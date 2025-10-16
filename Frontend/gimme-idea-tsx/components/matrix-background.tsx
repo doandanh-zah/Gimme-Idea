@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react"
 
 export default function MatrixBackground() {
-  const [spanCount, setSpanCount] = useState(280)
+  const [spanCount, setSpanCount] = useState(560)
 
   useEffect(() => {
     const updateSpanCount = () => {
