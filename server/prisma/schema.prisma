@@ -1,0 +1,165 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id              String        @id @default(uuid())
+  email           String        @unique
+  password        String
+  username        String        @unique
+  avatarUrl       String?
+  walletAddress   String?
+  bio             String?
+  linkedinUrl     String?
+  twitterHandle   String?
+  githubUrl       String?
+  reputationScore Int           @default(0)
+  totalEarned     Decimal       @default(0)
+  balance         Decimal       @default(0)
+  role            Role          @default(BOTH)
+  emailVerified   Boolean       @default(false)
+  isActive        Boolean       @default(true)
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  projects        Project[]
+  feedback        Feedback[]
+  transactions    Transaction[] @relation("UserTransactions")
+  notifications   Notification[]
+  followers       Follow[]      @relation("followers")
+  following       Follow[]      @relation("following")
+}
+
+model Project {
+  id                String          @id @default(uuid())
+  builderId         String
+  title             String
+  description       String          @db.Text
+  demoUrl           String
+  repoUrl           String?
+  category          String
+  tags              String[]
+  bountyAmount      Decimal
+  bountyDistributed Decimal         @default(0)
+  deadline          DateTime
+  status            ProjectStatus   @default(ACTIVE)
+  viewCount         Int             @default(0)
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+
+  builder           User            @relation(fields: [builderId], references: [id])
+  feedback          Feedback[]
+  transactions      Transaction[]
+  bookmarks         Bookmark[]
+}
+
+model Feedback {
+  id            String          @id @default(uuid())
+  projectId     String
+  reviewerId    String
+  content       Json            // {overall, pros[], cons[], suggestions}
+  qualityScore  Int?
+  rewardAmount  Decimal         @default(0)
+  status        FeedbackStatus  @default(PENDING)
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+
+  project       Project         @relation(fields: [projectId], references: [id])
+  reviewer      User            @relation(fields: [reviewerId], references: [id])
+
+  @@unique([projectId, reviewerId])
+}
+
+model Transaction {
+  id               String            @id @default(uuid())
+  type             TransactionType
+  fromUserId       String?
+  toUserId         String?
+  projectId        String?
+  amount           Decimal
+  currency         String            @default("USD")
+  status           TransactionStatus @default(PENDING)
+  stripePaymentId  String?
+  stripeTransferId String?
+  metadata         Json?
+  createdAt        DateTime          @default(now())
+
+  fromUser         User?             @relation("UserTransactions", fields: [fromUserId], references: [id])
+  toUser           User?             @relation("UserTransactions", fields: [toUserId], references: [id])
+  project          Project?          @relation(fields: [projectId], references: [id])
+}
+
+// Optional entities referenced in message; stubs for future use
+model Notification {
+  id        String   @id @default(uuid())
+  userId    String
+  type      String
+  payload   Json
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  user      User     @relation(fields: [userId], references: [id])
+}
+
+model Follow {
+  id         String   @id @default(uuid())
+  followerId String
+  followeeId String
+  createdAt  DateTime @default(now())
+
+  follower   User     @relation("followers", fields: [followerId], references: [id])
+  followee   User     @relation("following", fields: [followeeId], references: [id])
+
+  @@unique([followerId, followeeId])
+}
+
+model Bookmark {
+  id        String   @id @default(uuid())
+  userId    String
+  projectId String
+  createdAt DateTime @default(now())
+
+  user      User     @relation(fields: [userId], references: [id])
+  project   Project  @relation(fields: [projectId], references: [id])
+
+  @@unique([userId, projectId])
+}
+
+enum Role {
+  BUILDER
+  REVIEWER
+  BOTH
+}
+
+enum ProjectStatus {
+  DRAFT
+  ACTIVE
+  COMPLETED
+  CANCELLED
+}
+
+enum FeedbackStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum TransactionType {
+  DEPOSIT
+  WITHDRAWAL
+  REWARD
+  REFUND
+}
+
+enum TransactionStatus {
+  PENDING
+  COMPLETED
+  FAILED
+  CANCELED
+}
+

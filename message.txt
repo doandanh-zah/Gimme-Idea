@@ -1,0 +1,284 @@
+⚙️ PROMPT 2: BACKEND (CHO BẠN BẠN)
+Tôi cần bạn build BACKEND API cho platform "Gimme Idea" với Node.js + Express + PostgreSQL.
+TECH STACK BẮT BUỘC:
+
+Node.js + Express + TypeScript
+Database: PostgreSQL + Prisma ORM
+Auth: JWT (access + refresh tokens)
+Validation: Zod
+File Upload: Multer + Cloudinary
+Payment: Stripe
+Email: Nodemailer + SendGrid
+Queue: Bull + Redis
+Realtime: Socket.io
+Testing: Jest + Supertest
+
+DATABASE SCHEMA (Prisma):
+prismamodel User {
+  id              String    @id @default(uuid())
+  email           String    @unique
+  password        String
+  username        String    @unique
+  avatarUrl       String?
+  walletAddress   String?
+  bio             String?
+  linkedinUrl     String?
+  twitterHandle   String?
+  githubUrl       String?
+  reputationScore Int       @default(0)
+  totalEarned     Decimal   @default(0)
+  balance         Decimal   @default(0)
+  role            Role      @default(BOTH)
+  emailVerified   Boolean   @default(false)
+  isActive        Boolean   @default(true)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  
+  projects        Project[]
+  feedback        Feedback[]
+  transactions    Transaction[]
+  notifications   Notification[]
+  followers       Follow[]   @relation("followers")
+  following       Follow[]   @relation("following")
+}
+
+model Project {
+  id                String    @id @default(uuid())
+  builderId         String
+  title             String
+  description       String    @db.Text
+  demoUrl           String
+  repoUrl           String?
+  category          String
+  tags              String[]
+  bountyAmount      Decimal
+  bountyDistributed Decimal   @default(0)
+  deadline          DateTime
+  status            ProjectStatus @default(ACTIVE)
+  viewCount         Int       @default(0)
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  
+  builder           User      @relation(fields: [builderId], references: [id])
+  feedback          Feedback[]
+  transactions      Transaction[]
+  bookmarks         Bookmark[]
+}
+
+model Feedback {
+  id            String    @id @default(uuid())
+  projectId     String
+  reviewerId    String
+  content       Json      // {overall, pros[], cons[], suggestions}
+  qualityScore  Int?      // 1-5 rating from builder
+  rewardAmount  Decimal   @default(0)
+  status        FeedbackStatus @default(PENDING)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  
+  project       Project   @relation(fields: [projectId], references: [id])
+  reviewer      User      @relation(fields: [reviewerId], references: [id])
+  
+  @@unique([projectId, reviewerId])
+}
+
+model Transaction {
+  id                 String    @id @default(uuid())
+  type               TransactionType
+  fromUserId         String?
+  toUserId           String?
+  projectId          String?
+  amount             Decimal
+  currency           String    @default("USD")
+  status             TransactionStatus @default(PENDING)
+  stripePaymentId    String?
+  stripeTransferId   String?
+  metadata           Json?
+  createdAt          DateTime  @default(now())
+  
+  fromUser           User?     @relation(fields: [fromUserId], references: [id])
+  toUser             User?     @relation(fields: [toUserId], references: [id])
+  project            Project?  @relation(fields: [projectId], references: [id])
+}
+
+enum Role {
+  BUILDER
+  REVIEWER
+  BOTH
+}
+
+enum ProjectStatus {
+  DRAFT
+  ACTIVE
+  COMPLETED
+  CANCELLED
+}
+
+enum FeedbackStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum TransactionType {
+  DEPOSIT
+  WITHDRAWAL
+  REWARD
+  REFUND
+}
+API ENDPOINTS TO IMPLEMENT:
+Tất cả endpoints trả về format:
+typescript// Success
+{
+  success: true,
+  data: any,
+  message?: string
+}
+
+// Error
+{
+  success: false,
+  error: string,
+  code?: string
+}
+REQUIRED MIDDLEWARE:
+typescript// middleware/auth.ts
+- verifyToken: Check JWT và attach user vào req
+- refreshToken: Handle refresh token rotation
+- requireRole: Check user role permissions
+
+// middleware/validation.ts  
+- validateBody: Validate request body với Zod schema
+- validateQuery: Validate query params
+- validateParams: Validate URL params
+
+// middleware/rateLimiter.ts
+- General: 100 requests/15 min per IP
+- Auth: 5 requests/15 min per IP
+- Feedback: 1 per project per user
+
+// middleware/errorHandler.ts
+- Global error handler
+- Log errors với Winston
+- Send appropriate error response
+KEY FEATURES TO IMPLEMENT:
+
+Authentication System:
+
+Register với email verification link
+Login trả về access token (15min) + refresh token (7 days)
+Refresh token rotation
+Password reset qua email
+Logout blacklist refresh token
+
+
+Project Management:
+
+CRUD với authorization checks
+Auto-close projects sau deadline
+Escrow bounty amount khi create
+Track unique views (by IP/user)
+Full-text search trong title/description
+
+
+Feedback System:
+
+One feedback per user per project
+Edit trong 30 phút đầu
+Builder approve/reject với reason
+Auto-distribute bounty sau approval
+Calculate reviewer reputation
+
+
+Payment System:
+
+Stripe Connect cho marketplace
+Hold funds trong escrow
+Auto-release sau deadline + 3 days
+Minimum withdrawal $10
+Transaction fees 10%
+
+
+Background Jobs (Bull Queue):
+
+Send email verification
+Send password reset
+Process payment distributions
+Update reputation scores
+Clean expired tokens
+
+
+Real-time Features (Socket.io):
+
+New feedback notification
+Payment received notification
+Project status updates
+Online users in project
+
+
+
+SECURITY REQUIREMENTS:
+
+Bcrypt cho password hashing (10 rounds)
+Rate limiting trên all endpoints
+SQL injection prevention (Prisma)
+XSS prevention (sanitize inputs)
+CORS configuration
+Helmet.js cho security headers
+File upload validation (type, size < 5MB)
+
+ENVIRONMENT VARIABLES:
+envDATABASE_URL=postgresql://...
+JWT_SECRET=
+JWT_REFRESH_SECRET=
+STRIPE_SECRET_KEY=
+STRIPE_WEBHOOK_SECRET=
+CLOUDINARY_URL=
+SENDGRID_API_KEY=
+REDIS_URL=
+CLIENT_URL=http://localhost:5173
+```
+
+### **PROJECT STRUCTURE:**
+```
+server/
+├── src/
+│   ├── controllers/
+│   │   ├── auth.controller.ts
+│   │   ├── user.controller.ts
+│   │   ├── project.controller.ts
+│   │   ├── feedback.controller.ts
+│   │   └── payment.controller.ts
+│   ├── services/
+│   │   ├── auth.service.ts
+│   │   ├── email.service.ts
+│   │   ├── payment.service.ts
+│   │   └── reputation.service.ts
+│   ├── middleware/
+│   ├── validators/
+│   ├── routes/
+│   ├── prisma/
+│   ├── queues/
+│   ├── sockets/
+│   ├── utils/
+│   └── app.ts
+├── tests/
+└── package.json
+TESTING REQUIREMENTS:
+
+Unit tests cho services
+Integration tests cho API endpoints
+Test coverage > 70%
+Mock external services (Stripe, SendGrid)
+
+OUTPUT YÊU CẦU:
+Build step-by-step theo thứ tự:
+
+Setup project và database schema
+Implement authentication flow hoàn chỉnh
+Build CRUD cho projects
+Add feedback system
+Integrate Stripe payments
+Add background jobs
+Implement Socket.io
+Write tests
