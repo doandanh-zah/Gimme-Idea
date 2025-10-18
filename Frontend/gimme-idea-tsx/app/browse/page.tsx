@@ -25,7 +25,8 @@ export default function BrowsePage() {
   // Fetch projects on mount and when filters change
   useEffect(() => {
     fetchProjects({ ...filters, search: debouncedSearch })
-  }, [debouncedSearch, filters])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [debouncedSearch, JSON.stringify(filters)])
 
   const handlePageChange = (newPage: number) => {
     setFilters({ page: newPage })
@@ -71,7 +72,7 @@ export default function BrowsePage() {
                 <div className="flex items-center justify-center py-20">
                   <Loader2 className="animate-spin text-primary" size={48} />
                 </div>
-              ) : projects.length === 0 ? (
+              ) : !projects || projects.length === 0 ? (
                 <div className="text-center py-20">
                   <p className="text-gray text-xl">No projects found</p>
                   <p className="text-gray mt-2">Try adjusting your filters or search query</p>

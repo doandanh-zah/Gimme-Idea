@@ -27,12 +27,14 @@ model User {
   createdAt       DateTime      @default(now())
   updatedAt       DateTime      @updatedAt
 
-  projects        Project[]
-  feedback        Feedback[]
-  transactions    Transaction[] @relation("UserTransactions")
-  notifications   Notification[]
-  followers       Follow[]      @relation("followers")
-  following       Follow[]      @relation("following")
+  projects           Project[]
+  feedback           Feedback[]
+  transactionsFrom   Transaction[] @relation("TransactionsFrom")
+  transactionsTo     Transaction[] @relation("TransactionsTo")
+  notifications      Notification[]
+  followers          Follow[]      @relation("followers")
+  following          Follow[]      @relation("following")
+  bookmarks          Bookmark[]
 }
 
 model Project {
@@ -89,8 +91,8 @@ model Transaction {
   metadata         Json?
   createdAt        DateTime          @default(now())
 
-  fromUser         User?             @relation("UserTransactions", fields: [fromUserId], references: [id])
-  toUser           User?             @relation("UserTransactions", fields: [toUserId], references: [id])
+  fromUser         User?             @relation("TransactionsFrom", fields: [fromUserId], references: [id])
+  toUser           User?             @relation("TransactionsTo", fields: [toUserId], references: [id])
   project          Project?          @relation(fields: [projectId], references: [id])
 }
 

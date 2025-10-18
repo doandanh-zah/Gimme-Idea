@@ -51,13 +51,13 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
       const response = await apiClient.getProjects(filters)
 
       set({
-        projects: response.data,
+        projects: response.projects || response.data || [],
         pagination: response.pagination,
         filters,
         isLoading: false,
       })
 
-      console.log("[v0] ✅ Projects fetched:", response.data.length)
+      console.log("[v0] ✅ Projects fetched:", response.projects?.length || 0)
     } catch (error: any) {
       console.error("[v0] ❌ Fetch projects failed:", error)
       set({
@@ -70,7 +70,8 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
   fetchProjectById: async (id: string) => {
     set({ isLoading: true, error: null })
     try {
-      const project = await apiClient.getProjectById(id)
+      const response = await apiClient.getProjectById(id)
+      const project = response.project || response
       await apiClient.incrementProjectView(id)
 
       set({
@@ -91,7 +92,9 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
   createProject: async (data: any) => {
     set({ isLoading: true, error: null })
     try {
-      const project = await apiClient.createProject(data)
+      const response = await apiClient.createProject(data)
+      // Backend returns { project: {...} }
+      const project = response.project || response
 
       set({ isLoading: false })
       console.log("[v0] ✅ Project created:", project.title)
@@ -110,7 +113,8 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
   updateProject: async (id: string, data: any) => {
     set({ isLoading: true, error: null })
     try {
-      const project = await apiClient.updateProject(id, data)
+      const response = await apiClient.updateProject(id, data)
+      const project = response.project || response
 
       set({
         currentProject: project,

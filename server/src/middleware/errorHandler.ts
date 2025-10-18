@@ -1,5 +1,5 @@
 import type { NextFunction, Request, Response } from 'express';
-import { logger } from '../utils/logger.js';
+import logger from '../utils/logger.js';
 import { sendError } from '../utils/response.js';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any

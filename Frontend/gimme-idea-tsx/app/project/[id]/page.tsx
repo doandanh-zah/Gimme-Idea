@@ -25,18 +25,22 @@ export default function ProjectDetailPage() {
 
   useEffect(() => {
     if (projectId) {
+      console.log("[v0] 🔄 Fetching project:", projectId)
       fetchProjectById(projectId)
       loadFeedback()
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [projectId])
 
   const loadFeedback = async () => {
     setLoadingFeedback(true)
     try {
-      const data = await apiClient.getProjectFeedback(projectId)
-      setFeedbacks(data)
+      const response = await apiClient.getProjectFeedback(projectId)
+      // Backend returns { feedback: [...] }
+      setFeedbacks(response.feedback || response || [])
     } catch (error) {
       console.error("[v0] Failed to load feedback:", error)
+      setFeedbacks([])
     } finally {
       setLoadingFeedback(false)
     }
@@ -211,7 +215,7 @@ export default function ProjectDetailPage() {
               <div className="flex justify-center py-8">
                 <Loader2 className="animate-spin text-primary" size={32} />
               </div>
-            ) : feedbacks.length === 0 ? (
+            ) : !feedbacks || feedbacks.length === 0 ? (
               <p className="text-gray text-center py-8">No feedback yet. Be the first to provide feedback!</p>
             ) : (
               <div className="space-y-4">
