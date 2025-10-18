@@ -1,47 +1,122 @@
-# Global ignores for the monorepo
+# Root .gitignore for Gimme-Idea Project
 
-# Node
-**/node_modules/
-**/.pnp
-**/.pnp.js
-**/pnpm-lock.yaml
-**/yarn.lock
-**/package-lock.json
+# ========================================
+# Dependencies
+# ========================================
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
 
-# Builds / outputs
-**/dist/
-**/build/
-**/.next/
-**/out/
-**/.turbo/
-**/.cache/
-
-# Logs
-**/npm-debug.log*
-**/yarn-debug.log*
-**/yarn-error.log*
-**/.pnpm-debug.log*
-**/logs
-**/*.log
-
-# Env & secrets
+# ========================================
+# Environment Variables
+# ========================================
+.env
+.env.local
+.env*.local
+.env.development
+.env.test
+.env.production
 **/.env
-**/.env.*
-!.env.example
+**/.env.local
 
-# Coverage
-**/coverage/
+# ========================================
+# Build Output
+# ========================================
+dist/
+build/
+out/
+.next/
 
-# Editors / OS
-.DS_Store
-Thumbs.db
+# ========================================
+# IDE & Editors
+# ========================================
+.vscode/
+.idea/
 *.swp
 *.swo
-.idea/
-.vscode/
+*~
+*.sublime-workspace
+*.sublime-project
 
-# Misc
-**/*.tsbuildinfo
-**/.eslintcache
-**/.vercel
+# ========================================
+# OS Files
+# ========================================
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+Desktop.ini
 
+# ========================================
+# Logs
+# ========================================
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+combined.log
+error.log
+
+# ========================================
+# Testing
+# ========================================
+coverage/
+.nyc_output/
+*.lcov
+.jest-cache/
+
+# ========================================
+# TypeScript
+# ========================================
+*.tsbuildinfo
+tsconfig.tsbuildinfo
+
+# ========================================
+# Database
+# ========================================
+*.sqlite
+*.sqlite3
+*.db
+*.db-journal
+
+# ========================================
+# Temporary Files
+# ========================================
+tmp/
+temp/
+*.tmp
+*.bak
+*.swp
+*~.nib
+
+# ========================================
+# Production Deployment
+# ========================================
+.vercel
+.netlify
+
+# ========================================
+# Secrets & Keys
+# ========================================
+*.pem
+*.key
+*.cert
+secrets/
+credentials/
+
+# ========================================
+# Documentation (keep committed)
+# ========================================
+# !README.md
+# !PROJECT_STATUS.md
+# !PROJECT_STATUS_VI.md

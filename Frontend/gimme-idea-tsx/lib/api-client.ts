@@ -54,20 +54,39 @@ class ApiClient {
         headers,
       })
 
-      const data = await response.json()
+      // Try to parse JSON, but handle plain text responses (like rate limit errors)
+      let result
+      const contentType = response.headers.get("content-type")
+      if (contentType && contentType.includes("application/json")) {
+        result = await response.json()
+      } else {
+        const text = await response.text()
+        console.error("[v0] Non-JSON response from", url, ":", text)
+        throw new Error(text || "Server returned non-JSON response")
+      }
 
       if (!response.ok) {
         const error: ApiError = {
-          message: data.message || "An error occurred",
+          message: result.error || result.message || "An error occurred",
           status: response.status,
-          errors: data.errors,
+          errors: result.errors,
         }
+        console.error("[v0] API Error Response:", {
+          url,
+          status: response.status,
+          error: result,
+        })
         throw error
       }
 
-      return data
+      // Backend returns { success: true, data: {...} }
+      // Extract the data field
+      return result.data || result
     } catch (error: any) {
-      console.error("[v0] API Error:", error)
+      console.error("[v0] API Error for", url, ":", {
+        message: error.message,
+        error,
+      })
       throw error
     }
   }
