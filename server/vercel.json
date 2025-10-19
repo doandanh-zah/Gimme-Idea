@@ -13,16 +13,6 @@
       "dest": "dist/server.js"
     }
   ],
-  "env": {
-    "NODE_ENV": "production",
-    "DATABASE_URL": "@database-url",
-    "JWT_SECRET": "@jwt-secret",
-    "JWT_REFRESH_SECRET": "@jwt-refresh-secret",
-    "CLIENT_URL": "@client-url",
-    "SENDGRID_API_KEY": "@sendgrid-api-key",
-    "SENDGRID_FROM_EMAIL": "@sendgrid-from-email",
-    "SENDGRID_FROM_NAME": "Gimme Idea"
-  },
   "buildCommand": "npm run build",
   "installCommand": "npm install && npx prisma generate",
   "outputDirectory": "dist",
