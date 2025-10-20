@@ -17,14 +17,16 @@ const router = Router();
 
 // Public routes
 router.get('/', getProjects);
-router.get('/:id', getProjectById);
-router.post('/:id/view', (req, res) => res.json({ success: true })); // View count already incremented in getProjectById
 
-// Protected routes (require authentication)
+// Protected routes (require authentication) - Must be before /:id routes to avoid conflicts
 router.post('/', verifyToken, requireRole(['BUILDER', 'BOTH']), validateBody(createProjectSchema), createProject);
 router.get('/my/projects', verifyToken, getMyProjects);
-router.post('/:id/bookmark', verifyToken, toggleBookmark);
 router.get('/bookmarked', verifyToken, getBookmarkedProjects);
+
+// Dynamic ID routes - Must be after specific routes
+router.get('/:id', getProjectById);
+router.post('/:id/view', (req, res) => res.json({ success: true })); // View count already incremented in getProjectById
+router.post('/:id/bookmark', verifyToken, toggleBookmark);
 router.put('/:id', verifyToken, validateBody(updateProjectSchema), updateProject);
 router.delete('/:id', verifyToken, deleteProject);
 

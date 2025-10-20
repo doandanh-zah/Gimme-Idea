@@ -261,7 +261,7 @@ export async function updateProject(req: Request, res: Response) {
 
     if (title) updateData.title = title;
     if (description) updateData.description = description;
-    if (demoUrl) updateData.demoUrl = demoUrl;
+    if (demoUrl !== undefined) updateData.demoUrl = demoUrl || null;
     if (repoUrl !== undefined) updateData.repoUrl = repoUrl;
     if (category) updateData.category = category;
     if (tags) updateData.tags = tags;
