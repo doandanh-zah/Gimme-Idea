@@ -6,7 +6,7 @@ export const createProjectSchema = z.object({
   demoUrl: z.string().url('Invalid demo URL').optional().or(z.literal('')),
   repoUrl: z.string().url('Invalid repository URL').optional().or(z.literal('')),
   category: z.string().min(1, 'Category is required'),
-  tags: z.array(z.string()).min(1, 'At least one tag is required'),
+  tags: z.array(z.string()).optional().default([]),
   bountyAmount: z.number().min(0, 'Bounty amount must be positive').or(z.string()),
   deadline: z.string().datetime().or(z.date()).optional(),
 });
