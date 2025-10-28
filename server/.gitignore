@@ -1,62 +1,21 @@
-# Dependencies
+# dependencies
 node_modules/
+
+# next.js
+.next/
+out/
+
+# build artifacts
+build/
+
+# env files
+.env*
+
+# debug logs
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
 
-# Environment variables
-.env
-.env.local
-.env.development
-.env.test
-.env.production
-.env.*.local
-
-# Build output
-dist/
-build/
-*.js
-*.js.map
-!jest.config.js
-!commitlint.config.js
-
-# TypeScript
+# typescript
 *.tsbuildinfo
-tsconfig.tsbuildinfo
-
-# Testing
-coverage/
-.nyc_output/
-
-# IDE
-.vscode/
-.idea/
-*.swp
-*.swo
-*~
-.DS_Store
-
-# Logs
-logs/
-*.log
-combined.log
-error.log
-
-# Database
-*.sqlite
-*.sqlite3
-*.db
-
-# Prisma
-prisma/migrations/**/migration.sql.bak
-.env.backup
-
-# Temporary files
-tmp/
-temp/
-*.tmp
-
-# OS
-.DS_Store
-Thumbs.db

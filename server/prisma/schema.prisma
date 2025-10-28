@@ -3,165 +3,160 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
 model User {
-  id              String        @id @default(uuid())
-  email           String        @unique
-  password        String
-  username        String        @unique
-  avatarUrl       String?
-  walletAddress   String?
-  bio             String?
-  linkedinUrl     String?
-  twitterHandle   String?
-  githubUrl       String?
-  reputationScore Int           @default(0)
-  totalEarned     Decimal       @default(0)
-  balance         Decimal       @default(0)
-  role            Role          @default(BOTH)
-  emailVerified   Boolean       @default(false)
-  isActive        Boolean       @default(true)
-  createdAt       DateTime      @default(now())
-  updatedAt       DateTime      @updatedAt
+  id                String    @id @default(cuid())
+  email             String    @unique
+  username          String    @unique
+  password          String
+  emailVerified     Boolean   @default(false)
+  emailVerifyToken  String?
+  avatar            String?
+  bio               String?   @db.Text
+  walletAddress     String?   @unique
+  walletType        String?
+  walletConnectedAt DateTime?
+  aiCredits         Int       @default(5)
+  reputation        Int       @default(0)
+  totalTipsReceived Float     @default(0)
+  totalTipsGiven    Float     @default(0)
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  lastLoginAt       DateTime?
+  projects          Project[]
+  feedbacks         Feedback[]
+  aiChats           AIChat[]
+  tipsGiven         Tip[]     @relation("TipSender")
+  tipsReceived      Tip[]     @relation("TipReceiver")
+  notifications     Notification[]
 
-  projects           Project[]
-  feedback           Feedback[]
-  transactionsFrom   Transaction[] @relation("TransactionsFrom")
-  transactionsTo     Transaction[] @relation("TransactionsTo")
-  notifications      Notification[]
-  followers          Follow[]      @relation("followers")
-  following          Follow[]      @relation("following")
-  bookmarks          Bookmark[]
+  @@index([email])
+  @@index([walletAddress])
+  @@index([username])
 }
 
 model Project {
-  id                String          @id @default(uuid())
-  builderId         String
-  title             String
-  description       String          @db.Text
-  demoUrl           String
-  repoUrl           String?
-  category          String
-  tags              String[]
-  bountyAmount      Decimal
-  bountyDistributed Decimal         @default(0)
-  deadline          DateTime
-  status            ProjectStatus   @default(ACTIVE)
-  viewCount         Int             @default(0)
-  createdAt         DateTime        @default(now())
-  updatedAt         DateTime        @updatedAt
+  id             String         @id @default(cuid())
+  userId         String
+  title          String         @db.VarChar(100)
+  description    String         @db.Text
+  coverImage     String?
+  projectUrl     String?
+  repoUrl        String?
+  feedbackNeeded String         @db.Text
+  category       String
+  tags           String[]
+  techStack      String[]
+  aiReview       Json?
+  aiScore        Int?
+  aiReviewedAt   DateTime?
+  status         ProjectStatus  @default(DRAFT)
+  viewCount      Int            @default(0)
+  feedbackCount  Int            @default(0)
+  uniqueViewers  String[]       @default([])
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+  publishedAt    DateTime?
+  user           User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  feedbacks      Feedback[]
+  aiChats        AIChat[]
 
-  builder           User            @relation(fields: [builderId], references: [id])
-  feedback          Feedback[]
-  transactions      Transaction[]
-  bookmarks         Bookmark[]
+  @@index([userId, status])
+  @@index([category])
+  @@index([aiScore])
 }
 
 model Feedback {
-  id            String          @id @default(uuid())
-  projectId     String
-  reviewerId    String
-  content       Json            // {overall, pros[], cons[], suggestions}
-  qualityScore  Int?
-  rewardAmount  Decimal         @default(0)
-  status        FeedbackStatus  @default(PENDING)
-  createdAt     DateTime        @default(now())
-  updatedAt     DateTime        @updatedAt
-
-  project       Project         @relation(fields: [projectId], references: [id])
-  reviewer      User            @relation(fields: [reviewerId], references: [id])
-
-  @@unique([projectId, reviewerId])
-}
-
-model Transaction {
-  id               String            @id @default(uuid())
-  type             TransactionType
-  fromUserId       String?
-  toUserId         String?
-  projectId        String?
-  amount           Decimal
-  currency         String            @default("USD")
-  status           TransactionStatus @default(PENDING)
-  stripePaymentId  String?
-  stripeTransferId String?
-  metadata         Json?
-  createdAt        DateTime          @default(now())
-
-  fromUser         User?             @relation("TransactionsFrom", fields: [fromUserId], references: [id])
-  toUser           User?             @relation("TransactionsTo", fields: [toUserId], references: [id])
-  project          Project?          @relation(fields: [projectId], references: [id])
-}
-
-// Optional entities referenced in message; stubs for future use
-model Notification {
-  id        String   @id @default(uuid())
-  userId    String
-  type      String
-  payload   Json
-  read      Boolean  @default(false)
-  createdAt DateTime @default(now())
-
-  user      User     @relation(fields: [userId], references: [id])
-}
-
-model Follow {
-  id         String   @id @default(uuid())
-  followerId String
-  followeeId String
-  createdAt  DateTime @default(now())
-
-  follower   User     @relation("followers", fields: [followerId], references: [id])
-  followee   User     @relation("following", fields: [followeeId], references: [id])
-
-  @@unique([followerId, followeeId])
-}
-
-model Bookmark {
-  id        String   @id @default(uuid())
-  userId    String
+  id        String     @id @default(cuid())
   projectId String
-  createdAt DateTime @default(now())
+  userId    String
+  content   String     @db.Text
+  isAI      Boolean    @default(false)
+  parentId  String?
+  helpful   Int        @default(0)
+  reactions Json?
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+  project   Project    @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  user      User       @relation(fields: [userId], references: [id])
+  tips      Tip[]
+  parent    Feedback?  @relation("FeedbackReplies", fields: [parentId], references: [id])
+  replies   Feedback[] @relation("FeedbackReplies")
 
-  user      User     @relation(fields: [userId], references: [id])
-  project   Project  @relation(fields: [projectId], references: [id])
-
-  @@unique([userId, projectId])
+  @@index([projectId])
+  @@index([userId])
+  @@index([parentId])
 }
 
-enum Role {
-  BUILDER
-  REVIEWER
-  BOTH
+model AIChat {
+  id        String   @id @default(cuid())
+  projectId String
+  userId    String
+  message   String   @db.Text
+  response  String   @db.Text
+  tokenUsed Int
+  createdAt DateTime @default(now())
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id])
+
+  @@index([projectId, userId])
+}
+
+model Tip {
+  id          String    @id @default(cuid())
+  fromUserId  String
+  toUserId    String
+  feedbackId  String
+  amount      Float
+  usdValue    Float?
+  signature   String    @unique
+  status      TipStatus @default(PENDING)
+  processedAt DateTime?
+  createdAt   DateTime  @default(now())
+  sender      User      @relation("TipSender", fields: [fromUserId], references: [id])
+  receiver    User      @relation("TipReceiver", fields: [toUserId], references: [id])
+  feedback    Feedback  @relation(fields: [feedbackId], references: [id])
+
+  @@index([fromUserId])
+  @@index([toUserId])
+  @@index([signature])
+}
+
+model Notification {
+  id      String            @id @default(cuid())
+  userId  String
+  type    NotificationType
+  title   String
+  message String
+  data    Json?
+  read    Boolean           @default(false)
+  readAt  DateTime?
+  createdAt DateTime        @default(now())
+  user      User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, read])
 }
 
 enum ProjectStatus {
   DRAFT
-  ACTIVE
-  COMPLETED
-  CANCELLED
+  PUBLISHED
+  ARCHIVED
 }
 
-enum FeedbackStatus {
-  PENDING
-  APPROVED
-  REJECTED
-}
-
-enum TransactionType {
-  DEPOSIT
-  WITHDRAWAL
-  REWARD
-  REFUND
-}
-
-enum TransactionStatus {
+enum TipStatus {
   PENDING
   COMPLETED
   FAILED
-  CANCELED
 }
 
+enum NotificationType {
+  FEEDBACK_RECEIVED
+  TIP_RECEIVED
+  PROJECT_REVIEWED
+  AI_CREDITS_LOW
+  WALLET_CONNECTED
+}
