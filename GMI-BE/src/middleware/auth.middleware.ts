@@ -7,18 +7,20 @@ export const authMiddleware = async (
   req: AuthRequest,
   res: Response,
   next: NextFunction
-) => {
+): Promise<void> => {
   try {
     const walletAddress = req.headers['x-wallet-address'] as string
     const signature = req.headers['x-wallet-signature'] as string
 
     if (!walletAddress) {
-      return res.status(401).json({ error: 'Wallet address required' })
+      res.status(401).json({ error: 'Wallet address required' })
+      return
     }
 
     // For some endpoints, signature verification can be skipped (e.g., GET requests)
     if (req.method !== 'GET' && !signature) {
-      return res.status(401).json({ error: 'Wallet signature required' })
+      res.status(401).json({ error: 'Wallet signature required' })
+      return
     }
 
     // Verify signature if provided
@@ -27,7 +29,8 @@ export const authMiddleware = async (
       const isValid = await verifyWalletSignature(walletAddress, signature, message)
 
       if (!isValid) {
-        return res.status(401).json({ error: 'Invalid wallet signature' })
+        res.status(401).json({ error: 'Invalid wallet signature' })
+        return
       }
     }
 
@@ -66,9 +69,9 @@ export const authMiddleware = async (
 // Optional auth - doesn't fail if no wallet
 export const optionalAuthMiddleware = async (
   req: AuthRequest,
-  res: Response,
+  _res: Response,
   next: NextFunction
-) => {
+): Promise<void> => {
   const walletAddress = req.headers['x-wallet-address'] as string
 
   if (walletAddress) {

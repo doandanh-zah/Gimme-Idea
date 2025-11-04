@@ -107,7 +107,7 @@ router.post('/', authMiddleware, async (req: AuthRequest, res: Response) => {
           walletId: req.wallet.id,
           totalAmount: prizePool.totalAmount,
           winnersCount: prizePool.winnersCount,
-          distribution: prizePool.distribution,
+          distribution: prizePool.distribution as any,
           endsAt: new Date(prizePool.endsAt)
         }
       })

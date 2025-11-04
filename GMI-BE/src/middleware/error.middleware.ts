@@ -2,33 +2,36 @@ import { Request, Response, NextFunction } from 'express'
 
 export const errorMiddleware = (
   error: any,
-  req: Request,
+  _req: Request,
   res: Response,
-  next: NextFunction
-) => {
+  _next: NextFunction
+): void => {
   console.error('[Error]', error)
 
   // Prisma errors
   if (error.code === 'P2002') {
-    return res.status(400).json({
+    res.status(400).json({
       error: 'Duplicate entry',
       message: 'This record already exists'
     })
+    return
   }
 
   if (error.code === 'P2025') {
-    return res.status(404).json({
+    res.status(404).json({
       error: 'Not found',
       message: 'Record not found'
     })
+    return
   }
 
   // Validation errors
   if (error.name === 'ValidationError') {
-    return res.status(400).json({
+    res.status(400).json({
       error: 'Validation failed',
       message: error.message
     })
+    return
   }
 
   // Default error

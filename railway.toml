@@ -1,0 +1,8 @@
+[build]
+builder = "NIXPACKS"
+buildCommand = "cd GMI-BE && npm install && npx prisma generate && npm run build"
+
+[deploy]
+startCommand = "cd GMI-BE && npm start"
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 10
