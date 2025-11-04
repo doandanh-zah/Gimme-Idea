@@ -18,7 +18,7 @@ import { Badge } from "@/components/ui/badge"
 import { PostCard } from "@/components/post-card"
 import { Navbar } from "@/components/navbar"
 import { useAppStore } from "@/lib/stores/app-store"
-import { API } from "@/lib/api"
+import { getPosts } from "@/lib/actions/post-actions"
 import { Plus, Loader2 } from "lucide-react"
 
 const CATEGORIES = [
@@ -59,17 +59,14 @@ export default function Dashboard() {
       setError("")
 
       try {
-        // Call GMI-BE API
-        const response = await API.Posts.getPosts({
+        // Call GMI-BE API via action layer
+        const response = await getPosts({
           category: selectedCategory === "All" ? undefined : selectedCategory,
           page: 1,
           limit: 50
         })
 
-        if (!response.success || !response.data) {
-          throw new Error(response.error || 'Failed to fetch posts')
-        }
-
+        // post-actions returns the unwrapped backend response: {success: true, data: {posts: [...], total, ...}}
         setPosts(response.data.posts || [])
       } catch (err) {
         setError(err instanceof Error ? err.message : "Failed to fetch posts")

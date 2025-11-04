@@ -14,6 +14,7 @@ import { Navbar } from "@/components/navbar"
 import { useAppStore } from "@/lib/stores/app-store"
 import { uploadPostImage } from "@/lib/actions/image-actions"
 import { createPost } from "@/lib/actions/post-actions"
+import { getCachedSignature } from "@/lib/auth/sign-message"
 import { Upload, X, AlertCircle } from "lucide-react"
 
 const CATEGORIES = [
@@ -131,7 +132,13 @@ export default function CreatePost() {
 
       // Upload image to Supabase Storage
       if (imageFile) {
-        imageUrl = await uploadPostImage(imageFile)
+        // Get wallet signature from cache
+        const cached = getCachedSignature(appWallet.address || '')
+        if (!cached) {
+          throw new Error('Wallet signature not found. Please reconnect your wallet.')
+        }
+
+        imageUrl = await uploadPostImage(imageFile, appWallet.address || '', cached.signature)
       }
 
       // Create the post first
