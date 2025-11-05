@@ -45,7 +45,7 @@ router.post('/', upload.single('image'), authMiddleware, async (req: AuthRequest
 
     // Upload to Supabase Storage
     const { data, error } = await supabase.storage
-      .from('images')
+      .from('gimme-idea')
       .upload(filePath, file.buffer, {
         contentType: file.mimetype,
         cacheControl: '3600',
@@ -59,7 +59,7 @@ router.post('/', upload.single('image'), authMiddleware, async (req: AuthRequest
 
     // Get public URL
     const { data: urlData } = supabase.storage
-      .from('images')
+      .from('gimme-idea')
       .getPublicUrl(filePath)
 
     if (!urlData?.publicUrl) {
@@ -109,7 +109,7 @@ router.delete('/', authMiddleware, async (req: AuthRequest, res: Response) => {
     }
 
     const { error } = await supabase.storage
-      .from('images')
+      .from('gimme-idea')
       .remove([path])
 
     if (error) {
