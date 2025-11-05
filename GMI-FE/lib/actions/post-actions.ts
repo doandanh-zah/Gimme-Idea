@@ -33,7 +33,7 @@ export async function getPosts(params?: {
   // Transform posts but keep the rest of response structure
   return {
     ...response.data,
-    posts: response.data.posts.map(transformBackendPost)
+    posts: (response.data.posts || []).map(transformBackendPost)
   }
 }
 
@@ -48,7 +48,7 @@ export async function getUserPosts(walletAddress: string) {
   }
 
   // Transform backend camelCase to snake_case
-  return response.data.posts.map(transformBackendPost)
+  return (response.data.posts || []).map(transformBackendPost)
 }
 
 /**

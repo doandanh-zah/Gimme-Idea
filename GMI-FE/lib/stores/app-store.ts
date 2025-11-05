@@ -77,8 +77,13 @@ interface AppState {
 
 export const useAppStore = create<AppState>((set) => ({
   // Access
-  hasAccess: false,
-  setHasAccess: (value) => set({ hasAccess: value }),
+  hasAccess: typeof window !== 'undefined' ? localStorage.getItem('gmi-access') === 'true' : false,
+  setHasAccess: (value) => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('gmi-access', value.toString())
+    }
+    set({ hasAccess: value })
+  },
 
   // Wallet
   wallet: { address: null, type: null, connected: false },

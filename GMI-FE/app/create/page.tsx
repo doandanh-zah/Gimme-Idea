@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { useState, useRef } from "react"
+import { useState, useRef, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { useWallet } from "@solana/wallet-adapter-react"
 import { Button } from "@/components/ui/button"
@@ -37,7 +37,7 @@ const CATEGORIES = [
 export default function CreatePost() {
   const router = useRouter()
   const wallet = useWallet()
-  const { wallet: appWallet, addPost } = useAppStore()
+  const { wallet: appWallet, addPost, hasAccess } = useAppStore()
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [loading, setLoading] = useState(false)
   const [loadingMessage, setLoadingMessage] = useState("")
@@ -45,6 +45,16 @@ export default function CreatePost() {
   const [imageFile, setImageFile] = useState<File | null>(null)
   const [formError, setFormError] = useState("")
   const [uploadError, setUploadError] = useState("")
+
+  useEffect(() => {
+    if (!hasAccess) {
+      router.push("/")
+      return
+    }
+    if (!appWallet.connected) {
+      router.push("/connect")
+    }
+  }, [appWallet.connected, hasAccess, router])
 
   const [formData, setFormData] = useState({
     title: "",

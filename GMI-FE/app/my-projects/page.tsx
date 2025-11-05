@@ -13,14 +13,18 @@ import { Plus, Loader2 } from "lucide-react"
 
 export default function MyProjectsPage() {
   const router = useRouter()
-  const { wallet } = useAppStore()
+  const { wallet, hasAccess } = useAppStore()
   const [myPosts, setMyPosts] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState("")
 
   useEffect(() => {
-    if (!wallet.connected) {
+    if (!hasAccess) {
       router.push("/")
+      return
+    }
+    if (!wallet.connected) {
+      router.push("/connect")
       return
     }
 
@@ -39,7 +43,7 @@ export default function MyProjectsPage() {
     }
 
     fetchMyPosts()
-  }, [wallet.connected, wallet.address, router])
+  }, [wallet.connected, wallet.address, hasAccess, router])
 
   return (
     <div className="min-h-screen bg-background">

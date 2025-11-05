@@ -28,7 +28,7 @@ interface Comment {
 export default function PostDetail() {
   const router = useRouter()
   const params = useParams()
-  const { wallet, posts } = useAppStore()
+  const { wallet, posts, hasAccess } = useAppStore()
   const [comment, setComment] = useState("")
   const [comments, setComments] = useState<Comment[]>([])
   const [loading, setLoading] = useState(false)
@@ -36,10 +36,14 @@ export default function PostDetail() {
   const [postId, setPostId] = useState<string | null>(null)
 
   useEffect(() => {
-    if (!wallet.connected) {
+    if (!hasAccess) {
       router.push("/")
+      return
     }
-  }, [wallet.connected, router])
+    if (!wallet.connected) {
+      router.push("/connect")
+    }
+  }, [wallet.connected, hasAccess, router])
 
   useEffect(() => {
     if (params?.id) {
