@@ -61,7 +61,8 @@ export async function getPost(id: string) {
     throw new Error(response.error || 'Failed to get post')
   }
 
-  return response.data
+  // Transform backend camelCase to snake_case
+  return transformBackendPost(response.data)
 }
 
 /**

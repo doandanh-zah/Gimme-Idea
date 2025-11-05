@@ -23,7 +23,7 @@ export default function MyProjectsPage() {
       router.push("/")
       return
     }
-    if (!wallet.connected) {
+    if (!wallet.connected || !wallet.address) {
       router.push("/connect")
       return
     }
@@ -32,6 +32,17 @@ export default function MyProjectsPage() {
       setLoading(true)
       setError("")
       try {
+        // Check if we have a valid signature
+        const { getCachedSignature } = await import('@/lib/auth/sign-message')
+        const cached = getCachedSignature(wallet.address!)
+
+        if (!cached) {
+          // No signature found, need to re-authenticate
+          console.log('[My Projects] No signature found, redirecting to connect')
+          router.push("/connect")
+          return
+        }
+
         const data = await getUserPosts(wallet.address!)
         setMyPosts(data)
       } catch (err) {

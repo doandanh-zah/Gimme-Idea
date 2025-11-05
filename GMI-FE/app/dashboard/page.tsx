@@ -52,10 +52,24 @@ export default function Dashboard() {
       router.push("/")
       return
     }
-    if (!wallet.connected) {
+    if (!wallet.connected || !wallet.address) {
       router.push("/connect")
+      return
     }
-  }, [wallet.connected, hasAccess, router])
+
+    // Check if we have a valid signature for API calls
+    const checkSignature = async () => {
+      const { getCachedSignature } = await import('@/lib/auth/sign-message')
+      const cached = getCachedSignature(wallet.address!)
+
+      if (!cached) {
+        console.log('[Dashboard] No signature found, redirecting to connect')
+        router.push("/connect")
+      }
+    }
+
+    checkSignature()
+  }, [wallet.connected, wallet.address, hasAccess, router])
 
   useEffect(() => {
     const fetchPosts = async () => {

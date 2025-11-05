@@ -40,10 +40,24 @@ export default function PostDetail() {
       router.push("/")
       return
     }
-    if (!wallet.connected) {
+    if (!wallet.connected || !wallet.address) {
       router.push("/connect")
+      return
     }
-  }, [wallet.connected, hasAccess, router])
+
+    // Check if we have a valid signature for API calls
+    const checkSignature = async () => {
+      const { getCachedSignature } = await import('@/lib/auth/sign-message')
+      const cached = getCachedSignature(wallet.address!)
+
+      if (!cached) {
+        console.log('[Post Detail] No signature found, redirecting to connect')
+        router.push("/connect")
+      }
+    }
+
+    checkSignature()
+  }, [wallet.connected, wallet.address, hasAccess, router])
 
   useEffect(() => {
     if (params?.id) {
@@ -52,7 +66,38 @@ export default function PostDetail() {
     }
   }, [params?.id])
 
-  const post = posts.find((p) => p.id === postId)
+  // Try to find post in store first, then fetch from API if not found
+  const [post, setPost] = useState<any>(null)
+  const [loadingPost, setLoadingPost] = useState(true)
+
+  useEffect(() => {
+    const fetchPost = async () => {
+      if (!postId) return
+
+      setLoadingPost(true)
+      try {
+        // First check if post is in store
+        const storePost = posts.find((p) => p.id === postId)
+        if (storePost) {
+          setPost(storePost)
+          setLoadingPost(false)
+          return
+        }
+
+        // If not in store, fetch from API
+        const { getPost } = await import('@/lib/actions/post-actions')
+        const fetchedPost = await getPost(postId)
+        setPost(fetchedPost)
+      } catch (error) {
+        console.error('[Post Detail] Error fetching post:', error)
+        setPost(null)
+      } finally {
+        setLoadingPost(false)
+      }
+    }
+
+    fetchPost()
+  }, [postId, posts])
 
   useEffect(() => {
     if (post?.id) {
@@ -110,6 +155,16 @@ export default function PostDetail() {
     } finally {
       setLoading(false)
     }
+  }
+
+  if (loadingPost) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-muted-foreground mb-4">Loading post...</p>
+        </div>
+      </div>
+    )
   }
 
   if (!post) {

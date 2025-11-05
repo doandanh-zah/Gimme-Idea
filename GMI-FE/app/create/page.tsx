@@ -51,10 +51,24 @@ export default function CreatePost() {
       router.push("/")
       return
     }
-    if (!appWallet.connected) {
+    if (!appWallet.connected || !appWallet.address) {
       router.push("/connect")
+      return
     }
-  }, [appWallet.connected, hasAccess, router])
+
+    // Check if we have a valid signature for API calls
+    const checkSignature = async () => {
+      const { getCachedSignature } = await import('@/lib/auth/sign-message')
+      const cached = getCachedSignature(appWallet.address!)
+
+      if (!cached) {
+        console.log('[Create] No signature found, redirecting to connect')
+        router.push("/connect")
+      }
+    }
+
+    checkSignature()
+  }, [appWallet.connected, appWallet.address, hasAccess, router])
 
   const [formData, setFormData] = useState({
     title: "",
@@ -151,7 +165,7 @@ export default function CreatePost() {
 
       // Upload image to Supabase Storage
       if (imageFile) {
-        setLoadingMessage("Compressing and uploading image...")
+        setLoadingMessage("Uploading image...")
         imageUrl = await uploadPostImage(imageFile, appWallet.address || '', cached.signature, cached.message)
       }
 

@@ -85,10 +85,22 @@ export const useAppStore = create<AppState>((set) => ({
     set({ hasAccess: value })
   },
 
-  // Wallet
-  wallet: { address: null, type: null, connected: false },
-  setWallet: (wallet) => set({ wallet }),
-  disconnectWallet: () => set({ wallet: { address: null, type: null, connected: false } }),
+  // Wallet - persisted to localStorage
+  wallet: typeof window !== 'undefined'
+    ? JSON.parse(localStorage.getItem('gmi-wallet') || '{"address":null,"type":null,"connected":false}')
+    : { address: null, type: null, connected: false },
+  setWallet: (wallet) => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('gmi-wallet', JSON.stringify(wallet))
+    }
+    set({ wallet })
+  },
+  disconnectWallet: () => {
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('gmi-wallet')
+    }
+    set({ wallet: { address: null, type: null, connected: false } })
+  },
 
   // User Profile
   userProfile: null,
