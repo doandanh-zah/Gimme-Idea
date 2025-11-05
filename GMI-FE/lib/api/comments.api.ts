@@ -41,9 +41,13 @@ export async function createComment(
   postId: string,
   input: CreateCommentInput,
   walletAddress: string,
-  walletSignature: string
+  walletSignature: string,
+  message?: string
 ): Promise<ApiResponse<Comment>> {
-  return apiPost(`/api/posts/${postId}/comments`, input, {
+  // Include message in body for signature verification
+  const body = message ? { ...input, message } : input
+
+  return apiPost(`/api/posts/${postId}/comments`, body, {
     walletAddress,
     walletSignature
   })

@@ -15,6 +15,7 @@ import { WalletButton } from "@/components/wallet-button"
 import { Logo } from "@/components/logo"
 import { useAppStore } from "@/lib/stores/app-store"
 import { getComments, createComment } from "@/lib/actions/comment-actions"
+import { getCachedSignature } from "@/lib/auth/sign-message"
 
 interface Comment {
   id: string
@@ -73,12 +74,35 @@ export default function PostDetail() {
 
     setLoading(true)
     try {
-      const newComment = await createComment(post!.id, wallet.address || "Unknown", comment)
-      setComments((prev) => [newComment as Comment, ...prev])
+      // Get cached signature
+      const cached = getCachedSignature(wallet.address || '')
+      if (!cached) {
+        throw new Error('Wallet signature not found. Please reconnect your wallet.')
+      }
+
+      // Create comment with proper parameters
+      const newComment = await createComment(
+        post!.id,
+        { content: comment },
+        wallet.address || '',
+        cached.signature,
+        cached.message
+      )
+
+      // Transform backend response to local format
+      const transformedComment = {
+        id: newComment.id,
+        wallet_address: newComment.wallet?.address || wallet.address || '',
+        content: newComment.content,
+        created_at: newComment.createdAt,
+        replies: []
+      }
+
+      setComments((prev) => [transformedComment, ...prev])
       setComment("")
     } catch (error) {
       console.error("[v0] Error posting comment:", error)
-      alert("Failed to post comment. Please try again.")
+      alert(error instanceof Error ? error.message : "Failed to post comment. Please try again.")
     } finally {
       setLoading(false)
     }

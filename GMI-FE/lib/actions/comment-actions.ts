@@ -31,15 +31,17 @@ export async function createComment(
   postId: string,
   input: CreateCommentInput,
   walletAddress: string,
-  walletSignature: string
+  walletSignature: string,
+  message?: string
 ) {
-  const response = await apiCreateComment(postId, input, walletAddress, walletSignature)
+  const response = await apiCreateComment(postId, input, walletAddress, walletSignature, message)
 
   if (!response.success || !response.data) {
     throw new Error(response.error || 'Failed to create comment')
   }
 
-  return response.data
+  // Backend returns { comment: {...} }, extract the comment object
+  return response.data.comment || response.data
 }
 
 /**
