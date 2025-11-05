@@ -36,7 +36,7 @@ router.post('/connect', async (req: AuthRequest, res: Response) => {
     const wallet = await prisma.wallet.upsert({
       where: { address },
       update: {
-        type
+        type, // Update wallet type
         // lastActiveAt is auto-updated by @updatedAt decorator
       },
       create: {
