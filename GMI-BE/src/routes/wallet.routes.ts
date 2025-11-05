@@ -58,7 +58,12 @@ router.post('/connect', async (req: AuthRequest, res: Response) => {
     })
   } catch (error) {
     console.error('[Wallet] Connect error:', error)
-    res.status(500).json({ error: 'Failed to connect wallet' })
+    console.error('[Wallet] Error stack:', error instanceof Error ? error.stack : 'No stack trace')
+    console.error('[Wallet] Error message:', error instanceof Error ? error.message : String(error))
+    res.status(500).json({
+      error: 'Failed to connect wallet',
+      details: process.env.NODE_ENV === 'development' ? (error instanceof Error ? error.message : String(error)) : undefined
+    })
   }
 })
 
