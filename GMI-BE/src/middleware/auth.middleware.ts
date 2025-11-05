@@ -11,6 +11,7 @@ export const authMiddleware = async (
   try {
     const walletAddress = req.headers['x-wallet-address'] as string
     const signature = req.headers['x-wallet-signature'] as string
+    const messageFromHeader = req.headers['x-wallet-message'] as string
 
     if (!walletAddress) {
       res.status(401).json({ error: 'Wallet address required' })
@@ -25,7 +26,8 @@ export const authMiddleware = async (
 
     // Verify signature if provided
     if (signature) {
-      const message = req.body?.message || `Sign in to Gimme Idea at ${Date.now()}`
+      // Try header first (for uploads), then body (for JSON requests), then fallback
+      const message = messageFromHeader || req.body?.message || `Sign in to Gimme Idea at ${Date.now()}`
       const isValid = await verifyWalletSignature(walletAddress, signature, message)
 
       if (!isValid) {

@@ -149,19 +149,21 @@ export async function apiUpload<T = any>(
   const formData = new FormData()
   formData.append('image', file)
 
-  // Add message for signature verification if provided
-  if (message) {
-    formData.append('message', message)
-  }
-
   try {
+    const headers: Record<string, string> = {
+      'x-access-code': ACCESS_CODE,
+      'x-wallet-address': walletAddress,
+      'x-wallet-signature': walletSignature
+    }
+
+    // Send message via header for reliable transmission
+    if (message) {
+      headers['x-wallet-message'] = message
+    }
+
     const response = await fetch(`${API_URL}${endpoint}`, {
       method: 'POST',
-      headers: {
-        'x-access-code': ACCESS_CODE,
-        'x-wallet-address': walletAddress,
-        'x-wallet-signature': walletSignature
-      },
+      headers,
       body: formData,
       credentials: 'include'
     })
