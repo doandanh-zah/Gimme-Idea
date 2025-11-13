@@ -124,9 +124,12 @@ router.post('/', authMiddleware, async (req: AuthRequest, res: Response) => {
     })
 
     res.status(201).json({
-      post: {
-        ...post,
-        prizePool: prizePoolData
+      success: true,
+      data: {
+        post: {
+          ...post,
+          prizePool: prizePoolData
+        }
       }
     })
   } catch (error) {
@@ -212,7 +215,10 @@ router.get('/:id', optionalAuthMiddleware, async (req: AuthRequest, res: Respons
       data: { viewCount: { increment: 1 } }
     })
 
-    res.json({ post })
+    res.json({
+      success: true,
+      data: post
+    })
   } catch (error) {
     console.error('[Posts] Get error:', error)
     res.status(500).json({ error: 'Failed to fetch post' })
@@ -256,7 +262,10 @@ router.put('/:id', authMiddleware, async (req: AuthRequest, res: Response) => {
       }
     })
 
-    res.json({ post: updatedPost })
+    res.json({
+      success: true,
+      data: updatedPost
+    })
   } catch (error) {
     console.error('[Posts] Update error:', error)
     res.status(500).json({ error: 'Failed to update post' })
@@ -311,7 +320,10 @@ router.delete('/:id', authMiddleware, async (req: AuthRequest, res: Response) =>
       data: { postsCount: { decrement: 1 } }
     })
 
-    res.json({ success: true, message: 'Post deleted successfully' })
+    res.json({
+      success: true,
+      data: { success: true, message: 'Post deleted successfully' }
+    })
   } catch (error) {
     console.error('[Posts] Delete error:', error)
     res.status(500).json({ error: 'Failed to delete post' })
