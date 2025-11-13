@@ -54,7 +54,11 @@ export async function apiRequest<T = any>(
   }
 
   try {
-    const response = await fetch(`${API_URL}${endpoint}`, {
+    const url = `${API_URL}${endpoint}`
+    console.log(`[API] ${method} ${url}`)
+    console.log('[API] Headers:', { ...requestHeaders, 'x-access-code': requestHeaders['x-access-code'] })
+
+    const response = await fetch(url, {
       method,
       headers: requestHeaders,
       body: body ? JSON.stringify(body) : undefined,
@@ -63,6 +67,9 @@ export async function apiRequest<T = any>(
 
     // Check if response has content before parsing JSON
     const text = await response.text()
+    console.log(`[API] Response status: ${response.status}`)
+    console.log('[API] Response text:', text.substring(0, 200))
+
     let data
     try {
       data = text ? JSON.parse(text) : {}
@@ -75,12 +82,14 @@ export async function apiRequest<T = any>(
     }
 
     if (!response.ok) {
+      console.error('[API] Request failed:', data)
       return {
         error: data.error || `Request failed with status ${response.status}`,
         success: false
       }
     }
 
+    console.log('[API] Success:', data)
     return {
       data,
       success: true
