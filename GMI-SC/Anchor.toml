@@ -6,13 +6,13 @@ resolution = true
 skip-lint = false
 
 [programs.devnet]
-gimme_idea = "ARooZsLBTDQRUacUsWtbthEu9yjmcwqZTLmcrYzFa2Jd"
+gimme_idea = "AqDHUSYhd5m7yZtBRMeTDuo15hb2uavMpm7NiM8DwPrx"
 
 [registry]
 url = "https://api.apr.dev"
 
 [provider]
-cluster = "Devnet"
+cluster = "devnet"
 wallet = "~/.config/solana/id.json"
 
 [scripts]
