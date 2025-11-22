@@ -6,7 +6,7 @@ resolution = true
 skip-lint = false
 
 [programs.devnet]
-gimme_idea = "AqDHUSYhd5m7yZtBRMeTDuo15hb2uavMpm7NiM8DwPrx"
+gimme_idea = "DrJ1C8EsFTZsfU1AKEkTj9wCUZFHdoY3891ztGLnWeWb"
 
 [registry]
 url = "https://api.apr.dev"

@@ -1,7 +1,7 @@
 use anchor_lang::prelude::*;
 use anchor_spl::token::{self, Token, TokenAccount, Transfer};
 
-declare_id!("AqDHUSYhd5m7yZtBRMeTDuo15hb2uavMpm7NiM8DwPrx");
+declare_id!("DrJ1C8EsFTZsfU1AKEkTj9wCUZFHdoY3891ztGLnWeWb");
 
 #[error_code]
 pub enum ErrorCode {
@@ -289,7 +289,35 @@ pub mod gimme_idea {
         );
 
         // Calculate prize amount
-        let prize_.
+        let prize_amount = prize_pool.calculate_prize(winner_index)?;
+
+        // Transfer prize from escrow to winner
+        let seeds = &[
+            b"prize_pool".as_ref(),
+            prize_pool.post_id.as_bytes(),
+            &[prize_pool.bump],
+        ];
+        let signer = &[&seeds[..]];
+        let cpi_accounts = Transfer {
+            from: ctx.accounts.escrow_token_account.to_account_info(),
+            to: ctx.accounts.winner_token_account.to_account_info(),
+            authority: prize_pool.to_account_info(),
+        };
+        let cpi_program = ctx.accounts.token_program.to_account_info();
+        let cpi_ctx = CpiContext::new_with_signer(cpi_program, cpi_accounts, signer);
+
+        token::transfer(cpi_ctx, prize_amount)?;
+
+        // Mark as claimed
+        prize_pool.claimed[winner_index] = true;
+
+        // Update total claimed amount
+        prize_pool.total_claimed += prize_amount;
+
+        msg!("Prize claimed by winner: {:?}", ctx.accounts.winner.key());
+        msg!("Amount: {} USDC", prize_amount);
+
+        Ok(())
     }
 
     /// Emergency withdraw funds (only owner)
