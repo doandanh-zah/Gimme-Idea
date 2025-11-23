@@ -44,7 +44,7 @@ interface AppState {
   openUserProfile: (author: { username: string; wallet: string; avatar?: string }) => Promise<void>;
 
   fetchProjects: (filters?: { type?: 'project' | 'idea'; category?: string; search?: string }) => Promise<void>;
-  addProject: (project: Omit<Project, 'id' | 'votes' | 'feedbackCount' | 'createdAt'>) => Promise<void>;
+  addProject: (project: Omit<Project, 'id' | 'votes' | 'feedbackCount' | 'createdAt' | 'author' | 'comments'>) => Promise<void>;
   updateProject: (data: Partial<Project> & { id: string }) => Promise<void>;
   deleteProject: (id: string) => Promise<void>;
   voteProject: (id: string) => Promise<void>;
@@ -232,7 +232,9 @@ export const useAppStore = create<AppState>((set, get) => ({
       const response = await apiClient.voteProject(id);
       if (response.success && response.data) {
         set((state) => ({
-          projects: state.projects.map(p => p.id === id ? response.data : p)
+          projects: state.projects.map(p =>
+            p.id === id ? { ...p, votes: response.data.votes } : p
+          )
         }));
       }
     } catch (error) {
@@ -250,7 +252,7 @@ export const useAppStore = create<AppState>((set, get) => ({
       });
       if (response.success && response.data) {
         // Refresh project to get updated comments
-        const projectResponse = await apiClient.getProjectById(projectId);
+        const projectResponse = await apiClient.getProject(projectId);
         if (projectResponse.success && projectResponse.data) {
           set((state) => ({
             projects: state.projects.map(p => p.id === projectId ? projectResponse.data : p)
@@ -268,12 +270,12 @@ export const useAppStore = create<AppState>((set, get) => ({
       const response = await apiClient.createComment({
         projectId,
         content,
-        parentId: commentId,
+        parentCommentId: commentId,
         isAnonymous
       });
       if (response.success && response.data) {
         // Refresh project to get updated comments
-        const projectResponse = await apiClient.getProjectById(projectId);
+        const projectResponse = await apiClient.getProject(projectId);
         if (projectResponse.success && projectResponse.data) {
           set((state) => ({
             projects: state.projects.map(p => p.id === projectId ? projectResponse.data : p)
@@ -290,7 +292,7 @@ export const useAppStore = create<AppState>((set, get) => ({
     try {
       await apiClient.likeComment(commentId);
       // Refresh project to get updated comment likes
-      const projectResponse = await apiClient.getProjectById(projectId);
+      const projectResponse = await apiClient.getProject(projectId);
       if (projectResponse.success && projectResponse.data) {
         set((state) => ({
           projects: state.projects.map(p => p.id === projectId ? projectResponse.data : p)
@@ -306,7 +308,7 @@ export const useAppStore = create<AppState>((set, get) => ({
     try {
       await apiClient.dislikeComment(commentId);
       // Refresh project to get updated comment dislikes
-      const projectResponse = await apiClient.getProjectById(projectId);
+      const projectResponse = await apiClient.getProject(projectId);
       if (projectResponse.success && projectResponse.data) {
         set((state) => ({
           projects: state.projects.map(p => p.id === projectId ? projectResponse.data : p)
@@ -349,7 +351,7 @@ export const useAppStore = create<AppState>((set, get) => ({
       const existingProject = state.projects.find(p => p.id === id);
 
       if (!existingProject) {
-        const response = await apiClient.getProjectById(id);
+        const response = await apiClient.getProject(id);
         if (response.success && response.data) {
           set((state) => ({
             projects: [response.data, ...state.projects]

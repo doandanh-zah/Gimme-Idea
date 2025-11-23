@@ -124,7 +124,7 @@ export const apiClient = {
   getProjectComments: (projectId: string) =>
     apiFetch<any[]>(`/comments/project/${projectId}`),
 
-  createComment: (data: { projectId: string; content: string; parentCommentId?: string }) =>
+  createComment: (data: { projectId: string; content: string; parentCommentId?: string; isAnonymous?: boolean }) =>
     apiFetch<any>('/comments', {
       method: 'POST',
       body: JSON.stringify(data),
@@ -132,6 +132,11 @@ export const apiClient = {
 
   likeComment: (commentId: string) =>
     apiFetch<{ likes: number }>(`/comments/${commentId}/like`, {
+      method: 'POST',
+    }),
+
+  dislikeComment: (commentId: string) =>
+    apiFetch<{ dislikes: number }>(`/comments/${commentId}/dislike`, {
       method: 'POST',
     }),
 

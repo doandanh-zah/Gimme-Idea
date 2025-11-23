@@ -37,16 +37,20 @@ const CommentItem: React.FC<CommentItemProps> = ({ comment, projectId, isReply =
         dislikeComment(projectId, comment.id);
     };
 
-    const handleReplySubmit = (e: React.FormEvent) => {
+    const handleReplySubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!user) {
             toast.error("Please connect wallet to reply");
             return;
         }
-        replyComment(projectId, comment.id, replyText, user.username, isAnonReply);
-        setReplyText('');
-        setReplyingTo(false);
-        toast.success('Reply posted!');
+        try {
+            await replyComment(projectId, comment.id, replyText, isAnonReply);
+            setReplyText('');
+            setReplyingTo(false);
+            toast.success('Reply posted!');
+        } catch (error) {
+            toast.error('Failed to post reply');
+        }
     };
 
     return (

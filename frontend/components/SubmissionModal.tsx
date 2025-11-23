@@ -116,8 +116,8 @@ export const SubmissionModal = () => {
             type: submitType,
             title: formData.title,
             description: submitType === 'project' ? formData.description : formData.problem.substring(0, 100) + '...',
-            category: formData.category,
-            stage: formData.stage,
+            category: formData.category as Project['category'],
+            stage: formData.stage as Project['stage'],
             tags: tags.length > 0 ? tags : ['New', 'Solana'],
             // Project Specific
             website: formData.website,
@@ -141,7 +141,7 @@ export const SubmissionModal = () => {
             closeSubmitModal();
         }, 1000);
     } catch (error) {
-        setStatus('idle');
+        setStatus('error');
         setIsSubmitting(false);
         toast.error(`Failed to submit ${submitType}`);
     }
