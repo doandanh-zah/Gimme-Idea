@@ -1,43 +1,28 @@
 # Dependencies
 node_modules/
-.pnp
-.pnp.js
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
 
-# Testing
-coverage/
+# Environment variables (NEVER COMMIT THESE)
+.env
+.env.local
+.env.*.local
+backend/.env
+frontend/.env.local
 
-# Production builds
-build/
+# Build output
 dist/
+build/
 .next/
 out/
 
-# Rust/Cargo
-target/
-**/*.rs.bk
-*.pdb
-
-# Environment variables
-.env
-.env.local
-.env.development.local
-.env.test.local
-.env.production.local
-
 # Logs
+logs/
+*.log
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
-*.log
-
-# OS
-.DS_Store
-.DS_Store?
-._*
-.Spotlight-V100
-.Trashes
-ehthumbs.db
-Thumbs.db
 
 # IDE
 .vscode/
@@ -45,19 +30,27 @@ Thumbs.db
 *.swp
 *.swo
 *~
+.DS_Store
 
-# Anchor
+# Testing
+coverage/
+.nyc_output/
+
+# Rust/Anchor
+target/
+**/*.rs.bk
+Cargo.lock
 .anchor/
 test-ledger/
 
-# Temporary templates (optional - remove after copying)
-GMI-FE/_templates/
+# Solana keys (SECURITY: Never commit wallet keys)
+*.json
+!package.json
+!tsconfig.json
+!nest-cli.json
 
-# Database
-*.db
-*.db-journal
-
-# Cache
-.turbo/
-.vercel/
+# Misc
 .cache/
+tmp/
+temp/
+Thumbs.db

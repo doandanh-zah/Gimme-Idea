@@ -1,0 +1,36 @@
+import { IsString, IsEnum, IsOptional, IsInt, Min } from 'class-validator';
+import { Transform } from 'class-transformer';
+
+export class QueryProjectsDto {
+  @IsEnum(['DeFi', 'NFT', 'Gaming', 'Infrastructure', 'DAO'])
+  @IsOptional()
+  category?: 'DeFi' | 'NFT' | 'Gaming' | 'Infrastructure' | 'DAO';
+
+  @IsEnum(['Idea', 'Prototype', 'Devnet', 'Mainnet'])
+  @IsOptional()
+  stage?: 'Idea' | 'Prototype' | 'Devnet' | 'Mainnet';
+
+  @IsString()
+  @IsOptional()
+  search?: string;
+
+  @Transform(({ value }) => parseInt(value))
+  @IsInt()
+  @Min(1)
+  @IsOptional()
+  limit?: number = 20;
+
+  @Transform(({ value }) => parseInt(value))
+  @IsInt()
+  @Min(0)
+  @IsOptional()
+  offset?: number = 0;
+
+  @IsEnum(['votes', 'createdAt', 'feedbackCount'])
+  @IsOptional()
+  sortBy?: 'votes' | 'createdAt' | 'feedbackCount' = 'createdAt';
+
+  @IsEnum(['asc', 'desc'])
+  @IsOptional()
+  sortOrder?: 'asc' | 'desc' = 'desc';
+}
