@@ -1,7 +1,7 @@
 
 import { create } from 'zustand';
 import { Project, User, Comment, Notification } from './types';
-import { PROJECTS } from '../constants';
+import { apiClient } from './api-client';
 
 type View = 'landing' | 'projects-dashboard' | 'ideas-dashboard' | 'project-detail' | 'idea-detail' | 'profile' | 'donate';
 
@@ -30,30 +30,31 @@ interface AppState {
   // Actions
   openWalletModal: () => void;
   closeWalletModal: () => void;
-  
+
   openConnectReminder: () => void;
   closeConnectReminder: () => void;
-  
+
   openSubmitModal: (type: 'project' | 'idea') => void;
   closeSubmitModal: () => void;
 
   connectWallet: (walletType: string) => Promise<void>;
   disconnectWallet: () => void;
-  updateUserProfile: (data: Partial<User>) => void;
-  
-  openUserProfile: (author: { username: string; wallet: string; avatar?: string }) => void;
-  
-  addProject: (project: Project) => void;
-  updateProject: (data: Partial<Project> & { id: string }) => void;
-  deleteProject: (id: string) => void;
-  voteProject: (id: string) => void;
+  updateUserProfile: (data: Partial<User>) => Promise<void>;
+
+  openUserProfile: (author: { username: string; wallet: string; avatar?: string }) => Promise<void>;
+
+  fetchProjects: (filters?: { type?: 'project' | 'idea'; category?: string; search?: string }) => Promise<void>;
+  addProject: (project: Omit<Project, 'id' | 'votes' | 'feedbackCount' | 'createdAt'>) => Promise<void>;
+  updateProject: (data: Partial<Project> & { id: string }) => Promise<void>;
+  deleteProject: (id: string) => Promise<void>;
+  voteProject: (id: string) => Promise<void>;
   
   // Comment Actions (Updated to support anonymous)
-  addComment: (projectId: string, content: string, author: string, isAnonymous?: boolean) => void;
-  replyComment: (projectId: string, commentId: string, content: string, author: string, isAnonymous?: boolean) => void;
-  likeComment: (projectId: string, commentId: string) => void;
-  dislikeComment: (projectId: string, commentId: string) => void;
-  tipComment: (projectId: string, commentId: string, amount: number) => void;
+  addComment: (projectId: string, content: string, isAnonymous?: boolean) => Promise<void>;
+  replyComment: (projectId: string, commentId: string, content: string, isAnonymous?: boolean) => Promise<void>;
+  likeComment: (projectId: string, commentId: string) => Promise<void>;
+  dislikeComment: (projectId: string, commentId: string) => Promise<void>;
+  tipComment: (projectId: string, commentId: string, amount: number) => Promise<void>;
   
   setView: (view: View) => void;
   navigateToProject: (id: string, type: 'project' | 'idea') => Promise<void>;
@@ -66,7 +67,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   user: null,
   viewedUser: null,
   walletConnected: false,
-  projects: PROJECTS,
+  projects: [],
   isLoading: false,
   isNavigating: false,
   isWalletModalOpen: false,
@@ -76,11 +77,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   currentView: 'landing',
   selectedProjectId: null,
   searchQuery: '',
-  notifications: [
-    { id: '1', message: 'Welcome to Gimme Idea! Start by exploring projects.', type: 'info', read: false, timestamp: '2m ago' },
-    { id: '2', message: 'SolStream Protocol just launched on Mainnet.', type: 'success', read: false, timestamp: '1h ago' },
-    { id: '3', message: 'New bounty available: 500 USDC for Rust audit.', type: 'warning', read: false, timestamp: '3h ago' }
-  ],
+  notifications: [],
 
   openWalletModal: () => set({ isWalletModalOpen: true }),
   closeWalletModal: () => set({ isWalletModalOpen: false }),
@@ -126,153 +123,213 @@ export const useAppStore = create<AppState>((set, get) => ({
     set({ user: null, walletConnected: false, currentView: 'landing' });
   },
 
-  updateUserProfile: (data) => set((state) => ({
-    user: state.user ? { ...state.user, ...data } : null
-  })),
-
-  openUserProfile: (author) => {
-    set((state) => {
-        const isOwnProfile = state.user?.username === author.username;
-        const displayedUser: User = isOwnProfile && state.user ? state.user : {
-            username: author.username,
-            wallet: author.wallet,
-            avatar: author.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${author.username}`,
-            reputation: Math.floor(Math.random() * 1000),
-            balance: 0,
-            projects: [],
-            bio: `Builder on Solana. Building cool stuff.`,
-            socials: {
-                twitter: `https://twitter.com/${author.username}`,
-                github: `https://github.com/${author.username}`
-            }
-        };
-        return { viewedUser: displayedUser, currentView: 'profile' };
-    });
+  updateUserProfile: async (data) => {
+    try {
+      const response = await apiClient.updateUserProfile(data);
+      if (response.success && response.data) {
+        set((state) => ({
+          user: state.user ? { ...state.user, ...response.data } : null
+        }));
+      }
+    } catch (error) {
+      console.error('Failed to update profile:', error);
+      throw error;
+    }
   },
 
-  addProject: (project) => {
-    set((state) => ({ 
-      projects: [project, ...state.projects],
-      currentView: project.type === 'project' ? 'projects-dashboard' : 'ideas-dashboard'
-    }));
+  openUserProfile: async (author) => {
+    const state = get();
+    const isOwnProfile = state.user?.username === author.username;
+
+    if (isOwnProfile && state.user) {
+      set({ viewedUser: state.user, currentView: 'profile' });
+      return;
+    }
+
+    try {
+      set({ isLoading: true });
+      const response = await apiClient.getUserByUsername(author.username);
+      if (response.success && response.data) {
+        const userData = response.data;
+        const displayedUser: User = {
+          username: userData.username,
+          wallet: userData.wallet,
+          avatar: userData.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${userData.username}`,
+          reputation: userData.reputationScore || 0,
+          balance: userData.balance || 0,
+          projects: [],
+          bio: userData.bio || 'Builder on Solana',
+          socials: userData.socialLinks || {}
+        };
+        set({ viewedUser: displayedUser, currentView: 'profile', isLoading: false });
+      }
+    } catch (error) {
+      console.error('Failed to fetch user profile:', error);
+      set({ isLoading: false });
+    }
   },
 
-  updateProject: (data) => set((state) => ({
-    projects: state.projects.map(p => p.id === data.id ? { ...p, ...data } : p)
-  })),
-
-  deleteProject: (id) => set((state) => ({
-    projects: state.projects.filter(p => p.id !== id)
-  })),
-
-  voteProject: (id) => set((state) => ({
-    projects: state.projects.map(p => p.id === id ? { ...p, votes: p.votes + 1 } : p)
-  })),
-
-  addComment: (projectId, content, author, isAnonymous = false) => set((state) => ({
-    projects: state.projects.map(p => {
-      if (p.id === projectId) {
-        const newComment: Comment = {
-          id: Math.random().toString(36).substr(2, 9),
-          author: isAnonymous ? 'Anonymous' : author,
-          content,
-          timestamp: 'Just now',
-          likes: 0,
-          dislikes: 0,
-          tips: 0,
-          replies: [],
-          isAnonymous
-        };
-        return { ...p, comments: [newComment, ...(p.comments || [])], feedbackCount: p.feedbackCount + 1 };
+  fetchProjects: async (filters) => {
+    try {
+      set({ isLoading: true });
+      const response = await apiClient.getProjects(filters);
+      if (response.success && response.data) {
+        set({ projects: response.data, isLoading: false });
       }
-      return p;
-    })
-  })),
+    } catch (error) {
+      console.error('Failed to fetch projects:', error);
+      set({ isLoading: false });
+    }
+  },
 
-  replyComment: (projectId, commentId, content, author, isAnonymous = false) => set((state) => ({
-    projects: state.projects.map(p => {
-      if (p.id === projectId) {
-        return {
-          ...p,
-          comments: p.comments?.map(c => {
-            if (c.id === commentId) {
-              const reply: Comment = {
-                id: Math.random().toString(36).substr(2, 9),
-                author: isAnonymous ? 'Anonymous' : author,
-                content,
-                timestamp: 'Just now',
-                likes: 0,
-                dislikes: 0,
-                tips: 0,
-                replies: [],
-                isAnonymous
-              };
-              return { ...c, replies: [...(c.replies || []), reply] };
-            }
-            return c;
-          })
-        };
+  addProject: async (project) => {
+    try {
+      set({ isLoading: true });
+      const response = await apiClient.createProject(project);
+      if (response.success && response.data) {
+        set((state) => ({
+          projects: [response.data, ...state.projects],
+          currentView: project.type === 'project' ? 'projects-dashboard' : 'ideas-dashboard',
+          isLoading: false,
+          isSubmitModalOpen: false
+        }));
       }
-      return p;
-    })
-  })),
+    } catch (error) {
+      console.error('Failed to create project:', error);
+      set({ isLoading: false });
+      throw error;
+    }
+  },
 
-  likeComment: (projectId, commentId) => set((state) => ({
-    projects: state.projects.map(p => {
-      if (p.id === projectId) {
-        return {
-          ...p,
-          comments: p.comments?.map(c => {
-            if (c.id === commentId) return { ...c, likes: c.likes + 1 };
-            if (c.replies) {
-                const updatedReplies = c.replies.map(r => r.id === commentId ? { ...r, likes: r.likes + 1 } : r);
-                return { ...c, replies: updatedReplies };
-            }
-            return c;
-          })
-        };
+  updateProject: async (data) => {
+    try {
+      const response = await apiClient.updateProject(data.id, data);
+      if (response.success && response.data) {
+        set((state) => ({
+          projects: state.projects.map(p => p.id === data.id ? response.data : p)
+        }));
       }
-      return p;
-    })
-  })),
+    } catch (error) {
+      console.error('Failed to update project:', error);
+      throw error;
+    }
+  },
 
-  dislikeComment: (projectId, commentId) => set((state) => ({
-    projects: state.projects.map(p => {
-        if (p.id === projectId) {
-          return {
-            ...p,
-            comments: p.comments?.map(c => {
-              if (c.id === commentId) return { ...c, dislikes: c.dislikes + 1 };
-              if (c.replies) {
-                  const updatedReplies = c.replies.map(r => r.id === commentId ? { ...r, dislikes: r.dislikes + 1 } : r);
-                  return { ...c, replies: updatedReplies };
-              }
-              return c;
-            })
-          };
+  deleteProject: async (id) => {
+    try {
+      await apiClient.deleteProject(id);
+      set((state) => ({
+        projects: state.projects.filter(p => p.id !== id)
+      }));
+    } catch (error) {
+      console.error('Failed to delete project:', error);
+      throw error;
+    }
+  },
+
+  voteProject: async (id) => {
+    try {
+      const response = await apiClient.voteProject(id);
+      if (response.success && response.data) {
+        set((state) => ({
+          projects: state.projects.map(p => p.id === id ? response.data : p)
+        }));
+      }
+    } catch (error) {
+      console.error('Failed to vote on project:', error);
+      throw error;
+    }
+  },
+
+  addComment: async (projectId, content, isAnonymous = false) => {
+    try {
+      const response = await apiClient.createComment({
+        projectId,
+        content,
+        isAnonymous
+      });
+      if (response.success && response.data) {
+        // Refresh project to get updated comments
+        const projectResponse = await apiClient.getProjectById(projectId);
+        if (projectResponse.success && projectResponse.data) {
+          set((state) => ({
+            projects: state.projects.map(p => p.id === projectId ? projectResponse.data : p)
+          }));
         }
-        return p;
-      })
-  })),
+      }
+    } catch (error) {
+      console.error('Failed to add comment:', error);
+      throw error;
+    }
+  },
 
-  tipComment: (projectId, commentId, amount) => set((state) => ({
-    projects: state.projects.map(p => {
-        if (p.id === projectId) {
-          return {
-            ...p,
-            comments: p.comments?.map(c => {
-              if (c.id === commentId) return { ...c, tips: c.tips + amount };
-              if (c.replies) {
-                  const updatedReplies = c.replies.map(r => r.id === commentId ? { ...r, tips: r.tips + amount } : r);
-                  return { ...c, replies: updatedReplies };
-              }
-              return c;
-            })
-          };
+  replyComment: async (projectId, commentId, content, isAnonymous = false) => {
+    try {
+      const response = await apiClient.createComment({
+        projectId,
+        content,
+        parentId: commentId,
+        isAnonymous
+      });
+      if (response.success && response.data) {
+        // Refresh project to get updated comments
+        const projectResponse = await apiClient.getProjectById(projectId);
+        if (projectResponse.success && projectResponse.data) {
+          set((state) => ({
+            projects: state.projects.map(p => p.id === projectId ? projectResponse.data : p)
+          }));
         }
-        return p;
-    })
-  })),
+      }
+    } catch (error) {
+      console.error('Failed to add reply:', error);
+      throw error;
+    }
+  },
+
+  likeComment: async (projectId, commentId) => {
+    try {
+      await apiClient.likeComment(commentId);
+      // Refresh project to get updated comment likes
+      const projectResponse = await apiClient.getProjectById(projectId);
+      if (projectResponse.success && projectResponse.data) {
+        set((state) => ({
+          projects: state.projects.map(p => p.id === projectId ? projectResponse.data : p)
+        }));
+      }
+    } catch (error) {
+      console.error('Failed to like comment:', error);
+      throw error;
+    }
+  },
+
+  dislikeComment: async (projectId, commentId) => {
+    try {
+      await apiClient.dislikeComment(commentId);
+      // Refresh project to get updated comment dislikes
+      const projectResponse = await apiClient.getProjectById(projectId);
+      if (projectResponse.success && projectResponse.data) {
+        set((state) => ({
+          projects: state.projects.map(p => p.id === projectId ? projectResponse.data : p)
+        }));
+      }
+    } catch (error) {
+      console.error('Failed to dislike comment:', error);
+      throw error;
+    }
+  },
+
+  tipComment: async (projectId, commentId, amount) => {
+    try {
+      // This would require payment verification flow with Solana transaction
+      // For now, just update optimistically
+      console.log('Tip comment functionality requires Solana payment integration');
+      // After payment is verified, the backend would update the tips_amount
+      // and we would refresh the project data
+    } catch (error) {
+      console.error('Failed to tip comment:', error);
+      throw error;
+    }
+  },
 
   setView: (view) => {
     set({ currentView: view });
@@ -285,12 +342,30 @@ export const useAppStore = create<AppState>((set, get) => ({
   
   navigateToProject: async (id, type) => {
     set({ isNavigating: true });
-    await new Promise(resolve => setTimeout(resolve, 800));
-    set({ 
-      currentView: type === 'project' ? 'project-detail' : 'idea-detail', 
-      selectedProjectId: id,
-      isNavigating: false
-    });
+
+    try {
+      // Fetch project details if not already in store
+      const state = get();
+      const existingProject = state.projects.find(p => p.id === id);
+
+      if (!existingProject) {
+        const response = await apiClient.getProjectById(id);
+        if (response.success && response.data) {
+          set((state) => ({
+            projects: [response.data, ...state.projects]
+          }));
+        }
+      }
+
+      set({
+        currentView: type === 'project' ? 'project-detail' : 'idea-detail',
+        selectedProjectId: id,
+        isNavigating: false
+      });
+    } catch (error) {
+      console.error('Failed to navigate to project:', error);
+      set({ isNavigating: false });
+    }
   },
 
   setSearchQuery: (query) => set({ searchQuery: query }),

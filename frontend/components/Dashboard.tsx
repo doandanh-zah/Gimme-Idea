@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { ProjectCard } from './ProjectCard';
 import { useAppStore } from '../lib/store';
 import { Filter, Plus, TrendingUp, Activity, X, Lightbulb, Rocket } from 'lucide-react';
@@ -12,9 +12,14 @@ interface DashboardProps {
 }
 
 export default function Dashboard({ mode }: DashboardProps) {
-  const { projects, searchQuery, setSearchQuery, openSubmitModal } = useAppStore();
+  const { projects, searchQuery, setSearchQuery, openSubmitModal, fetchProjects } = useAppStore();
   const [categoryFilter, setCategoryFilter] = useState('All');
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
+
+  // Fetch projects on mount
+  useEffect(() => {
+    fetchProjects({ type: mode });
+  }, [mode, fetchProjects]);
 
   const categories = ['All', 'DeFi', 'NFT', 'Gaming', 'Infrastructure', 'DAO', 'DePIN', 'Social', 'Mobile', 'Security'];
 

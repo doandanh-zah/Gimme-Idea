@@ -19,20 +19,24 @@ export const ProjectCard: React.FC<ProjectCardProps> = ({ project }) => {
 
   const isIdea = project.type === 'idea';
 
-  const handleVote = (e: React.MouseEvent) => {
+  const handleVote = async (e: React.MouseEvent) => {
     e.stopPropagation();
     if (!isLiked) {
-        voteProject(project.id);
-        setIsLiked(true);
-        setShowBurst(true);
-        setTimeout(() => setShowBurst(false), 800);
-        toast.success(`Supported ${project.title}`);
+        try {
+          await voteProject(project.id);
+          setIsLiked(true);
+          setShowBurst(true);
+          setTimeout(() => setShowBurst(false), 800);
+          toast.success(`Supported ${project.title}`);
+        } catch (error) {
+          toast.error('Failed to vote');
+        }
     }
   };
 
   const handleAuthorClick = (e: React.MouseEvent) => {
       e.stopPropagation();
-      if (project.isAnonymous) return;
+      if (project.isAnonymous || !project.author) return;
       openUserProfile(project.author);
   };
 

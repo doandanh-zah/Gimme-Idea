@@ -44,7 +44,7 @@ export interface Project {
     username: string; // If anonymous idea, this is hidden in UI
     wallet: string;
     avatar?: string;
-  };
+  } | null; // Null for anonymous projects/ideas
 }
 
 export interface User {

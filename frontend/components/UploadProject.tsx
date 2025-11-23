@@ -84,41 +84,33 @@ export const UploadProject = () => {
     
     setIsSubmitting(true);
     setStatus('loading');
-    
-    // Simulate Network Request + AI Analysis time
-    await new Promise(resolve => setTimeout(resolve, 2500));
-    
-    // Show Success State
-    setStatus('success');
-    
-    const newProject: Project = {
-        id: Math.random().toString(36).substr(2, 9),
-        type: 'project',
-        title: formData.title,
-        description: formData.description,
-        category: formData.category as any,
-        stage: formData.stage as any,
-        votes: 0,
-        feedbackCount: 0,
-        tags: tags.length > 0 ? tags : ['New', 'Solana'],
-        website: formData.website,
-        image: imagePreview || undefined,
-        bounty: formData.bounty ? Number(formData.bounty) : undefined,
-        author: {
-            username: user.username,
-            wallet: user.wallet,
-            avatar: user.avatar
-        },
-        createdAt: new Date().toISOString(),
-        comments: []
-    };
 
-    // Delay actual addition to let user see the celebration
-    setTimeout(() => {
-        addProject(newProject);
-        toast.success('Project live on network!');
+    try {
+        // Prepare project data for API
+        const projectData = {
+            type: 'project' as const,
+            title: formData.title,
+            description: formData.description,
+            category: formData.category,
+            stage: formData.stage,
+            tags: tags.length > 0 ? tags : ['New', 'Solana'],
+            website: formData.website,
+            imageUrl: imagePreview || undefined,
+            bounty: formData.bounty ? Number(formData.bounty) : undefined
+        };
+
+        await addProject(projectData);
+        setStatus('success');
+
+        setTimeout(() => {
+            toast.success('Project live on network!');
+            setIsSubmitting(false);
+        }, 1500);
+    } catch (error) {
+        setStatus('loading');
         setIsSubmitting(false);
-    }, 3500);
+        toast.error('Failed to submit project');
+    }
   };
 
   return (

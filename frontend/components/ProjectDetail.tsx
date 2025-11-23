@@ -178,21 +178,29 @@ export const ProjectDetail = () => {
 
   if (!project) return null;
 
-  const handleComment = (e: React.FormEvent) => {
+  const handleComment = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user) {
         toast.error("Please connect wallet to comment");
         return;
     }
     if (!commentText.trim()) return;
-    addComment(project.id, commentText, user.username);
-    setCommentText('');
-    toast.success('Comment posted!');
+    try {
+      await addComment(project.id, commentText);
+      setCommentText('');
+      toast.success('Comment posted!');
+    } catch (error) {
+      toast.error('Failed to post comment');
+    }
   };
 
-  const handleVote = () => {
-    voteProject(project.id);
-    toast.success('Voted!');
+  const handleVote = async () => {
+    try {
+      await voteProject(project.id);
+      toast.success('Voted!');
+    } catch (error) {
+      toast.error('Failed to vote');
+    }
   };
 
   // Triggered from Project Button
@@ -255,20 +263,20 @@ export const ProjectDetail = () => {
          <div className="flex flex-col justify-center">
             <h1 className="text-4xl md:text-5xl font-display font-bold mb-4">{project.title}</h1>
             
-            <div 
+            <div
                 className="flex items-center gap-3 mb-6 cursor-pointer hover:opacity-80 transition-opacity"
-                onClick={() => openUserProfile(project.author)}
+                onClick={() => project.author && openUserProfile(project.author)}
             >
                 <div className="w-8 h-8 rounded-full bg-white/10 overflow-hidden">
-                    {project.author.avatar ? (
+                    {project.author?.avatar ? (
                         <img src={project.author.avatar} alt={project.author.username} />
                     ) : (
                         <div className="w-full h-full bg-purple-500" />
                     )}
                 </div>
                 <div>
-                    <p className="text-sm font-bold">{project.author.username}</p>
-                    <p className="text-xs text-gray-400 font-mono">{project.author.wallet}</p>
+                    <p className="text-sm font-bold">{project.author?.username || 'Anonymous'}</p>
+                    <p className="text-xs text-gray-400 font-mono">{project.author?.wallet || 'Hidden'}</p>
                 </div>
             </div>
 

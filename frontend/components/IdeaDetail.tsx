@@ -166,20 +166,28 @@ export const IdeaDetail = () => {
 
   if (!project) return null;
 
-  const handleVote = () => {
-      voteProject(project.id);
-      toast.success('Vote recorded!');
+  const handleVote = async () => {
+      try {
+        await voteProject(project.id);
+        toast.success('Vote recorded!');
+      } catch (error) {
+        toast.error('Failed to record vote');
+      }
   };
 
-  const handleComment = (e: React.FormEvent) => {
+  const handleComment = async (e: React.FormEvent) => {
       e.preventDefault();
       if (!user) {
           openWalletModal();
           return;
       }
-      addComment(project.id, commentText, user.username, isAnonComment);
-      setCommentText('');
-      toast.success('Comment added');
+      try {
+        await addComment(project.id, commentText, isAnonComment);
+        setCommentText('');
+        toast.success('Comment added');
+      } catch (error) {
+        toast.error('Failed to add comment');
+      }
   };
 
   const openCommentTip = (commentId: string, author: string) => {
@@ -226,7 +234,7 @@ export const IdeaDetail = () => {
                          <div className={`w-8 h-8 rounded-full flex items-center justify-center ${project.isAnonymous ? 'bg-gray-800' : 'bg-white/10'}`}>
                              {project.isAnonymous ? <EyeOff className="w-4 h-4" /> : <User className="w-4 h-4" />}
                          </div>
-                         <span>{project.isAnonymous ? 'Anonymous Inventor' : project.author.username}</span>
+                         <span>{project.isAnonymous || !project.author ? 'Anonymous Inventor' : project.author.username}</span>
                      </div>
                      <span>•</span>
                      <span>{project.category}</span>

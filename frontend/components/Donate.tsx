@@ -1,27 +1,12 @@
 
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Heart, Send, Twitter, Copy, Check, Trophy, Clock, DollarSign, Crown, ExternalLink } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useAppStore } from '../lib/store';
-
-const RECENT_DONATIONS = [
-  { id: 1, user: 'sol_chad.sol', amount: 50, time: '2m ago', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=sol_chad' },
-  { id: 2, user: 'anon_whale', amount: 1000, time: '15m ago', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=anon' },
-  { id: 3, user: 'ruby_dev', amount: 15, time: '1h ago', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=ruby' },
-  { id: 4, user: '8x...92a', amount: 5, time: '3h ago', avatar: null },
-  { id: 5, user: 'rust_enjoyer', amount: 20, time: '5h ago', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=rust' },
-];
-
-const TOP_DONATORS = [
-  { id: 1, user: 'super_fan_99', amount: 5000, rank: 1, avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=fan' },
-  { id: 2, user: 'early_backer', amount: 2500, rank: 2, avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=backer' },
-  { id: 3, user: 'vc_intern', amount: 1000, rank: 3, avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=vc' },
-  { id: 4, user: 'solana_legend', amount: 500, rank: 4, avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=legend' },
-  { id: 5, user: 'diamond_hands', amount: 100, rank: 5, avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=hands' },
-];
+import { apiClient } from '../lib/api-client';
 
 export const Donate = () => {
   const { user, openConnectReminder } = useAppStore();
@@ -30,6 +15,35 @@ export const Donate = () => {
   const [isProcessing, setIsProcessing] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
   const [activeTab, setActiveTab] = useState<'recent' | 'top'>('top');
+  const [recentDonations, setRecentDonations] = useState<any[]>([]);
+  const [topDonators, setTopDonators] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  // Fetch donation data on mount
+  useEffect(() => {
+    const fetchDonations = async () => {
+      try {
+        setIsLoading(true);
+        const [recent, top] = await Promise.all([
+          apiClient.getRecentDonations(10),
+          apiClient.getTopDonators(10)
+        ]);
+
+        if (recent.success && recent.data) {
+          setRecentDonations(recent.data);
+        }
+        if (top.success && top.data) {
+          setTopDonators(top.data);
+        }
+      } catch (error) {
+        console.error('Failed to fetch donations:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchDonations();
+  }, []);
 
   const walletAddress = "FzcnaZMYcoAYpLgr7Wym2b8hrKYk3VXsRxWSLuvZKLJm";
 
@@ -293,7 +307,7 @@ export const Donate = () => {
                             exit={{ opacity: 0, y: -10 }}
                             className="divide-y divide-white/5"
                         >
-                            {TOP_DONATORS.map((donor, index) => (
+                            {topDonators.map((donor, index) => (
                                 <div key={donor.id} className="p-6 flex items-center gap-4 hover:bg-white/5 transition-colors group">
                                     <div className={`w-12 h-12 flex-shrink-0 flex items-center justify-center rounded-full font-display font-bold text-lg relative border border-white/5
                                         ${index === 0 ? 'bg-gradient-to-br from-yellow-400 to-yellow-600 text-black shadow-[0_0_15px_rgba(234,179,8,0.4)]' : 
@@ -312,7 +326,7 @@ export const Donate = () => {
                                         <div className="w-full bg-white/5 rounded-full h-1.5 overflow-hidden">
                                             <div 
                                                 className="bg-gradient-to-r from-blue-500 to-purple-600 h-full rounded-full relative" 
-                                                style={{ width: `${(donor.amount / TOP_DONATORS[0].amount) * 100}%` }} 
+                                                style={{ width: `${topDonators[0] ? (donor.amount / topDonators[0].amount) * 100 : 0}%` }} 
                                             >
                                                 <div className="absolute inset-0 bg-white/20 animate-[shimmer_2s_infinite]" />
                                             </div>
@@ -329,7 +343,7 @@ export const Donate = () => {
                             exit={{ opacity: 0, y: -10 }}
                             className="divide-y divide-white/5"
                         >
-                            {RECENT_DONATIONS.map((item) => (
+                            {recentDonations.map((item) => (
                                 <div key={item.id} className="p-6 flex items-center gap-4 hover:bg-white/5 transition-colors group">
                                     <div className="w-10 h-10 rounded-full bg-white/5 border border-white/5 overflow-hidden flex-shrink-0 group-hover:border-blue-500/30 transition-colors">
                                         {item.avatar ? (
