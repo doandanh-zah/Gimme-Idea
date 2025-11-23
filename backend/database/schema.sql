@@ -14,6 +14,7 @@ CREATE TABLE IF NOT EXISTS users (
   bio TEXT,
   avatar TEXT,
   reputation_score INTEGER DEFAULT 0,
+  balance NUMERIC(18, 9) DEFAULT 0, -- Track tips received
   social_links JSONB DEFAULT '{}'::jsonb,
   last_login_at TIMESTAMP WITH TIME ZONE,
   login_count INTEGER DEFAULT 0,
@@ -25,24 +26,36 @@ CREATE INDEX idx_users_wallet ON users(wallet);
 CREATE INDEX idx_users_username ON users(username);
 
 -- =============================================
--- PROJECTS TABLE
+-- PROJECTS TABLE (Supports both Projects and Ideas)
 -- =============================================
 CREATE TABLE IF NOT EXISTS projects (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  type VARCHAR(20) NOT NULL DEFAULT 'project' CHECK (type IN ('project', 'idea')),
   author_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   title VARCHAR(255) NOT NULL,
   description TEXT NOT NULL,
   category VARCHAR(50) NOT NULL CHECK (category IN ('DeFi', 'NFT', 'Gaming', 'Infrastructure', 'DAO')),
   stage VARCHAR(50) NOT NULL CHECK (stage IN ('Idea', 'Prototype', 'Devnet', 'Mainnet')),
   tags TEXT[] DEFAULT '{}',
+  website TEXT,
   bounty NUMERIC(18, 9) DEFAULT 0,
   votes INTEGER DEFAULT 0,
   feedback_count INTEGER DEFAULT 0,
   image_url TEXT,
+
+  -- Idea-specific fields (nullable for projects)
+  problem TEXT,
+  solution TEXT,
+  opportunity TEXT,
+  go_market TEXT, -- Go-to-market strategy
+  team_info TEXT,
+  is_anonymous BOOLEAN DEFAULT false,
+
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
+CREATE INDEX idx_projects_type ON projects(type);
 CREATE INDEX idx_projects_author ON projects(author_id);
 CREATE INDEX idx_projects_category ON projects(category);
 CREATE INDEX idx_projects_stage ON projects(stage);
@@ -58,7 +71,9 @@ CREATE TABLE IF NOT EXISTS comments (
   user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   content TEXT NOT NULL,
   parent_comment_id UUID REFERENCES comments(id) ON DELETE CASCADE,
+  is_anonymous BOOLEAN DEFAULT false,
   likes INTEGER DEFAULT 0,
+  tips_amount NUMERIC(18, 9) DEFAULT 0, -- Total tips received for this comment
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );

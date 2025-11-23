@@ -3,6 +3,7 @@
 
 export interface Project {
   id: string;
+  type?: 'project' | 'idea';
   title: string;
   description: string;
   category: 'DeFi' | 'NFT' | 'Gaming' | 'Infrastructure' | 'DAO';
@@ -10,12 +11,21 @@ export interface Project {
   feedbackCount: number;
   stage: 'Idea' | 'Prototype' | 'Devnet' | 'Mainnet';
   tags: string[];
-  author: {
+  website?: string;
+  author?: {
     username: string;
     wallet: string;
     avatar?: string;
-  };
+  } | null; // Nullable when isAnonymous
   bounty?: number;
+  imageUrl?: string;
+  // Idea-specific fields
+  problem?: string;
+  solution?: string;
+  opportunity?: string;
+  goMarket?: string;
+  teamInfo?: string;
+  isAnonymous?: boolean;
   createdAt: string;
 }
 
@@ -23,13 +33,15 @@ export interface Comment {
   id: string;
   projectId: string;
   content: string;
-  author: {
+  author?: {
     username: string;
     wallet: string;
     avatar?: string;
-  };
+  } | null; // Nullable when isAnonymous
   likes: number;
   parentCommentId?: string; // For nested replies
+  isAnonymous?: boolean;
+  tipsAmount?: number; // Total tips received
   createdAt: string;
 }
 
@@ -40,6 +52,7 @@ export interface User {
   bio?: string;
   avatar?: string;
   reputationScore: number;
+  balance?: number; // Track tips received
   socialLinks?: {
     twitter?: string;
     github?: string;

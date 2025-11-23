@@ -1,4 +1,4 @@
-import { IsString, IsEnum, IsOptional, IsArray, IsNumber } from 'class-validator';
+import { IsString, IsEnum, IsOptional, IsArray, IsNumber, IsBoolean } from 'class-validator';
 
 export class UpdateProjectDto {
   @IsString()
@@ -22,6 +22,10 @@ export class UpdateProjectDto {
   @IsOptional()
   tags?: string[];
 
+  @IsString()
+  @IsOptional()
+  website?: string;
+
   @IsNumber()
   @IsOptional()
   bounty?: number;
@@ -29,4 +33,29 @@ export class UpdateProjectDto {
   @IsString()
   @IsOptional()
   imageUrl?: string;
+
+  // Idea-specific fields
+  @IsString()
+  @IsOptional()
+  problem?: string;
+
+  @IsString()
+  @IsOptional()
+  solution?: string;
+
+  @IsString()
+  @IsOptional()
+  opportunity?: string;
+
+  @IsString()
+  @IsOptional()
+  goMarket?: string;
+
+  @IsString()
+  @IsOptional()
+  teamInfo?: string;
+
+  @IsBoolean()
+  @IsOptional()
+  isAnonymous?: boolean;
 }

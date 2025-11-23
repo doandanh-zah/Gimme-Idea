@@ -1,6 +1,10 @@
-import { IsString, IsNotEmpty, IsEnum, IsOptional, IsArray, IsNumber } from 'class-validator';
+import { IsString, IsNotEmpty, IsEnum, IsOptional, IsArray, IsNumber, IsBoolean } from 'class-validator';
 
 export class CreateProjectDto {
+  @IsEnum(['project', 'idea'])
+  @IsOptional()
+  type?: 'project' | 'idea' = 'project';
+
   @IsString()
   @IsNotEmpty()
   title: string;
@@ -19,6 +23,10 @@ export class CreateProjectDto {
   @IsString({ each: true })
   tags: string[];
 
+  @IsString()
+  @IsOptional()
+  website?: string;
+
   @IsNumber()
   @IsOptional()
   bounty?: number;
@@ -26,4 +34,29 @@ export class CreateProjectDto {
   @IsString()
   @IsOptional()
   imageUrl?: string;
+
+  // Idea-specific fields
+  @IsString()
+  @IsOptional()
+  problem?: string;
+
+  @IsString()
+  @IsOptional()
+  solution?: string;
+
+  @IsString()
+  @IsOptional()
+  opportunity?: string;
+
+  @IsString()
+  @IsOptional()
+  goMarket?: string; // Go-to-market strategy
+
+  @IsString()
+  @IsOptional()
+  teamInfo?: string;
+
+  @IsBoolean()
+  @IsOptional()
+  isAnonymous?: boolean = false;
 }

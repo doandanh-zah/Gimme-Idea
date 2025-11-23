@@ -18,7 +18,9 @@ export class CommentsService {
       user_id: userId,
       content: createDto.content,
       parent_comment_id: createDto.parentCommentId || null,
+      is_anonymous: createDto.isAnonymous || false,
       likes: 0,
+      tips_amount: 0,
       created_at: new Date().toISOString(),
     };
 
@@ -48,13 +50,15 @@ export class CommentsService {
       id: comment.id,
       projectId: comment.project_id,
       content: comment.content,
-      author: {
+      author: comment.is_anonymous ? null : {
         username: comment.author.username,
         wallet: comment.author.wallet,
         avatar: comment.author.avatar,
       },
       likes: comment.likes || 0,
       parentCommentId: comment.parent_comment_id,
+      isAnonymous: comment.is_anonymous,
+      tipsAmount: comment.tips_amount || 0,
       createdAt: comment.created_at,
     };
 
@@ -92,13 +96,15 @@ export class CommentsService {
       id: c.id,
       projectId: c.project_id,
       content: c.content,
-      author: {
+      author: c.is_anonymous ? null : {
         username: c.author.username,
         wallet: c.author.wallet,
         avatar: c.author.avatar,
       },
       likes: c.likes || 0,
       parentCommentId: c.parent_comment_id,
+      isAnonymous: c.is_anonymous,
+      tipsAmount: c.tips_amount || 0,
       createdAt: c.created_at,
     }));
 

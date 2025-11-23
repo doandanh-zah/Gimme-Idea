@@ -27,6 +27,10 @@ export class ProjectsService {
       `);
 
     // Apply filters
+    if (query.type) {
+      supabaseQuery = supabaseQuery.eq('type', query.type);
+    }
+
     if (query.category) {
       supabaseQuery = supabaseQuery.eq('category', query.category);
     }
@@ -57,6 +61,7 @@ export class ProjectsService {
     // Map database results to Project type
     const projects: Project[] = data.map(p => ({
       id: p.id,
+      type: p.type || 'project',
       title: p.title,
       description: p.description,
       category: p.category,
@@ -64,12 +69,21 @@ export class ProjectsService {
       feedbackCount: p.feedback_count || 0,
       stage: p.stage,
       tags: p.tags || [],
-      author: {
+      website: p.website,
+      author: p.is_anonymous ? null : {
         username: p.author.username,
         wallet: p.author.wallet,
         avatar: p.author.avatar,
       },
       bounty: p.bounty,
+      imageUrl: p.image_url,
+      // Idea-specific fields
+      problem: p.problem,
+      solution: p.solution,
+      opportunity: p.opportunity,
+      goMarket: p.go_market,
+      teamInfo: p.team_info,
+      isAnonymous: p.is_anonymous,
       createdAt: p.created_at,
     }));
 
@@ -104,6 +118,7 @@ export class ProjectsService {
 
     const projectResponse: Project = {
       id: project.id,
+      type: project.type || 'project',
       title: project.title,
       description: project.description,
       category: project.category,
@@ -111,12 +126,21 @@ export class ProjectsService {
       feedbackCount: project.feedback_count || 0,
       stage: project.stage,
       tags: project.tags || [],
-      author: {
+      website: project.website,
+      author: project.is_anonymous ? null : {
         username: project.author.username,
         wallet: project.author.wallet,
         avatar: project.author.avatar,
       },
       bounty: project.bounty,
+      imageUrl: project.image_url,
+      // Idea-specific fields
+      problem: project.problem,
+      solution: project.solution,
+      opportunity: project.opportunity,
+      goMarket: project.go_market,
+      teamInfo: project.team_info,
+      isAnonymous: project.is_anonymous,
       createdAt: project.created_at,
     };
 
@@ -133,13 +157,23 @@ export class ProjectsService {
     const supabase = this.supabaseService.getAdminClient();
 
     const newProject = {
+      type: createDto.type || 'project',
       author_id: userId,
       title: createDto.title,
       description: createDto.description,
       category: createDto.category,
       stage: createDto.stage,
       tags: createDto.tags,
+      website: createDto.website,
       bounty: createDto.bounty || 0,
+      image_url: createDto.imageUrl,
+      // Idea-specific fields
+      problem: createDto.problem,
+      solution: createDto.solution,
+      opportunity: createDto.opportunity,
+      go_market: createDto.goMarket,
+      team_info: createDto.teamInfo,
+      is_anonymous: createDto.isAnonymous || false,
       votes: 0,
       feedback_count: 0,
       created_at: new Date().toISOString(),
@@ -164,6 +198,7 @@ export class ProjectsService {
 
     const projectResponse: Project = {
       id: project.id,
+      type: project.type || 'project',
       title: project.title,
       description: project.description,
       category: project.category,
@@ -171,12 +206,21 @@ export class ProjectsService {
       feedbackCount: project.feedback_count || 0,
       stage: project.stage,
       tags: project.tags || [],
-      author: {
+      website: project.website,
+      author: project.is_anonymous ? null : {
         username: project.author.username,
         wallet: project.author.wallet,
         avatar: project.author.avatar,
       },
       bounty: project.bounty,
+      imageUrl: project.image_url,
+      // Idea-specific fields
+      problem: project.problem,
+      solution: project.solution,
+      opportunity: project.opportunity,
+      goMarket: project.go_market,
+      teamInfo: project.team_info,
+      isAnonymous: project.is_anonymous,
       createdAt: project.created_at,
     };
 
@@ -208,17 +252,27 @@ export class ProjectsService {
       throw new ForbiddenException('You can only update your own projects');
     }
 
-    // Update project
+    // Update project - Only update fields that are provided
+    const updateData: any = {};
+    if (updateDto.title !== undefined) updateData.title = updateDto.title;
+    if (updateDto.description !== undefined) updateData.description = updateDto.description;
+    if (updateDto.category !== undefined) updateData.category = updateDto.category;
+    if (updateDto.stage !== undefined) updateData.stage = updateDto.stage;
+    if (updateDto.tags !== undefined) updateData.tags = updateDto.tags;
+    if (updateDto.website !== undefined) updateData.website = updateDto.website;
+    if (updateDto.bounty !== undefined) updateData.bounty = updateDto.bounty;
+    if (updateDto.imageUrl !== undefined) updateData.image_url = updateDto.imageUrl;
+    // Idea-specific fields
+    if (updateDto.problem !== undefined) updateData.problem = updateDto.problem;
+    if (updateDto.solution !== undefined) updateData.solution = updateDto.solution;
+    if (updateDto.opportunity !== undefined) updateData.opportunity = updateDto.opportunity;
+    if (updateDto.goMarket !== undefined) updateData.go_market = updateDto.goMarket;
+    if (updateDto.teamInfo !== undefined) updateData.team_info = updateDto.teamInfo;
+    if (updateDto.isAnonymous !== undefined) updateData.is_anonymous = updateDto.isAnonymous;
+
     const { data: updated, error } = await supabase
       .from('projects')
-      .update({
-        title: updateDto.title,
-        description: updateDto.description,
-        category: updateDto.category,
-        stage: updateDto.stage,
-        tags: updateDto.tags,
-        bounty: updateDto.bounty,
-      })
+      .update(updateData)
       .eq('id', id)
       .select(`
         *,
@@ -236,6 +290,7 @@ export class ProjectsService {
 
     const projectResponse: Project = {
       id: updated.id,
+      type: updated.type || 'project',
       title: updated.title,
       description: updated.description,
       category: updated.category,
@@ -243,12 +298,21 @@ export class ProjectsService {
       feedbackCount: updated.feedback_count || 0,
       stage: updated.stage,
       tags: updated.tags || [],
-      author: {
+      website: updated.website,
+      author: updated.is_anonymous ? null : {
         username: updated.author.username,
         wallet: updated.author.wallet,
         avatar: updated.author.avatar,
       },
       bounty: updated.bounty,
+      imageUrl: updated.image_url,
+      // Idea-specific fields
+      problem: updated.problem,
+      solution: updated.solution,
+      opportunity: updated.opportunity,
+      goMarket: updated.go_market,
+      teamInfo: updated.team_info,
+      isAnonymous: updated.is_anonymous,
       createdAt: updated.created_at,
     };
 

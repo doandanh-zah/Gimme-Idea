@@ -2,6 +2,10 @@ import { IsString, IsEnum, IsOptional, IsInt, Min } from 'class-validator';
 import { Transform } from 'class-transformer';
 
 export class QueryProjectsDto {
+  @IsEnum(['project', 'idea'])
+  @IsOptional()
+  type?: 'project' | 'idea';
+
   @IsEnum(['DeFi', 'NFT', 'Gaming', 'Infrastructure', 'DAO'])
   @IsOptional()
   category?: 'DeFi' | 'NFT' | 'Gaming' | 'Infrastructure' | 'DAO';

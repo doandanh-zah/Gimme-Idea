@@ -1,4 +1,4 @@
-import { IsString, IsNotEmpty, IsOptional, IsUUID } from 'class-validator';
+import { IsString, IsNotEmpty, IsOptional, IsUUID, IsBoolean } from 'class-validator';
 
 export class CreateCommentDto {
   @IsUUID()
@@ -12,4 +12,8 @@ export class CreateCommentDto {
   @IsUUID()
   @IsOptional()
   parentCommentId?: string;
+
+  @IsBoolean()
+  @IsOptional()
+  isAnonymous?: boolean = false;
 }
