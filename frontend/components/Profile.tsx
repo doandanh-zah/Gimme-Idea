@@ -10,7 +10,7 @@ import toast from 'react-hot-toast';
 import { Project } from '../lib/types';
 
 export const Profile = () => {
-  const { user, viewedUser, projects, updateUserProfile, updateProject, deleteProject, setView } = useAppStore();
+  const { user, viewedUser, projects, updateUserProfile, updateProject, deleteProject, setView, openSubmitModal } = useAppStore();
   const [isEditing, setIsEditing] = useState(false);
   const [editingProject, setEditingProject] = useState<Project | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -153,8 +153,8 @@ export const Profile = () => {
             <div className="absolute inset-0 bg-black/20" />
             {/* Back Button if viewing another profile */}
             {!isOwnProfile && (
-                <button 
-                    onClick={() => setView('dashboard')}
+                <button
+                    onClick={() => setView('projects-dashboard')}
                     className="absolute top-8 left-8 z-20 bg-black/50 backdrop-blur-md p-2 rounded-full border border-white/10 hover:bg-black/70 transition-colors text-white"
                 >
                     <ArrowLeft className="w-6 h-6" />
@@ -382,7 +382,7 @@ export const Profile = () => {
                     <div className="text-center py-12 bg-white/5 rounded-xl border border-dashed border-white/10">
                         <p className="text-gray-500 mb-4">No projects deployed yet.</p>
                         {isOwnProfile && (
-                            <button onClick={() => setView('upload')} className="text-accent font-bold hover:underline">Start Building</button>
+                            <button onClick={() => openSubmitModal('project')} className="text-accent font-bold hover:underline">Start Building</button>
                         )}
                     </div>
                 )}

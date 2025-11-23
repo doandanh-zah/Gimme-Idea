@@ -230,8 +230,8 @@ export const ProjectDetail = () => {
       className="pt-32 pb-20 px-6 max-w-5xl mx-auto min-h-screen"
     >
       {/* Back Button */}
-      <button 
-        onClick={() => setView('dashboard')}
+      <button
+        onClick={() => setView('projects-dashboard')}
         className="flex items-center gap-2 text-gray-400 hover:text-white mb-8 transition-colors"
       >
         <ArrowLeft className="w-4 h-4" /> Back to Explore
