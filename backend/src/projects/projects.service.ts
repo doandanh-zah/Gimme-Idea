@@ -1,5 +1,6 @@
-import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
+import { Injectable, NotFoundException, ForbiddenException, Logger } from '@nestjs/common';
 import { SupabaseService } from '../shared/supabase.service';
+import { AIService } from '../shared/ai.service';
 import { CreateProjectDto } from './dto/create-project.dto';
 import { UpdateProjectDto } from './dto/update-project.dto';
 import { QueryProjectsDto } from './dto/query-projects.dto';
@@ -7,7 +8,13 @@ import { ApiResponse, Project } from '../shared/types';
 
 @Injectable()
 export class ProjectsService {
-  constructor(private supabaseService: SupabaseService) {}
+  private readonly logger = new Logger(ProjectsService.name);
+  private readonly AI_BOT_WALLET = 'GimmeAI1111111111111111111111111111111111111';
+
+  constructor(
+    private supabaseService: SupabaseService,
+    private aiService: AIService,
+  ) {}
 
   /**
    * Get all projects with filters
@@ -258,6 +265,11 @@ export class ProjectsService {
       isAnonymous: project.is_anonymous,
       createdAt: project.created_at,
     };
+
+    // Generate AI feedback asynchronously (don't wait for it)
+    this.generateAIFeedbackAsync(project.id, createDto).catch(err => {
+      this.logger.error(`Failed to generate AI feedback for project ${project.id}`, err);
+    });
 
     return {
       success: true,

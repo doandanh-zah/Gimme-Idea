@@ -3,6 +3,7 @@ import { ConfigModule } from '@nestjs/config';
 import { AppController } from './app.controller';
 import { SupabaseService } from './shared/supabase.service';
 import { SolanaService } from './shared/solana.service';
+import { AIService } from './shared/ai.service';
 import { AuthModule } from './auth/auth.module';
 import { ProjectsModule } from './projects/projects.module';
 import { CommentsModule } from './comments/comments.module';
@@ -22,7 +23,7 @@ import { PaymentsModule } from './payments/payments.module';
     PaymentsModule,
   ],
   controllers: [AppController],
-  providers: [SupabaseService, SolanaService],
-  exports: [SupabaseService, SolanaService],
+  providers: [SupabaseService, SolanaService, AIService],
+  exports: [SupabaseService, SolanaService, AIService],
 })
 export class AppModule {}
