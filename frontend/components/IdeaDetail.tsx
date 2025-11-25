@@ -3,7 +3,7 @@
 
 import React, { useState } from 'react';
 import { useAppStore } from '../lib/store';
-import { ArrowLeft, ThumbsUp, ThumbsDown, MessageCircle, Send, EyeOff, User, DollarSign } from 'lucide-react';
+import { ArrowLeft, ThumbsUp, ThumbsDown, MessageCircle, Send, EyeOff, User, DollarSign, Share2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';
 import { Comment } from '../lib/types';
@@ -224,6 +224,21 @@ export const IdeaDetail = () => {
       }
   };
 
+  const handleShareToX = () => {
+      // Create shareable URL (using query param for now, can be updated with proper routing later)
+      const ideaUrl = `${window.location.origin}?idea=${project.id}`;
+
+      // Create tweet text
+      const tweetText = `Check out this idea on Gimme Idea: "${project.title}"\n\n${project.description?.substring(0, 100)}${project.description?.length > 100 ? '...' : ''}\n\n`;
+
+      // Create Twitter intent URL
+      const twitterUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(tweetText)}&url=${encodeURIComponent(ideaUrl)}`;
+
+      // Open in new window
+      window.open(twitterUrl, '_blank', 'width=550,height=420');
+      toast.success('Opening Twitter...');
+  };
+
   const handleComment = async (e: React.FormEvent) => {
       e.preventDefault();
       if (!user) {
@@ -269,8 +284,14 @@ export const IdeaDetail = () => {
             <div className="mb-12">
                 <div className="flex flex-col md:flex-row justify-between items-start gap-4 mb-6">
                      <h1 className="text-4xl md:text-5xl font-display font-bold leading-tight">{project.title}</h1>
-                     <div className="flex items-center gap-2">
-                         <button 
+                     <div className="flex items-center gap-3">
+                         <button
+                            onClick={handleShareToX}
+                            className="bg-[#1DA1F2] text-white px-5 py-2 rounded-full font-bold flex items-center gap-2 hover:scale-105 transition-transform shadow-[0_0_20px_rgba(29,161,242,0.3)]"
+                         >
+                             <Share2 className="w-4 h-4" /> Share to 𝕏
+                         </button>
+                         <button
                             onClick={handleVote}
                             className="bg-[#FFD700] text-black px-6 py-2 rounded-full font-bold flex items-center gap-2 hover:scale-105 transition-transform shadow-[0_0_20px_rgba(255,215,0,0.3)]"
                          >
@@ -314,10 +335,6 @@ export const IdeaDetail = () => {
                          <section>
                              <h3 className="text-sm font-bold text-gray-500 mb-2 font-mono uppercase">Go To Market</h3>
                              <p className="text-gray-300">{project.goMarket || "Not specified."}</p>
-                         </section>
-                         <section>
-                             <h3 className="text-sm font-bold text-gray-500 mb-2 font-mono uppercase">Team Info</h3>
-                             <p className="text-gray-300">{project.teamInfo || "Not specified."}</p>
                          </section>
                      </div>
                 </div>

@@ -28,7 +28,6 @@ export const SubmissionModal = () => {
     opportunity: '',
     solution: '',
     goMarket: '',
-    teamInfo: '',
     isAnonymous: false
   });
 
@@ -41,7 +40,7 @@ export const SubmissionModal = () => {
     if (isSubmitModalOpen) {
         setFormData({
             title: '', description: '', category: 'DeFi', stage: 'Idea', website: '', bounty: '',
-            problem: '', opportunity: '', solution: '', goMarket: '', teamInfo: '', isAnonymous: false
+            problem: '', opportunity: '', solution: '', goMarket: '', isAnonymous: false
         });
         setTags([]);
         setImagePreview(null);
@@ -142,7 +141,6 @@ export const SubmissionModal = () => {
             opportunity: formData.opportunity,
             solution: formData.solution,
             goMarket: formData.goMarket,
-            teamInfo: formData.teamInfo,
             isAnonymous: formData.isAnonymous
         };
 
@@ -431,15 +429,6 @@ export const SubmissionModal = () => {
                                             onChange={(e) => setFormData({...formData, opportunity: e.target.value})}
                                             className="w-full bg-[#1A1A1A] border border-white/10 rounded-xl px-5 py-4 outline-none focus:border-white/30 text-white placeholder:text-gray-600"
                                             placeholder="Market size, timing?"
-                                        />
-                                     </div>
-                                     <div className="space-y-2">
-                                        <label className="text-xs font-bold text-gray-400 uppercase tracking-wider ml-1">Team Info</label>
-                                        <input 
-                                            value={formData.teamInfo}
-                                            onChange={(e) => setFormData({...formData, teamInfo: e.target.value})}
-                                            className="w-full bg-[#1A1A1A] border border-white/10 rounded-xl px-5 py-4 outline-none focus:border-white/30 text-white placeholder:text-gray-600"
-                                            placeholder="Who is building this?"
                                         />
                                      </div>
                                 </div>

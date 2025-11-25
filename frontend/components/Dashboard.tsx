@@ -7,6 +7,7 @@ import { useAppStore } from '../lib/store';
 import { Filter, Plus, TrendingUp, Activity, X, Lightbulb, Rocket } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useRealtimeProjects } from '../hooks/useRealtimeProjects';
+import { ComingSoonModal } from './ComingSoonModal';
 
 interface DashboardProps {
     mode: 'project' | 'idea';
@@ -23,10 +24,12 @@ export default function Dashboard({ mode }: DashboardProps) {
     handleRealtimeNewProject,
     handleRealtimeUpdateProject,
     handleRealtimeDeleteProject,
+    setView,
   } = useAppStore();
   const [categoryFilter, setCategoryFilter] = useState('All');
   const [stars, setStars] = useState<{ id: number; top: string; left: string; size: number; duration: string; opacity: number }[]>([]);
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
+  const [showComingSoon, setShowComingSoon] = useState(false);
 
   // Generate stars on mount
   useEffect(() => {
@@ -41,9 +44,18 @@ export default function Dashboard({ mode }: DashboardProps) {
     setStars(newStars);
   }, []);
 
-  // Fetch projects on mount
+  // Show coming soon modal for projects mode
   useEffect(() => {
-    fetchProjects({ type: mode });
+    if (mode === 'project') {
+      setShowComingSoon(true);
+    }
+  }, [mode]);
+
+  // Fetch projects on mount (skip for project mode)
+  useEffect(() => {
+    if (mode !== 'project') {
+      fetchProjects({ type: mode });
+    }
   }, [mode, fetchProjects]);
 
   // Subscribe to realtime project updates
@@ -230,6 +242,15 @@ export default function Dashboard({ mode }: DashboardProps) {
           </>
         )}
       </div>
+
+      {/* Coming Soon Modal for Projects */}
+      <ComingSoonModal
+        isOpen={showComingSoon}
+        onClose={() => {
+          setShowComingSoon(false);
+          setView('ideas-dashboard');
+        }}
+      />
     </motion.div>
   );
 }
