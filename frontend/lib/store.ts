@@ -151,9 +151,81 @@ export const useAppStore = create<AppState>((set, get) => ({
     try {
       const response = await apiClient.updateUserProfile(data);
       if (response.success && response.data) {
-        set((state) => ({
-          user: state.user ? { ...state.user, ...response.data } : null
-        }));
+        set((state) => {
+          const updatedUser = state.user ? { ...state.user, ...response.data } : null;
+
+          // Update author info in all projects authored by this user
+          const updatedProjects = state.projects.map(project => {
+            let updatedProject = { ...project };
+
+            // Update project author if it belongs to current user
+            if (project.author && state.user && project.author.wallet === state.user.wallet) {
+              updatedProject.author = {
+                ...project.author,
+                username: response.data.username || project.author.username,
+                avatar: response.data.avatar || project.author.avatar,
+              };
+            }
+
+            // Update comment authors if they belong to current user
+            if (project.comments && project.comments.length > 0) {
+              updatedProject.comments = project.comments.map(comment => {
+                if (comment.author && state.user && comment.author.wallet === state.user.wallet) {
+                  return {
+                    ...comment,
+                    author: {
+                      ...comment.author,
+                      username: response.data.username || comment.author.username,
+                      avatar: response.data.avatar || comment.author.avatar,
+                    }
+                  };
+                }
+                return comment;
+              });
+            }
+
+            return updatedProject;
+          });
+
+          // Update selectedProject (both project author and comment authors)
+          let updatedSelectedProject = state.selectedProject;
+          if (updatedSelectedProject) {
+            updatedSelectedProject = { ...updatedSelectedProject };
+
+            // Update project author if it belongs to current user
+            if (updatedSelectedProject.author && state.user &&
+                updatedSelectedProject.author.wallet === state.user.wallet) {
+              updatedSelectedProject.author = {
+                ...updatedSelectedProject.author,
+                username: response.data.username || updatedSelectedProject.author.username,
+                avatar: response.data.avatar || updatedSelectedProject.author.avatar,
+              };
+            }
+
+            // Update comment authors if they belong to current user
+            if (updatedSelectedProject.comments && updatedSelectedProject.comments.length > 0) {
+              updatedSelectedProject.comments = updatedSelectedProject.comments.map(comment => {
+                if (comment.author && state.user && comment.author.wallet === state.user.wallet) {
+                  return {
+                    ...comment,
+                    author: {
+                      ...comment.author,
+                      username: response.data.username || comment.author.username,
+                      avatar: response.data.avatar || comment.author.avatar,
+                    }
+                  };
+                }
+                return comment;
+              });
+            }
+          }
+
+          return {
+            user: updatedUser,
+            projects: updatedProjects,
+            selectedProject: updatedSelectedProject
+          };
+        });
       }
     } catch (error) {
       console.error('Failed to update profile:', error);
