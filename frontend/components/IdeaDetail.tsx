@@ -226,7 +226,7 @@ export const IdeaDetail = () => {
 
   const handleShareToX = () => {
       // Create shareable URL with proper routing
-      const ideaUrl = `${window.location.origin}/ideas/${project.id}`;
+      const ideaUrl = `${window.location.origin}/idea/${project.id}`;
 
       // Create tweet text
       const tweetText = `Check out this idea on Gimme Idea: "${project.title}"\n\n${project.description?.substring(0, 100)}${project.description?.length > 100 ? '...' : ''}\n\n`;
@@ -276,7 +276,7 @@ export const IdeaDetail = () => {
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="min-h-screen pt-32 pb-20 px-6">
         <div className="max-w-4xl mx-auto">
             {/* Nav */}
-            <button onClick={() => router.push('/ideas')} className="flex items-center gap-2 text-gray-400 hover:text-white mb-8">
+            <button onClick={() => router.push('/idea')} className="flex items-center gap-2 text-gray-400 hover:text-white mb-8">
                 <ArrowLeft className="w-4 h-4" /> Back to Ideas
             </button>
 

@@ -249,7 +249,7 @@ export default function Dashboard({ mode }: DashboardProps) {
         isOpen={showComingSoon}
         onClose={() => {
           setShowComingSoon(false);
-          router.push('/ideas');
+          router.push('/idea');
         }}
       />
     </motion.div>

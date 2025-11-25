@@ -60,7 +60,7 @@ export const Profile = () => {
           <div className="min-h-screen flex items-center justify-center pt-20">
               <div className="text-center">
                   <h2 className="text-2xl font-bold mb-4">Profile Not Found</h2>
-                  <button onClick={() => router.push('/')} className="text-accent underline">Go Home</button>
+                  <button onClick={() => router.push('/home')} className="text-accent underline">Go Home</button>
               </div>
           </div>
       );

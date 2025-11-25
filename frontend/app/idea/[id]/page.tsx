@@ -19,10 +19,10 @@ export default function IdeaDetailPage() {
           setSelectedProject(project);
         } else {
           // If project not found, redirect to ideas page
-          router.push('/ideas');
+          router.push('/idea');
         }
       }).catch(() => {
-        router.push('/ideas');
+        router.push('/idea');
       });
     }
   }, [ideaId, fetchProjectById, setSelectedProject, router]);

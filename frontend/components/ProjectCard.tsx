@@ -43,7 +43,7 @@ export const ProjectCard: React.FC<ProjectCardProps> = ({ project }) => {
   };
 
   const handleCardClick = () => {
-    const route = isIdea ? `/ideas/${project.id}` : `/projects/${project.id}`;
+    const route = isIdea ? `/idea/${project.id}` : `/projects/${project.id}`;
     router.push(route);
   };
 

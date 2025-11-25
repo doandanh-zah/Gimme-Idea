@@ -60,10 +60,10 @@ const Navbar = () => {
   };
 
   const navLinks = [
-    { name: 'IDEA', route: '/ideas', icon: Lightbulb },
+    { name: 'IDEA', route: '/idea', icon: Lightbulb },
     { name: 'PROJECT', route: '/projects', icon: Rocket },
     { name: 'Donate me', route: '/donate', icon: Heart },
-    { name: 'Leaderboard', route: '/', icon: BarChart3 },
+    { name: 'Leaderboard', route: '/home', icon: BarChart3 },
   ];
 
   return (
@@ -74,7 +74,7 @@ const Navbar = () => {
         className="pointer-events-auto bg-[#0F0F0F]/90 backdrop-blur-xl border border-white/5 rounded-full px-6 py-3 flex items-center justify-between w-full max-w-5xl shadow-2xl shadow-purple-900/10 relative"
       >
         {/* Logo */}
-        <button onClick={() => router.push('/')} className="flex items-center gap-3 group">
+        <button onClick={() => router.push('/home')} className="flex items-center gap-3 group">
           <div className="relative w-10 h-10 flex items-center justify-center">
              <div className="absolute inset-0 bg-[#FFD700]/20 rounded-full blur-md opacity-50 group-hover:opacity-100 transition-opacity duration-300" />
              <Image
@@ -233,7 +233,7 @@ const Navbar = () => {
                             <UserIcon className="w-4 h-4" /> My Profile
                         </button>
                         <button
-                             onClick={() => { disconnectWallet(); setShowUserMenu(false); router.push('/'); }}
+                             onClick={() => { disconnectWallet(); setShowUserMenu(false); router.push('/home'); }}
                              className="w-full text-left px-4 py-3 text-sm text-red-400 hover:bg-red-500/10 flex items-center gap-2 border-t border-white/5"
                         >
                             Log Out
