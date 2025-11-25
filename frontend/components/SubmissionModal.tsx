@@ -27,7 +27,6 @@ export const SubmissionModal = () => {
     problem: '',
     opportunity: '',
     solution: '',
-    goMarket: '',
     isAnonymous: false
   });
 
@@ -40,7 +39,7 @@ export const SubmissionModal = () => {
     if (isSubmitModalOpen) {
         setFormData({
             title: '', description: '', category: 'DeFi', stage: 'Idea', website: '', bounty: '',
-            problem: '', opportunity: '', solution: '', goMarket: '', isAnonymous: false
+            problem: '', opportunity: '', solution: '', isAnonymous: false
         });
         setTags([]);
         setImagePreview(null);
@@ -140,7 +139,6 @@ export const SubmissionModal = () => {
             problem: formData.problem,
             opportunity: formData.opportunity,
             solution: formData.solution,
-            goMarket: formData.goMarket,
             isAnonymous: formData.isAnonymous
         };
 

@@ -25,7 +25,8 @@ export default function IdeaDetailPage() {
         router.push('/idea');
       });
     }
-  }, [ideaId, fetchProjectById, setSelectedProject, router]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ideaId]);
 
   if (isLoading || !ideaId) {
     return (
