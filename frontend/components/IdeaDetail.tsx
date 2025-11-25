@@ -8,6 +8,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';
 import { Comment } from '../lib/types';
 import { PaymentModal } from './PaymentModal';
+import { useRealtimeComments } from '../hooks/useRealtimeComments';
 
 interface CommentItemProps {
     comment: Comment;
@@ -168,10 +169,22 @@ const CommentItem: React.FC<CommentItemProps> = ({ comment, projectId, isReply =
 };
 
 export const IdeaDetail = () => {
-  const { projects, selectedProjectId, setView, voteProject, addComment, user, openWalletModal, tipComment } = useAppStore();
+  const {
+    projects,
+    selectedProjectId,
+    setView,
+    voteProject,
+    addComment,
+    user,
+    openWalletModal,
+    tipComment,
+    handleRealtimeNewComment,
+    handleRealtimeUpdateComment,
+    handleRealtimeDeleteComment,
+  } = useAppStore();
   const [commentText, setCommentText] = useState('');
   const [isAnonComment, setIsAnonComment] = useState(false);
-  
+
   // Payment Modal State
   const [showPayment, setShowPayment] = useState(false);
   const [paymentRecipient, setPaymentRecipient] = useState('');
@@ -179,6 +192,26 @@ export const IdeaDetail = () => {
   const [selectedCommentId, setSelectedCommentId] = useState<string | null>(null);
 
   const project = projects.find(p => p.id === selectedProjectId);
+
+  // Subscribe to realtime comment updates for this project
+  useRealtimeComments({
+    projectId: selectedProjectId || '',
+    onNewComment: (comment) => {
+      if (selectedProjectId) {
+        handleRealtimeNewComment(selectedProjectId, comment);
+      }
+    },
+    onUpdateComment: (comment) => {
+      if (selectedProjectId) {
+        handleRealtimeUpdateComment(selectedProjectId, comment);
+      }
+    },
+    onDeleteComment: (commentId) => {
+      if (selectedProjectId) {
+        handleRealtimeDeleteComment(selectedProjectId, commentId);
+      }
+    },
+  });
 
   if (!project) return null;
 

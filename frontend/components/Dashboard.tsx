@@ -6,13 +6,24 @@ import { ProjectCard } from './ProjectCard';
 import { useAppStore } from '../lib/store';
 import { Filter, Plus, TrendingUp, Activity, X, Lightbulb, Rocket } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useRealtimeProjects } from '../hooks/useRealtimeProjects';
 
 interface DashboardProps {
     mode: 'project' | 'idea';
 }
 
 export default function Dashboard({ mode }: DashboardProps) {
-  const { projects, searchQuery, setSearchQuery, openSubmitModal, fetchProjects, isLoading } = useAppStore();
+  const {
+    projects,
+    searchQuery,
+    setSearchQuery,
+    openSubmitModal,
+    fetchProjects,
+    isLoading,
+    handleRealtimeNewProject,
+    handleRealtimeUpdateProject,
+    handleRealtimeDeleteProject,
+  } = useAppStore();
   const [categoryFilter, setCategoryFilter] = useState('All');
   const [stars, setStars] = useState<{ id: number; top: string; left: string; size: number; duration: string; opacity: number }[]>([]);
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
@@ -34,6 +45,13 @@ export default function Dashboard({ mode }: DashboardProps) {
   useEffect(() => {
     fetchProjects({ type: mode });
   }, [mode, fetchProjects]);
+
+  // Subscribe to realtime project updates
+  useRealtimeProjects({
+    onNewProject: handleRealtimeNewProject,
+    onUpdateProject: handleRealtimeUpdateProject,
+    onDeleteProject: handleRealtimeDeleteProject,
+  });
 
   const categories = ['All', 'DeFi', 'NFT', 'Gaming', 'Infrastructure', 'DAO', 'DePIN', 'Social', 'Mobile', 'Security'];
 

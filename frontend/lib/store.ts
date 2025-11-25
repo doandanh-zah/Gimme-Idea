@@ -51,7 +51,15 @@ interface AppState {
   updateProject: (data: Partial<Project> & { id: string }) => Promise<void>;
   deleteProject: (id: string) => Promise<void>;
   voteProject: (id: string) => Promise<void>;
-  
+
+  // Realtime handlers
+  handleRealtimeNewProject: (project: any) => void;
+  handleRealtimeUpdateProject: (project: any) => void;
+  handleRealtimeDeleteProject: (projectId: string) => void;
+  handleRealtimeNewComment: (projectId: string, comment: any) => void;
+  handleRealtimeUpdateComment: (projectId: string, comment: any) => void;
+  handleRealtimeDeleteComment: (projectId: string, commentId: string) => void;
+
   // Comment Actions (Updated to support anonymous)
   addComment: (projectId: string, content: string, isAnonymous?: boolean) => Promise<void>;
   replyComment: (projectId: string, commentId: string, content: string, isAnonymous?: boolean) => Promise<void>;
@@ -263,6 +271,225 @@ export const useAppStore = create<AppState>((set, get) => ({
       console.error('Failed to vote on project:', error);
       throw error;
     }
+  },
+
+  // Realtime event handlers
+  handleRealtimeNewProject: (projectData) => {
+    const newProject: Project = {
+      id: projectData.id,
+      type: projectData.type || 'project',
+      title: projectData.title,
+      description: projectData.description,
+      category: projectData.category,
+      votes: projectData.votes || 0,
+      feedbackCount: projectData.feedback_count || 0,
+      stage: projectData.stage,
+      tags: projectData.tags || [],
+      website: projectData.website,
+      author: projectData.is_anonymous ? null : (projectData.author || null),
+      bounty: projectData.bounty,
+      imageUrl: projectData.image_url,
+      image: projectData.image_url,
+      problem: projectData.problem,
+      solution: projectData.solution,
+      opportunity: projectData.opportunity,
+      goMarket: projectData.go_market,
+      teamInfo: projectData.team_info,
+      isAnonymous: projectData.is_anonymous,
+      createdAt: projectData.created_at,
+      comments: [],
+    };
+
+    set((state) => {
+      // Check if project already exists (avoid duplicates)
+      const exists = state.projects.some(p => p.id === newProject.id);
+      if (exists) return state;
+
+      return {
+        projects: [newProject, ...state.projects]
+      };
+    });
+  },
+
+  handleRealtimeUpdateProject: (projectData) => {
+    set((state) => {
+      const existingProject = state.projects.find(p => p.id === projectData.id);
+      if (!existingProject) return state;
+
+      const updatedProject: Project = {
+        ...existingProject,
+        type: projectData.type || existingProject.type,
+        title: projectData.title,
+        description: projectData.description,
+        category: projectData.category,
+        votes: projectData.votes || 0,
+        feedbackCount: projectData.feedback_count || 0,
+        stage: projectData.stage,
+        tags: projectData.tags || [],
+        website: projectData.website,
+        bounty: projectData.bounty,
+        imageUrl: projectData.image_url,
+        image: projectData.image_url,
+        problem: projectData.problem,
+        solution: projectData.solution,
+        opportunity: projectData.opportunity,
+        goMarket: projectData.go_market,
+        teamInfo: projectData.team_info,
+        isAnonymous: projectData.is_anonymous,
+      };
+
+      return {
+        projects: state.projects.map(p => p.id === projectData.id ? updatedProject : p)
+      };
+    });
+  },
+
+  handleRealtimeDeleteProject: (projectId) => {
+    set((state) => ({
+      projects: state.projects.filter(p => p.id !== projectId)
+    }));
+  },
+
+  handleRealtimeNewComment: (projectId, commentData) => {
+    set((state) => {
+      const project = state.projects.find(p => p.id === projectId);
+      if (!project) return state;
+
+      const newComment: Comment = {
+        id: commentData.id,
+        projectId: commentData.project_id,
+        content: commentData.content,
+        author: commentData.is_anonymous ? null : commentData.author,
+        likes: commentData.likes || 0,
+        dislikes: commentData.dislikes || 0,
+        parentCommentId: commentData.parent_comment_id,
+        isAnonymous: commentData.is_anonymous,
+        tipsAmount: commentData.tips_amount || 0,
+        createdAt: commentData.created_at,
+        replies: [],
+      };
+
+      // Check if it's a reply or a top-level comment
+      if (newComment.parentCommentId) {
+        // It's a reply - add it to the parent comment
+        const addReplyToParent = (comments: Comment[]): Comment[] => {
+          return comments.map(comment => {
+            if (comment.id === newComment.parentCommentId) {
+              // Check if reply already exists (avoid duplicates)
+              const replyExists = comment.replies?.some(r => r.id === newComment.id);
+              if (replyExists) return comment;
+
+              return {
+                ...comment,
+                replies: [...(comment.replies || []), newComment]
+              };
+            }
+            if (comment.replies && comment.replies.length > 0) {
+              return {
+                ...comment,
+                replies: addReplyToParent(comment.replies)
+              };
+            }
+            return comment;
+          });
+        };
+
+        const updatedProject = {
+          ...project,
+          comments: addReplyToParent(project.comments || []),
+          feedbackCount: (project.feedbackCount || 0) + 1
+        };
+
+        return {
+          projects: state.projects.map(p => p.id === projectId ? updatedProject : p)
+        };
+      } else {
+        // It's a top-level comment - check if it already exists
+        const commentExists = project.comments?.some(c => c.id === newComment.id);
+        if (commentExists) return state;
+
+        const updatedProject = {
+          ...project,
+          comments: [...(project.comments || []), newComment],
+          feedbackCount: (project.feedbackCount || 0) + 1
+        };
+
+        return {
+          projects: state.projects.map(p => p.id === projectId ? updatedProject : p)
+        };
+      }
+    });
+  },
+
+  handleRealtimeUpdateComment: (projectId, commentData) => {
+    set((state) => {
+      const project = state.projects.find(p => p.id === projectId);
+      if (!project || !project.comments) return state;
+
+      const updateComment = (comments: Comment[]): Comment[] => {
+        return comments.map(comment => {
+          if (comment.id === commentData.id) {
+            return {
+              ...comment,
+              content: commentData.content,
+              likes: commentData.likes || 0,
+              dislikes: commentData.dislikes || 0,
+              tipsAmount: commentData.tips_amount || 0,
+            };
+          }
+          if (comment.replies && comment.replies.length > 0) {
+            return {
+              ...comment,
+              replies: updateComment(comment.replies)
+            };
+          }
+          return comment;
+        });
+      };
+
+      const updatedProject = {
+        ...project,
+        comments: updateComment(project.comments)
+      };
+
+      return {
+        projects: state.projects.map(p => p.id === projectId ? updatedProject : p)
+      };
+    });
+  },
+
+  handleRealtimeDeleteComment: (projectId, commentId) => {
+    set((state) => {
+      const project = state.projects.find(p => p.id === projectId);
+      if (!project || !project.comments) return state;
+
+      const removeComment = (comments: Comment[]): Comment[] => {
+        return comments
+          .filter(c => c.id !== commentId)
+          .map(comment => {
+            if (comment.replies && comment.replies.length > 0) {
+              return {
+                ...comment,
+                replies: removeComment(comment.replies)
+              };
+            }
+            return comment;
+          });
+      };
+
+      const updatedComments = removeComment(project.comments);
+      const commentCountDiff = (project.comments.length - updatedComments.length);
+
+      const updatedProject = {
+        ...project,
+        comments: updatedComments,
+        feedbackCount: Math.max(0, (project.feedbackCount || 0) - commentCountDiff)
+      };
+
+      return {
+        projects: state.projects.map(p => p.id === projectId ? updatedProject : p)
+      };
+    });
   },
 
   addComment: async (projectId, content, isAnonymous = false) => {
