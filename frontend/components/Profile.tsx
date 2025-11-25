@@ -3,6 +3,7 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { useAppStore } from '../lib/store';
+import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { Camera, Edit2, Save, X, Github, Twitter, Facebook, Send, Pencil, Trash2, ArrowLeft } from 'lucide-react';
 import { ProjectCard } from './ProjectCard';
@@ -10,7 +11,8 @@ import toast from 'react-hot-toast';
 import { Project } from '../lib/types';
 
 export const Profile = () => {
-  const { user, viewedUser, projects, updateUserProfile, updateProject, deleteProject, setView, openSubmitModal } = useAppStore();
+  const { user, viewedUser, projects, updateUserProfile, updateProject, deleteProject, openSubmitModal } = useAppStore();
+  const router = useRouter();
   const [isEditing, setIsEditing] = useState(false);
   const [editingProject, setEditingProject] = useState<Project | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -58,7 +60,7 @@ export const Profile = () => {
           <div className="min-h-screen flex items-center justify-center pt-20">
               <div className="text-center">
                   <h2 className="text-2xl font-bold mb-4">Profile Not Found</h2>
-                  <button onClick={() => setView('landing')} className="text-accent underline">Go Home</button>
+                  <button onClick={() => router.push('/')} className="text-accent underline">Go Home</button>
               </div>
           </div>
       );
@@ -174,7 +176,7 @@ export const Profile = () => {
             {/* Back Button if viewing another profile */}
             {!isOwnProfile && (
                 <button
-                    onClick={() => setView('projects-dashboard')}
+                    onClick={() => router.back()}
                     className="absolute top-8 left-8 z-20 bg-black/50 backdrop-blur-md p-2 rounded-full border border-white/10 hover:bg-black/70 transition-colors text-white"
                 >
                     <ArrowLeft className="w-6 h-6" />

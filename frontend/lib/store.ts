@@ -14,17 +14,18 @@ interface AppState {
   isLoading: boolean;
   isNavigating: boolean;
   isWalletModalOpen: boolean;
-  
+
   // Connect Wallet Reminder State
   isConnectReminderOpen: boolean;
 
   // Submission Modal State
   isSubmitModalOpen: boolean;
   submitType: 'project' | 'idea';
-  
+
   // Navigation & Search State
   currentView: View;
   selectedProjectId: string | null;
+  selectedProject: Project | null;
   searchQuery: string;
   notifications: Notification[];
   
@@ -47,10 +48,12 @@ interface AppState {
   openUserProfile: (author: { username: string; wallet: string; avatar?: string }) => Promise<void>;
 
   fetchProjects: (filters?: { type?: 'project' | 'idea'; category?: string; search?: string }) => Promise<void>;
+  fetchProjectById: (id: string) => Promise<Project | null>;
   addProject: (project: Omit<Project, 'id' | 'votes' | 'feedbackCount' | 'createdAt' | 'author' | 'comments'>) => Promise<void>;
   updateProject: (data: Partial<Project> & { id: string }) => Promise<void>;
   deleteProject: (id: string) => Promise<void>;
   voteProject: (id: string) => Promise<void>;
+  setSelectedProject: (project: Project | null) => void;
 
   // Realtime handlers
   handleRealtimeNewProject: (project: any) => void;
@@ -87,6 +90,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   submitType: 'project',
   currentView: 'landing',
   selectedProjectId: null,
+  selectedProject: null,
   searchQuery: '',
   notifications: [],
 
@@ -205,6 +209,53 @@ export const useAppStore = create<AppState>((set, get) => ({
       console.error('Failed to fetch projects:', error);
       set({ isLoading: false });
     }
+  },
+
+  fetchProjectById: async (id) => {
+    try {
+      const state = get();
+      const existingProject = state.projects.find(p => p.id === id);
+
+      // Return existing project if it has comments already loaded
+      if (existingProject && existingProject.comments && existingProject.comments.length > 0) {
+        return existingProject;
+      }
+
+      // Fetch full project data with comments
+      const response = await apiClient.getProject(id);
+      if (response.success && response.data) {
+        // Map imageUrl to image for frontend compatibility
+        const project = {
+          ...response.data,
+          image: response.data.imageUrl || response.data.image
+        };
+        // Transform flat comments to nested structure
+        if (project.comments && project.comments.length > 0) {
+          project.comments = buildCommentTree(project.comments);
+        }
+
+        // Update or add project to store
+        if (existingProject) {
+          set((state) => ({
+            projects: state.projects.map(p => p.id === id ? project : p)
+          }));
+        } else {
+          set((state) => ({
+            projects: [project, ...state.projects]
+          }));
+        }
+
+        return project;
+      }
+      return null;
+    } catch (error) {
+      console.error('Failed to fetch project by ID:', error);
+      return null;
+    }
+  },
+
+  setSelectedProject: (project) => {
+    set({ selectedProject: project, selectedProjectId: project?.id || null });
   },
 
   addProject: async (project) => {

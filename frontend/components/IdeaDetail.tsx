@@ -3,6 +3,7 @@
 
 import React, { useState } from 'react';
 import { useAppStore } from '../lib/store';
+import { useRouter } from 'next/navigation';
 import { ArrowLeft, ThumbsUp, ThumbsDown, MessageCircle, Send, EyeOff, User, DollarSign, Share2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';
@@ -170,9 +171,7 @@ const CommentItem: React.FC<CommentItemProps> = ({ comment, projectId, isReply =
 
 export const IdeaDetail = () => {
   const {
-    projects,
-    selectedProjectId,
-    setView,
+    selectedProject,
     voteProject,
     addComment,
     user,
@@ -182,6 +181,7 @@ export const IdeaDetail = () => {
     handleRealtimeUpdateComment,
     handleRealtimeDeleteComment,
   } = useAppStore();
+  const router = useRouter();
   const [commentText, setCommentText] = useState('');
   const [isAnonComment, setIsAnonComment] = useState(false);
 
@@ -191,24 +191,24 @@ export const IdeaDetail = () => {
   const [recipientWallet, setRecipientWallet] = useState('');
   const [selectedCommentId, setSelectedCommentId] = useState<string | null>(null);
 
-  const project = projects.find(p => p.id === selectedProjectId);
+  const project = selectedProject;
 
   // Subscribe to realtime comment updates for this project
   useRealtimeComments({
-    projectId: selectedProjectId || '',
+    projectId: project?.id || '',
     onNewComment: (comment) => {
-      if (selectedProjectId) {
-        handleRealtimeNewComment(selectedProjectId, comment);
+      if (project?.id) {
+        handleRealtimeNewComment(project.id, comment);
       }
     },
     onUpdateComment: (comment) => {
-      if (selectedProjectId) {
-        handleRealtimeUpdateComment(selectedProjectId, comment);
+      if (project?.id) {
+        handleRealtimeUpdateComment(project.id, comment);
       }
     },
     onDeleteComment: (commentId) => {
-      if (selectedProjectId) {
-        handleRealtimeDeleteComment(selectedProjectId, commentId);
+      if (project?.id) {
+        handleRealtimeDeleteComment(project.id, commentId);
       }
     },
   });
@@ -225,8 +225,8 @@ export const IdeaDetail = () => {
   };
 
   const handleShareToX = () => {
-      // Create shareable URL (using query param for now, can be updated with proper routing later)
-      const ideaUrl = `${window.location.origin}?idea=${project.id}`;
+      // Create shareable URL with proper routing
+      const ideaUrl = `${window.location.origin}/ideas/${project.id}`;
 
       // Create tweet text
       const tweetText = `Check out this idea on Gimme Idea: "${project.title}"\n\n${project.description?.substring(0, 100)}${project.description?.length > 100 ? '...' : ''}\n\n`;
@@ -276,7 +276,7 @@ export const IdeaDetail = () => {
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="min-h-screen pt-32 pb-20 px-6">
         <div className="max-w-4xl mx-auto">
             {/* Nav */}
-            <button onClick={() => setView('ideas-dashboard')} className="flex items-center gap-2 text-gray-400 hover:text-white mb-8">
+            <button onClick={() => router.push('/ideas')} className="flex items-center gap-2 text-gray-400 hover:text-white mb-8">
                 <ArrowLeft className="w-4 h-4" /> Back to Ideas
             </button>
 

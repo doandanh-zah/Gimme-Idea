@@ -1,11 +1,15 @@
 
+'use client';
+
 import React from 'react';
 import { motion } from 'framer-motion';
 import { Terminal, Code, Cpu, LayoutGrid, Plus } from 'lucide-react';
 import { useAppStore } from '../lib/store';
+import { useRouter } from 'next/navigation';
 
 const Hero: React.FC = () => {
-  const { setView, openSubmitModal } = useAppStore();
+  const { openSubmitModal } = useAppStore();
+  const router = useRouter();
 
   return (
     <section className="relative min-h-screen flex items-center justify-center pt-20 overflow-hidden">
@@ -54,7 +58,7 @@ const Hero: React.FC = () => {
                 Start Building
               </button>
               <button
-                onClick={() => setView('projects-dashboard')}
+                onClick={() => router.push('/projects')}
                 className="px-8 py-4 bg-transparent border border-white/20 text-white font-bold rounded-full hover:border-white hover:bg-white/5 transition-all duration-300 flex items-center gap-2"
               >
                 <LayoutGrid className="w-5 h-5" />

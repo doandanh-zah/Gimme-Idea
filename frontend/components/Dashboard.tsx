@@ -4,6 +4,7 @@
 import { useState, useEffect } from 'react';
 import { ProjectCard } from './ProjectCard';
 import { useAppStore } from '../lib/store';
+import { useRouter } from 'next/navigation';
 import { Filter, Plus, TrendingUp, Activity, X, Lightbulb, Rocket } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useRealtimeProjects } from '../hooks/useRealtimeProjects';
@@ -24,8 +25,8 @@ export default function Dashboard({ mode }: DashboardProps) {
     handleRealtimeNewProject,
     handleRealtimeUpdateProject,
     handleRealtimeDeleteProject,
-    setView,
   } = useAppStore();
+  const router = useRouter();
   const [categoryFilter, setCategoryFilter] = useState('All');
   const [stars, setStars] = useState<{ id: number; top: string; left: string; size: number; duration: string; opacity: number }[]>([]);
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
@@ -248,7 +249,7 @@ export default function Dashboard({ mode }: DashboardProps) {
         isOpen={showComingSoon}
         onClose={() => {
           setShowComingSoon(false);
-          setView('ideas-dashboard');
+          router.push('/ideas');
         }}
       />
     </motion.div>

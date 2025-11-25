@@ -5,28 +5,31 @@ import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Wallet, Bell, Search, Menu, X, LayoutGrid, Plus, Trophy, BarChart3, User as UserIcon, Lightbulb, Heart, Rocket } from 'lucide-react';
 import { useAppStore } from '../lib/store';
+import { useRouter, usePathname } from 'next/navigation';
+import Link from 'next/link';
 import Image from 'next/image';
 
 const Navbar = () => {
-  const { 
-    walletConnected, 
-    openWalletModal, 
-    user, 
-    disconnectWallet, 
-    currentView, 
-    setView, 
-    searchQuery, 
+  const {
+    walletConnected,
+    openWalletModal,
+    user,
+    disconnectWallet,
+    searchQuery,
     setSearchQuery,
     notifications,
     markNotificationRead,
     clearNotifications
   } = useAppStore();
-  
+
+  const router = useRouter();
+  const pathname = usePathname();
+
   const [isOpen, setIsOpen] = React.useState(false);
   const [showUserMenu, setShowUserMenu] = React.useState(false);
   const [showSearch, setShowSearch] = React.useState(false);
   const [showNotifications, setShowNotifications] = React.useState(false);
-  
+
   const searchInputRef = useRef<HTMLInputElement>(null);
   const notificationRef = useRef<HTMLDivElement>(null);
 
@@ -57,10 +60,10 @@ const Navbar = () => {
   };
 
   const navLinks = [
-    { name: 'IDEA', view: 'ideas-dashboard', icon: Lightbulb },
-    { name: 'PROJECT', view: 'projects-dashboard', icon: Rocket },
-    { name: 'Donate me', view: 'donate', icon: Heart },
-    { name: 'Leaderboard', view: 'landing', icon: BarChart3 },
+    { name: 'IDEA', route: '/ideas', icon: Lightbulb },
+    { name: 'PROJECT', route: '/projects', icon: Rocket },
+    { name: 'Donate me', route: '/donate', icon: Heart },
+    { name: 'Leaderboard', route: '/', icon: BarChart3 },
   ];
 
   return (
@@ -71,7 +74,7 @@ const Navbar = () => {
         className="pointer-events-auto bg-[#0F0F0F]/90 backdrop-blur-xl border border-white/5 rounded-full px-6 py-3 flex items-center justify-between w-full max-w-5xl shadow-2xl shadow-purple-900/10 relative"
       >
         {/* Logo */}
-        <button onClick={() => setView('landing')} className="flex items-center gap-3 group">
+        <button onClick={() => router.push('/')} className="flex items-center gap-3 group">
           <div className="relative w-10 h-10 flex items-center justify-center">
              <div className="absolute inset-0 bg-[#FFD700]/20 rounded-full blur-md opacity-50 group-hover:opacity-100 transition-opacity duration-300" />
              <Image
@@ -91,26 +94,29 @@ const Navbar = () => {
 
         {/* Desktop Links */}
         <div className={`hidden md:flex items-center gap-6 lg:gap-8 ${showSearch ? 'opacity-0 pointer-events-none' : 'opacity-100'} transition-opacity duration-300`}>
-          {navLinks.map((link) => (
-            <button 
-              key={link.name}
-              onClick={() => setView(link.view as any)}
-              className={`text-sm font-medium transition-all duration-300 flex items-center gap-2 group
-                ${currentView === link.view ? 'text-white font-bold' : 'text-gray-400'}`}
-            >
-              <link.icon className={`w-4 h-4 transition-colors duration-300 ${
-                  currentView === link.view ? 'text-white' : 'group-hover:text-[#FFD700]'
-              }`} />
-              
-              <span className={`bg-clip-text transition-all duration-300 ${
-                  currentView === link.view 
-                  ? 'text-white' 
-                  : 'text-gray-400 group-hover:text-transparent group-hover:bg-gradient-to-r group-hover:from-purple-400 group-hover:to-[#FFD700]'
-              }`}>
-                {link.name}
-              </span>
-            </button>
-          ))}
+          {navLinks.map((link) => {
+            const isActive = pathname === link.route || (link.route !== '/' && pathname?.startsWith(link.route));
+            return (
+              <button
+                key={link.name}
+                onClick={() => router.push(link.route)}
+                className={`text-sm font-medium transition-all duration-300 flex items-center gap-2 group
+                  ${isActive ? 'text-white font-bold' : 'text-gray-400'}`}
+              >
+                <link.icon className={`w-4 h-4 transition-colors duration-300 ${
+                    isActive ? 'text-white' : 'group-hover:text-[#FFD700]'
+                }`} />
+
+                <span className={`bg-clip-text transition-all duration-300 ${
+                    isActive
+                    ? 'text-white'
+                    : 'text-gray-400 group-hover:text-transparent group-hover:bg-gradient-to-r group-hover:from-purple-400 group-hover:to-[#FFD700]'
+                }`}>
+                  {link.name}
+                </span>
+              </button>
+            );
+          })}
         </div>
 
         {/* Search Bar Overlay */}
@@ -220,14 +226,14 @@ const Navbar = () => {
                   {/* Dropdown Menu */}
                   {showUserMenu && (
                      <div className="absolute top-full right-0 mt-2 w-48 bg-[#0F0F0F] border border-white/10 rounded-xl shadow-xl overflow-hidden py-1 z-50">
-                        <button 
-                             onClick={() => { setView('profile'); setShowUserMenu(false); }}
+                        <button
+                             onClick={() => { router.push('/profile'); setShowUserMenu(false); }}
                              className="w-full text-left px-4 py-3 text-sm text-gray-300 hover:bg-white/5 hover:text-white flex items-center gap-2"
                         >
                             <UserIcon className="w-4 h-4" /> My Profile
                         </button>
-                        <button 
-                             onClick={() => { disconnectWallet(); setShowUserMenu(false); }}
+                        <button
+                             onClick={() => { disconnectWallet(); setShowUserMenu(false); router.push('/'); }}
                              className="w-full text-left px-4 py-3 text-sm text-red-400 hover:bg-red-500/10 flex items-center gap-2 border-t border-white/5"
                         >
                             Log Out
@@ -255,16 +261,16 @@ const Navbar = () => {
 
       {/* Mobile Menu Overlay */}
       {isOpen && (
-        <motion.div 
+        <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
           className="pointer-events-auto absolute top-20 left-4 right-4 bg-[#0F0F0F] border border-white/10 rounded-2xl p-4 flex flex-col gap-4 md:hidden shadow-2xl z-50"
         >
           {navLinks.map((link) => (
-            <button 
+            <button
               key={link.name}
               onClick={() => {
-                setView(link.view as any);
+                router.push(link.route);
                 setIsOpen(false);
               }}
               className="px-4 py-3 hover:bg-white/5 rounded-xl text-gray-300 text-left flex items-center gap-3"
@@ -274,9 +280,9 @@ const Navbar = () => {
             </button>
           ))}
           {user && (
-              <button 
+              <button
                 onClick={() => {
-                    setView('profile');
+                    router.push('/profile');
                     setIsOpen(false);
                 }}
                 className="px-4 py-3 hover:bg-white/5 rounded-xl text-gray-300 text-left flex items-center gap-3 border-t border-white/5"

@@ -5,6 +5,7 @@ import React, { useState } from 'react';
 import { Project } from '../lib/types';
 import { MessageSquare, ThumbsUp, EyeOff, Lightbulb, Rocket, Tag } from 'lucide-react';
 import { useAppStore } from '../lib/store';
+import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -13,7 +14,8 @@ interface ProjectCardProps {
 }
 
 export const ProjectCard: React.FC<ProjectCardProps> = ({ project }) => {
-  const { voteProject, navigateToProject, openUserProfile } = useAppStore();
+  const { voteProject, openUserProfile } = useAppStore();
+  const router = useRouter();
   const [isLiked, setIsLiked] = useState(false);
   const [showBurst, setShowBurst] = useState(false);
 
@@ -40,9 +42,14 @@ export const ProjectCard: React.FC<ProjectCardProps> = ({ project }) => {
       openUserProfile(project.author);
   };
 
+  const handleCardClick = () => {
+    const route = isIdea ? `/ideas/${project.id}` : `/projects/${project.id}`;
+    router.push(route);
+  };
+
   return (
     <div
-      onClick={() => navigateToProject(project.id, project.type)}
+      onClick={handleCardClick}
       className={`backdrop-blur-xl border border-white/10 rounded-xl overflow-hidden transition-all duration-300 hover:-translate-y-1 group cursor-pointer flex flex-col h-full shadow-[0_4px_20px_rgba(0,0,0,0.5)] relative z-10 ${
         isIdea
           ? 'bg-gradient-to-b from-[#1a1508] via-[#0d0a04] to-[#050505] hover:border-gold/50'
