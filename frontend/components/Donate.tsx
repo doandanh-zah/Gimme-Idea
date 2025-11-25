@@ -246,7 +246,7 @@ export const Donate = () => {
                             exit={{ opacity: 0 }}
                         >
                              <div className="mb-6">
-                                <label className="block text-xs font-bold text-gray-400 mb-2 uppercase tracking-wider">Select Amount</label>
+                                <label className="block text-xs font-bold text-gray-400 mb-2 uppercase tracking-wider">You are in devnet, please donate in mainnet! Thank you so much :3</label>
                                 <div className="grid grid-cols-4 gap-2 mb-4">
                                     {['0.1', '0.5', '1', '2'].map((val) => (
                                         <button
