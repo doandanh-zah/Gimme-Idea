@@ -176,4 +176,52 @@ export const apiClient = {
       method: 'PATCH',
       body: JSON.stringify(data),
     }),
+
+  // =====================================
+  // AI API
+  // =====================================
+
+  generateAIFeedback: (data: {
+    projectId: string;
+    title: string;
+    problem: string;
+    solution: string;
+    opportunity?: string;
+    goMarket?: string;
+    teamInfo?: string;
+  }) =>
+    apiFetch<any>('/ai/feedback', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+
+  generateAIReply: (data: {
+    projectId: string;
+    userMessage: string;
+    conversationHistory?: Array<{ role: string; content: string }>;
+    ideaContext: {
+      title: string;
+      problem: string;
+      solution: string;
+    };
+  }) =>
+    apiFetch<{ reply: string }>('/ai/reply', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+
+  generateMarketAssessment: (data: {
+    projectId: string;
+    title: string;
+    problem: string;
+    solution: string;
+    opportunity?: string;
+  }) =>
+    apiFetch<any>('/ai/market-assessment', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+
+  checkAIQuota: (projectId: string) =>
+    apiFetch<any>(`/ai/quota/${projectId}`),
 };

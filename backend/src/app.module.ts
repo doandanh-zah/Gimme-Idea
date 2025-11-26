@@ -8,6 +8,7 @@ import { ProjectsModule } from './projects/projects.module';
 import { CommentsModule } from './comments/comments.module';
 import { UsersModule } from './users/users.module';
 import { PaymentsModule } from './payments/payments.module';
+import { AIModule } from './ai/ai.module';
 
 @Module({
   imports: [
@@ -20,6 +21,7 @@ import { PaymentsModule } from './payments/payments.module';
     CommentsModule,
     UsersModule,
     PaymentsModule,
+    AIModule,
   ],
   controllers: [AppController],
   providers: [SupabaseService, SolanaService],

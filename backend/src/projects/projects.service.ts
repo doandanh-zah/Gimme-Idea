@@ -1,13 +1,20 @@
-import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
+import { Injectable, NotFoundException, ForbiddenException, Logger } from '@nestjs/common';
 import { SupabaseService } from '../shared/supabase.service';
 import { CreateProjectDto } from './dto/create-project.dto';
 import { UpdateProjectDto } from './dto/update-project.dto';
 import { QueryProjectsDto } from './dto/query-projects.dto';
 import { ApiResponse, Project } from '../shared/types';
+import { AIService } from '../ai/ai.service';
 
 @Injectable()
 export class ProjectsService {
-  constructor(private supabaseService: SupabaseService) {}
+  private readonly logger = new Logger(ProjectsService.name);
+  private readonly AI_BOT_WALLET = 'GimmeAI1111111111111111111111111111111111111';
+
+  constructor(
+    private supabaseService: SupabaseService,
+    private aiService: AIService,
+  ) {}
 
   /**
    * Get all projects with filters
@@ -49,10 +56,24 @@ export class ProjectsService {
     const sortColumnMap = {
       feedbackCount: 'feedback_count',
       createdAt: 'created_at',
-      votes: 'votes'
+      votes: 'votes',
+      aiScore: 'ai_score',
+      recommended: 'ai_score', // Alias for AI recommendations
     };
-    const sortColumn = sortColumnMap[query.sortBy] || query.sortBy;
-    supabaseQuery = supabaseQuery.order(sortColumn, { ascending: query.sortOrder === 'asc' });
+
+    // Default: For ideas without explicit sort, use AI score for recommendations
+    let sortColumn = sortColumnMap[query.sortBy] || query.sortBy;
+    let sortOrder = query.sortOrder === 'asc';
+
+    // If sorting by AI score, handle NULL values (put them at the end)
+    if (sortColumn === 'ai_score') {
+      supabaseQuery = supabaseQuery.order(sortColumn, {
+        ascending: sortOrder,
+        nullsFirst: false // NULLs last - projects without AI score go to the end
+      });
+    } else {
+      supabaseQuery = supabaseQuery.order(sortColumn, { ascending: sortOrder });
+    }
 
     // Apply pagination
     supabaseQuery = supabaseQuery.range(query.offset, query.offset + query.limit - 1);
@@ -83,6 +104,64 @@ export class ProjectsService {
       bounty: p.bounty,
       imageUrl: p.image_url,
       // Idea-specific fields
+      problem: p.problem,
+      solution: p.solution,
+      opportunity: p.opportunity,
+      goMarket: p.go_market,
+      teamInfo: p.team_info,
+      isAnonymous: p.is_anonymous,
+      createdAt: p.created_at,
+    }));
+
+    return {
+      success: true,
+      data: projects,
+    };
+  }
+
+  /**
+   * Get top recommended ideas based on AI score
+   */
+  async getRecommendedIdeas(limit: number = 3): Promise<ApiResponse<Project[]>> {
+    const supabase = this.supabaseService.getAdminClient();
+
+    const { data, error } = await supabase
+      .from('projects')
+      .select(`
+        *,
+        author:users!projects_author_id_fkey(
+          username,
+          wallet,
+          avatar
+        )
+      `)
+      .eq('type', 'idea')
+      .not('ai_score', 'is', null)
+      .order('ai_score', { ascending: false, nullsFirst: false })
+      .limit(limit);
+
+    if (error) {
+      throw new Error(`Failed to fetch recommended ideas: ${error.message}`);
+    }
+
+    const projects: Project[] = data.map(p => ({
+      id: p.id,
+      type: p.type || 'project',
+      title: p.title,
+      description: p.description,
+      category: p.category,
+      votes: p.votes || 0,
+      feedbackCount: p.feedback_count || 0,
+      stage: p.stage,
+      tags: p.tags || [],
+      website: p.website,
+      author: p.is_anonymous ? null : {
+        username: p.author.username,
+        wallet: p.author.wallet,
+        avatar: p.author.avatar,
+      },
+      bounty: p.bounty,
+      imageUrl: p.image_url,
       problem: p.problem,
       solution: p.solution,
       opportunity: p.opportunity,
@@ -259,11 +338,131 @@ export class ProjectsService {
       createdAt: project.created_at,
     };
 
+    // Auto-generate AI feedback for ideas (async, don't wait)
+    if (project.type === 'idea' && project.problem && project.solution) {
+      this.generateAIFeedbackAsync(project.id, {
+        title: project.title,
+        problem: project.problem,
+        solution: project.solution,
+        opportunity: project.opportunity,
+        goMarket: project.go_market,
+        teamInfo: project.team_info,
+      }).catch(err => {
+        this.logger.error(`Failed to generate AI feedback for project ${project.id}`, err);
+      });
+    }
+
     return {
       success: true,
       data: projectResponse,
       message: 'Project created successfully',
     };
+  }
+
+  /**
+   * Generate AI feedback asynchronously (background task)
+   */
+  private async generateAIFeedbackAsync(
+    projectId: string,
+    ideaData: {
+      title: string;
+      problem: string;
+      solution: string;
+      opportunity?: string;
+      goMarket?: string;
+      teamInfo?: string;
+    },
+  ): Promise<void> {
+    this.logger.log(`Generating AI feedback for project ${projectId}`);
+
+    try {
+      // Spam filter: check content quality
+      const minLength = 50; // Minimum total length
+      const totalLength = (ideaData.problem || '').length + (ideaData.solution || '').length;
+
+      if (totalLength < minLength) {
+        this.logger.warn(`Skipping AI feedback for project ${projectId}: content too short (${totalLength} chars)`);
+        return;
+      }
+
+      // Check for spam patterns
+      const spamKeywords = ['test', 'bla bla', 'asdf', 'qwerty', '...', 'spam'];
+      const content = `${ideaData.title} ${ideaData.problem} ${ideaData.solution}`.toLowerCase();
+      const hasSpam = spamKeywords.some(keyword => content.includes(keyword));
+
+      if (hasSpam && totalLength < 100) {
+        this.logger.warn(`Skipping AI feedback for project ${projectId}: likely spam content`);
+        return;
+      }
+
+      // Generate AI feedback
+      const feedback = await this.aiService.generateIdeaFeedback(ideaData);
+
+      // Create AI comment
+      const supabase = this.supabaseService.getAdminClient();
+
+      // First, get or create AI bot user
+      let { data: aiUser } = await supabase
+        .from('users')
+        .select('id')
+        .eq('wallet', this.AI_BOT_WALLET)
+        .single();
+
+      if (!aiUser) {
+        // Create AI bot user
+        const { data: newAiUser, error: createError } = await supabase
+          .from('users')
+          .insert({
+            wallet: this.AI_BOT_WALLET,
+            username: 'AI Assistant',
+            avatar: null,
+          })
+          .select('id')
+          .single();
+
+        if (createError) {
+          this.logger.error('Failed to create AI bot user', createError);
+          return;
+        }
+        aiUser = newAiUser;
+      }
+
+      // Save AI score to project (for recommendations)
+      const { error: updateError } = await supabase
+        .from('projects')
+        .update({ ai_score: feedback.score })
+        .eq('id', projectId);
+
+      if (updateError) {
+        this.logger.error('Failed to update project AI score', updateError);
+      }
+
+      // Create comment with AI feedback (WITHOUT showing score)
+      const commentContent = `${feedback.comment}\n\n**💪 Strengths:**\n${feedback.strengths.map(s => `• ${s}`).join('\n')}\n\n**⚠️ Areas for Improvement:**\n${feedback.weaknesses.map(w => `• ${w}`).join('\n')}\n\n**💡 Suggestions:**\n${feedback.suggestions.map(s => `• ${s}`).join('\n')}`;
+
+      const { error: commentError } = await supabase
+        .from('comments')
+        .insert({
+          project_id: projectId,
+          user_id: aiUser.id,
+          content: commentContent,
+          is_anonymous: false,
+          likes: 0,
+          tips_amount: 0,
+          is_ai_generated: true,
+          ai_model: 'gpt-4o-mini',
+          ai_tokens_used: 0, // TODO: track actual tokens
+          created_at: new Date().toISOString(),
+        });
+
+      if (commentError) {
+        this.logger.error('Failed to create AI comment', commentError);
+      } else {
+        this.logger.log(`AI feedback created for project ${projectId} with score ${feedback.score}`);
+      }
+    } catch (error) {
+      this.logger.error(`AI feedback generation failed for project ${projectId}`, error);
+    }
   }
 
   /**

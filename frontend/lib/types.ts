@@ -15,6 +15,10 @@ export interface Comment {
   isAnonymous?: boolean;
   tipsAmount?: number; // Total tips received
   createdAt: string;
+  // AI-related fields
+  is_ai_generated?: boolean;
+  ai_model?: string;
+  ai_tokens_used?: number;
   // Frontend-only fields for compatibility
   timestamp?: string;
   dislikes?: number;
@@ -92,4 +96,34 @@ export interface JourneyStep {
   title: string;
   description: string;
   icon: React.ReactNode;
+}
+
+// ============================================
+// AI-related types
+// ============================================
+
+export interface AIFeedback {
+  comment: string;
+  score: number;
+  strengths: string[];
+  weaknesses: string[];
+  suggestions: string[];
+}
+
+export interface MarketAssessment {
+  score: number;
+  assessmentText: string;
+  strengths: string[];
+  weaknesses: string[];
+  recommendations: string[];
+  marketSize: 'small' | 'medium' | 'large';
+  competitionLevel: 'low' | 'medium' | 'high';
+}
+
+export interface AIQuota {
+  canUse: boolean;
+  freeRemaining: number;
+  paidCredits: number;
+  interactionsUsed: number;
+  maxFreeInteractions: number;
 }

@@ -21,6 +21,15 @@ export class ProjectsController {
   }
 
   /**
+   * GET /api/projects/recommended
+   * Get top recommended ideas based on AI score
+   */
+  @Get('recommended')
+  async getRecommended(@Query('limit') limit?: number): Promise<ApiResponse<Project[]>> {
+    return this.projectsService.getRecommendedIdeas(limit || 3);
+  }
+
+  /**
    * GET /api/projects/:id
    * Get single project by ID
    */
