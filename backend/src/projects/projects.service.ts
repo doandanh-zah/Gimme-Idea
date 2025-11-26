@@ -266,10 +266,8 @@ export class ProjectsService {
       createdAt: project.created_at,
     };
 
-    // Generate AI feedback asynchronously (don't wait for it)
-    this.generateAIFeedbackAsync(project.id, createDto).catch(err => {
-      this.logger.error(`Failed to generate AI feedback for project ${project.id}`, err);
-    });
+    // Note: AI feedback is generated manually by user via "Generate AI Feedback" button
+    // See frontend/components/GenerateAIFeedbackButton.tsx
 
     return {
       success: true,
