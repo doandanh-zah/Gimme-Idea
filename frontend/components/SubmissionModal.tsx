@@ -428,16 +428,14 @@ export const SubmissionModal = () => {
                                         placeholder="How does your idea solve this?"
                                     />
                                 </div>
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                     <div className="space-y-2">
-                                        <label className="text-xs font-bold text-gray-400 uppercase tracking-wider ml-1">Opportunity</label>
-                                        <input 
-                                            value={formData.opportunity}
-                                            onChange={(e) => setFormData({...formData, opportunity: e.target.value})}
-                                            className="w-full bg-[#1A1A1A] border border-white/10 rounded-xl px-5 py-4 outline-none focus:border-white/30 text-white placeholder:text-gray-600"
-                                            placeholder="Market size, timing?"
-                                        />
-                                     </div>
+                                <div className="space-y-2">
+                                    <label className="text-xs font-bold text-gray-400 uppercase tracking-wider ml-1">Opportunity</label>
+                                    <textarea
+                                        value={formData.opportunity}
+                                        onChange={(e) => setFormData({...formData, opportunity: e.target.value})}
+                                        className="w-full bg-[#1A1A1A] border border-white/10 rounded-xl px-5 py-4 outline-none focus:border-white/30 text-white h-24 resize-none placeholder:text-gray-600"
+                                        placeholder="Market size, timing, potential..."
+                                    />
                                 </div>
 
                                 {/* Anonymous Toggle */}
