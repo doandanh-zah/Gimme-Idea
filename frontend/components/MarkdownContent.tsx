@@ -11,10 +11,10 @@ interface MarkdownContentProps {
 
 export const MarkdownContent: React.FC<MarkdownContentProps> = ({ content, className = '' }) => {
   return (
-    <ReactMarkdown
-      remarkPlugins={[remarkGfm]}
-      className={`markdown-content ${className}`}
-      components={{
+    <div className={`markdown-content ${className}`}>
+      <ReactMarkdown
+        remarkPlugins={[remarkGfm]}
+        components={{
         // Headings
         h1: ({ node, ...props }) => (
           <h1 className="text-3xl font-bold mb-4 mt-6 text-white" {...props} />
@@ -128,9 +128,10 @@ export const MarkdownContent: React.FC<MarkdownContentProps> = ({ content, class
         img: ({ node, ...props }) => (
           <img className="max-w-full h-auto rounded-lg my-4" {...props} />
         ),
-      }}
-    >
-      {content}
-    </ReactMarkdown>
+        }}
+      >
+        {content}
+      </ReactMarkdown>
+    </div>
   );
 };
