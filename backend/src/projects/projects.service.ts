@@ -1,6 +1,5 @@
 import { Injectable, NotFoundException, ForbiddenException, Logger } from '@nestjs/common';
 import { SupabaseService } from '../shared/supabase.service';
-import { AIService } from '../shared/ai.service';
 import { CreateProjectDto } from './dto/create-project.dto';
 import { UpdateProjectDto } from './dto/update-project.dto';
 import { QueryProjectsDto } from './dto/query-projects.dto';
@@ -13,7 +12,6 @@ export class ProjectsService {
 
   constructor(
     private supabaseService: SupabaseService,
-    private aiService: AIService,
   ) {}
 
   /**
