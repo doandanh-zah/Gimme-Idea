@@ -12,7 +12,7 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
 export const RecommendedIdeas = () => {
   const [recommendedIdeas, setRecommendedIdeas] = useState<Project[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const { setSelectedProjectId, setView } = useAppStore();
+  const { navigateToProject } = useAppStore();
 
   useEffect(() => {
     const fetchRecommended = async () => {
@@ -32,8 +32,7 @@ export const RecommendedIdeas = () => {
   }, []);
 
   const handleViewIdea = (id: string) => {
-    setSelectedProjectId(id);
-    setView('idea-detail');
+    navigateToProject(id, 'idea');
   };
 
   if (isLoading) {
