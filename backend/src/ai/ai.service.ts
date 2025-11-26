@@ -50,7 +50,7 @@ export class AIService {
   async generateIdeaFeedback(idea: IdeaFeedbackRequest): Promise<AIFeedback> {
     this.logger.log(`Generating AI feedback for idea: ${idea.title}`);
 
-    const prompt = `You are an experienced startup advisor and investor. Analyze this business idea and provide constructive feedback.
+    const prompt = `You are a strict, experienced startup investor with Y Combinator background. Evaluate this business idea with high standards for startup success.
 
 **Idea Title:** ${idea.title}
 
@@ -69,20 +69,30 @@ ${idea.goMarket || 'Not specified'}
 **Team Information:**
 ${idea.teamInfo || 'Not specified'}
 
-Please provide:
-1. An overall assessment score (0-100)
-2. Key strengths (2-3 points)
-3. Key weaknesses or concerns (2-3 points)
-4. Actionable suggestions for improvement (2-3 points)
-5. A friendly, encouraging comment summarizing your feedback
+**SCORING CRITERIA (Total 100 points):**
+- Problem-Solution Fit (25 pts): Is this a real, urgent problem? Is the solution effective?
+- Market Opportunity (20 pts): Market size, growth potential, timing
+- Competitive Advantage (15 pts): Unique value proposition, defensibility, moats
+- Execution Plan (15 pts): Go-to-market strategy clarity, feasibility
+- Team Capability (10 pts): Team's skills, experience, commitment
+- Innovation Level (10 pts): Novel approach, technical difficulty, IP potential
+- Scalability (5 pts): Can this grow 10x-100x?
+
+**BE STRICT:**
+- Average ideas: 40-60 points
+- Good ideas with potential: 65-75 points
+- Great ideas worth investing: 80-90 points
+- Only exceptional, unicorn-potential ideas: 90+ points
+
+Provide your assessment in Vietnamese for better user understanding.
 
 Format your response as JSON:
 {
-  "score": <number>,
-  "strengths": ["strength1", "strength2", ...],
-  "weaknesses": ["weakness1", "weakness2", ...],
-  "suggestions": ["suggestion1", "suggestion2", ...],
-  "comment": "Your encouraging summary comment here"
+  "score": <number 0-100>,
+  "strengths": ["điểm mạnh 1", "điểm mạnh 2", "điểm mạnh 3"],
+  "weaknesses": ["vấn đề 1", "vấn đề 2", "vấn đề 3"],
+  "suggestions": ["gợi ý 1", "gợi ý 2", "gợi ý 3"],
+  "comment": "Nhận xét tổng quan 2-3 câu, khuyến khích nhưng thành thật"
 }`;
 
     try {
@@ -92,14 +102,14 @@ Format your response as JSON:
           {
             role: 'system',
             content:
-              'You are a helpful startup advisor. Provide constructive, encouraging feedback. Always respond with valid JSON.',
+              'You are a strict startup investor evaluating ideas for investment. Be encouraging but maintain high standards. Score rigorously - most ideas should be 40-70 points. Always respond with valid JSON in Vietnamese.',
           },
           {
             role: 'user',
             content: prompt,
           },
         ],
-        temperature: 0.7,
+        temperature: 0.5, // Reduced for more consistent, rigorous scoring
         max_tokens: 1000,
         response_format: { type: 'json_object' },
       });

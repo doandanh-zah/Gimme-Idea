@@ -56,10 +56,29 @@ export class ProjectsService {
     const sortColumnMap = {
       feedbackCount: 'feedback_count',
       createdAt: 'created_at',
-      votes: 'votes'
+      votes: 'votes',
+      aiScore: 'ai_score',
+      recommended: 'ai_score', // Alias for AI recommendations
     };
-    const sortColumn = sortColumnMap[query.sortBy] || query.sortBy;
-    supabaseQuery = supabaseQuery.order(sortColumn, { ascending: query.sortOrder === 'asc' });
+
+    // Default: For ideas without explicit sort, use AI score for recommendations
+    let sortColumn = sortColumnMap[query.sortBy] || query.sortBy;
+    let sortOrder = query.sortOrder === 'asc';
+
+    // If sorting by AI score, handle NULL values (put them at the end)
+    if (sortColumn === 'ai_score') {
+      supabaseQuery = supabaseQuery.order(sortColumn, {
+        ascending: sortOrder,
+        nullsFirst: false // NULLs last - projects without AI score go to the end
+      });
+    } else {
+      supabaseQuery = supabaseQuery.order(sortColumn, { ascending: sortOrder });
+    }
+
+    // For ideas, always add secondary sort by AI score if not already sorting by it
+    if (query.type === 'idea' && sortColumn !== 'ai_score') {
+      supabaseQuery = supabaseQuery.order('ai_score', { ascending: false, nullsFirst: false });
+    }
 
     // Apply pagination
     supabaseQuery = supabaseQuery.range(query.offset, query.offset + query.limit - 1);
@@ -304,6 +323,25 @@ export class ProjectsService {
     this.logger.log(`Generating AI feedback for project ${projectId}`);
 
     try {
+      // Spam filter: check content quality
+      const minLength = 50; // Minimum total length
+      const totalLength = (ideaData.problem || '').length + (ideaData.solution || '').length;
+
+      if (totalLength < minLength) {
+        this.logger.warn(`Skipping AI feedback for project ${projectId}: content too short (${totalLength} chars)`);
+        return;
+      }
+
+      // Check for spam patterns
+      const spamKeywords = ['test', 'bla bla', 'asdf', 'qwerty', '...', 'spam'];
+      const content = `${ideaData.title} ${ideaData.problem} ${ideaData.solution}`.toLowerCase();
+      const hasSpam = spamKeywords.some(keyword => content.includes(keyword));
+
+      if (hasSpam && totalLength < 100) {
+        this.logger.warn(`Skipping AI feedback for project ${projectId}: likely spam content`);
+        return;
+      }
+
       // Generate AI feedback
       const feedback = await this.aiService.generateIdeaFeedback(ideaData);
 
@@ -336,8 +374,18 @@ export class ProjectsService {
         aiUser = newAiUser;
       }
 
-      // Create comment with AI feedback
-      const commentContent = `**AI Assessment (Score: ${feedback.score}/100)**\n\n${feedback.comment}\n\n**Strengths:**\n${feedback.strengths.map(s => `• ${s}`).join('\n')}\n\n**Areas for Improvement:**\n${feedback.weaknesses.map(w => `• ${w}`).join('\n')}\n\n**Suggestions:**\n${feedback.suggestions.map(s => `• ${s}`).join('\n')}`;
+      // Save AI score to project (for recommendations)
+      const { error: updateError } = await supabase
+        .from('projects')
+        .update({ ai_score: feedback.score })
+        .eq('id', projectId);
+
+      if (updateError) {
+        this.logger.error('Failed to update project AI score', updateError);
+      }
+
+      // Create comment with AI feedback (WITHOUT showing score)
+      const commentContent = `${feedback.comment}\n\n**💪 Strengths:**\n${feedback.strengths.map(s => `• ${s}`).join('\n')}\n\n**⚠️ Areas for Improvement:**\n${feedback.weaknesses.map(w => `• ${w}`).join('\n')}\n\n**💡 Suggestions:**\n${feedback.suggestions.map(s => `• ${s}`).join('\n')}`;
 
       const { error: commentError } = await supabase
         .from('comments')
@@ -357,7 +405,7 @@ export class ProjectsService {
       if (commentError) {
         this.logger.error('Failed to create AI comment', commentError);
       } else {
-        this.logger.log(`AI feedback comment created for project ${projectId}`);
+        this.logger.log(`AI feedback created for project ${projectId} with score ${feedback.score}`);
       }
     } catch (error) {
       this.logger.error(`AI feedback generation failed for project ${projectId}`, error);
