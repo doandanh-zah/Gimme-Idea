@@ -356,26 +356,12 @@ export const IdeaDetail = () => {
                          </div>
                      </section>
 
-                     <div className="grid md:grid-cols-2 gap-8">
-                         <section>
-                             <h3 className="text-sm font-bold text-gray-500 mb-2 font-mono uppercase">Opportunity</h3>
-                             <div className="text-gray-300">
-                                 {project.opportunity ? <MarkdownContent content={project.opportunity} /> : "Not specified."}
-                             </div>
-                         </section>
-                         <section>
-                             <h3 className="text-sm font-bold text-gray-500 mb-2 font-mono uppercase">Go To Market</h3>
-                             <div className="text-gray-300">
-                                 {project.goMarket ? <MarkdownContent content={project.goMarket} /> : "Not specified."}
-                             </div>
-                         </section>
-                         <section>
-                             <h3 className="text-sm font-bold text-gray-500 mb-2 font-mono uppercase">Team Info</h3>
-                             <div className="text-gray-300">
-                                 {project.teamInfo ? <MarkdownContent content={project.teamInfo} /> : "Not specified."}
-                             </div>
-                         </section>
-                     </div>
+                     <section>
+                         <h3 className="text-sm font-bold text-gray-500 mb-2 font-mono uppercase">Opportunity</h3>
+                         <div className="text-gray-300">
+                             {project.opportunity ? <MarkdownContent content={project.opportunity} /> : "Not specified."}
+                         </div>
+                     </section>
                 </div>
             </div>
 
