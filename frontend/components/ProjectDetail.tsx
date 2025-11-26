@@ -81,7 +81,9 @@ const CommentItem: React.FC<CommentItemProps> = ({
                         </span>
                     )}
                 </div>
-                <p className="text-gray-300 text-sm leading-relaxed mb-3">{comment.content}</p>
+                <div className="text-gray-300 text-sm leading-relaxed mb-3">
+                    <MarkdownContent content={comment.content} />
+                  </div>
                 
                 {/* Actions */}
                 <div className="flex items-center gap-4">
