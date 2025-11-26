@@ -9,6 +9,7 @@ import { PaymentModal } from './PaymentModal';
 import toast from 'react-hot-toast';
 import { Comment } from '../lib/types';
 import { useRealtimeComments } from '../hooks/useRealtimeComments';
+import { MarkdownContent } from './MarkdownContent';
 
 interface CommentItemProps {
     comment: Comment;
