@@ -6,11 +6,9 @@ import { useAppStore } from '../lib/store';
 import { ArrowLeft, ThumbsUp, ThumbsDown, MessageCircle, Send, EyeOff, User, DollarSign } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';
-import { Comment, AIFeedback } from '../lib/types';
+import { Comment } from '../lib/types';
 import { PaymentModal } from './PaymentModal';
 import { AICommentBadge } from './AICommentBadge';
-import { GenerateAIFeedbackButton } from './GenerateAIFeedbackButton';
-import { MarketAssessment } from './MarketAssessment';
 
 interface CommentItemProps {
     comment: Comment;
@@ -293,61 +291,6 @@ export const IdeaDetail = () => {
                              <p className="text-gray-300">{project.teamInfo || "Not specified."}</p>
                          </section>
                      </div>
-                </div>
-            </div>
-
-            {/* AI Features Section */}
-            <div className="border-t border-white/10 pt-12 mb-12 space-y-8">
-                {/* Generate AI Feedback Button */}
-                <div>
-                    <h3 className="text-xl font-bold mb-4 text-white">AI Feedback</h3>
-                    <GenerateAIFeedbackButton
-                        projectId={project.id}
-                        ideaData={{
-                            title: project.title,
-                            problem: project.problem || '',
-                            solution: project.solution || '',
-                            opportunity: project.opportunity,
-                            goMarket: project.goMarket,
-                            teamInfo: project.teamInfo,
-                        }}
-                        onFeedbackGenerated={(feedback: AIFeedback) => {
-                            // Create AI comment from feedback
-                            const aiComment: Comment = {
-                                id: `ai-${Date.now()}`,
-                                projectId: project.id,
-                                content: `**AI Assessment (Score: ${feedback.score}/100)**\n\n${feedback.comment}\n\n**Strengths:**\n${feedback.strengths.map(s => `• ${s}`).join('\n')}\n\n**Areas for Improvement:**\n${feedback.weaknesses.map(w => `• ${w}`).join('\n')}\n\n**Suggestions:**\n${feedback.suggestions.map(s => `• ${s}`).join('\n')}`,
-                                author: {
-                                    username: 'AI Assistant',
-                                    wallet: '',
-                                },
-                                likes: 0,
-                                is_ai_generated: true,
-                                ai_model: 'gpt-4o-mini',
-                                createdAt: new Date().toISOString(),
-                            };
-
-                            // Add AI comment to the project's comments
-                            if (project.comments) {
-                                project.comments.unshift(aiComment);
-                            } else {
-                                project.comments = [aiComment];
-                            }
-                        }}
-                    />
-                </div>
-
-                {/* Market Assessment */}
-                <div>
-                    <MarketAssessment
-                        projectId={project.id}
-                        ideaData={{
-                            title: project.title,
-                            problem: project.problem || '',
-                            solution: project.solution || '',
-                            opportunity: project.opportunity,
-                        }}
-                    />
                 </div>
             </div>
 

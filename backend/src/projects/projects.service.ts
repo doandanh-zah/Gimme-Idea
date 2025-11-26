@@ -4,6 +4,7 @@ import { CreateProjectDto } from './dto/create-project.dto';
 import { UpdateProjectDto } from './dto/update-project.dto';
 import { QueryProjectsDto } from './dto/query-projects.dto';
 import { ApiResponse, Project } from '../shared/types';
+import { AIService } from '../ai/ai.service';
 
 @Injectable()
 export class ProjectsService {
@@ -12,6 +13,7 @@ export class ProjectsService {
 
   constructor(
     private supabaseService: SupabaseService,
+    private aiService: AIService,
   ) {}
 
   /**
@@ -264,14 +266,102 @@ export class ProjectsService {
       createdAt: project.created_at,
     };
 
-    // Note: AI feedback is generated manually by user via "Generate AI Feedback" button
-    // See frontend/components/GenerateAIFeedbackButton.tsx
+    // Auto-generate AI feedback for ideas (async, don't wait)
+    if (project.type === 'idea' && project.problem && project.solution) {
+      this.generateAIFeedbackAsync(project.id, {
+        title: project.title,
+        problem: project.problem,
+        solution: project.solution,
+        opportunity: project.opportunity,
+        goMarket: project.go_market,
+        teamInfo: project.team_info,
+      }).catch(err => {
+        this.logger.error(`Failed to generate AI feedback for project ${project.id}`, err);
+      });
+    }
 
     return {
       success: true,
       data: projectResponse,
       message: 'Project created successfully',
     };
+  }
+
+  /**
+   * Generate AI feedback asynchronously (background task)
+   */
+  private async generateAIFeedbackAsync(
+    projectId: string,
+    ideaData: {
+      title: string;
+      problem: string;
+      solution: string;
+      opportunity?: string;
+      goMarket?: string;
+      teamInfo?: string;
+    },
+  ): Promise<void> {
+    this.logger.log(`Generating AI feedback for project ${projectId}`);
+
+    try {
+      // Generate AI feedback
+      const feedback = await this.aiService.generateIdeaFeedback(ideaData);
+
+      // Create AI comment
+      const supabase = this.supabaseService.getAdminClient();
+
+      // First, get or create AI bot user
+      let { data: aiUser } = await supabase
+        .from('users')
+        .select('id')
+        .eq('wallet', this.AI_BOT_WALLET)
+        .single();
+
+      if (!aiUser) {
+        // Create AI bot user
+        const { data: newAiUser, error: createError } = await supabase
+          .from('users')
+          .insert({
+            wallet: this.AI_BOT_WALLET,
+            username: 'AI Assistant',
+            avatar: null,
+          })
+          .select('id')
+          .single();
+
+        if (createError) {
+          this.logger.error('Failed to create AI bot user', createError);
+          return;
+        }
+        aiUser = newAiUser;
+      }
+
+      // Create comment with AI feedback
+      const commentContent = `**AI Assessment (Score: ${feedback.score}/100)**\n\n${feedback.comment}\n\n**Strengths:**\n${feedback.strengths.map(s => `• ${s}`).join('\n')}\n\n**Areas for Improvement:**\n${feedback.weaknesses.map(w => `• ${w}`).join('\n')}\n\n**Suggestions:**\n${feedback.suggestions.map(s => `• ${s}`).join('\n')}`;
+
+      const { error: commentError } = await supabase
+        .from('comments')
+        .insert({
+          project_id: projectId,
+          user_id: aiUser.id,
+          content: commentContent,
+          is_anonymous: false,
+          likes: 0,
+          tips_amount: 0,
+          is_ai_generated: true,
+          ai_model: 'gpt-4o-mini',
+          ai_tokens_used: 0, // TODO: track actual tokens
+          created_at: new Date().toISOString(),
+        });
+
+      if (commentError) {
+        this.logger.error('Failed to create AI comment', commentError);
+      } else {
+        this.logger.log(`AI feedback comment created for project ${projectId}`);
+      }
+    } catch (error) {
+      this.logger.error(`AI feedback generation failed for project ${projectId}`, error);
+    }
   }
 
   /**
