@@ -151,24 +151,6 @@ export default function Dashboard({ mode }: DashboardProps) {
           </div>
         </div>
 
-        {/* Stats Row (Simplified) */}
-        {!searchQuery && (
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
-                <div className="glass-panel p-6 rounded-2xl relative overflow-hidden">
-                    <h3 className="text-gray-400 text-sm font-mono mb-1">Total {mode === 'project' ? 'Value' : 'Ideas'}</h3>
-                    <p className="text-3xl font-display font-bold text-white">{mode === 'project' ? '$14.2M' : '1,240'}</p>
-                </div>
-                <div className="glass-panel p-6 rounded-2xl relative overflow-hidden">
-                    <h3 className="text-gray-400 text-sm font-mono mb-1">Weekly Feedback</h3>
-                    <p className="text-3xl font-display font-bold text-white">2,450</p>
-                </div>
-                <div className="glass-panel p-6 rounded-2xl relative overflow-hidden">
-                    <h3 className="text-gray-400 text-sm font-mono mb-1">Active Categories</h3>
-                    <p className="text-3xl font-display font-bold text-white">8</p>
-                </div>
-            </div>
-        )}
-
         {/* Recommended Ideas Section (only for ideas mode) */}
         {mode === 'idea' && !searchQuery && (
           <RecommendedIdeas />

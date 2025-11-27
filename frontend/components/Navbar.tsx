@@ -19,7 +19,9 @@ const Navbar = () => {
     setSearchQuery,
     notifications,
     markNotificationRead,
-    clearNotifications
+    clearNotifications,
+    setView,
+    setSelectedProject
   } = useAppStore();
 
   const router = useRouter();
@@ -74,7 +76,7 @@ const Navbar = () => {
         className="pointer-events-auto bg-[#0F0F0F]/90 backdrop-blur-xl border border-white/5 rounded-full px-6 py-3 flex items-center justify-between w-full max-w-5xl shadow-2xl shadow-purple-900/10 relative"
       >
         {/* Logo */}
-        <button onClick={() => router.push('/home')} className="flex items-center gap-3 group">
+        <button onClick={() => { setView('landing'); setSelectedProject(null); router.push('/home'); }} className="flex items-center gap-3 group">
           <div className="relative w-10 h-10 flex items-center justify-center">
              <div className="absolute inset-0 bg-[#FFD700]/20 rounded-full blur-md opacity-50 group-hover:opacity-100 transition-opacity duration-300" />
              <Image

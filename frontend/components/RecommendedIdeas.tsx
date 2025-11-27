@@ -83,7 +83,9 @@ export const RecommendedIdeas = () => {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: index * 0.1 }}
             onClick={() => handleViewIdea(idea.id)}
-            className="relative glass-panel p-6 rounded-2xl hover:bg-white/10 transition-all cursor-pointer group border border-[#FFD700]/20 hover:border-[#FFD700]/50"
+            whileHover={{ y: -8, scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+            className="relative glass-panel p-6 rounded-2xl hover:bg-white/10 transition-all duration-300 cursor-pointer group border border-[#FFD700]/20 hover:border-[#FFD700]/50 hover:shadow-[0_8px_30px_rgba(255,215,0,0.3)]"
           >
             {/* Medal Badge */}
             <div className="absolute top-4 right-4">
