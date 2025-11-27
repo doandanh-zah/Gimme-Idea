@@ -67,7 +67,7 @@ export default function Dashboard({ mode }: DashboardProps) {
     onDeleteProject: handleRealtimeDeleteProject,
   });
 
-  const categories = ['All', 'DeFi', 'NFT', 'Gaming', 'Infrastructure', 'DAO', 'DePIN', 'Social', 'Mobile', 'Security'];
+  const categories = ['All', 'DeFi', 'NFT', 'Gaming', 'Infrastructure', 'DAO', 'DePIN', 'Social', 'Mobile', 'Security', 'Payment', 'Developer Tooling', 'ReFi', 'Content', 'Dapp', 'Blinks'];
 
   // Filter logic
   const filteredProjects = projects.filter(project => {

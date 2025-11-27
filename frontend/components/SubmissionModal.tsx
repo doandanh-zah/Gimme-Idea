@@ -22,7 +22,7 @@ export const SubmissionModal = () => {
   const [formData, setFormData] = useState({
     title: '',
     description: '',
-    category: 'DeFi',
+    categories: [] as string[],
     stage: 'Idea',
     website: '',
     bounty: '',
@@ -41,7 +41,7 @@ export const SubmissionModal = () => {
   useEffect(() => {
     if (isSubmitModalOpen) {
         setFormData({
-            title: '', description: '', category: 'DeFi', stage: 'Idea', website: '', bounty: '',
+            title: '', description: '', categories: [], stage: 'Idea', website: '', bounty: '',
             problem: '', opportunity: '', solution: '', isAnonymous: false
         });
         setTags([]);
@@ -51,7 +51,8 @@ export const SubmissionModal = () => {
   }, [isSubmitModalOpen]);
 
   const categories = [
-    'DeFi', 'NFT', 'Gaming', 'Infrastructure', 'DAO', 'DePIN', 'Social', 'Mobile', 'Security'
+    'DeFi', 'NFT', 'Gaming', 'Infrastructure', 'DAO', 'DePIN', 'Social', 'Mobile', 'Security',
+    'Payment', 'Developer Tooling', 'ReFi', 'Content', 'Dapp', 'Blinks'
   ];
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -94,6 +95,20 @@ export const SubmissionModal = () => {
     setTags(tags.filter(tag => tag !== tagToRemove));
   };
 
+  const toggleCategory = (category: string) => {
+    if (formData.categories.includes(category)) {
+      // Remove category
+      setFormData({...formData, categories: formData.categories.filter(c => c !== category)});
+    } else {
+      // Add category (max 3)
+      if (formData.categories.length < 3) {
+        setFormData({...formData, categories: [...formData.categories, category]});
+      } else {
+        toast.error('You can select up to 3 categories');
+      }
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -106,6 +121,11 @@ export const SubmissionModal = () => {
 
     if (!formData.title.trim()) {
         toast.error('Please enter a title');
+        return;
+    }
+
+    if (formData.categories.length === 0) {
+        toast.error('Please select at least one category');
         return;
     }
 
@@ -131,9 +151,9 @@ export const SubmissionModal = () => {
             type: submitType,
             title: formData.title,
             description: submitType === 'project' ? formData.description : formData.problem.substring(0, 100) + '...',
-            category: formData.category as Project['category'],
+            category: formData.categories[0] as Project['category'],
             stage: formData.stage as Project['stage'],
-            tags: tags.length > 0 ? tags : ['New', 'Solana'],
+            tags: tags.length > 0 ? tags : [...formData.categories.slice(1), 'New', 'Solana'],
             // Project Specific
             website: formData.website,
             imageUrl: imagePreview || undefined,
@@ -320,20 +340,33 @@ export const SubmissionModal = () => {
                                     placeholder={submitType === 'idea' ? "e.g. Decentralized Uber" : "e.g. SolStream Protocol"}
                                 />
                              </div>
-                             <div className="space-y-2">
-                                <label className="text-xs font-bold text-gray-400 uppercase tracking-wider ml-1">Category</label>
-                                <div className="relative">
-                                    <select 
-                                        value={formData.category}
-                                        onChange={(e) => setFormData({...formData, category: e.target.value})}
-                                        className="w-full bg-[#1A1A1A] border border-white/10 rounded-xl px-5 py-4 outline-none focus:border-white/30 text-white appearance-none cursor-pointer font-medium"
-                                    >
-                                        {categories.map(cat => <option key={cat} value={cat}>{cat}</option>)}
-                                    </select>
-                                    <div className="absolute right-5 top-1/2 -translate-y-1/2 pointer-events-none text-gray-500">
-                                        <Layers className="w-4 h-4" />
-                                    </div>
+                             <div className="space-y-2 md:col-span-2">
+                                <label className="text-xs font-bold text-gray-400 uppercase tracking-wider ml-1">
+                                  Categories * <span className="text-gray-600 font-normal text-[10px]">(Select 1-3)</span>
+                                </label>
+                                <div className="flex flex-wrap gap-2">
+                                    {categories.map(cat => (
+                                      <button
+                                        key={cat}
+                                        type="button"
+                                        onClick={() => toggleCategory(cat)}
+                                        className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                                          formData.categories.includes(cat)
+                                            ? isProject
+                                              ? 'bg-gradient-to-r from-[#9945FF] to-[#7c3aed] text-white border border-[#9945FF] shadow-lg shadow-purple-500/20'
+                                              : 'bg-gradient-to-r from-[#FFD700] to-[#FDB931] text-black border border-[#FFD700] shadow-lg shadow-yellow-500/20'
+                                            : 'bg-[#1A1A1A] text-gray-400 border border-white/10 hover:border-white/30 hover:text-white'
+                                        }`}
+                                      >
+                                        {cat}
+                                      </button>
+                                    ))}
                                 </div>
+                                {formData.categories.length > 0 && (
+                                  <div className="flex gap-2 items-center text-xs text-gray-500 mt-1">
+                                    <span>Selected: {formData.categories.join(', ')}</span>
+                                  </div>
+                                )}
                              </div>
                         </div>
 
