@@ -51,42 +51,23 @@ const Hero: React.FC = () => {
 
             <div className="flex flex-wrap gap-4 mt-8">
               <button
-                onClick={() => openSubmitModal('project')}
+                onClick={() => openSubmitModal('idea')}
                 className="px-8 py-4 bg-white text-black font-bold rounded-full hover:bg-gold transition-all duration-300 transform hover:scale-105 flex items-center gap-2"
               >
                 <Plus className="w-5 h-5" />
-                Start Building
+                Share Your Idea
               </button>
               <button
-                onClick={() => router.push('/projects')}
+                onClick={() => router.push('/idea')}
                 className="px-8 py-4 bg-transparent border border-white/20 text-white font-bold rounded-full hover:border-white hover:bg-white/5 transition-all duration-300 flex items-center gap-2"
               >
                 <LayoutGrid className="w-5 h-5" />
-                Explore Projects
+                Explore Ideas
               </button>
             </div>
           </motion.div>
 
-          {/* Stats Row */}
-          <motion.div 
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.4, duration: 0.6 }}
-            className="flex gap-8 border-t border-white/10 pt-8"
-          >
-            <div>
-              <p className="text-3xl font-display font-bold text-white">500+</p>
-              <p className="text-xs text-gray-500 font-mono uppercase">Active Projects</p>
-            </div>
-            <div>
-              <p className="text-3xl font-display font-bold text-white">1K+</p>
-              <p className="text-xs text-gray-500 font-mono uppercase">Feedback Loops</p>
-            </div>
-            <div>
-              <p className="text-3xl font-display font-bold text-gold">100+</p>
-              <p className="text-xs text-gray-500 font-mono uppercase">Success Stories</p>
-            </div>
-          </motion.div>
+
         </div>
 
         {/* Right Column: Visuals */}

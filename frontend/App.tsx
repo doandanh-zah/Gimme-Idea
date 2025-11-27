@@ -96,15 +96,14 @@ function App() {
                 </h2>
                 <p className="text-xl text-gray-400">Join 12,000+ developers building the future of Solana.</p>
                 <div className="flex flex-col sm:flex-row justify-center gap-4">
-                  <button onClick={() => openSubmitModal('project')} className="px-8 py-4 bg-[#9945FF] text-white font-bold rounded-full hover:bg-[#7c3aed] transition-colors shadow-lg shadow-purple-500/20">
-                    Launch Project
-                  </button>
+
                   <button 
                     onClick={() => openSubmitModal('idea')}
                     className="px-8 py-4 bg-transparent border border-white/20 text-white rounded-full font-bold hover:bg-white/10 transition-colors"
                   >
                     Submit Idea
                   </button>
+
                 </div>
               </div>
             </section>
