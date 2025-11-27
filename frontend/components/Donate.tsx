@@ -124,7 +124,7 @@ export const Donate = () => {
   };
 
   return (
-    <div className="min-h-screen pt-28 pb-20 px-6 relative overflow-hidden">
+    <div className="min-h-screen pt-28 pb-20 px-4 sm:px-6 relative overflow-hidden">
 
       {/* Background with Stars & Grid (same as landing page) */}
       <div className="fixed inset-0 z-[-1] pointer-events-none">
@@ -164,7 +164,7 @@ export const Donate = () => {
             >
                 <Heart className="w-4 h-4 fill-current" /> Support the Builders
             </motion.div>
-            <h1 className="text-5xl md:text-6xl font-display font-bold mb-4 leading-tight">
+            <h1 className="text-4xl md:text-6xl font-display font-bold mb-4 leading-tight">
                 Fuel the <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-500">Revolution.</span>
             </h1>
             <p className="text-gray-400 text-lg max-w-2xl mx-auto">
@@ -224,7 +224,7 @@ export const Donate = () => {
                                 ))}
                             </div>
 
-                            <h3 className="text-2xl font-bold text-white mb-2 font-display">Donation Received!</h3>
+                            <h3 className="text-xl sm:text-2xl font-bold text-white mb-2 font-display">Donation Received!</h3>
                             <p className="text-gray-400 mb-6">You successfully sent <span className="text-white font-bold">{amount} SOL</span></p>
                             
                             <div className="w-full bg-white/5 border border-white/10 rounded-xl p-4 max-w-xs">
@@ -282,7 +282,7 @@ export const Donate = () => {
                                                                      value={amount}
                                                                      onChange={(e) => setAmount(e.target.value)}
                                                                      step="0.1"
-                                                                     className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-4 text-2xl font-bold text-white outline-none focus:border-blue-500 transition-colors pr-16 group-hover/input:border-white/20"
+                                                                     className="w-full bg-black/40 border border-white/10 rounded-xl px-3 py-3 sm:px-4 sm:py-4 text-xl sm:text-2xl font-bold text-white outline-none focus:border-blue-500 transition-colors pr-16 group-hover/input:border-white/20"
                                                                  />
                                                                  <div className="absolute right-4 top-1/2 -translate-y-1/2 text-sm font-mono text-gray-500 pointer-events-none">
                                                                      SOL
@@ -294,13 +294,13 @@ export const Donate = () => {
                                                                      value={donorName}
                                                                      onChange={(e) => setDonorName(e.target.value)}
                                                                      placeholder="What should we call you? (optional)"
-                                                                     className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-white outline-none focus:border-blue-500 transition-colors group-hover/input:border-white/20"
+                                                                     className="w-full bg-black/40 border border-white/10 rounded-xl px-3 sm:px-4 py-3 text-white outline-none focus:border-blue-500 transition-colors group-hover/input:border-white/20"
                                                                  />
                                                              </div>
                                                          </div>
                              
                                                          <div className="flex items-center gap-2 bg-black/40 border border-white/10 rounded-xl p-3 mb-6 relative group/copy transition-colors hover:border-white/20">
-                                                             <code className="text-sm text-gray-300 font-mono truncate w-full px-2">
+                                                             <code className="text-sm text-gray-300 font-mono truncate w-full px-2 min-w-0">
                                                                  {walletAddress}
                                                              </code>
                                                              <button
@@ -342,7 +342,7 @@ export const Donate = () => {
             className="bg-[#0F0F0F]/80 backdrop-blur-xl border border-white/10 rounded-3xl p-6 sm:p-8 overflow-hidden shadow-2xl"
         >
             <div className="text-center mb-8">
-                <h2 className="text-3xl font-display font-bold mb-2">
+                <h2 className="text-2xl sm:text-3xl font-display font-bold mb-2">
                     🧑‍🍳 <span className="text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 to-orange-500">We Cooked</span> Gimme Idea
                 </h2>
                 <p className="text-gray-400">Meet the builders behind this platform</p>
@@ -368,7 +368,7 @@ export const Donate = () => {
                             </div>
                         </div>
                         <div className="flex-grow">
-                            <h3 className="text-xl font-bold text-white mb-1 flex items-center gap-2">
+                            <h3 className="text-xl font-bold text-white mb-1 flex items-center gap-2 flex-wrap">
                                 ZAH
                                 <span className="px-2 py-0.5 bg-yellow-500/10 border border-yellow-500/30 rounded-full text-[10px] font-mono text-yellow-400">FOUNDER</span>
                             </h3>
@@ -397,7 +397,7 @@ export const Donate = () => {
                             </div>
                         </div>
                         <div className="flex-grow">
-                            <h3 className="text-xl font-bold text-white mb-1 flex items-center gap-2">
+                            <h3 className="text-xl font-bold text-white mb-1 flex items-center gap-2 flex-wrap">
                                 THODIUM
                                 <span className="px-2 py-0.5 bg-blue-500/10 border border-blue-500/30 rounded-full text-[10px] font-mono text-blue-400">CO-FOUNDER</span>
                             </h3>
