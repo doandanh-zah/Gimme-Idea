@@ -23,6 +23,20 @@ export const Donate = () => {
   const [recentDonations, setRecentDonations] = useState<any[]>([]);
   const [topDonators, setTopDonators] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [stars, setStars] = useState<{ id: number; top: string; left: string; size: number; duration: string; opacity: number }[]>([]);
+
+  // Generate stars on mount
+  useEffect(() => {
+    const newStars = Array.from({ length: 50 }).map((_, i) => ({
+      id: i,
+      top: `${Math.random() * 100}%`,
+      left: `${Math.random() * 100}%`,
+      size: Math.random() * 2 + 1,
+      duration: `${Math.random() * 3 + 2}s`,
+      opacity: Math.random()
+    }));
+    setStars(newStars);
+  }, []);
 
   // Fetch donation data on mount
   useEffect(() => {
@@ -140,10 +154,29 @@ export const Donate = () => {
 
   return (
     <div className="min-h-screen pt-28 pb-20 px-6 relative overflow-hidden">
-      
-      {/* Background */}
-      <div className="fixed inset-0 z-[-1] bg-[radial-gradient(circle_at_50%_0%,#3b0764_0%,#000000_100%)] opacity-80" />
-      <div className="fixed inset-0 z-[-1] opacity-30 bg-[linear-gradient(rgba(236,72,153,0.05)_1px,transparent_1px),linear-gradient(90deg,rgba(236,72,153,0.05)_1px,transparent_1px)] bg-[size:30px_30px]" />
+
+      {/* Background with Stars & Grid (same as landing page) */}
+      <div className="fixed inset-0 z-[-1] pointer-events-none">
+          <div className="bg-grid opacity-40"></div>
+          <div className="stars-container">
+            {stars.map((star) => (
+              <div
+                key={star.id}
+                className="star"
+                style={{
+                  top: star.top,
+                  left: star.left,
+                  width: `${star.size}px`,
+                  height: `${star.size}px`,
+                  '--duration': star.duration,
+                  '--opacity': star.opacity
+                } as React.CSSProperties}
+              />
+            ))}
+            <div className="shooting-star" style={{ top: '20%', left: '80%' }} />
+            <div className="shooting-star" style={{ top: '60%', left: '10%', animationDelay: '2s' }} />
+          </div>
+      </div>
 
       <div className="max-w-6xl mx-auto grid lg:grid-cols-2 gap-12 items-start">
         

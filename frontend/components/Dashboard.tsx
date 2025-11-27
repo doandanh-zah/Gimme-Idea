@@ -31,6 +31,20 @@ export default function Dashboard({ mode }: DashboardProps) {
   const [categoryFilter, setCategoryFilter] = useState('All');
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
   const [showComingSoon, setShowComingSoon] = useState(false);
+  const [stars, setStars] = useState<{ id: number; top: string; left: string; size: number; duration: string; opacity: number }[]>([]);
+
+  // Generate stars on mount
+  useEffect(() => {
+    const newStars = Array.from({ length: 50 }).map((_, i) => ({
+      id: i,
+      top: `${Math.random() * 100}%`,
+      left: `${Math.random() * 100}%`,
+      size: Math.random() * 2 + 1,
+      duration: `${Math.random() * 3 + 2}s`,
+      opacity: Math.random()
+    }));
+    setStars(newStars);
+  }, []);
 
   // Show coming soon modal for projects mode
   useEffect(() => {
@@ -77,75 +91,28 @@ export default function Dashboard({ mode }: DashboardProps) {
       animate={{ opacity: 1 }}
       className="min-h-screen pb-20 relative"
     >
-      {/* Premium Dark-Medium Background with Artistic Depth */}
-      <div className="fixed inset-0 z-[-1] pointer-events-none bg-[#14161F]">
-          {/* Base gradient overlay for depth */}
-          <div className="absolute inset-0 bg-gradient-to-br from-[#1A1C27] via-[#14161F] to-[#1A1710] opacity-80" />
-
-          {/* Large luminous orbs for depth (6-10% opacity) */}
-          <div className={`absolute top-[10%] left-[5%] w-[900px] h-[900px] ${mode === 'project' ? 'bg-purple-400' : 'bg-yellow-400'} opacity-[0.08] rounded-full blur-[160px]`} />
-          <div className="absolute bottom-[15%] right-[8%] w-[800px] h-[800px] bg-blue-400 opacity-[0.06] rounded-full blur-[150px]" />
-          <div className={`absolute top-[45%] right-[12%] w-[700px] h-[700px] ${mode === 'project' ? 'bg-indigo-400' : 'bg-amber-400'} opacity-[0.07] rounded-full blur-[140px]`} />
-          <div className="absolute bottom-[40%] left-[20%] w-[600px] h-[600px] bg-purple-300 opacity-[0.05] rounded-full blur-[120px]" />
-
-          {/* Subtle geometric lines */}
-          <div className="absolute inset-0 opacity-[0.03]">
-            <svg className="w-full h-full" xmlns="http://www.w3.org/2000/svg">
-              <defs>
-                <pattern id="grid" width="100" height="100" patternUnits="userSpaceOnUse">
-                  <path d="M 100 0 L 0 0 0 100" fill="none" stroke="rgba(255,255,255,0.1)" strokeWidth="0.5"/>
-                </pattern>
-              </defs>
-              <rect width="100%" height="100%" fill="url(#grid)" />
-            </svg>
-          </div>
-
-          {/* Tech pattern - circuit-like lines */}
-          <div className="absolute top-[20%] right-[15%] w-[400px] h-[400px] opacity-[0.04]">
-            <svg viewBox="0 0 400 400" className="w-full h-full">
-              <circle cx="200" cy="200" r="150" fill="none" stroke="rgba(255,215,0,0.3)" strokeWidth="1" />
-              <circle cx="200" cy="200" r="120" fill="none" stroke="rgba(138,43,226,0.2)" strokeWidth="0.5" />
-              <line x1="50" y1="200" x2="350" y2="200" stroke="rgba(255,255,255,0.1)" strokeWidth="0.5" />
-              <line x1="200" y1="50" x2="200" y2="350" stroke="rgba(255,255,255,0.1)" strokeWidth="0.5" />
-            </svg>
-          </div>
-
-          {/* Hologram rings */}
-          <div className="absolute bottom-[25%] left-[10%] w-[500px] h-[500px] opacity-[0.03]">
-            <svg viewBox="0 0 500 500" className="w-full h-full">
-              <circle cx="250" cy="250" r="200" fill="none" stroke="rgba(100,149,237,0.3)" strokeWidth="1" strokeDasharray="10,5" />
-              <circle cx="250" cy="250" r="160" fill="none" stroke="rgba(138,43,226,0.2)" strokeWidth="0.8" strokeDasharray="8,4" />
-            </svg>
-          </div>
-
-          {/* Crystal dust shimmer particles */}
-          <div className="absolute inset-0 opacity-[0.15]">
-            {[...Array(30)].map((_, i) => (
+      {/* Background with Stars & Grid (same as landing page) */}
+      <div className="fixed inset-0 z-[-1] pointer-events-none">
+          <div className="bg-grid opacity-40"></div>
+          <div className="stars-container">
+            {stars.map((star) => (
               <div
-                key={i}
-                className="absolute w-1 h-1 bg-white rounded-full"
+                key={star.id}
+                className="star"
                 style={{
-                  top: `${Math.random() * 100}%`,
-                  left: `${Math.random() * 100}%`,
-                  opacity: Math.random() * 0.3,
-                  animation: `twinkle ${3 + Math.random() * 4}s infinite ${Math.random() * 2}s`
-                }}
+                  top: star.top,
+                  left: star.left,
+                  width: `${star.size}px`,
+                  height: `${star.size}px`,
+                  '--duration': star.duration,
+                  '--opacity': star.opacity
+                } as React.CSSProperties}
               />
             ))}
+            <div className="shooting-star" style={{ top: '20%', left: '80%' }} />
+            <div className="shooting-star" style={{ top: '60%', left: '10%', animationDelay: '2s' }} />
           </div>
-
-          {/* Subtle grain texture overlay */}
-          <div className="absolute inset-0 opacity-[0.015] mix-blend-overlay"
-               style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg viewBox=\'0 0 400 400\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cfilter id=\'noiseFilter\'%3E%3CfeTurbulence type=\'fractalNoise\' baseFrequency=\'0.9\' numOctaves=\'4\' stitchTiles=\'stitch\'/%3E%3C/filter%3E%3Crect width=\'100%25\' height=\'100%25\' filter=\'url(%23noiseFilter)\'/%3E%3C/svg%3E")' }}
-          />
       </div>
-
-      <style jsx>{`
-        @keyframes twinkle {
-          0%, 100% { opacity: 0.1; transform: scale(1); }
-          50% { opacity: 0.4; transform: scale(1.2); }
-        }
-      `}</style>
 
       <div className="pt-32 px-6 max-w-7xl mx-auto">
         
