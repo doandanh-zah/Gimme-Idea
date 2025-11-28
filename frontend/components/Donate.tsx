@@ -123,7 +123,7 @@ export const Donate = () => {
   };
 
   return (
-    <div className="min-h-screen pt-28 pb-20 px-6 relative overflow-hidden">
+    <div className="min-h-screen pt-24 pb-12 px-6 relative overflow-hidden flex items-center">
 
       {/* Background with Stars & Grid (same as landing page) */}
       <div className="fixed inset-0 z-[-1] pointer-events-none">
@@ -148,31 +148,24 @@ export const Donate = () => {
           </div>
       </div>
 
-      <div className="max-w-5xl mx-auto">
+      <div className="max-w-6xl mx-auto w-full">
 
-        {/* Header Section */}
+        {/* Header Section - Compact */}
         <motion.div
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="text-center mb-12"
+            className="text-center mb-8"
         >
-            <motion.div
-                initial={{ scale: 0.8, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-400 font-mono text-sm mb-6"
-            >
-                <Heart className="w-4 h-4 fill-current" /> Support the Builders
-            </motion.div>
-            <h1 className="text-5xl md:text-6xl font-display font-bold mb-4 leading-tight">
-                Fuel the <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-500">Revolution.</span>
+            <h1 className="text-4xl md:text-5xl font-display font-bold mb-2 leading-tight">
+                <Heart className="inline w-8 h-8 text-red-400 fill-current mb-2" /> Support <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-500">Gimme Idea</span>
             </h1>
-            <p className="text-gray-400 text-lg max-w-2xl mx-auto">
-                Your contribution directly supports server costs, coffee, and open-source development for Gimme Idea.
+            <p className="text-gray-400 text-sm max-w-2xl mx-auto">
+                Help us keep the servers running and coffee flowing ☕
             </p>
         </motion.div>
 
         {/* Main Content Grid */}
-        <div className="grid lg:grid-cols-2 gap-8 items-start mb-16">
+        <div className="grid lg:grid-cols-3 gap-6 mb-6">
 
         {/* Donation Card */}
         <motion.div
