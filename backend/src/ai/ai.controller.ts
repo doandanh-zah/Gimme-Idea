@@ -55,8 +55,6 @@ export class AIController {
         problem: dto.problem,
         solution: dto.solution,
         opportunity: dto.opportunity,
-        goMarket: dto.goMarket,
-        teamInfo: dto.teamInfo,
       });
 
       // Track usage

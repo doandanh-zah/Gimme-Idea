@@ -70,13 +70,81 @@ ${idea.goMarket || 'Not specified'}
 ${idea.teamInfo || 'Not specified'}
 
 **SCORING CRITERIA (Total 100 points):**
-- Problem-Solution Fit (25 pts): Is this a real, urgent problem? Is the solution effective?
-- Market Opportunity (20 pts): Market size, growth potential, timing
-- Competitive Advantage (15 pts): Unique value proposition, defensibility, moats
-- Execution Plan (15 pts): Go-to-market strategy clarity, feasibility
-- Team Capability (10 pts): Team's skills, experience, commitment
-- Innovation Level (10 pts): Novel approach, technical difficulty, IP potential
-- Scalability (5 pts): Can this grow 10x-100x?
+1. Problem & Solution Fit (30 pts)
+Evaluate how painfully real the problem is + how logically strong the solution is.
+Breakdown:
+- Problem clarity (0-10 pts):
+0-3: Vague or generic
+4-7: Real but not urgent
+8-10: Clear, painful, urgent, backed by strong insight
+- Solution relevance (0-10 pts):
+0-3: Weak or mismatched
+4-7: Reasonable but not convincing
+8-10: Direct, logical, high-probability effectiveness
+- User insight depth (0-10 pts):
+0-3: Surface-level
+4-7: Moderate understanding
+8-10: Deep, non-obvious insight
+
+2. Market Opportunity (25 pts)
+Breakdown:
+- Market size (0-10 pts):
+0-3: Small/niche
+4-7: Medium
+8-10: >$1B or very high demand
+- Timing & trends (0-8 pts):
+0-2: Poor timing
+3-5: Neutral
+6-8: Perfect timing, strong macro tailwinds
+- Growth potential (0-7 pts):
+0-2: Stagnant
+3-5: Moderate growth
+6-7: High velocity / explosive category
+
+3. Competitive Advantage (20 pts)
+Breakdown:
+- Differentiation clarity (0-8 pts):
+0-3: Weak difference
+4-6: Somewhat unique
+7-8: Clear, strong point of difference
+- Moat potential (0-7 pts):
+0-2: None
+3-5: Possible but not strong
+6-7: Realistic future moat (network effects, data, IP…)
+- Defensibility at idea level (0-5 pts):
+0-1: No defensibility
+2-3: Some barriers exist
+4-5: Strong conceptual defensibility
+
+4. Innovation Level (15 pts)
+Breakdown:
+- Originality (0-6 pts):
+0-2: Common idea
+3-4: Somewhat new
+5-6: Fresh, unique insight
+- Technical/conceptual difficulty (0-5 pts):
+0-1: Trivial
+2-3: Moderate
+4-5: Complex or breakthrough
+- Creative leap / boldness (0-4 pts):
+0-1: Safe
+2-3: Good creativity
+4: High-level innovation
+
+5. Scalability (10 pts)
+Breakdown:
+10x-100x potential (0-5 pts):
+0-1: Hard to scale
+2-3: Possibly scalable
+4-5: Strong exponential potential
+Global applicability (0-3 pts):
+0: Local-only
+1-2: Regional
+3: Globally relevant
+User growth dynamics (0-2 pts):
+0: Linear
+1: Moderate user-growth loops
+2: Viral/viral-adjacent dynamics
 
 **BE STRICT:**
 - Average ideas: 40-60 points
