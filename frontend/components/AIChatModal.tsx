@@ -73,7 +73,7 @@ export const AIChatModal: React.FC<AIChatModalProps> = ({ isOpen, onClose }) => 
           setTimeout(() => {
             setMessages(prev => [...prev, {
               role: 'ai',
-              content: `Tôi cần thêm thông tin để giúp bạn tốt hơn. Hãy mô tả về lợi thế của bạn và lý do bạn muốn build về ${input.toLowerCase()}?`
+              content: `I need a bit more info to help you out — tell me your strengths and why you want to build in ${input.string()}?`
             }]);
             setIsLoading(false);
           }, 800);
@@ -81,7 +81,7 @@ export const AIChatModal: React.FC<AIChatModalProps> = ({ isOpen, onClose }) => 
           setTimeout(() => {
             setMessages(prev => [...prev, {
               role: 'ai',
-              content: `Hãy mô tả về lợi thế của bạn và lý do bạn muốn build về ${input.toLowerCase()}?`
+              content: `What are your strengths and why do you want to build ${input.string()}?`
             }]);
             setIsLoading(false);
           }, 800);
@@ -105,7 +105,7 @@ export const AIChatModal: React.FC<AIChatModalProps> = ({ isOpen, onClose }) => 
           setTimeout(() => {
             setMessages(prev => [...prev, {
               role: 'ai',
-              content: `Đây là top 3 idea mình nghĩ là phù hợp nhất với bạn!\n\n${reasoning}`,
+              content: `Here are my top 3 recommendations for you!\n\n${reasoning}`,
               recommendedIdeas
             }]);
             setIsLoading(false);
@@ -144,7 +144,7 @@ export const AIChatModal: React.FC<AIChatModalProps> = ({ isOpen, onClose }) => 
       console.error('AI chat error:', error);
       setMessages(prev => [...prev, {
         role: 'ai',
-        content: 'Xin lỗi, đã có lỗi xảy ra. Vui lòng thử lại sau.'
+        content: 'Opps. Something went wrong. Please try again later.'
       }]);
       setIsLoading(false);
     }
@@ -317,7 +317,7 @@ export const AIChatModal: React.FC<AIChatModalProps> = ({ isOpen, onClose }) => 
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyPress={(e) => e.key === 'Enter' && !isLoading && handleSend()}
-              placeholder="Nhập câu trả lời của bạn..."
+              placeholder="Write your answer..."
               className="flex-1 bg-[#1A1A1A] border border-white/10 rounded-xl px-5 py-3 outline-none focus:border-[#FFD700]/30 text-white placeholder:text-gray-600"
               disabled={isLoading}
             />
@@ -327,7 +327,7 @@ export const AIChatModal: React.FC<AIChatModalProps> = ({ isOpen, onClose }) => 
               className="px-6 py-3 bg-gradient-to-r from-[#FFD700] to-[#FDB931] text-black rounded-xl font-bold hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
             >
               <Send className="w-4 h-4" />
-              Gửi
+              Send
             </button>
           </div>
         </div>
