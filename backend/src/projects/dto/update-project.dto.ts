@@ -9,9 +9,9 @@ export class UpdateProjectDto {
   @IsOptional()
   description?: string;
 
-  @IsEnum(['DeFi', 'NFT', 'Gaming', 'Infrastructure', 'DAO', 'DePIN', 'Social', 'Mobile', 'Security'])
+  @IsEnum(['DeFi', 'NFT', 'Gaming', 'Infrastructure', 'DAO', 'DePIN', 'Social', 'Mobile', 'Security', 'Payment', 'Developer Tooling', 'ReFi', 'Content', 'Dapp', 'Blinks'])
   @IsOptional()
-  category?: 'DeFi' | 'NFT' | 'Gaming' | 'Infrastructure' | 'DAO' | 'DePIN' | 'Social' | 'Mobile' | 'Security';
+  category?: 'DeFi' | 'NFT' | 'Gaming' | 'Infrastructure' | 'DAO' | 'DePIN' | 'Social' | 'Mobile' | 'Security' | 'Payment' | 'Developer Tooling' | 'ReFi' | 'Content' | 'Dapp' | 'Blinks';
 
   @IsEnum(['Idea', 'Prototype', 'Devnet', 'Mainnet'])
   @IsOptional()
@@ -46,14 +46,6 @@ export class UpdateProjectDto {
   @IsString()
   @IsOptional()
   opportunity?: string;
-
-  @IsString()
-  @IsOptional()
-  goMarket?: string;
-
-  @IsString()
-  @IsOptional()
-  teamInfo?: string;
 
   @IsBoolean()
   @IsOptional()

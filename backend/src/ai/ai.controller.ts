@@ -10,8 +10,6 @@ export interface GenerateFeedbackDto {
   problem: string;
   solution: string;
   opportunity?: string;
-  goMarket?: string;
-  teamInfo?: string;
 }
 
 export interface GenerateReplyDto {
@@ -23,6 +21,20 @@ export interface GenerateReplyDto {
     problem: string;
     solution: string;
   };
+}
+
+export interface FindIdeasDto {
+  interest: string;
+  strengths: string;
+}
+
+export interface ChatDto {
+  message: string;
+  context: {
+    interest: string;
+    strengths: string;
+  };
+  history: Array<{ role: string; content: string }>;
 }
 
 @Controller('ai')
@@ -55,8 +67,6 @@ export class AIController {
         problem: dto.problem,
         solution: dto.solution,
         opportunity: dto.opportunity,
-        goMarket: dto.goMarket,
-        teamInfo: dto.teamInfo,
       });
 
       // Track usage
@@ -181,6 +191,52 @@ export class AIController {
       return {
         success: false,
         error: error.message || 'Failed to check quota',
+      };
+    }
+  }
+
+  /**
+   * POST /api/ai/find-ideas
+   * Find matching ideas based on user interest and strengths
+   */
+  @Post('find-ideas')
+  async findIdeas(@Body() dto: FindIdeasDto): Promise<ApiResponse<any>> {
+    try {
+      const result = await this.aiService.findMatchingIdeas(dto.interest, dto.strengths);
+
+      return {
+        success: true,
+        data: result,
+      };
+    } catch (error: any) {
+      return {
+        success: false,
+        error: error.message || 'Failed to find ideas',
+      };
+    }
+  }
+
+  /**
+   * POST /api/ai/chat
+   * Continue conversation with AI
+   */
+  @Post('chat')
+  async chat(@Body() dto: ChatDto): Promise<ApiResponse<any>> {
+    try {
+      const reply = await this.aiService.continueConversation(
+        dto.message,
+        dto.context,
+        dto.history,
+      );
+
+      return {
+        success: true,
+        data: { reply },
+      };
+    } catch (error: any) {
+      return {
+        success: false,
+        error: error.message || 'Failed to chat',
       };
     }
   }

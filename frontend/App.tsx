@@ -6,9 +6,6 @@ import Navbar from './components/Navbar';
 import Hero from './components/Hero';
 import StatsDashboard from './components/StatsDashboard';
 import JourneyMap from './components/JourneyMap';
-import { ProjectCard } from './components/ProjectCard';
-import { PROJECTS } from './constants';
-import { Shield, Star, Zap, Plus, LayoutGrid } from 'lucide-react';
 import { useAppStore } from './lib/store';
 import Dashboard from './components/Dashboard';
 import { ProjectDetail } from './components/ProjectDetail';
@@ -21,7 +18,7 @@ import { Profile } from './components/Profile';
 import { ConnectReminderModal } from './components/ConnectReminderModal';
 
 function App() {
-  const { currentView, setView, openWalletModal, isNavigating, openSubmitModal } = useAppStore();
+  const { currentView, isNavigating, openSubmitModal } = useAppStore();
   const [stars, setStars] = useState<{ id: number; top: string; left: string; size: number; duration: string; opacity: number }[]>([]);
 
   useEffect(() => {
@@ -65,27 +62,6 @@ function App() {
 
             {/* Journey Map */}
             <JourneyMap />
-
-            {/* Featured Projects */}
-            <section className="py-24 px-6 relative">
-              <div className="max-w-7xl mx-auto">
-                <div className="flex flex-col md:flex-row justify-between items-end mb-12">
-                  <div>
-                    <h2 className="text-4xl font-display font-bold mb-2">Trending <span className="text-[#9945FF] glow-text">Builds</span></h2>
-                    <p className="text-gray-400">Projects seeking your technical expertise right now.</p>
-                  </div>
-                  <button onClick={() => setView('projects-dashboard')} className="text-gold font-mono text-sm hover:underline mt-4 md:mt-0">
-                    View all projects &rarr;
-                  </button>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                  {PROJECTS.filter(p => p.type === 'project').slice(0, 3).map(project => (
-                    <ProjectCard key={project.id} project={project} />
-                  ))}
-                </div>
-              </div>
-            </section>
 
             {/* CTA */}
             <section className="py-32 px-6 text-center relative overflow-hidden">

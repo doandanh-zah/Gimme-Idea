@@ -23,8 +23,6 @@ export interface Project {
   problem?: string;
   solution?: string;
   opportunity?: string;
-  goMarket?: string;
-  teamInfo?: string;
   isAnonymous?: boolean;
   createdAt: string;
   comments?: Comment[];

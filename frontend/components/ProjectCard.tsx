@@ -105,7 +105,7 @@ export const ProjectCard: React.FC<ProjectCardProps> = ({ project }) => {
             {project.description}
         </p>
 
-        {project.bounty && (
+        {project.bounty && project.bounty > 0 && (
           <div className="mb-4 p-3 bg-primary/5 border border-primary/20 rounded-lg flex items-center justify-between">
             <span className="text-xs font-mono text-primary font-bold">FEEDBACK BOUNTY</span>
             <span className="text-sm font-bold text-white">{project.bounty} USDC</span>

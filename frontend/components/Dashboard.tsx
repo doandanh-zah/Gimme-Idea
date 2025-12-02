@@ -6,10 +6,11 @@ import { ProjectCard } from './ProjectCard';
 import { RecommendedIdeas } from './RecommendedIdeas';
 import { useAppStore } from '../lib/store';
 import { useRouter } from 'next/navigation';
-import { Filter, Plus, TrendingUp, Activity, X, Lightbulb, Rocket } from 'lucide-react';
+import { Filter, Plus, TrendingUp, Activity, X, Lightbulb, Rocket, Sparkles } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useRealtimeProjects } from '../hooks/useRealtimeProjects';
 import { ComingSoonModal } from './ComingSoonModal';
+import { AIChatModal } from './AIChatModal';
 
 interface DashboardProps {
     mode: 'project' | 'idea';
@@ -31,6 +32,7 @@ export default function Dashboard({ mode }: DashboardProps) {
   const [categoryFilter, setCategoryFilter] = useState('All');
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
   const [showComingSoon, setShowComingSoon] = useState(false);
+  const [showAIChat, setShowAIChat] = useState(false);
   const [stars, setStars] = useState<{ id: number; top: string; left: string; size: number; duration: string; opacity: number }[]>([]);
 
   // Generate stars on mount
@@ -132,13 +134,15 @@ export default function Dashboard({ mode }: DashboardProps) {
           </div>
           
           <div className="flex gap-3 flex-wrap">
-             <button 
-               onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
-               className={`px-4 py-2 border rounded-full text-sm font-mono transition-colors flex items-center gap-2 backdrop-blur-md ${showAdvancedFilters ? 'bg-white text-black border-white' : 'bg-white/10 border-white/20 hover:bg-white/20'}`}
-             >
-               <Filter className="w-4 h-4" /> {showAdvancedFilters ? 'Hide Filters' : 'Filter'}
-             </button>
-             <button 
+             {mode === 'idea' && (
+               <button
+                 onClick={() => setShowAIChat(true)}
+                 className="px-4 py-2 border border-[#FFD700]/30 bg-[#FFD700]/10 rounded-full text-sm font-mono transition-colors flex items-center gap-2 hover:bg-[#FFD700]/20 text-white"
+               >
+                 <Sparkles className="w-4 h-4 text-[#FFD700]" /> Find by AI
+               </button>
+             )}
+             <button
                onClick={() => openSubmitModal(mode)}
                className={`px-6 py-2 bg-gradient-to-r ${mode === 'project' ? 'from-[#9945FF] to-[#8035e0] text-white' : 'from-[#FFD700] to-[#FDB931] text-black'} rounded-full text-sm font-bold hover:shadow-lg transition-all flex items-center gap-2`}
              >
@@ -234,6 +238,12 @@ export default function Dashboard({ mode }: DashboardProps) {
           setShowComingSoon(false);
           router.push('/idea');
         }}
+      />
+
+      {/* AI Chat Modal for Ideas */}
+      <AIChatModal
+        isOpen={showAIChat}
+        onClose={() => setShowAIChat(false)}
       />
     </motion.div>
   );

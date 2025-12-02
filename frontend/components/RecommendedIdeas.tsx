@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Sparkles, TrendingUp } from 'lucide-react';
+import { Sparkles, TrendingUp, ChevronDown } from 'lucide-react';
 import { useAppStore } from '../lib/store';
 import { Project } from '../lib/types';
 import { useRouter } from 'next/navigation';
@@ -13,12 +13,17 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
 export const RecommendedIdeas = () => {
   const [recommendedIdeas, setRecommendedIdeas] = useState<Project[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [selectedCategory, setSelectedCategory] = useState('All');
+  const [showCategoryMenu, setShowCategoryMenu] = useState(false);
   const router = useRouter();
+
+  const categories = ['All', 'DeFi', 'NFT', 'Gaming', 'Infrastructure', 'DAO', 'DePIN', 'Social', 'Mobile', 'Security', 'Payment', 'Developer Tooling', 'ReFi', 'Content', 'Dapp', 'Blinks'];
 
   useEffect(() => {
     const fetchRecommended = async () => {
       try {
-        const response = await axios.get(`${API_URL}/projects/recommended?limit=3`);
+        const categoryParam = selectedCategory === 'All' ? '' : `&category=${selectedCategory}`;
+        const response = await axios.get(`${API_URL}/projects?type=idea&sortBy=aiScore&sortOrder=desc&limit=3${categoryParam}`);
         if (response.data.success) {
           setRecommendedIdeas(response.data.data);
         }
@@ -30,7 +35,7 @@ export const RecommendedIdeas = () => {
     };
 
     fetchRecommended();
-  }, []);
+  }, [selectedCategory]);
 
   const handleViewIdea = (id: string) => {
     router.push(`/idea/${id}`);
@@ -39,9 +44,11 @@ export const RecommendedIdeas = () => {
   if (isLoading) {
     return (
       <div className="mb-12">
-        <div className="flex items-center gap-2 mb-6">
-          <Sparkles className="w-5 h-5 text-[#FFD700]" />
-          <h2 className="text-2xl font-bold text-white">AI Recommended Ideas</h2>
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center gap-2">
+            <Sparkles className="w-5 h-5 text-[#FFD700]" />
+            <h2 className="text-2xl font-bold text-white">Top 3 of {selectedCategory}</h2>
+          </div>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {[1, 2, 3].map(i => (
@@ -68,12 +75,45 @@ export const RecommendedIdeas = () => {
 
   return (
     <div className="mb-12">
-      <div className="flex items-center gap-3 mb-6">
-        <Sparkles className="w-6 h-6 text-[#FFD700] animate-pulse" />
-        <h2 className="text-2xl font-bold bg-gradient-to-r from-[#FFD700] to-[#FDB931] text-transparent bg-clip-text">
-          AI Recommended Ideas
-        </h2>
-        <TrendingUp className="w-5 h-5 text-[#FFD700]" />
+      <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center gap-3">
+          <Sparkles className="w-6 h-6 text-[#FFD700] animate-pulse" />
+          <h2 className="text-2xl font-bold bg-gradient-to-r from-[#FFD700] to-[#FDB931] text-transparent bg-clip-text">
+            Top 3 of {selectedCategory}
+          </h2>
+          <TrendingUp className="w-5 h-5 text-[#FFD700]" />
+        </div>
+
+        {/* Category Selector */}
+        <div className="relative">
+          <button
+            onClick={() => setShowCategoryMenu(!showCategoryMenu)}
+            className="px-4 py-2 bg-white/10 border border-white/20 rounded-full text-sm font-mono text-white hover:bg-white/20 transition-colors flex items-center gap-2"
+          >
+            {selectedCategory}
+            <ChevronDown className={`w-4 h-4 transition-transform ${showCategoryMenu ? 'rotate-180' : ''}`} />
+          </button>
+
+          {showCategoryMenu && (
+            <div className="absolute top-full right-0 mt-2 w-48 bg-[#14151C] border border-white/20 rounded-xl shadow-xl z-50 max-h-80 overflow-y-auto">
+              {categories.map(cat => (
+                <button
+                  key={cat}
+                  onClick={() => {
+                    setSelectedCategory(cat);
+                    setShowCategoryMenu(false);
+                    setIsLoading(true);
+                  }}
+                  className={`w-full px-4 py-2 text-left text-sm hover:bg-white/10 transition-colors ${
+                    selectedCategory === cat ? 'text-[#FFD700] bg-white/5' : 'text-white'
+                  }`}
+                >
+                  {cat}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10">

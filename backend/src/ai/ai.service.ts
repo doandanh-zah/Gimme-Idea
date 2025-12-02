@@ -7,8 +7,6 @@ export interface IdeaFeedbackRequest {
   problem: string;
   solution: string;
   opportunity?: string;
-  goMarket?: string;
-  teamInfo?: string;
 }
 
 export interface AIFeedback {
@@ -61,22 +59,84 @@ ${idea.problem}
 ${idea.solution}
 
 **Opportunity:**
-${idea.opportunity}
-
-**Go-to-Market Strategy:**
-${idea.goMarket || 'Not specified'}
-
-**Team Information:**
-${idea.teamInfo || 'Not specified'}
+${idea.opportunity || 'Not specified'}
 
 **SCORING CRITERIA (Total 100 points):**
-- Problem-Solution Fit (25 pts): Is this a real, urgent problem? Is the solution effective?
-- Market Opportunity (20 pts): Market size, growth potential, timing
-- Competitive Advantage (15 pts): Unique value proposition, defensibility, moats
-- Execution Plan (15 pts): Go-to-market strategy clarity, feasibility
-- Team Capability (10 pts): Team's skills, experience, commitment
-- Innovation Level (10 pts): Novel approach, technical difficulty, IP potential
-- Scalability (5 pts): Can this grow 10x-100x?
+1. Problem & Solution Fit (30 pts)
+Evaluate how painfully real the problem is + how logically strong the solution is.
+Breakdown:
+- Problem clarity (0-10 pts):
+0-3: Vague or generic
+4-7: Real but not urgent
+8-10: Clear, painful, urgent, backed by strong insight
+- Solution relevance (0-10 pts):
+0-3: Weak or mismatched
+4-7: Reasonable but not convincing
+8-10: Direct, logical, high-probability effectiveness
+- User insight depth (0-10 pts):
+0-3: Surface-level
+4-7: Moderate understanding
+8-10: Deep, non-obvious insight
+
+2. Market Opportunity (25 pts)
+Breakdown:
+- Market size (0-10 pts):
+0-3: Small/niche
+4-7: Medium
+8-10: >$1B or very high demand
+- Timing & trends (0-8 pts):
+0-2: Poor timing
+3-5: Neutral
+6-8: Perfect timing, strong macro tailwinds
+- Growth potential (0-7 pts):
+0-2: Stagnant
+3-5: Moderate growth
+6-7: High velocity / explosive category
+
+3. Competitive Advantage (20 pts)
+Breakdown:
+- Differentiation clarity (0-8 pts):
+0-3: Weak difference
+4-6: Somewhat unique
+7-8: Clear, strong point of difference
+- Moat potential (0-7 pts):
+0-2: None
+3-5: Possible but not strong
+6-7: Realistic future moat (network effects, data, IP…)
+- Defensibility at idea level (0-5 pts):
+0-1: No defensibility
+2-3: Some barriers exist
+4-5: Strong conceptual defensibility
+
+4. Innovation Level (15 pts)
+Breakdown:
+- Originality (0-6 pts):
+0-2: Common idea
+3-4: Somewhat new
+5-6: Fresh, unique insight
+- Technical/conceptual difficulty (0-5 pts):
+0-1: Trivial
+2-3: Moderate
+4-5: Complex or breakthrough
+- Creative leap / boldness (0-4 pts):
+0-1: Safe
+2-3: Good creativity
+4: High-level innovation
+
+5. Scalability (10 pts)
+Breakdown:
+10x-100x potential (0-5 pts):
+0-1: Hard to scale
+2-3: Possibly scalable
+4-5: Strong exponential potential
+Global applicability (0-3 pts):
+0: Local-only
+1-2: Regional
+3: Globally relevant
+User growth dynamics (0-2 pts):
+0: Linear
+1: Moderate user-growth loops
+2: Viral/viral-adjacent dynamics
 
 **BE STRICT:**
 - Average ideas: 40-60 points
@@ -313,6 +373,154 @@ Respond with valid JSON:
     } catch (error) {
       this.logger.error('Failed to track AI interaction:', error);
       throw new Error('Failed to track AI interaction');
+    }
+  }
+
+  /**
+   * Find matching ideas based on user interest and strengths
+   */
+  async findMatchingIdeas(
+    interest: string,
+    strengths: string,
+  ): Promise<{ ideas: any[]; reasoning: string }> {
+    this.logger.log(`Finding matching ideas for interest: ${interest}`);
+
+    const supabase = this.supabaseService.getAdminClient();
+
+    try {
+      // Fetch top ideas from database
+      const { data: ideas, error } = await supabase
+        .from('projects')
+        .select(`
+          *,
+          author:users!projects_author_id_fkey(
+            username,
+            wallet,
+            avatar
+          )
+        `)
+        .eq('type', 'idea')
+        .order('ai_score', { ascending: false, nullsFirst: false })
+        .limit(20);
+
+      if (error) throw error;
+
+      // Use AI to analyze and rank ideas based on user context
+      const prompt = `You are an expert startup advisor. A user wants to build something in this area:
+
+**User's Interest:** ${interest}
+
+**User's Strengths:** ${strengths}
+
+Here are some existing ideas in our database:
+${ideas.map((idea, idx) => `
+${idx + 1}. **${idea.title}** (Category: ${idea.category})
+   Problem: ${idea.problem}
+   Solution: ${idea.solution}
+   Votes: ${idea.votes || 0}
+`).join('\n')}
+
+Analyze which 3 ideas would be the BEST match for this user based on their interests and strengths.
+
+Return ONLY valid JSON in this exact format:
+{
+  "topIdeas": [<index1>, <index2>, <index3>],
+  "reasoning": "Brief explanation (3-4 sentences) of why these ideas match the user's interests and strengths, plus key challenges they should be aware of."
+}`;
+
+      const completion = await this.openai.chat.completions.create({
+        model: 'gpt-4o-mini',
+        messages: [
+          {
+            role: 'system',
+            content: 'You are a helpful startup advisor. Respond with valid JSON only.',
+          },
+          {
+            role: 'user',
+            content: prompt,
+          },
+        ],
+        temperature: 0.7,
+        max_tokens: 500,
+        response_format: { type: 'json_object' },
+      });
+
+      const response = JSON.parse(completion.choices[0].message.content);
+      const topIdeas = response.topIdeas.map((idx: number) => ideas[idx - 1]).filter(Boolean);
+
+      // Format ideas for frontend
+      const formattedIdeas = topIdeas.map((idea: any) => ({
+        id: idea.id,
+        title: idea.title,
+        problem: idea.problem,
+        solution: idea.solution,
+        category: idea.category,
+        votes: idea.votes || 0,
+        feedbackCount: idea.feedback_count || 0,
+        tags: idea.tags || [],
+        author: idea.is_anonymous ? null : {
+          username: idea.author?.username,
+          wallet: idea.author?.wallet,
+          avatar: idea.author?.avatar,
+        },
+        isAnonymous: idea.is_anonymous,
+      }));
+
+      return {
+        ideas: formattedIdeas,
+        reasoning: response.reasoning,
+      };
+    } catch (error) {
+      this.logger.error('Failed to find matching ideas:', error);
+      throw new Error('Failed to find matching ideas');
+    }
+  }
+
+  /**
+   * Continue conversation with AI
+   */
+  async continueConversation(
+    message: string,
+    context: { interest: string; strengths: string },
+    history: Array<{ role: string; content: string }>,
+  ): Promise<string> {
+    this.logger.log('Continuing AI conversation');
+
+    const systemPrompt = `You are a helpful startup advisor helping users find and refine business ideas.
+
+User Context:
+- Interest: ${context.interest}
+- Strengths: ${context.strengths}
+
+Answer the user's question concisely and helpfully. Keep responses to 2-3 sentences.`;
+
+    const messages = [
+      {
+        role: 'system',
+        content: systemPrompt,
+      },
+      ...history,
+      {
+        role: 'user',
+        content: message,
+      },
+    ];
+
+    try {
+      const completion = await this.openai.chat.completions.create({
+        model: 'gpt-4o-mini',
+        messages: messages as any,
+        temperature: 0.7,
+        max_tokens: 200,
+      });
+
+      const reply = completion.choices[0].message.content;
+      this.logger.log('AI conversation continued successfully');
+
+      return reply;
+    } catch (error) {
+      this.logger.error('Failed to continue conversation:', error);
+      throw new Error('Failed to continue conversation');
     }
   }
 }
