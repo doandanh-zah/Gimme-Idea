@@ -232,8 +232,6 @@ export class ProjectsService {
       problem: project.problem,
       solution: project.solution,
       opportunity: project.opportunity,
-      goMarket: project.go_market,
-      teamInfo: project.team_info,
       isAnonymous: project.is_anonymous,
       createdAt: project.created_at,
       // Include comments
@@ -326,8 +324,6 @@ export class ProjectsService {
       problem: project.problem,
       solution: project.solution,
       opportunity: project.opportunity,
-      goMarket: project.go_market,
-      teamInfo: project.team_info,
       isAnonymous: project.is_anonymous,
       createdAt: project.created_at,
     };
@@ -532,8 +528,6 @@ export class ProjectsService {
       problem: updated.problem,
       solution: updated.solution,
       opportunity: updated.opportunity,
-      goMarket: updated.go_market,
-      teamInfo: updated.team_info,
       isAnonymous: updated.is_anonymous,
       createdAt: updated.created_at,
     };
