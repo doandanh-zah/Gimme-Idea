@@ -2,13 +2,17 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Send, Sparkles, Loader2 } from 'lucide-react';
+import { X, Send, Sparkles, Loader2, Coins } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import axios from 'axios';
 import { Project } from '../lib/types';
 import toast from 'react-hot-toast';
+import { useWallet } from '@solana/wallet-adapter-react';
+import { Connection, PublicKey, Transaction, SystemProgram, LAMPORTS_PER_SOL } from '@solana/web3.js';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+const RECIPIENT_WALLET = 'your_wallet_address_here'; // TODO: Replace with your wallet address
+const SOL_PRICE_USD = 200; // Approximate SOL price, should fetch from API in production
 
 interface Message {
   role: 'ai' | 'user';
@@ -29,8 +33,11 @@ export const AIChatModal: React.FC<AIChatModalProps> = ({ isOpen, onClose }) => 
   const [userContext, setUserContext] = useState({ interest: '', strengths: '' });
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [hasUnlimitedAccess, setHasUnlimitedAccess] = useState(false);
+  const [paymentAmount, setPaymentAmount] = useState(1); // USD amount
+  const [isProcessingPayment, setIsProcessingPayment] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
+  const { publicKey, sendTransaction } = useWallet();
 
   // Scroll to bottom when messages change
   useEffect(() => {
@@ -148,11 +155,61 @@ export const AIChatModal: React.FC<AIChatModalProps> = ({ isOpen, onClose }) => 
     onClose();
   };
 
-  const handlePayment = () => {
-    // TODO: Implement actual payment logic with Solana transaction
-    toast.success('Payment successful! You now have unlimited access.');
-    setHasUnlimitedAccess(true);
-    setShowPaymentModal(false);
+  const handlePayment = async () => {
+    if (!publicKey) {
+      toast.error('Please connect your wallet first');
+      return;
+    }
+
+    if (paymentAmount < 1) {
+      toast.error('Minimum payment is $1');
+      return;
+    }
+
+    setIsProcessingPayment(true);
+
+    try {
+      // Calculate SOL amount
+      const solAmount = paymentAmount / SOL_PRICE_USD;
+      const lamports = Math.floor(solAmount * LAMPORTS_PER_SOL);
+
+      // Create connection
+      const connection = new Connection(process.env.NEXT_PUBLIC_RPC_URL || 'https://api.devnet.solana.com');
+
+      // Create transaction
+      const transaction = new Transaction().add(
+        SystemProgram.transfer({
+          fromPubkey: publicKey,
+          toPubkey: new PublicKey(RECIPIENT_WALLET),
+          lamports,
+        })
+      );
+
+      // Get latest blockhash
+      const { blockhash } = await connection.getLatestBlockhash();
+      transaction.recentBlockhash = blockhash;
+      transaction.feePayer = publicKey;
+
+      // Send transaction
+      const signature = await sendTransaction(transaction, connection);
+
+      // Wait for confirmation
+      await connection.confirmTransaction(signature, 'confirmed');
+
+      // Calculate messages granted (10 messages per dollar)
+      const messagesGranted = paymentAmount * 10;
+
+      toast.success(`Payment successful! You received ${messagesGranted} messages.`);
+      setHasUnlimitedAccess(true);
+      setShowPaymentModal(false);
+
+      // TODO: Save transaction to backend for user's message credit
+    } catch (error: any) {
+      console.error('Payment error:', error);
+      toast.error(error.message || 'Payment failed. Please try again.');
+    } finally {
+      setIsProcessingPayment(false);
+    }
   };
 
   if (!isOpen) return null;
@@ -285,31 +342,85 @@ export const AIChatModal: React.FC<AIChatModalProps> = ({ isOpen, onClose }) => 
             exit={{ opacity: 0 }}
             className="fixed inset-0 z-[110] flex items-center justify-center px-4"
           >
-            <div className="absolute inset-0 bg-black/90 backdrop-blur-lg" />
+            <div className="absolute inset-0 bg-black/90 backdrop-blur-lg" onClick={() => setShowPaymentModal(false)} />
             <motion.div
               initial={{ scale: 0.9, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.9, opacity: 0 }}
-              className="relative bg-[#1A1A1A] border border-white/10 rounded-2xl p-8 max-w-md w-full"
+              className="relative bg-[#1A1A1A] border border-[#FFD700]/30 rounded-3xl p-8 max-w-lg w-full"
             >
-              <h3 className="text-2xl font-bold text-white mb-4">Mở khóa trò chuyện không giới hạn</h3>
-              <p className="text-gray-400 mb-6">
-                Bạn đã hết lượt hỏi miễn phí. Nạp tiền để tiếp tục trò chuyện với AI và nhận thêm gợi ý.
+              {/* Header with Icon */}
+              <div className="flex items-center gap-4 mb-6">
+                <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-[#FFD700] to-[#FDB931] flex items-center justify-center text-black">
+                  <Coins className="w-7 h-7" />
+                </div>
+                <div>
+                  <h3 className="text-2xl font-display font-bold text-white">Unlock More Messages</h3>
+                  <p className="text-sm text-gray-400">Continue your conversation with AI</p>
+                </div>
+              </div>
+
+              {/* Info */}
+              <p className="text-gray-300 mb-6 font-mono text-sm">
+                You've used your free questions. Purchase additional messages to keep chatting with the AI and get more personalized recommendations.
               </p>
+
+              {/* Pricing Info */}
+              <div className="bg-[#FFD700]/5 border border-[#FFD700]/20 rounded-xl p-4 mb-6">
+                <p className="text-[#FFD700] text-sm font-mono font-bold mb-2">💡 Pricing</p>
+                <p className="text-white font-mono">$1 USD = 10 AI messages</p>
+              </div>
+
+              {/* Amount Input */}
+              <div className="mb-6">
+                <label className="block text-sm font-mono text-gray-400 mb-2">Amount (USD)</label>
+                <input
+                  type="number"
+                  min="1"
+                  value={paymentAmount}
+                  onChange={(e) => setPaymentAmount(Math.max(1, parseInt(e.target.value) || 1))}
+                  className="w-full bg-[#0F0F0F] border border-white/20 rounded-xl px-4 py-3 text-white font-mono text-lg outline-none focus:border-[#FFD700]/50 transition-colors"
+                  placeholder="Enter amount"
+                />
+                <div className="mt-3 space-y-1">
+                  <p className="text-sm text-gray-400 font-mono">
+                    ≈ <span className="text-[#FFD700]">{(paymentAmount / SOL_PRICE_USD).toFixed(4)} SOL</span>
+                  </p>
+                  <p className="text-sm text-gray-400 font-mono">
+                    You'll receive: <span className="text-white font-bold">{paymentAmount * 10} messages</span>
+                  </p>
+                </div>
+              </div>
+
+              {/* Buttons */}
               <div className="flex gap-3">
                 <button
                   onClick={handlePayment}
-                  className="flex-1 px-6 py-3 bg-gradient-to-r from-[#FFD700] to-[#FDB931] text-black rounded-full font-bold hover:shadow-lg transition-all"
+                  disabled={isProcessingPayment}
+                  className="flex-1 px-6 py-3 bg-gradient-to-r from-[#FFD700] to-[#FDB931] text-black rounded-xl font-bold font-display hover:shadow-[0_0_20px_rgba(255,215,0,0.3)] transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                 >
-                  OK - Nạp tiền
+                  {isProcessingPayment ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      Processing...
+                    </>
+                  ) : (
+                    `Pay $${paymentAmount}`
+                  )}
                 </button>
                 <button
                   onClick={() => setShowPaymentModal(false)}
-                  className="flex-1 px-6 py-3 bg-white text-black rounded-full font-bold hover:bg-gray-200 transition-all"
+                  disabled={isProcessingPayment}
+                  className="px-6 py-3 bg-white/10 border border-white/20 text-white rounded-xl font-bold font-display hover:bg-white/20 transition-all disabled:opacity-50"
                 >
-                  Từ chối
+                  Cancel
                 </button>
               </div>
+
+              {/* Disclaimer */}
+              <p className="text-xs text-gray-500 text-center mt-4 font-mono">
+                Payment will be processed via Solana blockchain
+              </p>
             </motion.div>
           </motion.div>
         )}

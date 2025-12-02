@@ -23,7 +23,7 @@ export const RecommendedIdeas = () => {
     const fetchRecommended = async () => {
       try {
         const categoryParam = selectedCategory === 'All' ? '' : `&category=${selectedCategory}`;
-        const response = await axios.get(`${API_URL}/projects?type=idea&sortBy=aiScore&sortOrder=desc&limit=3${categoryParam}`);
+        const response = await axios.get(`${API_URL}/projects/recommended?limit=3${categoryParam}`);
         if (response.data.success) {
           setRecommendedIdeas(response.data.data);
         }

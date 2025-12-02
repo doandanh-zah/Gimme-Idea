@@ -406,26 +406,26 @@ Respond with valid JSON:
       if (error) throw error;
 
       // Use AI to analyze and rank ideas based on user context
-      const prompt = `You are an expert startup advisor. A user wants to build something in this area:
+      const prompt = `You are a friendly and knowledgeable startup advisor helping developers find the right ideas to work on.
 
 **User's Interest:** ${interest}
 
 **User's Strengths:** ${strengths}
 
-Here are some existing ideas in our database:
+Here are some existing ideas in our platform:
 ${ideas.map((idea, idx) => `
 ${idx + 1}. **${idea.title}** (Category: ${idea.category})
    Problem: ${idea.problem}
    Solution: ${idea.solution}
-   Votes: ${idea.votes || 0}
+   Community Interest: ${idea.votes || 0} votes
 `).join('\n')}
 
-Analyze which 3 ideas would be the BEST match for this user based on their interests and strengths.
+Analyze which 3 ideas would be the BEST fit for this user based on their interests and strengths.
 
 Return ONLY valid JSON in this exact format:
 {
   "topIdeas": [<index1>, <index2>, <index3>],
-  "reasoning": "Brief explanation (3-4 sentences) of why these ideas match the user's interests and strengths, plus key challenges they should be aware of."
+  "reasoning": "A friendly, conversational explanation (3-4 sentences in Vietnamese) of why these ideas are a great match for the user. Focus on the positive alignment with their interests and strengths, and mention any important considerations they should know. Use a warm, supportive tone - like talking to a friend."
 }`;
 
       const completion = await this.openai.chat.completions.create({
@@ -433,7 +433,7 @@ Return ONLY valid JSON in this exact format:
         messages: [
           {
             role: 'system',
-            content: 'You are a helpful startup advisor. Respond with valid JSON only.',
+            content: 'You are a friendly and supportive startup advisor who speaks Vietnamese naturally. You help developers find ideas that match their skills and interests. Always respond with valid JSON only, and keep your reasoning warm and conversational.',
           },
           {
             role: 'user',
@@ -486,13 +486,13 @@ Return ONLY valid JSON in this exact format:
   ): Promise<string> {
     this.logger.log('Continuing AI conversation');
 
-    const systemPrompt = `You are a helpful startup advisor helping users find and refine business ideas.
+    const systemPrompt = `Bạn là một người cố vấn startup thân thiện và nhiệt tình, giúp người dùng tìm kiếm và phát triển ý tưởng kinh doanh.
 
-User Context:
-- Interest: ${context.interest}
-- Strengths: ${context.strengths}
+Thông tin người dùng:
+- Quan tâm: ${context.interest}
+- Thế mạnh: ${context.strengths}
 
-Answer the user's question concisely and helpfully. Keep responses to 2-3 sentences.`;
+Hãy trả lời câu hỏi của người dùng một cách tự nhiên, lịch sự và hữu ích. Giữ câu trả lời ngắn gọn (2-3 câu) nhưng đầy đủ ý nghĩa. Nói chuyện như bạn đang trò chuyện với một người bạn, không quá trang trọng nhưng vẫn chuyên nghiệp.`;
 
     const messages = [
       {

@@ -120,10 +120,10 @@ export class ProjectsService {
   /**
    * Get top recommended ideas based on AI score
    */
-  async getRecommendedIdeas(limit: number = 3): Promise<ApiResponse<Project[]>> {
+  async getRecommendedIdeas(limit: number = 3, category?: string): Promise<ApiResponse<Project[]>> {
     const supabase = this.supabaseService.getAdminClient();
 
-    const { data, error } = await supabase
+    let query = supabase
       .from('projects')
       .select(`
         *,
@@ -135,8 +135,14 @@ export class ProjectsService {
       `)
       .eq('type', 'idea')
       .not('ai_score', 'is', null)
-      .order('ai_score', { ascending: false, nullsFirst: false })
-      .limit(limit);
+      .order('ai_score', { ascending: false, nullsFirst: false });
+
+    // Filter by category if provided
+    if (category && category !== 'All') {
+      query = query.eq('category', category);
+    }
+
+    const { data, error } = await query.limit(limit);
 
     if (error) {
       throw new Error(`Failed to fetch recommended ideas: ${error.message}`);
