@@ -8,6 +8,7 @@ import Navbar from '../components/Navbar';
 import { WalletModal } from '../components/WalletModal';
 import { ConnectReminderModal } from '../components/ConnectReminderModal';
 import { SubmissionModal } from '../components/SubmissionModal';
+import Script from 'next/script';
 import React from 'react';
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-inter' });
@@ -22,6 +23,20 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={`${inter.variable} ${mono.variable} ${space.variable} font-sans bg-background text-white min-h-screen selection:bg-accent selection:text-black`}>
+        {/* Google Analytics */}
+        <Script
+          src="https://www.googletagmanager.com/gtag/js?id=G-65VF8CLCR7"
+          strategy="afterInteractive"
+        />
+        <Script id="google-analytics" strategy="afterInteractive">
+          {`
+            window.dataLayer = window.dataLayer || [];
+            function gtag(){dataLayer.push(arguments);}
+            gtag('js', new Date());
+            gtag('config', 'G-65VF8CLCR7');
+          `}
+        </Script>
+
         <WalletProvider>
           <Navbar />
           <WalletModal />
