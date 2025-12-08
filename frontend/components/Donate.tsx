@@ -347,8 +347,7 @@ export const Donate = () => {
                             </div>
                         </div>
                         <div className="flex-grow">
-                            <h3 className="text-xl font-bold text-white mb-1 flex flex-wrap items-center gap-2">
-                                <span className="px-2 py-0.5 bg-yellow-500/10 border border-yellow-500/30 rounded-full text-[10px] font-mono text-yellow-400">FOUNDER</span>
+                            <h3 className="text-xl font-bold text-white mb-1 flex flex-wrap sm:flex-nowrap items-center gap-2">
                             </h3>
                             <p className="text-sm text-gray-400 mb-1">President @ DUT Superteam University Club</p>
                             <p className="text-xs text-gray-500">Founder @ Gimme Idea</p>
@@ -375,7 +374,7 @@ export const Donate = () => {
                             </div>
                         </div>
                         <div className="flex-grow">
-                            <h3 className="text-xl font-bold text-white mb-1 flex flex-wrap items-center gap-2">
+                            <h3 className="text-xl font-bold text-white mb-1 flex flex-wrap sm:flex-nowrap items-center gap-2">
                                 THODIUM
                                 <span className="px-2 py-0.5 bg-blue-500/10 border border-blue-500/30 rounded-full text-[10px] font-mono text-blue-400">CO-FOUNDER</span>
                             </h3>
