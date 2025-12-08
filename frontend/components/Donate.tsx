@@ -173,7 +173,7 @@ export const Donate = () => {
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: 0.1 }}
         >
-            <div className="bg-[#0F0F0F]/80 backdrop-blur-xl border border-blue-500/20 rounded-3xl p-8 relative overflow-hidden shadow-2xl shadow-blue-900/10 group flex flex-col justify-center">
+            <div className="bg-[#0F0F0F]/80 backdrop-blur-xl border border-blue-500/20 rounded-3xl p-6 sm:p-8 relative overflow-hidden shadow-2xl shadow-blue-900/10 group flex flex-col justify-center">
                 <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 via-transparent to-purple-500/5 pointer-events-none" />
                 
                 <AnimatePresence mode="wait">
@@ -253,7 +253,7 @@ export const Donate = () => {
                         >
                              <div className="mb-6">
                                 <label className="block text-xs font-bold text-gray-400 mb-2 uppercase tracking-wider">You are in devnet, please donate in mainnet! Thank you so much :3</label>
-                                <div className="grid grid-cols-4 gap-2 mb-4">
+                                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-4">
                                     {['0.1', '0.5', '1', '2'].map((val) => (
                                         <button
                                             key={val}
@@ -318,7 +318,7 @@ export const Donate = () => {
             initial={{ opacity: 0, x: 30 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: 0.2 }}
-            className="bg-[#0F0F0F]/80 backdrop-blur-xl border border-white/10 rounded-3xl p-8 overflow-hidden shadow-2xl"
+            className="bg-[#0F0F0F]/80 backdrop-blur-xl border border-white/10 rounded-3xl p-6 sm:p-8 overflow-hidden shadow-2xl"
         >
             <div className="text-center mb-8">
                 <h2 className="text-3xl font-display font-bold mb-2">
@@ -347,8 +347,7 @@ export const Donate = () => {
                             </div>
                         </div>
                         <div className="flex-grow">
-                            <h3 className="text-xl font-bold text-white mb-1 flex items-center gap-2">
-                                ZAH
+                            <h3 className="text-xl font-bold text-white mb-1 flex flex-wrap items-center gap-2">
                                 <span className="px-2 py-0.5 bg-yellow-500/10 border border-yellow-500/30 rounded-full text-[10px] font-mono text-yellow-400">FOUNDER</span>
                             </h3>
                             <p className="text-sm text-gray-400 mb-1">President @ DUT Superteam University Club</p>
@@ -376,7 +375,7 @@ export const Donate = () => {
                             </div>
                         </div>
                         <div className="flex-grow">
-                            <h3 className="text-xl font-bold text-white mb-1 flex items-center gap-2">
+                            <h3 className="text-xl font-bold text-white mb-1 flex flex-wrap items-center gap-2">
                                 THODIUM
                                 <span className="px-2 py-0.5 bg-blue-500/10 border border-blue-500/30 rounded-full text-[10px] font-mono text-blue-400">CO-FOUNDER</span>
                             </h3>
