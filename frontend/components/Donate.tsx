@@ -402,8 +402,9 @@ export const Donate = () => {
                     💡 Built with <span className="text-red-400">❤️</span>, <span className="text-yellow-400">☕</span> coffee, and countless late nights
                 </p>
             </motion.div>
-                    </motion.div>
-        
+
+        </motion.div> {/* End Builders Section */}
+
                 {/* Social Links */}
                 <motion.div
                     initial={{ opacity: 0, y: 20 }}
@@ -431,10 +432,9 @@ export const Donate = () => {
                     </a>
                 </motion.div>
         
-                </div> {/* Close new flex wrapper */}
-
-
+        </div> {/* Close new flex wrapper */}
       </div> {/* Close max-w-6xl mx-auto w-full */}
     </div> {/* Close min-h-screen pt-24 pb-12 px-6 relative overflow-hidden flex items-center */}
+    </div>
   );
 };
