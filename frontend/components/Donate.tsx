@@ -19,6 +19,7 @@ export const Donate = () => {
   const [isProcessing, setIsProcessing] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
   const [txHash, setTxHash] = useState('');
+  const [contributorName, setContributorName] = useState('');
   const [stars, setStars] = useState<{ id: number; top: string; left: string; size: number; duration: string; opacity: number }[]>([]);
 
   // Generate stars on mount
@@ -164,6 +165,20 @@ export const Donate = () => {
             </p>
         </motion.div>
 
+        <motion.div
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1 }}
+            className="text-center mb-12 max-w-2xl mx-auto"
+        >
+            <p className="text-xl text-gray-300 font-display font-bold mb-4 leading-relaxed">
+                Fuel the Revolution. Your contribution directly supports server costs, coffee, and open-source development for Gimme Idea.
+            </p>
+            <p className="text-sm text-gray-500">
+                Your support is our infrastructure. Thank you for fueling the mission.
+            </p>
+        </motion.div>
+
         {/* Main Content Grid */}
         <div className="flex flex-col lg:flex-row gap-6 mb-6">
 
@@ -281,6 +296,18 @@ export const Donate = () => {
                                         SOL
                                     </div>
                                 </div>
+                            </div>
+
+                            <div className="mb-6">
+                                <label htmlFor="contributor-name" className="block text-xs font-bold text-gray-400 mb-2 uppercase tracking-wider">What should we call you? (optional)</label>
+                                <input
+                                    id="contributor-name"
+                                    type="text"
+                                    value={contributorName}
+                                    onChange={(e) => setContributorName(e.target.value)}
+                                    placeholder="Your Name or Alias"
+                                    className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-white outline-none focus:border-blue-500 transition-colors group-hover/input:border-white/20"
+                                />
                             </div>
 
                             <div className="flex items-center gap-2 bg-black/40 border border-white/10 rounded-xl p-3 mb-6 relative group/copy transition-colors hover:border-white/20">
@@ -432,9 +459,9 @@ export const Donate = () => {
                     </a>
                 </motion.div>
         
-        </div> {/* Close new flex wrapper */}
-      </div> {/* Close max-w-6xl mx-auto w-full */}
-    </div> {/* Close min-h-screen pt-24 pb-12 px-6 relative overflow-hidden flex items-center */}
+            </div>
+        </div>
+      </div>
     </div>
   );
 };
