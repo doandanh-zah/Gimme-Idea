@@ -94,8 +94,15 @@ export default function Dashboard({ mode }: DashboardProps) {
       className="min-h-screen pb-20 relative"
     >
       {/* Background with Stars & Grid (same as landing page) */}
-      <div className="fixed inset-0 z-[-1] pointer-events-none">
+      <div className="fixed inset-0 z-[-1] pointer-events-none overflow-hidden">
           <div className="bg-grid opacity-40"></div>
+          
+          {/* Deep Purple Orb - Top Left */}
+          <div className="absolute top-[-20%] left-[-10%] w-[600px] h-[600px] bg-[#2e1065] rounded-full blur-[120px] animate-pulse-slow opacity-40 mix-blend-screen" />
+        
+          {/* Dark Gold/Bronze Orb - Bottom Right */}
+          <div className="absolute bottom-[-20%] right-[-10%] w-[600px] h-[600px] bg-[#422006] rounded-full blur-[120px] animate-pulse-slow opacity-40 mix-blend-screen" style={{animationDelay: '2s'}} />
+
           <div className="stars-container">
             {stars.map((star) => (
               <div

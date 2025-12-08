@@ -54,8 +54,8 @@ function App() {
             <Hero />
             
             {/* Stats Section */}
-            <section className="py-12 border-y border-white/5 bg-black/40 backdrop-blur-sm">
-              <div className="max-w-7xl mx-auto">
+            <section className="py-12 border-y border-white/5 bg-gradient-to-b from-transparent via-[#000000]/60 to-[#000000]/80">
+              <div className="max-w-7xl mx-auto backdrop-blur-sm">
                  <StatsDashboard />
               </div>
             </section>

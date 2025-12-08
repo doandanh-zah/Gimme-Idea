@@ -5,7 +5,7 @@ import { ArrowRight } from 'lucide-react';
 
 const JourneyMap: React.FC = () => {
   return (
-    <section className="py-24 px-6 relative">
+    <section className="py-24 px-6 relative bg-gradient-to-b from-transparent via-[#000000]/60 to-[#000000]/80">
       <div className="max-w-7xl mx-auto">
         <motion.div 
           initial={{ opacity: 0, y: 20 }}
