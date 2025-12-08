@@ -3,7 +3,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Wallet, Bell, Search, Menu, X, LayoutGrid, Plus, Trophy, BarChart3, User as UserIcon, Lightbulb, Heart, Rocket } from 'lucide-react';
+import { Wallet, Bell, Search, Menu, X, LayoutGrid, Plus, Trophy, BarChart3, User as UserIcon, Lightbulb, Heart, Rocket, MoreHorizontal, Info, Mail } from 'lucide-react';
 import { useAppStore } from '../lib/store';
 import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
@@ -31,9 +31,11 @@ const Navbar = () => {
   const [showUserMenu, setShowUserMenu] = React.useState(false);
   const [showSearch, setShowSearch] = React.useState(false);
   const [showNotifications, setShowNotifications] = React.useState(false);
+  const [showMoreMenu, setShowMoreMenu] = React.useState(false); // New state for 'More' menu
 
   const searchInputRef = useRef<HTMLInputElement>(null);
   const notificationRef = useRef<HTMLDivElement>(null);
+  const moreMenuRef = useRef<HTMLDivElement>(null); // Ref for 'More' menu
 
   const unreadCount = notifications.filter(n => !n.read).length;
 
@@ -41,6 +43,10 @@ const Navbar = () => {
     const handleClickOutside = (event: MouseEvent) => {
         if (notificationRef.current && !notificationRef.current.contains(event.target as Node)) {
             setShowNotifications(false);
+        }
+        // Handle click outside for 'More' menu
+        if (moreMenuRef.current && !moreMenuRef.current.contains(event.target as Node)) {
+            setShowMoreMenu(false);
         }
     };
     document.addEventListener('mousedown', handleClickOutside);
@@ -59,6 +65,12 @@ const Navbar = () => {
 
   const handleNotificationClick = () => {
       setShowNotifications(!showNotifications);
+      setShowMoreMenu(false); // Close other menus
+  };
+
+  const handleMoreMenuClick = () => {
+    setShowMoreMenu(!showMoreMenu);
+    setShowNotifications(false); // Close other menus
   };
 
   const navLinks = [
@@ -66,6 +78,13 @@ const Navbar = () => {
     { name: 'PROJECT', route: '/projects', icon: Rocket },
     { name: 'Donate me', route: '/donate', icon: Heart },
     { name: 'Leaderboard', route: '/home', icon: BarChart3 },
+    { name: 'More', isDropdown: true, icon: MoreHorizontal } // New 'More' entry
+  ];
+
+  const moreLinks = [ // Links for the 'More' dropdown
+    { name: 'Hackathon', route: '/hackathon', icon: Trophy },
+    { name: 'About Us', route: '/about', icon: Info },
+    { name: 'Contact', route: '/contact', icon: Mail },
   ];
 
   return (
@@ -97,6 +116,52 @@ const Navbar = () => {
         {/* Desktop Links */}
         <div className={`hidden md:flex items-center gap-6 lg:gap-8 ${showSearch ? 'opacity-0 pointer-events-none' : 'opacity-100'} transition-opacity duration-300`}>
           {navLinks.map((link) => {
+            if (link.isDropdown) {
+              return (
+                <div key={link.name} className="relative" ref={moreMenuRef}>
+                  <button
+                    onClick={handleMoreMenuClick}
+                    className={`text-sm font-medium transition-all duration-300 flex items-center gap-2 group
+                      ${showMoreMenu ? 'text-white font-bold' : 'text-gray-400'}`}
+                  >
+                    <link.icon className={`w-4 h-4 transition-colors duration-300 ${
+                        showMoreMenu ? 'text-white' : 'group-hover:text-[#FFD700]'
+                    }`} />
+                    <span className={`bg-clip-text transition-all duration-300 ${
+                        showMoreMenu
+                        ? 'text-white'
+                        : 'text-gray-400 group-hover:text-transparent group-hover:bg-gradient-to-r group-hover:from-purple-400 group-hover:to-[#FFD700]'
+                    }`}>
+                      {link.name}
+                    </span>
+                  </button>
+                  <AnimatePresence>
+                    {showMoreMenu && (
+                      <motion.div
+                        initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                        exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                        className="absolute top-full left-1/2 -translate-x-1/2 mt-4 w-48 bg-[#0F0F0F] border border-white/10 rounded-xl shadow-2xl overflow-hidden z-50 py-1"
+                      >
+                        {moreLinks.map((subLink) => (
+                          <button
+                            key={subLink.name}
+                            onClick={() => {
+                              router.push(subLink.route);
+                              setShowMoreMenu(false);
+                            }}
+                            className="w-full text-left px-4 py-3 text-sm text-gray-300 hover:bg-white/5 hover:text-white flex items-center gap-2"
+                          >
+                            <subLink.icon className="w-4 h-4" /> {subLink.name}
+                          </button>
+                        ))}
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
+              );
+            }
+
             const isActive = pathname === link.route || (link.route !== '/' && pathname?.startsWith(link.route));
             return (
               <button
@@ -268,19 +333,59 @@ const Navbar = () => {
           animate={{ opacity: 1, y: 0 }}
           className="pointer-events-auto absolute top-20 left-4 right-4 bg-[#0F0F0F] border border-white/10 rounded-2xl p-4 flex flex-col gap-4 md:hidden shadow-2xl z-50"
         >
-          {navLinks.map((link) => (
-            <button
-              key={link.name}
-              onClick={() => {
-                router.push(link.route);
-                setIsOpen(false);
-              }}
-              className="px-4 py-3 hover:bg-white/5 rounded-xl text-gray-300 text-left flex items-center gap-3"
-            >
-              <link.icon className="w-5 h-5" />
-              {link.name}
-            </button>
-          ))}
+          {navLinks.map((link) => {
+            if (link.isDropdown) {
+              return (
+                <div key={link.name}>
+                  <button
+                    onClick={() => setShowMoreMenu(!showMoreMenu)}
+                    className="px-4 py-3 hover:bg-white/5 rounded-xl text-gray-300 text-left flex items-center gap-3"
+                  >
+                    <link.icon className="w-5 h-5" />
+                    {link.name}
+                  </button>
+                  <AnimatePresence>
+                    {showMoreMenu && (
+                      <motion.div
+                        initial={{ opacity: 0, height: 0 }}
+                        animate={{ opacity: 1, height: 'auto' }}
+                        exit={{ opacity: 0, height: 0 }}
+                        className="overflow-hidden"
+                      >
+                        {moreLinks.map((subLink) => (
+                          <button
+                            key={subLink.name}
+                            onClick={() => {
+                              router.push(subLink.route);
+                              setIsOpen(false);
+                              setShowMoreMenu(false);
+                            }}
+                            className="w-full text-left pl-10 pr-4 py-3 text-sm text-gray-400 hover:bg-white/5 rounded-xl flex items-center gap-3"
+                          >
+                            <subLink.icon className="w-4 h-4" />
+                            {subLink.name}
+                          </button>
+                        ))}
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
+              );
+            }
+            return (
+              <button
+                key={link.name}
+                onClick={() => {
+                  router.push(link.route);
+                  setIsOpen(false);
+                }}
+                className="px-4 py-3 hover:bg-white/5 rounded-xl text-gray-300 text-left flex items-center gap-3"
+              >
+                <link.icon className="w-5 h-5" />
+                {link.name}
+              </button>
+            );
+          })}
           {user && (
               <button
                 onClick={() => {
