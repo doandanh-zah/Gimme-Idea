@@ -40,9 +40,35 @@ export class SettingsService {
    */
   private getDefaultMenuConfig() {
     return [
-      { name: 'Hackathon', route: '/hackathon', icon: 'Trophy', isActive: true },
-      { name: 'About Us', route: '/about', icon: 'Info', isActive: true },
-      { name: 'Contact', route: '/contact', icon: 'Mail', isActive: true },
+      { 
+        id: 'hackathon',
+        name: 'Hackathon', 
+        route: '/hackathon', 
+        icon: 'Trophy', 
+        status: 'open', // open, locked, hidden
+        highlight: {
+          borderColor: '#14F195',
+          glow: true,
+          badge: 'LIVE'
+        }
+      },
+      { 
+        id: 'about',
+        name: 'About Us', 
+        route: '/about', 
+        icon: 'Info', 
+        status: 'open' 
+      },
+      { 
+        id: 'contact',
+        name: 'Contact', 
+        route: '/contact', 
+        icon: 'Mail', 
+        status: 'locked',
+        highlight: {
+          badge: 'SOON'
+        }
+      },
     ];
   }
 }
