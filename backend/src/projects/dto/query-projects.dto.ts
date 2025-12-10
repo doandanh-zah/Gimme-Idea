@@ -1,18 +1,49 @@
-import { IsString, IsEnum, IsOptional, IsInt, Min } from 'class-validator';
-import { Transform } from 'class-transformer';
+import { IsString, IsEnum, IsOptional, IsInt, Min } from "class-validator";
+import { Transform } from "class-transformer";
 
 export class QueryProjectsDto {
-  @IsEnum(['project', 'idea'])
+  @IsEnum(["project", "idea"])
   @IsOptional()
-  type?: 'project' | 'idea';
+  type?: "project" | "idea";
 
-  @IsEnum(['DeFi', 'NFT', 'Gaming', 'Infrastructure', 'DAO'])
+  @IsEnum([
+    "DeFi",
+    "NFT",
+    "Gaming",
+    "Infrastructure",
+    "DAO",
+    "DePIN",
+    "Social",
+    "Mobile",
+    "Security",
+    "Payment",
+    "Developer Tooling",
+    "ReFi",
+    "Content",
+    "Dapp",
+    "Blinks",
+  ])
   @IsOptional()
-  category?: 'DeFi' | 'NFT' | 'Gaming' | 'Infrastructure' | 'DAO';
+  category?:
+    | "DeFi"
+    | "NFT"
+    | "Gaming"
+    | "Infrastructure"
+    | "DAO"
+    | "DePIN"
+    | "Social"
+    | "Mobile"
+    | "Security"
+    | "Payment"
+    | "Developer Tooling"
+    | "ReFi"
+    | "Content"
+    | "Dapp"
+    | "Blinks";
 
-  @IsEnum(['Idea', 'Prototype', 'Devnet', 'Mainnet'])
+  @IsEnum(["Idea", "Prototype", "Devnet", "Mainnet"])
   @IsOptional()
-  stage?: 'Idea' | 'Prototype' | 'Devnet' | 'Mainnet';
+  stage?: "Idea" | "Prototype" | "Devnet" | "Mainnet";
 
   @IsString()
   @IsOptional()
@@ -30,11 +61,11 @@ export class QueryProjectsDto {
   @IsOptional()
   offset?: number = 0;
 
-  @IsEnum(['votes', 'createdAt', 'feedbackCount'])
+  @IsEnum(["votes", "createdAt", "feedbackCount"])
   @IsOptional()
-  sortBy?: 'votes' | 'createdAt' | 'feedbackCount' = 'createdAt';
+  sortBy?: "votes" | "createdAt" | "feedbackCount" = "createdAt";
 
-  @IsEnum(['asc', 'desc'])
+  @IsEnum(["asc", "desc"])
   @IsOptional()
-  sortOrder?: 'asc' | 'desc' = 'desc';
+  sortOrder?: "asc" | "desc" = "desc";
 }
