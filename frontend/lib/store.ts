@@ -293,7 +293,11 @@ export const useAppStore = create<AppState>((set, get) => ({
   fetchProjects: async (filters) => {
     try {
       set({ isLoading: true });
-      const response = await apiClient.getProjects(filters);
+      // Default limit to reduce egress - can be increased with pagination
+      const response = await apiClient.getProjects({
+        limit: 20,
+        ...filters,
+      });
       if (response.success && response.data) {
         // Map imageUrl to image for frontend compatibility
         const projects = response.data.map((p) => ({

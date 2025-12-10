@@ -1,19 +1,25 @@
-import { Injectable, NotFoundException, ForbiddenException, Logger } from '@nestjs/common';
-import { SupabaseService } from '../shared/supabase.service';
-import { CreateProjectDto } from './dto/create-project.dto';
-import { UpdateProjectDto } from './dto/update-project.dto';
-import { QueryProjectsDto } from './dto/query-projects.dto';
-import { ApiResponse, Project } from '../shared/types';
-import { AIService } from '../ai/ai.service';
+import {
+  Injectable,
+  NotFoundException,
+  ForbiddenException,
+  Logger,
+} from "@nestjs/common";
+import { SupabaseService } from "../shared/supabase.service";
+import { CreateProjectDto } from "./dto/create-project.dto";
+import { UpdateProjectDto } from "./dto/update-project.dto";
+import { QueryProjectsDto } from "./dto/query-projects.dto";
+import { ApiResponse, Project } from "../shared/types";
+import { AIService } from "../ai/ai.service";
 
 @Injectable()
 export class ProjectsService {
   private readonly logger = new Logger(ProjectsService.name);
-  private readonly AI_BOT_WALLET = 'FzcnaZMYcoAYpLgr7Wym2b8hrKYk3VXsRxWSLuvZKLJm';
+  private readonly AI_BOT_WALLET =
+    "FzcnaZMYcoAYpLgr7Wym2b8hrKYk3VXsRxWSLuvZKLJm";
 
   constructor(
     private supabaseService: SupabaseService,
-    private aiService: AIService,
+    private aiService: AIService
   ) {}
 
   /**
@@ -22,10 +28,24 @@ export class ProjectsService {
   async findAll(query: QueryProjectsDto): Promise<ApiResponse<Project[]>> {
     const supabase = this.supabaseService.getAdminClient();
 
-    let supabaseQuery = supabase
-      .from('projects')
-      .select(`
-        *,
+    // OPTIMIZATION: Only select columns needed for list view to reduce egress
+    // Full details (problem, solution, opportunity) are fetched in findOne
+    let supabaseQuery = supabase.from("projects").select(`
+        id,
+        type,
+        title,
+        description,
+        category,
+        votes,
+        feedback_count,
+        stage,
+        tags,
+        website,
+        bounty,
+        image_url,
+        is_anonymous,
+        created_at,
+        ai_score,
         author:users!projects_author_id_fkey(
           username,
           wallet,
@@ -35,15 +55,15 @@ export class ProjectsService {
 
     // Apply filters
     if (query.type) {
-      supabaseQuery = supabaseQuery.eq('type', query.type);
+      supabaseQuery = supabaseQuery.eq("type", query.type);
     }
 
     if (query.category) {
-      supabaseQuery = supabaseQuery.eq('category', query.category);
+      supabaseQuery = supabaseQuery.eq("category", query.category);
     }
 
     if (query.stage) {
-      supabaseQuery = supabaseQuery.eq('stage', query.stage);
+      supabaseQuery = supabaseQuery.eq("stage", query.stage);
     }
 
     if (query.search) {
@@ -54,29 +74,32 @@ export class ProjectsService {
 
     // Apply sorting (convert camelCase to snake_case for database columns)
     const sortColumnMap = {
-      feedbackCount: 'feedback_count',
-      createdAt: 'created_at',
-      votes: 'votes',
-      aiScore: 'ai_score',
-      recommended: 'ai_score', // Alias for AI recommendations
+      feedbackCount: "feedback_count",
+      createdAt: "created_at",
+      votes: "votes",
+      aiScore: "ai_score",
+      recommended: "ai_score", // Alias for AI recommendations
     };
 
     // Default: For ideas without explicit sort, use AI score for recommendations
     let sortColumn = sortColumnMap[query.sortBy] || query.sortBy;
-    let sortOrder = query.sortOrder === 'asc';
+    let sortOrder = query.sortOrder === "asc";
 
     // If sorting by AI score, handle NULL values (put them at the end)
-    if (sortColumn === 'ai_score') {
+    if (sortColumn === "ai_score") {
       supabaseQuery = supabaseQuery.order(sortColumn, {
         ascending: sortOrder,
-        nullsFirst: false // NULLs last - projects without AI score go to the end
+        nullsFirst: false, // NULLs last - projects without AI score go to the end
       });
     } else {
       supabaseQuery = supabaseQuery.order(sortColumn, { ascending: sortOrder });
     }
 
     // Apply pagination
-    supabaseQuery = supabaseQuery.range(query.offset, query.offset + query.limit - 1);
+    supabaseQuery = supabaseQuery.range(
+      query.offset,
+      query.offset + query.limit - 1
+    );
 
     const { data, error } = await supabaseQuery;
 
@@ -84,32 +107,38 @@ export class ProjectsService {
       throw new Error(`Failed to fetch projects: ${error.message}`);
     }
 
-    // Map database results to Project type
-    const projects: Project[] = data.map(p => ({
-      id: p.id,
-      type: p.type || 'project',
-      title: p.title,
-      description: p.description,
-      category: p.category,
-      votes: p.votes || 0,
-      feedbackCount: p.feedback_count || 0,
-      stage: p.stage,
-      tags: p.tags || [],
-      website: p.website,
-      author: p.is_anonymous ? null : {
-        username: p.author.username,
-        wallet: p.author.wallet,
-        avatar: p.author.avatar,
-      },
-      bounty: p.bounty,
-      imageUrl: p.image_url,
-      // Idea-specific fields
-      problem: p.problem,
-      solution: p.solution,
-      opportunity: p.opportunity,
-      isAnonymous: p.is_anonymous,
-      createdAt: p.created_at,
-    }));
+    // Map database results to Project type (list view - minimal fields)
+    const projects: Project[] = data.map((p) => {
+      // Handle author - can be array or single object depending on query
+      const authorData = Array.isArray(p.author) ? p.author[0] : p.author;
+
+      return {
+        id: p.id,
+        type: p.type || "project",
+        title: p.title,
+        description: p.description,
+        category: p.category,
+        votes: p.votes || 0,
+        feedbackCount: p.feedback_count || 0,
+        stage: p.stage,
+        tags: p.tags || [],
+        website: p.website,
+        author:
+          p.is_anonymous || !authorData
+            ? null
+            : {
+                username: authorData.username,
+                wallet: authorData.wallet,
+                avatar: authorData.avatar,
+              },
+        bounty: p.bounty,
+        imageUrl: p.image_url,
+        // Idea-specific fields NOT included in list view to save bandwidth
+        // They are fetched in findOne for detail view
+        isAnonymous: p.is_anonymous,
+        createdAt: p.created_at,
+      };
+    });
 
     return {
       success: true,
@@ -120,26 +149,46 @@ export class ProjectsService {
   /**
    * Get top recommended ideas based on AI score
    */
-  async getRecommendedIdeas(limit: number = 3, category?: string): Promise<ApiResponse<Project[]>> {
+  async getRecommendedIdeas(
+    limit: number = 3,
+    category?: string
+  ): Promise<ApiResponse<Project[]>> {
     const supabase = this.supabaseService.getAdminClient();
 
+    // OPTIMIZATION: Only select columns needed for recommended cards
     let query = supabase
-      .from('projects')
-      .select(`
-        *,
+      .from("projects")
+      .select(
+        `
+        id,
+        type,
+        title,
+        description,
+        category,
+        votes,
+        feedback_count,
+        stage,
+        tags,
+        website,
+        bounty,
+        image_url,
+        is_anonymous,
+        created_at,
+        ai_score,
         author:users!projects_author_id_fkey(
           username,
           wallet,
           avatar
         )
-      `)
-      .eq('type', 'idea')
-      .not('ai_score', 'is', null)
-      .order('ai_score', { ascending: false, nullsFirst: false });
+      `
+      )
+      .eq("type", "idea")
+      .not("ai_score", "is", null)
+      .order("ai_score", { ascending: false, nullsFirst: false });
 
     // Filter by category if provided
-    if (category && category !== 'All') {
-      query = query.eq('category', category);
+    if (category && category !== "All") {
+      query = query.eq("category", category);
     }
 
     const { data, error } = await query.limit(limit);
@@ -148,30 +197,34 @@ export class ProjectsService {
       throw new Error(`Failed to fetch recommended ideas: ${error.message}`);
     }
 
-    const projects: Project[] = data.map(p => ({
-      id: p.id,
-      type: p.type || 'project',
-      title: p.title,
-      description: p.description,
-      category: p.category,
-      votes: p.votes || 0,
-      feedbackCount: p.feedback_count || 0,
-      stage: p.stage,
-      tags: p.tags || [],
-      website: p.website,
-      author: p.is_anonymous ? null : {
-        username: p.author.username,
-        wallet: p.author.wallet,
-        avatar: p.author.avatar,
-      },
-      bounty: p.bounty,
-      imageUrl: p.image_url,
-      problem: p.problem,
-      solution: p.solution,
-      opportunity: p.opportunity,
-      isAnonymous: p.is_anonymous,
-      createdAt: p.created_at,
-    }));
+    const projects: Project[] = data.map((p) => {
+      const authorData = Array.isArray(p.author) ? p.author[0] : p.author;
+
+      return {
+        id: p.id,
+        type: p.type || "project",
+        title: p.title,
+        description: p.description,
+        category: p.category,
+        votes: p.votes || 0,
+        feedbackCount: p.feedback_count || 0,
+        stage: p.stage,
+        tags: p.tags || [],
+        website: p.website,
+        author:
+          p.is_anonymous || !authorData
+            ? null
+            : {
+                username: authorData.username,
+                wallet: authorData.wallet,
+                avatar: authorData.avatar,
+              },
+        bounty: p.bounty,
+        imageUrl: p.image_url,
+        isAnonymous: p.is_anonymous,
+        createdAt: p.created_at,
+      };
+    });
 
     return {
       success: true,
@@ -186,39 +239,43 @@ export class ProjectsService {
     const supabase = this.supabaseService.getAdminClient();
 
     const { data: project, error } = await supabase
-      .from('projects')
-      .select(`
+      .from("projects")
+      .select(
+        `
         *,
         author:users!projects_author_id_fkey(
           username,
           wallet,
           avatar
         )
-      `)
-      .eq('id', id)
+      `
+      )
+      .eq("id", id)
       .single();
 
     if (error || !project) {
-      throw new NotFoundException('Project not found');
+      throw new NotFoundException("Project not found");
     }
 
     // Fetch comments for this project
     const { data: comments } = await supabase
-      .from('comments')
-      .select(`
+      .from("comments")
+      .select(
+        `
         *,
         author:users!comments_user_id_fkey(
           username,
           wallet,
           avatar
         )
-      `)
-      .eq('project_id', id)
-      .order('created_at', { ascending: true });
+      `
+      )
+      .eq("project_id", id)
+      .order("created_at", { ascending: true });
 
     const projectResponse: Project = {
       id: project.id,
-      type: project.type || 'project',
+      type: project.type || "project",
       title: project.title,
       description: project.description,
       category: project.category,
@@ -227,11 +284,13 @@ export class ProjectsService {
       stage: project.stage,
       tags: project.tags || [],
       website: project.website,
-      author: project.is_anonymous ? null : {
-        username: project.author.username,
-        wallet: project.author.wallet,
-        avatar: project.author.avatar,
-      },
+      author: project.is_anonymous
+        ? null
+        : {
+            username: project.author.username,
+            wallet: project.author.wallet,
+            avatar: project.author.avatar,
+          },
       bounty: project.bounty,
       imageUrl: project.image_url,
       // Idea-specific fields
@@ -241,21 +300,25 @@ export class ProjectsService {
       isAnonymous: project.is_anonymous,
       createdAt: project.created_at,
       // Include comments
-      comments: comments ? comments.map(c => ({
-        id: c.id,
-        projectId: c.project_id,
-        content: c.content,
-        author: c.is_anonymous ? null : {
-          username: c.author.username,
-          wallet: c.author.wallet,
-          avatar: c.author.avatar,
-        },
-        likes: c.likes || 0,
-        parentCommentId: c.parent_comment_id,
-        isAnonymous: c.is_anonymous,
-        tipsAmount: c.tips_amount || 0,
-        createdAt: c.created_at,
-      })) : [],
+      comments: comments
+        ? comments.map((c) => ({
+            id: c.id,
+            projectId: c.project_id,
+            content: c.content,
+            author: c.is_anonymous
+              ? null
+              : {
+                  username: c.author.username,
+                  wallet: c.author.wallet,
+                  avatar: c.author.avatar,
+                },
+            likes: c.likes || 0,
+            parentCommentId: c.parent_comment_id,
+            isAnonymous: c.is_anonymous,
+            tipsAmount: c.tips_amount || 0,
+            createdAt: c.created_at,
+          }))
+        : [],
     };
 
     return {
@@ -267,11 +330,14 @@ export class ProjectsService {
   /**
    * Create new project
    */
-  async create(userId: string, createDto: CreateProjectDto): Promise<ApiResponse<Project>> {
+  async create(
+    userId: string,
+    createDto: CreateProjectDto
+  ): Promise<ApiResponse<Project>> {
     const supabase = this.supabaseService.getAdminClient();
 
     const newProject = {
-      type: createDto.type || 'project',
+      type: createDto.type || "project",
       author_id: userId,
       title: createDto.title,
       description: createDto.description,
@@ -292,16 +358,18 @@ export class ProjectsService {
     };
 
     const { data: project, error } = await supabase
-      .from('projects')
+      .from("projects")
       .insert(newProject)
-      .select(`
+      .select(
+        `
         *,
         author:users!projects_author_id_fkey(
           username,
           wallet,
           avatar
         )
-      `)
+      `
+      )
       .single();
 
     if (error) {
@@ -310,7 +378,7 @@ export class ProjectsService {
 
     const projectResponse: Project = {
       id: project.id,
-      type: project.type || 'project',
+      type: project.type || "project",
       title: project.title,
       description: project.description,
       category: project.category,
@@ -319,11 +387,13 @@ export class ProjectsService {
       stage: project.stage,
       tags: project.tags || [],
       website: project.website,
-      author: project.is_anonymous ? null : {
-        username: project.author.username,
-        wallet: project.author.wallet,
-        avatar: project.author.avatar,
-      },
+      author: project.is_anonymous
+        ? null
+        : {
+            username: project.author.username,
+            wallet: project.author.wallet,
+            avatar: project.author.avatar,
+          },
       bounty: project.bounty,
       imageUrl: project.image_url,
       // Idea-specific fields
@@ -335,21 +405,24 @@ export class ProjectsService {
     };
 
     // Auto-generate AI feedback for ideas (async, don't wait)
-    if (project.type === 'idea' && project.problem && project.solution) {
+    if (project.type === "idea" && project.problem && project.solution) {
       this.generateAIFeedbackAsync(project.id, {
         title: project.title,
         problem: project.problem,
         solution: project.solution,
         opportunity: project.opportunity,
-      }).catch(err => {
-        this.logger.error(`Failed to generate AI feedback for project ${project.id}`, err);
+      }).catch((err) => {
+        this.logger.error(
+          `Failed to generate AI feedback for project ${project.id}`,
+          err
+        );
       });
     }
 
     return {
       success: true,
       data: projectResponse,
-      message: 'Project created successfully',
+      message: "Project created successfully",
     };
   }
 
@@ -363,27 +436,33 @@ export class ProjectsService {
       problem: string;
       solution: string;
       opportunity?: string;
-    },
+    }
   ): Promise<void> {
     this.logger.log(`Generating AI feedback for project ${projectId}`);
 
     try {
       // Spam filter: check content quality
       const minLength = 50; // Minimum total length
-      const totalLength = (ideaData.problem || '').length + (ideaData.solution || '').length;
+      const totalLength =
+        (ideaData.problem || "").length + (ideaData.solution || "").length;
 
       if (totalLength < minLength) {
-        this.logger.warn(`Skipping AI feedback for project ${projectId}: content too short (${totalLength} chars)`);
+        this.logger.warn(
+          `Skipping AI feedback for project ${projectId}: content too short (${totalLength} chars)`
+        );
         return;
       }
 
       // Check for spam patterns
-      const spamKeywords = ['test', 'bla bla', 'asdf', 'qwerty', '...', 'spam'];
-      const content = `${ideaData.title} ${ideaData.problem} ${ideaData.solution}`.toLowerCase();
-      const hasSpam = spamKeywords.some(keyword => content.includes(keyword));
+      const spamKeywords = ["test", "bla bla", "asdf", "qwerty", "...", "spam"];
+      const content =
+        `${ideaData.title} ${ideaData.problem} ${ideaData.solution}`.toLowerCase();
+      const hasSpam = spamKeywords.some((keyword) => content.includes(keyword));
 
       if (hasSpam && totalLength < 100) {
-        this.logger.warn(`Skipping AI feedback for project ${projectId}: likely spam content`);
+        this.logger.warn(
+          `Skipping AI feedback for project ${projectId}: likely spam content`
+        );
         return;
       }
 
@@ -395,25 +474,25 @@ export class ProjectsService {
 
       // First, get or create AI bot user
       let { data: aiUser } = await supabase
-        .from('users')
-        .select('id')
-        .eq('wallet', this.AI_BOT_WALLET)
+        .from("users")
+        .select("id")
+        .eq("wallet", this.AI_BOT_WALLET)
         .single();
 
       if (!aiUser) {
         // Create AI bot user
         const { data: newAiUser, error: createError } = await supabase
-          .from('users')
+          .from("users")
           .insert({
             wallet: this.AI_BOT_WALLET,
-            username: 'Gimme Idea Guy',
+            username: "Gimme Idea Guy",
             avatar: null,
           })
-          .select('id')
+          .select("id")
           .single();
 
         if (createError) {
-          this.logger.error('Failed to create AI bot user', createError);
+          this.logger.error("Failed to create AI bot user", createError);
           return;
         }
         aiUser = newAiUser;
@@ -421,91 +500,114 @@ export class ProjectsService {
 
       // Save AI score to project (for recommendations)
       const { error: updateError } = await supabase
-        .from('projects')
+        .from("projects")
         .update({ ai_score: feedback.score })
-        .eq('id', projectId);
+        .eq("id", projectId);
 
       if (updateError) {
-        this.logger.error('Failed to update project AI score', updateError);
+        this.logger.error("Failed to update project AI score", updateError);
       }
 
       // Create comment with AI feedback (WITHOUT showing score)
-      const commentContent = `${feedback.comment}\n\n**💪 Strengths:**\n${feedback.strengths.map(s => `• ${s}`).join('\n')}\n\n**⚠️ Areas for Improvement:**\n${feedback.weaknesses.map(w => `• ${w}`).join('\n')}\n\n**💡 Suggestions:**\n${feedback.suggestions.map(s => `• ${s}`).join('\n')}`;
+      const commentContent = `${
+        feedback.comment
+      }\n\n**💪 Strengths:**\n${feedback.strengths
+        .map((s) => `• ${s}`)
+        .join("\n")}\n\n**⚠️ Areas for Improvement:**\n${feedback.weaknesses
+        .map((w) => `• ${w}`)
+        .join("\n")}\n\n**💡 Suggestions:**\n${feedback.suggestions
+        .map((s) => `• ${s}`)
+        .join("\n")}`;
 
-      const { error: commentError } = await supabase
-        .from('comments')
-        .insert({
-          project_id: projectId,
-          user_id: aiUser.id,
-          content: commentContent,
-          is_anonymous: false,
-          likes: 0,
-          tips_amount: 0,
-          is_ai_generated: true,
-          ai_model: 'gpt-4o-mini',
-          ai_tokens_used: 0, // TODO: track actual tokens
-          created_at: new Date().toISOString(),
-        });
+      const { error: commentError } = await supabase.from("comments").insert({
+        project_id: projectId,
+        user_id: aiUser.id,
+        content: commentContent,
+        is_anonymous: false,
+        likes: 0,
+        tips_amount: 0,
+        is_ai_generated: true,
+        ai_model: "gpt-4o-mini",
+        ai_tokens_used: 0, // TODO: track actual tokens
+        created_at: new Date().toISOString(),
+      });
 
       if (commentError) {
-        this.logger.error('Failed to create AI comment', commentError);
+        this.logger.error("Failed to create AI comment", commentError);
       } else {
-        this.logger.log(`AI feedback created for project ${projectId} with score ${feedback.score}`);
+        this.logger.log(
+          `AI feedback created for project ${projectId} with score ${feedback.score}`
+        );
       }
     } catch (error) {
-      this.logger.error(`AI feedback generation failed for project ${projectId}`, error);
+      this.logger.error(
+        `AI feedback generation failed for project ${projectId}`,
+        error
+      );
     }
   }
 
   /**
    * Update project
    */
-  async update(id: string, userId: string, updateDto: UpdateProjectDto): Promise<ApiResponse<Project>> {
+  async update(
+    id: string,
+    userId: string,
+    updateDto: UpdateProjectDto
+  ): Promise<ApiResponse<Project>> {
     const supabase = this.supabaseService.getAdminClient();
 
     // Check if user is the author
     const { data: project } = await supabase
-      .from('projects')
-      .select('author_id')
-      .eq('id', id)
+      .from("projects")
+      .select("author_id")
+      .eq("id", id)
       .single();
 
     if (!project) {
-      throw new NotFoundException('Project not found');
+      throw new NotFoundException("Project not found");
     }
 
     if (project.author_id !== userId) {
-      throw new ForbiddenException('You can only update your own projects');
+      throw new ForbiddenException("You can only update your own projects");
     }
 
     // Update project - Only update fields that are provided
     const updateData: any = {};
     if (updateDto.title !== undefined) updateData.title = updateDto.title;
-    if (updateDto.description !== undefined) updateData.description = updateDto.description;
-    if (updateDto.category !== undefined) updateData.category = updateDto.category;
+    if (updateDto.description !== undefined)
+      updateData.description = updateDto.description;
+    if (updateDto.category !== undefined)
+      updateData.category = updateDto.category;
     if (updateDto.stage !== undefined) updateData.stage = updateDto.stage;
     if (updateDto.tags !== undefined) updateData.tags = updateDto.tags;
     if (updateDto.website !== undefined) updateData.website = updateDto.website;
     if (updateDto.bounty !== undefined) updateData.bounty = updateDto.bounty;
-    if (updateDto.imageUrl !== undefined) updateData.image_url = updateDto.imageUrl;
+    if (updateDto.imageUrl !== undefined)
+      updateData.image_url = updateDto.imageUrl;
     // Idea-specific fields
     if (updateDto.problem !== undefined) updateData.problem = updateDto.problem;
-    if (updateDto.solution !== undefined) updateData.solution = updateDto.solution;
-    if (updateDto.opportunity !== undefined) updateData.opportunity = updateDto.opportunity;
-    if (updateDto.isAnonymous !== undefined) updateData.is_anonymous = updateDto.isAnonymous;
+    if (updateDto.solution !== undefined)
+      updateData.solution = updateDto.solution;
+    if (updateDto.opportunity !== undefined)
+      updateData.opportunity = updateDto.opportunity;
+    if (updateDto.isAnonymous !== undefined)
+      updateData.is_anonymous = updateDto.isAnonymous;
 
     const { data: updated, error } = await supabase
-      .from('projects')
+      .from("projects")
       .update(updateData)
-      .eq('id', id)
-      .select(`
+      .eq("id", id)
+      .select(
+        `
         *,
         author:users!projects_author_id_fkey(
           username,
           wallet,
           avatar
         )
-      `)
+      `
+      )
       .single();
 
     if (error) {
@@ -514,7 +616,7 @@ export class ProjectsService {
 
     const projectResponse: Project = {
       id: updated.id,
-      type: updated.type || 'project',
+      type: updated.type || "project",
       title: updated.title,
       description: updated.description,
       category: updated.category,
@@ -523,11 +625,13 @@ export class ProjectsService {
       stage: updated.stage,
       tags: updated.tags || [],
       website: updated.website,
-      author: updated.is_anonymous ? null : {
-        username: updated.author.username,
-        wallet: updated.author.wallet,
-        avatar: updated.author.avatar,
-      },
+      author: updated.is_anonymous
+        ? null
+        : {
+            username: updated.author.username,
+            wallet: updated.author.wallet,
+            avatar: updated.author.avatar,
+          },
       bounty: updated.bounty,
       imageUrl: updated.image_url,
       // Idea-specific fields
@@ -541,7 +645,7 @@ export class ProjectsService {
     return {
       success: true,
       data: projectResponse,
-      message: 'Project updated successfully',
+      message: "Project updated successfully",
     };
   }
 
@@ -553,24 +657,21 @@ export class ProjectsService {
 
     // Check if user is the author
     const { data: project } = await supabase
-      .from('projects')
-      .select('author_id')
-      .eq('id', id)
+      .from("projects")
+      .select("author_id")
+      .eq("id", id)
       .single();
 
     if (!project) {
-      throw new NotFoundException('Project not found');
+      throw new NotFoundException("Project not found");
     }
 
     if (project.author_id !== userId) {
-      throw new ForbiddenException('You can only delete your own projects');
+      throw new ForbiddenException("You can only delete your own projects");
     }
 
     // Delete project
-    const { error } = await supabase
-      .from('projects')
-      .delete()
-      .eq('id', id);
+    const { error } = await supabase.from("projects").delete().eq("id", id);
 
     if (error) {
       throw new Error(`Failed to delete project: ${error.message}`);
@@ -578,40 +679,46 @@ export class ProjectsService {
 
     return {
       success: true,
-      message: 'Project deleted successfully',
+      message: "Project deleted successfully",
     };
   }
 
   /**
    * Vote for project
    */
-  async vote(id: string, userId: string): Promise<ApiResponse<{ votes: number }>> {
+  async vote(
+    id: string,
+    userId: string
+  ): Promise<ApiResponse<{ votes: number }>> {
     const supabase = this.supabaseService.getAdminClient();
 
     // Check if user already voted
     const { data: existingVote } = await supabase
-      .from('project_votes')
-      .select('*')
-      .eq('project_id', id)
-      .eq('user_id', userId)
+      .from("project_votes")
+      .select("*")
+      .eq("project_id", id)
+      .eq("user_id", userId)
       .single();
 
     if (existingVote) {
       return {
         success: false,
-        error: 'You already voted for this project',
+        error: "You already voted for this project",
       };
     }
 
     // Add vote
     await supabase
-      .from('project_votes')
+      .from("project_votes")
       .insert({ project_id: id, user_id: userId });
 
     // Increment vote count
-    const { data: newVotes, error } = await supabase.rpc('increment_project_votes', {
-      project_id: id,
-    });
+    const { data: newVotes, error } = await supabase.rpc(
+      "increment_project_votes",
+      {
+        project_id: id,
+      }
+    );
 
     if (error) {
       throw new Error(`Failed to vote: ${error.message}`);
@@ -620,7 +727,7 @@ export class ProjectsService {
     return {
       success: true,
       data: { votes: newVotes },
-      message: 'Vote added successfully',
+      message: "Vote added successfully",
     };
   }
 }
