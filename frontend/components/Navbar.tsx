@@ -175,10 +175,10 @@ const Navbar = () => {
                priority
              />
           </div>
-          <div className="flex flex-col items-start leading-none hidden sm:flex">
-            <span className="text-white font-bold text-lg tracking-tight">Gimme</span>
-            <span className="text-[10px] font-mono text-[#FFD700] tracking-widest uppercase">Idea</span>
-          </div>
+          <span className="hidden sm:block font-fugaz text-xl tracking-wide">
+            <span className="text-white">Gimme</span>
+            <span className="text-[#FFD700]">Idea</span>
+          </span>
         </button>
 
         {/* Desktop Links */}

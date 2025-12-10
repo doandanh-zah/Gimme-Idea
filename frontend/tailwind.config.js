@@ -28,6 +28,7 @@ module.exports = {
         sans: ['var(--font-inter)', 'sans-serif'],
         mono: ['var(--font-mono)', 'monospace'],
         display: ['var(--font-space)', 'sans-serif'],
+        fugaz: ['var(--font-fugaz)', 'cursive'],
       },
       animation: {
         'float': 'float 6s ease-in-out infinite',
