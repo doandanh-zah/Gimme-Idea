@@ -2,7 +2,7 @@
  * imgBB Image Upload Service
  * Free image hosting with CDN support
  * https://api.imgbb.com/
- * 
+ *
  * Benefits over Supabase Storage:
  * - No egress costs
  * - Global CDN
@@ -10,8 +10,9 @@
  */
 
 // API key from environment or fallback
-const IMGBB_API_KEY = process.env.NEXT_PUBLIC_IMGBB_API_KEY || 'c46f48a848428c48a80fa1fd1db02c96';
-const IMGBB_API_URL = 'https://api.imgbb.com/1/upload';
+const IMGBB_API_KEY =
+  process.env.NEXT_PUBLIC_IMGBB_API_KEY || "c46f48a848428c48a80fa1fd1db02c96";
+const IMGBB_API_URL = "https://api.imgbb.com/1/upload";
 
 interface ImgBBResponse {
   data: {
@@ -63,29 +64,29 @@ export async function uploadToImgBB(
   name?: string
 ): Promise<string> {
   if (!IMGBB_API_KEY) {
-    console.error('IMGBB_API_KEY is not configured');
-    throw new Error('Image upload service is not configured');
+    console.error("IMGBB_API_KEY is not configured");
+    throw new Error("Image upload service is not configured");
   }
 
   const formData = new FormData();
-  formData.append('key', IMGBB_API_KEY);
+  formData.append("key", IMGBB_API_KEY);
 
-  if (typeof file === 'string') {
+  if (typeof file === "string") {
     // If it's a base64 string, extract just the data part
-    const base64Data = file.includes(',') ? file.split(',')[1] : file;
-    formData.append('image', base64Data);
+    const base64Data = file.includes(",") ? file.split(",")[1] : file;
+    formData.append("image", base64Data);
   } else {
     // If it's a File object
-    formData.append('image', file);
+    formData.append("image", file);
   }
 
   if (name) {
-    formData.append('name', name);
+    formData.append("name", name);
   }
 
   try {
     const response = await fetch(IMGBB_API_URL, {
-      method: 'POST',
+      method: "POST",
       body: formData,
     });
 
@@ -96,13 +97,13 @@ export async function uploadToImgBB(
     const result: ImgBBResponse = await response.json();
 
     if (!result.success) {
-      throw new Error('imgBB upload unsuccessful');
+      throw new Error("imgBB upload unsuccessful");
     }
 
     // Return the display URL (optimized for web display)
     return result.data.display_url;
   } catch (error) {
-    console.error('Error uploading to imgBB:', error);
+    console.error("Error uploading to imgBB:", error);
     throw error;
   }
 }
@@ -114,15 +115,17 @@ export async function uploadToImgBB(
  */
 export async function uploadAvatar(file: File): Promise<string> {
   // Validate file type
-  const validTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+  const validTypes = ["image/jpeg", "image/png", "image/gif", "image/webp"];
   if (!validTypes.includes(file.type)) {
-    throw new Error('Invalid file type. Please upload JPEG, PNG, GIF, or WebP.');
+    throw new Error(
+      "Invalid file type. Please upload JPEG, PNG, GIF, or WebP."
+    );
   }
 
   // Validate file size (max 2MB)
   const maxSize = 2 * 1024 * 1024;
   if (file.size > maxSize) {
-    throw new Error('File size must be less than 2MB.');
+    throw new Error("File size must be less than 2MB.");
   }
 
   // Generate a unique name for the avatar
@@ -140,15 +143,17 @@ export async function uploadAvatar(file: File): Promise<string> {
  */
 export async function uploadProjectImage(file: File): Promise<string> {
   // Validate file type
-  const validTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+  const validTypes = ["image/jpeg", "image/png", "image/gif", "image/webp"];
   if (!validTypes.includes(file.type)) {
-    throw new Error('Invalid file type. Please upload JPEG, PNG, GIF, or WebP.');
+    throw new Error(
+      "Invalid file type. Please upload JPEG, PNG, GIF, or WebP."
+    );
   }
 
   // Validate file size (max 5MB for project images)
   const maxSize = 5 * 1024 * 1024;
   if (file.size > maxSize) {
-    throw new Error('File size must be less than 5MB.');
+    throw new Error("File size must be less than 5MB.");
   }
 
   // Generate a unique name

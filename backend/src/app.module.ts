@@ -10,7 +10,6 @@ import { UsersModule } from './users/users.module';
 import { PaymentsModule } from './payments/payments.module';
 import { SettingsModule } from './settings/settings.module';
 import { AIModule } from './ai/ai.module';
-import { SupabaseService } from './shared/supabase.service';
 
 @Module({
   imports: [
@@ -22,7 +21,6 @@ import { SupabaseService } from './shared/supabase.service';
     PaymentsModule,
     SettingsModule,
     AIModule,
-    SupabaseModule,
   ],
   controllers: [AppController],
   providers: [SupabaseService, SolanaService],

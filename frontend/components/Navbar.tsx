@@ -126,7 +126,8 @@ const Navbar = () => {
           .map((item: any) => ({
             name: item.name,
             route: item.route,
-            icon: getIconComponent(item.icon)
+            icon: getIconComponent(item.icon),
+            isActive: item.isActive
           }));
         
         if (mappedLinks.length > 0) {
