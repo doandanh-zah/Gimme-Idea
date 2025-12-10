@@ -3,7 +3,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Wallet, Bell, Search, Menu, X, LayoutGrid, Plus, Trophy, BarChart3, User as UserIcon, Lightbulb, Heart, Rocket, LogOut, AlertCircle, MoreHorizontal, Info, Mail } from 'lucide-react';
+import { Wallet, Bell, Search, Menu, X, LayoutGrid, Plus, Trophy, BarChart3, User as UserIcon, Lightbulb, Heart, Rocket, LogOut, AlertCircle, MoreHorizontal, Info, Mail, Lock } from 'lucide-react';
 import { useAppStore } from '../lib/store';
 import { useAuth } from '../contexts/AuthContext';
 import { useRouter, usePathname } from 'next/navigation';
@@ -38,9 +38,26 @@ const Navbar = () => {
   
   // Dynamic Menu State
   const [moreLinks, setMoreLinks] = useState([
-    { name: 'Hackathon', route: '/hackathon', icon: Trophy, isActive: true },
-    { name: 'About Us', route: '/about', icon: Info, isActive: true },
-    { name: 'Contact', route: '/contact', icon: Mail, isActive: true },
+    { 
+      name: 'Hackathon', 
+      route: '/hackathon', 
+      icon: Trophy, 
+      status: 'open',
+      highlight: { badge: 'LIVE', borderColor: '#14F195' } 
+    },
+    { 
+      name: 'About Us', 
+      route: '/about', 
+      icon: Info, 
+      status: 'open' 
+    },
+    { 
+      name: 'Contact', 
+      route: '/contact', 
+      icon: Mail, 
+      status: 'locked',
+      highlight: { badge: 'SOON' }
+    },
   ]);
 
   useEffect(() => {
@@ -113,6 +130,7 @@ const Navbar = () => {
       case 'Mail': return Mail;
       case 'Heart': return Heart;
       case 'Star': return Lightbulb;
+      case 'Lock': return Lock;
       default: return Info;
     }
   };
@@ -122,10 +140,9 @@ const Navbar = () => {
       const response = await apiClient.getMenuConfig();
       if (response.success && response.data && Array.isArray(response.data)) {
         const mappedLinks = response.data
-          .filter((item: any) => item.isActive)
+          .filter((item: any) => item.status !== 'hidden')
           .map((item: any) => ({
-            name: item.name,
-            route: item.route,
+            ...item,
             icon: getIconComponent(item.icon)
           }));
         
@@ -193,18 +210,50 @@ const Navbar = () => {
                         exit={{ opacity: 0, y: 10, scale: 0.95 }}
                         className="absolute top-full left-1/2 -translate-x-1/2 mt-4 w-48 bg-[#0F0F0F] border border-white/10 rounded-xl shadow-2xl overflow-hidden z-50 py-1"
                       >
-                        {moreLinks.map((subLink) => (
+                        {moreLinks.map((subLink: any) => {
+                          const isLocked = subLink.status === 'locked';
+                          const style = subLink.highlight || {};
+                          
+                          return (
                           <button
-                            key={subLink.name}
+                            key={subLink.id || subLink.name}
                             onClick={() => {
-                              router.push(subLink.route);
-                              setShowMoreMenu(false);
+                              if (!isLocked) {
+                                router.push(subLink.route);
+                                setShowMoreMenu(false);
+                              }
                             }}
-                            className="w-full text-left px-4 py-3 text-sm text-gray-300 hover:bg-white/5 hover:text-white flex items-center gap-2"
+                            disabled={isLocked}
+                            style={{
+                              borderColor: style.borderColor || 'transparent',
+                              boxShadow: style.glow && style.borderColor ? `0 0 10px ${style.borderColor}40` : 'none'
+                            }}
+                            className={`w-full text-left px-4 py-3 text-sm flex items-center justify-between gap-2 border-l-2 transition-all
+                              ${isLocked 
+                                ? 'text-gray-500 cursor-not-allowed bg-white/[0.02]' 
+                                : 'text-gray-300 hover:bg-white/5 hover:text-white'
+                              }`}
                           >
-                            <subLink.icon className="w-4 h-4" /> {subLink.name}
+                            <div className="flex items-center gap-2">
+                              <subLink.icon className={`w-4 h-4 ${style.textColor ? '' : ''}`} style={{ color: style.textColor }} /> 
+                              <span style={{ color: style.textColor }}>{subLink.name}</span>
+                            </div>
+                            
+                            {isLocked ? (
+                              <Lock className="w-3 h-3 text-gray-600" />
+                            ) : (
+                              style.badge && (
+                                <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-white/10 font-bold border border-white/10"
+                                      style={{ 
+                                        color: style.borderColor || 'white',
+                                        borderColor: style.borderColor || 'rgba(255,255,255,0.1)'
+                                      }}>
+                                  {style.badge}
+                                </span>
+                              )
+                            )}
                           </button>
-                        ))}
+                        )})}
                       </motion.div>
                     )}
                   </AnimatePresence>
