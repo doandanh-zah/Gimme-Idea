@@ -34,7 +34,7 @@ CREATE TABLE IF NOT EXISTS projects (
   author_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   title VARCHAR(255) NOT NULL,
   description TEXT NOT NULL,
-  category VARCHAR(50) NOT NULL CHECK (category IN ('DeFi', 'NFT', 'Gaming', 'Infrastructure', 'DAO', 'DePIN', 'Social', 'Mobile', 'Security')),
+  category VARCHAR(50) NOT NULL CHECK (category IN ('DeFi', 'NFT', 'Gaming', 'Infrastructure', 'DAO', 'DePIN', 'Social', 'Mobile', 'Security', 'Payment', 'Developer Tooling', 'ReFi', 'Content', 'Dapp', 'Blinks')),
   stage VARCHAR(50) NOT NULL CHECK (stage IN ('Idea', 'Prototype', 'Devnet', 'Mainnet')),
   tags TEXT[] DEFAULT '{}',
   website TEXT,
