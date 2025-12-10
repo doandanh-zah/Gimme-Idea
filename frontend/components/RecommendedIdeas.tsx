@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { ChevronDown } from 'lucide-react';
+import { ChevronDown, Crown, Medal, Award, MessageCircle, ThumbsUp, Sparkles } from 'lucide-react';
 import { useAppStore } from '../lib/store';
 import { Project } from '../lib/types';
 import { useRouter } from 'next/navigation';
@@ -70,9 +70,9 @@ export const RecommendedIdeas = () => {
   }
 
   const medals = [
-    { emoji: '🥇', label: 'Top Pick', watermark: '1' },
-    { emoji: '🥈', label: '2nd Best', watermark: '2' },
-    { emoji: '🥉', label: '3rd Best', watermark: '3' },
+    { icon: Crown, label: 'Top Pick', watermark: '1', color: 'from-[#FFD700] to-[#FDB931]', bgColor: 'bg-[#FFD700]' },
+    { icon: Medal, label: '2nd Best', watermark: '2', color: 'from-[#C0C0C0] to-[#A8A8A8]', bgColor: 'bg-[#C0C0C0]' },
+    { icon: Award, label: '3rd Best', watermark: '3', color: 'from-[#CD7F32] to-[#B87333]', bgColor: 'bg-[#CD7F32]' },
   ];
 
   return (
@@ -116,65 +116,87 @@ export const RecommendedIdeas = () => {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10">
-        {recommendedIdeas.map((idea, index) => (
-          <motion.div
-            key={idea.id}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: index * 0.08, duration: 0.25, ease: "easeOut" }}
-            onClick={() => handleViewIdea(idea)}
-            whileHover={{ scale: 1.01 }}
-            whileTap={{ scale: 0.99 }}
-            className="relative p-6 rounded-2xl transition-all duration-200 cursor-pointer group border border-[#FFD700]/10 bg-gradient-to-br from-[#FFD700]/[0.03] to-transparent hover:shadow-[0_8px_40px_rgba(255,215,0,0.12)] min-h-[320px] flex flex-col overflow-hidden"
-          >
-            {/* Faded Watermark Number */}
-            <div className="absolute top-6 right-6 text-[120px] font-black text-[#FFD700]/[0.03] leading-none pointer-events-none select-none">
-              {medals[index].watermark}
-            </div>
-
-            {/* Premium Medal Badge */}
-            <div className="relative z-10 flex items-center justify-between mb-5">
-              <div className="flex items-center gap-2">
-                <span className="text-3xl">{medals[index].emoji}</span>
-                <div>
-                  <div className="text-xs font-mono text-[#FFD700]/60 uppercase tracking-wider">AI Recommended</div>
-                  <div className="text-sm font-bold text-[#FFD700]">{medals[index].label}</div>
-                </div>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {recommendedIdeas.map((idea, index) => {
+          const MedalIcon = medals[index].icon;
+          
+          return (
+            <motion.div
+              key={idea.id}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: index * 0.08, duration: 0.25, ease: "easeOut" }}
+              onClick={() => handleViewIdea(idea)}
+              whileHover={{ scale: 1.02, y: -4 }}
+              whileTap={{ scale: 0.98 }}
+              className="relative p-6 rounded-2xl transition-all duration-300 cursor-pointer group border border-white/10 bg-[#0D0D12] hover:border-[#FFD700]/30 hover:shadow-[0_8px_40px_rgba(255,215,0,0.15)] min-h-[340px] flex flex-col overflow-hidden"
+            >
+              {/* Subtle gradient overlay on hover */}
+              <div className="absolute inset-0 bg-gradient-to-br from-[#FFD700]/[0.02] to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-2xl" />
+              
+              {/* Faded Watermark Number */}
+              <div className="absolute top-4 right-4 text-[100px] font-black text-white/[0.03] leading-none pointer-events-none select-none">
+                {medals[index].watermark}
               </div>
-            </div>
 
-            {/* Large Title */}
-            <h3 className="relative z-10 text-2xl font-bold text-white mb-4 line-clamp-2 group-hover:text-[#FFD700] transition-colors duration-200">
-              {idea.title}
-            </h3>
-
-            {/* Problem Preview */}
-            <p className="relative z-10 text-sm text-gray-400 line-clamp-3 mb-5 flex-grow">
-              {idea.problem}
-            </p>
-
-            {/* Footer Stats */}
-            <div className="relative z-10 flex items-center justify-between pt-4 border-t border-[#FFD700]/10 mt-auto">
-              <div className="flex items-center gap-3 text-xs">
-                <span className="px-2 py-1 bg-[#FFD700]/10 text-[#FFD700] rounded-full font-mono text-[10px]">
+              {/* Premium Medal Badge */}
+              <div className="relative z-10 flex items-center justify-between mb-4">
+                <div className="flex items-center gap-3">
+                  <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${medals[index].color} flex items-center justify-center shadow-lg`}>
+                    <MedalIcon className="w-5 h-5 text-black" />
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-1.5 text-xs font-medium text-gray-400 uppercase tracking-wider">
+                      <Sparkles className="w-3 h-3 text-[#FFD700]" />
+                      AI Recommended
+                    </div>
+                    <div className={`text-sm font-bold bg-gradient-to-r ${medals[index].color} text-transparent bg-clip-text`}>
+                      {medals[index].label}
+                    </div>
+                  </div>
+                </div>
+                
+                {/* Category Badge */}
+                <span className="px-2.5 py-1 bg-white/5 border border-white/10 text-white/70 rounded-lg font-mono text-[10px] uppercase">
                   {idea.category}
                 </span>
-                <span className="text-gray-500">💬 {idea.feedbackCount || 0}</span>
-                <span className="text-gray-500">👍 {idea.votes || 0}</span>
               </div>
-              <AuthorLink
-                username={idea.author?.username || 'Anonymous'}
-                avatar={idea.author?.avatar}
-                isAnonymous={idea.isAnonymous || !idea.author}
-                showAvatar={false}
-                className="text-xs text-gray-600 font-mono"
-              >
-                {idea.author && !idea.isAnonymous ? `@${idea.author.username}` : undefined}
-              </AuthorLink>
-            </div>
-          </motion.div>
-        ))}
+
+              {/* Title */}
+              <h3 className="relative z-10 text-xl font-bold text-white mb-3 line-clamp-2 group-hover:text-[#FFD700] transition-colors duration-200">
+                {idea.title}
+              </h3>
+
+              {/* Problem Preview */}
+              <p className="relative z-10 text-sm text-gray-400 line-clamp-3 mb-5 flex-grow leading-relaxed">
+                {idea.problem || idea.description || 'No description available'}
+              </p>
+
+              {/* Footer Stats */}
+              <div className="relative z-10 flex items-center justify-between pt-4 border-t border-white/10 mt-auto">
+                <div className="flex items-center gap-4 text-xs">
+                  <div className="flex items-center gap-1.5 text-gray-400">
+                    <MessageCircle className="w-3.5 h-3.5" />
+                    <span>{idea.feedbackCount || 0}</span>
+                  </div>
+                  <div className="flex items-center gap-1.5 text-gray-400">
+                    <ThumbsUp className="w-3.5 h-3.5" />
+                    <span>{idea.votes || 0}</span>
+                  </div>
+                </div>
+                <AuthorLink
+                  username={idea.author?.username || 'Anonymous'}
+                  avatar={idea.author?.avatar}
+                  isAnonymous={idea.isAnonymous || !idea.author}
+                  showAvatar={false}
+                  className="text-xs text-gray-500 font-mono hover:text-white transition-colors"
+                >
+                  {idea.author && !idea.isAnonymous ? `@${idea.author.username}` : undefined}
+                </AuthorLink>
+              </div>
+            </motion.div>
+          );
+        })}
       </div>
 
       {/* Divider */}

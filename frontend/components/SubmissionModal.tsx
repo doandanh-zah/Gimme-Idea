@@ -301,77 +301,114 @@ export const SubmissionModal = () => {
                 initial={{ scale: 0.95, opacity: 0, y: 20 }}
                 animate={{ scale: 1, opacity: 1, y: 0 }}
                 exit={{ scale: 0.95, opacity: 0, y: 20 }}
-                className={`relative w-full max-w-4xl bg-[#121212] border ${borderColor} rounded-3xl ${shadowColor} shadow-2xl overflow-hidden max-h-[90vh] flex flex-col`}
+                className="relative w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden"
             >
-                {/* Header with visual flare */}
-                <div className={`relative px-8 py-6 border-b border-white/10 overflow-hidden`}>
-                    <div className={`absolute inset-0 bg-gradient-to-r ${themeColor} opacity-10`} />
-                    <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full blur-[80px] -translate-y-1/2 translate-x-1/2" />
+                {/* Outer Glow Border */}
+                <div className={`absolute inset-0 rounded-3xl bg-gradient-to-br ${themeColor} opacity-20 blur-xl`} />
+                
+                {/* Main Container */}
+                <div className="relative bg-[#0D0D12] border border-white/10 rounded-3xl overflow-hidden flex flex-col max-h-[90vh]">
+                    {/* Animated Border Gradient */}
+                    <div 
+                        className="absolute inset-0 rounded-3xl p-[1px] pointer-events-none"
+                        style={{
+                            background: isProject 
+                                ? 'linear-gradient(135deg, rgba(153,69,255,0.3), transparent 40%, transparent 60%, rgba(153,69,255,0.3))'
+                                : 'linear-gradient(135deg, rgba(255,215,0,0.3), transparent 40%, transparent 60%, rgba(255,215,0,0.3))',
+                        }}
+                    />
                     
-                    <div className="relative z-10 flex justify-between items-center">
-                        <div className="flex items-center gap-4">
-                            <div className={`w-12 h-12 rounded-xl flex items-center justify-center bg-gradient-to-br ${themeColor} text-white shadow-lg`}>
-                                {isProject ? <Rocket className="w-6 h-6" /> : <Lightbulb className="w-6 h-6" />}
-                            </div>
-                            <div>
-                                <h2 className="text-2xl font-bold font-display text-white">
-                                    {isProject ? 'Launch Project' : 'Share an Idea'}
-                                </h2>
-                                <p className="text-sm text-gray-400">
-                                    {isProject ? 'Showcase your build to the Solana community.' : 'Validate your concept with builders.'}
-                                </p>
-                            </div>
-                        </div>
-                        <button onClick={closeSubmitModal} className="w-8 h-8 rounded-full bg-white/5 hover:bg-white/10 flex items-center justify-center transition-colors text-gray-400 hover:text-white">
-                            <X className="w-5 h-5" />
-                        </button>
-                    </div>
-                </div>
-
-                {/* Scrollable Form Area */}
-                <div className="overflow-y-auto p-8 custom-scrollbar bg-gradient-to-b from-[#121212] to-[#0A0A0A]">
-                    <form onSubmit={handleSubmit} className="space-y-8">
+                    {/* Header */}
+                    <div className="relative px-8 py-6 border-b border-white/10 overflow-hidden flex-shrink-0">
+                        {/* Background Effects */}
+                        <div className={`absolute inset-0 bg-gradient-to-r ${themeColor} opacity-5`} />
+                        <div className="absolute top-0 right-0 w-80 h-80 rounded-full blur-[100px] -translate-y-1/2 translate-x-1/4"
+                            style={{ background: isProject ? 'rgba(153,69,255,0.15)' : 'rgba(255,215,0,0.15)' }}
+                        />
+                        <div className="absolute bottom-0 left-0 w-40 h-40 rounded-full blur-[60px] translate-y-1/2 -translate-x-1/4"
+                            style={{ background: isProject ? 'rgba(153,69,255,0.1)' : 'rgba(255,215,0,0.1)' }}
+                        />
                         
-                        {/* Common Fields */}
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                             <div className="space-y-2">
-                                <label className="text-xs font-bold text-gray-400 uppercase tracking-wider ml-1">{submitType === 'idea' ? 'Idea Name' : 'Project Name'} *</label>
-                                <input 
-                                    value={formData.title}
-                                    onChange={(e) => setFormData({...formData, title: e.target.value})}
-                                    className="w-full bg-[#1A1A1A] border border-white/10 rounded-xl px-5 py-4 outline-none focus:border-white/30 text-white placeholder:text-gray-600 transition-colors font-medium"
-                                    placeholder={submitType === 'idea' ? "e.g. Decentralized Uber" : "e.g. SolStream Protocol"}
-                                />
-                             </div>
-                             <div className="space-y-2 md:col-span-2">
-                                <label className="text-xs font-bold text-gray-400 uppercase tracking-wider ml-1">
-                                  Categories * <span className="text-gray-600 font-normal text-[10px]">(Select 1-3)</span>
-                                </label>
-                                <div className="flex flex-wrap gap-2">
-                                    {categories.map(cat => (
-                                      <button
-                                        key={cat}
-                                        type="button"
-                                        onClick={() => toggleCategory(cat)}
-                                        className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
-                                          formData.categories.includes(cat)
-                                            ? isProject
-                                              ? 'bg-gradient-to-r from-[#9945FF] to-[#7c3aed] text-white border border-[#9945FF] shadow-lg shadow-purple-500/20'
-                                              : 'bg-gradient-to-r from-[#FFD700] to-[#FDB931] text-black border border-[#FFD700] shadow-lg shadow-yellow-500/20'
-                                            : 'bg-[#1A1A1A] text-gray-400 border border-white/10 hover:border-white/30 hover:text-white'
-                                        }`}
-                                      >
-                                        {cat}
-                                      </button>
-                                    ))}
+                        <div className="relative z-10 flex justify-between items-center">
+                            <div className="flex items-center gap-4">
+                                <motion.div 
+                                    className={`w-14 h-14 rounded-2xl flex items-center justify-center bg-gradient-to-br ${themeColor} text-white shadow-2xl relative`}
+                                    whileHover={{ scale: 1.05, rotate: 5 }}
+                                    style={{
+                                        boxShadow: isProject 
+                                            ? '0 0 30px rgba(153,69,255,0.4)' 
+                                            : '0 0 30px rgba(255,215,0,0.4)',
+                                    }}
+                                >
+                                    {isProject ? <Rocket className="w-7 h-7" /> : <Lightbulb className="w-7 h-7" />}
+                                </motion.div>
+                                <div>
+                                    <h2 className="text-2xl font-bold font-display text-white tracking-tight">
+                                        {isProject ? 'Launch Project' : 'Share Your Idea'}
+                                    </h2>
+                                    <p className="text-sm text-gray-400 mt-0.5">
+                                        {isProject ? 'Showcase your build to the Solana community' : 'Validate your concept with builders'}
+                                    </p>
                                 </div>
-                                {formData.categories.length > 0 && (
-                                  <div className="flex gap-2 items-center text-xs text-gray-500 mt-1">
-                                    <span>Selected: {formData.categories.join(', ')}</span>
-                                  </div>
-                                )}
-                             </div>
+                            </div>
+                            <motion.button 
+                                onClick={closeSubmitModal} 
+                                className="w-10 h-10 rounded-xl bg-white/5 hover:bg-white/10 flex items-center justify-center transition-all text-gray-400 hover:text-white border border-white/10 hover:border-white/20"
+                                whileHover={{ scale: 1.05 }}
+                                whileTap={{ scale: 0.95 }}
+                            >
+                                <X className="w-5 h-5" />
+                            </motion.button>
                         </div>
+                    </div>
+
+                    {/* Scrollable Form Area */}
+                    <div className="overflow-y-auto p-8 custom-scrollbar flex-1">
+                        <form onSubmit={handleSubmit} className="space-y-8">
+                            
+                            {/* Common Fields */}
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div className="space-y-2 md:col-span-2">
+                                    <label className="text-xs font-bold text-gray-400 uppercase tracking-wider ml-1 flex items-center gap-2">
+                                        {submitType === 'idea' ? 'Idea Name' : 'Project Name'}
+                                        <span className="text-red-400">*</span>
+                                    </label>
+                                    <input 
+                                        value={formData.title}
+                                        onChange={(e) => setFormData({...formData, title: e.target.value})}
+                                        className="w-full bg-[#141419] border border-white/10 rounded-xl px-5 py-4 outline-none focus:border-white/30 text-white placeholder:text-gray-600 transition-all font-medium hover:border-white/20 focus:shadow-[0_0_20px_rgba(255,255,255,0.05)]"
+                                        placeholder={submitType === 'idea' ? "e.g. Decentralized Uber for Solana" : "e.g. SolStream Protocol"}
+                                    />
+                                </div>
+                                
+                                <div className="space-y-2 md:col-span-2">
+                                    <label className="text-xs font-bold text-gray-400 uppercase tracking-wider ml-1 flex items-center gap-2">
+                                        Categories
+                                        <span className="text-red-400">*</span>
+                                        <span className="text-gray-600 font-normal text-[10px]">(Select up to 3)</span>
+                                    </label>
+                                    <div className="flex flex-wrap gap-2">
+                                        {categories.map(cat => (
+                                            <motion.button
+                                                key={cat}
+                                                type="button"
+                                                onClick={() => toggleCategory(cat)}
+                                                whileHover={{ scale: 1.02 }}
+                                                whileTap={{ scale: 0.98 }}
+                                                className={`px-4 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 ${
+                                                    formData.categories.includes(cat)
+                                                        ? isProject
+                                                            ? 'bg-gradient-to-r from-[#9945FF] to-[#7c3aed] text-white border border-[#9945FF]/50 shadow-lg shadow-purple-500/25'
+                                                            : 'bg-gradient-to-r from-[#FFD700] to-[#FDB931] text-black border border-[#FFD700]/50 shadow-lg shadow-yellow-500/25'
+                                                        : 'bg-[#141419] text-gray-400 border border-white/10 hover:border-white/25 hover:text-white hover:bg-white/5'
+                                                }`}
+                                            >
+                                                {cat}
+                                            </motion.button>
+                                        ))}
+                                    </div>
+                                </div>
+                            </div>
 
                         {/* Project Specific */}
                         {isProject && (
@@ -522,14 +559,29 @@ export const SubmissionModal = () => {
                 </div>
 
                 {/* Footer Action */}
-                <div className="p-6 border-t border-white/10 bg-[#0F0F0F]">
-                    <button 
+                <div className="p-6 border-t border-white/10 bg-[#0A0A0F] flex-shrink-0">
+                    <motion.button 
                         onClick={handleSubmit}
-                        className={`w-full py-4 rounded-xl font-bold text-lg flex items-center justify-center gap-3 hover:scale-[1.01] active:scale-[0.99] transition-all shadow-lg ${isProject ? 'bg-gradient-to-r from-[#9945FF] to-[#7c3aed] text-white shadow-purple-500/20' : 'bg-gradient-to-r from-[#FFD700] to-[#FDB931] text-black shadow-yellow-500/20'}`}
+                        whileHover={{ scale: 1.01 }}
+                        whileTap={{ scale: 0.99 }}
+                        className={`w-full py-4 rounded-xl font-bold text-lg flex items-center justify-center gap-3 transition-all relative overflow-hidden group ${
+                            isProject 
+                                ? 'bg-gradient-to-r from-[#9945FF] to-[#7c3aed] text-white shadow-lg shadow-purple-500/30' 
+                                : 'bg-gradient-to-r from-[#FFD700] to-[#FDB931] text-black shadow-lg shadow-yellow-500/30'
+                        }`}
+                        style={{
+                            boxShadow: isProject 
+                                ? '0 0 30px rgba(153,69,255,0.3)' 
+                                : '0 0 30px rgba(255,215,0,0.3)',
+                        }}
                     >
-                        {isProject ? <Rocket className="w-5 h-5" /> : <Lightbulb className="w-5 h-5" />}
-                        {isProject ? 'Launch Project' : 'Publish Idea'}
-                    </button>
+                        {/* Shimmer effect */}
+                        <div className="absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-700 bg-gradient-to-r from-transparent via-white/20 to-transparent" />
+                        
+                        {isProject ? <Rocket className="w-5 h-5 relative z-10" /> : <Lightbulb className="w-5 h-5 relative z-10" />}
+                        <span className="relative z-10">{isProject ? 'Launch Project' : 'Publish Idea'}</span>
+                    </motion.button>
+                </div>
                 </div>
             </motion.div>
         )}

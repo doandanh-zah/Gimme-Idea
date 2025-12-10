@@ -172,7 +172,7 @@ export const EditProjectModal = ({ project, isOpen, onClose, onSave }: EditProje
   if (!isOpen || !project) return null;
 
   const themeColor = isIdea ? 'from-[#FFD700] to-[#FDB931]' : 'from-[#9945FF] to-[#7c3aed]';
-  const borderColor = isIdea ? 'border-[#FFD700]/30' : 'border-[#9945FF]/30';
+  const themeColorRGB = isIdea ? '255, 215, 0' : '153, 69, 255';
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center px-4">
@@ -186,71 +186,101 @@ export const EditProjectModal = ({ project, isOpen, onClose, onSave }: EditProje
         initial={{ scale: 0.95, opacity: 0, y: 20 }}
         animate={{ scale: 1, opacity: 1, y: 0 }}
         exit={{ scale: 0.95, opacity: 0, y: 20 }}
-        className={`relative w-full max-w-4xl bg-[#121212] border ${borderColor} rounded-3xl shadow-2xl overflow-hidden max-h-[90vh] flex flex-col`}
+        className="relative w-full max-w-4xl max-h-[90vh] flex flex-col"
       >
-        {/* Header */}
-        <div className={`relative px-8 py-6 border-b border-white/10 overflow-hidden`}>
-          <div className={`absolute inset-0 bg-gradient-to-r ${themeColor} opacity-10`} />
-          <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full blur-[80px] -translate-y-1/2 translate-x-1/2" />
+        {/* Outer Glow */}
+        <div className={`absolute inset-0 rounded-3xl bg-gradient-to-br ${themeColor} opacity-20 blur-xl`} />
+        
+        {/* Main Container */}
+        <div className="relative bg-[#0D0D12] border border-white/10 rounded-3xl overflow-hidden flex flex-col max-h-[90vh]">
+          {/* Animated Border */}
+          <div 
+            className="absolute inset-0 rounded-3xl p-[1px] pointer-events-none"
+            style={{
+              background: `linear-gradient(135deg, rgba(${themeColorRGB},0.3), transparent 40%, transparent 60%, rgba(${themeColorRGB},0.3))`,
+            }}
+          />
           
-          <div className="relative z-10 flex justify-between items-center">
-            <div className="flex items-center gap-4">
-              <div className={`w-12 h-12 rounded-xl flex items-center justify-center bg-gradient-to-br ${themeColor} text-white shadow-lg`}>
-                {isIdea ? <Lightbulb className="w-6 h-6" /> : <Rocket className="w-6 h-6" />}
-              </div>
-              <div>
-                <h2 className="text-2xl font-bold font-display text-white">
-                  Edit {isIdea ? 'Idea' : 'Project'}
-                </h2>
-                <p className="text-sm text-gray-400">
-                  Update your {isIdea ? 'idea' : 'project'} details
-                </p>
-              </div>
-            </div>
-            <button onClick={onClose} className="w-8 h-8 rounded-full bg-white/5 hover:bg-white/10 flex items-center justify-center transition-colors text-gray-400 hover:text-white">
-              <X className="w-5 h-5" />
-            </button>
-          </div>
-        </div>
-
-        {/* Scrollable Form Area */}
-        <div className="overflow-y-auto p-8 custom-scrollbar bg-gradient-to-b from-[#121212] to-[#0A0A0A]">
-          <form onSubmit={handleSubmit} className="space-y-8">
+          {/* Header */}
+          <div className="relative px-8 py-6 border-b border-white/10 overflow-hidden flex-shrink-0">
+            <div className={`absolute inset-0 bg-gradient-to-r ${themeColor} opacity-5`} />
+            <div 
+              className="absolute top-0 right-0 w-80 h-80 rounded-full blur-[100px] -translate-y-1/2 translate-x-1/4"
+              style={{ background: `rgba(${themeColorRGB}, 0.15)` }}
+            />
             
-            {/* Title */}
+            <div className="relative z-10 flex justify-between items-center">
+              <div className="flex items-center gap-4">
+                <motion.div 
+                  className={`w-14 h-14 rounded-2xl flex items-center justify-center bg-gradient-to-br ${themeColor} text-white shadow-2xl`}
+                  whileHover={{ scale: 1.05, rotate: 5 }}
+                  style={{ boxShadow: `0 0 30px rgba(${themeColorRGB}, 0.4)` }}
+                >
+                  {isIdea ? <Lightbulb className="w-7 h-7" /> : <Rocket className="w-7 h-7" />}
+                </motion.div>
+                <div>
+                  <h2 className="text-2xl font-bold font-display text-white tracking-tight">
+                    Edit {isIdea ? 'Idea' : 'Project'}
+                  </h2>
+                  <p className="text-sm text-gray-400 mt-0.5">
+                    Update your {isIdea ? 'idea' : 'project'} details
+                  </p>
+                </div>
+              </div>
+              <motion.button 
+                onClick={onClose} 
+                className="w-10 h-10 rounded-xl bg-white/5 hover:bg-white/10 flex items-center justify-center transition-all text-gray-400 hover:text-white border border-white/10 hover:border-white/20"
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+              >
+                <X className="w-5 h-5" />
+              </motion.button>
+            </div>
+          </div>
+
+          {/* Scrollable Form Area */}
+          <div className="overflow-y-auto p-8 custom-scrollbar flex-1">
+            <form onSubmit={handleSubmit} className="space-y-8">
+              
+              {/* Title */}
             <div className="space-y-2">
-              <label className="text-xs font-bold text-gray-400 uppercase tracking-wider ml-1">
-                {isIdea ? 'Idea Name' : 'Project Name'} *
+              <label className="text-xs font-bold text-gray-400 uppercase tracking-wider ml-1 flex items-center gap-2">
+                {isIdea ? 'Idea Name' : 'Project Name'}
+                <span className="text-red-400">*</span>
               </label>
               <input 
                 value={formData.title}
                 onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                className="w-full bg-[#1A1A1A] border border-white/10 rounded-xl px-5 py-4 outline-none focus:border-white/30 text-white placeholder:text-gray-600 transition-colors font-medium"
-                placeholder={isIdea ? "e.g. Decentralized Uber" : "e.g. SolStream Protocol"}
+                className="w-full bg-[#141419] border border-white/10 rounded-xl px-5 py-4 outline-none focus:border-white/30 text-white placeholder:text-gray-600 transition-all font-medium hover:border-white/20 focus:shadow-[0_0_20px_rgba(255,255,255,0.05)]"
+                placeholder={isIdea ? "e.g. Decentralized Uber for Solana" : "e.g. SolStream Protocol"}
               />
             </div>
 
             {/* Categories */}
             <div className="space-y-2">
-              <label className="text-xs font-bold text-gray-400 uppercase tracking-wider ml-1">
-                Categories * <span className="text-gray-600 font-normal text-[10px]">(Select 1-3)</span>
+              <label className="text-xs font-bold text-gray-400 uppercase tracking-wider ml-1 flex items-center gap-2">
+                Categories
+                <span className="text-red-400">*</span>
+                <span className="text-gray-600 font-normal text-[10px]">(Select up to 3)</span>
               </label>
               <div className="flex flex-wrap gap-2">
                 {categories.map(cat => (
-                  <button
+                  <motion.button
                     key={cat}
                     type="button"
                     onClick={() => toggleCategory(cat)}
-                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    className={`px-4 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 ${
                       formData.categories.includes(cat)
                         ? isIdea
-                          ? 'bg-gradient-to-r from-[#FFD700] to-[#FDB931] text-black border border-[#FFD700] shadow-lg shadow-yellow-500/20'
-                          : 'bg-gradient-to-r from-[#9945FF] to-[#7c3aed] text-white border border-[#9945FF] shadow-lg shadow-purple-500/20'
-                        : 'bg-[#1A1A1A] text-gray-400 border border-white/10 hover:border-white/30 hover:text-white'
+                          ? 'bg-gradient-to-r from-[#FFD700] to-[#FDB931] text-black border border-[#FFD700]/50 shadow-lg shadow-yellow-500/25'
+                          : 'bg-gradient-to-r from-[#9945FF] to-[#7c3aed] text-white border border-[#9945FF]/50 shadow-lg shadow-purple-500/25'
+                        : 'bg-[#141419] text-gray-400 border border-white/10 hover:border-white/25 hover:text-white hover:bg-white/5'
                     }`}
                   >
                     {cat}
-                  </button>
+                  </motion.button>
                 ))}
               </div>
             </div>
@@ -406,29 +436,46 @@ export const EditProjectModal = ({ project, isOpen, onClose, onSave }: EditProje
         </div>
 
         {/* Footer Action */}
-        <div className="p-6 border-t border-white/10 bg-[#0F0F0F]">
+        <div className="p-6 border-t border-white/10 bg-[#0A0A0F] flex-shrink-0">
           <div className="flex gap-4">
-            <button 
+            <motion.button 
               onClick={handleSubmit}
               disabled={isSaving}
-              className={`flex-1 py-4 rounded-xl font-bold text-lg flex items-center justify-center gap-3 hover:scale-[1.01] active:scale-[0.99] transition-all shadow-lg disabled:opacity-50 ${isIdea ? 'bg-gradient-to-r from-[#FFD700] to-[#FDB931] text-black shadow-yellow-500/20' : 'bg-gradient-to-r from-[#9945FF] to-[#7c3aed] text-white shadow-purple-500/20'}`}
+              whileHover={{ scale: 1.01 }}
+              whileTap={{ scale: 0.99 }}
+              className={`flex-1 py-4 rounded-xl font-bold text-lg flex items-center justify-center gap-3 transition-all relative overflow-hidden group disabled:opacity-50 ${
+                isIdea 
+                  ? 'bg-gradient-to-r from-[#FFD700] to-[#FDB931] text-black shadow-lg shadow-yellow-500/30' 
+                  : 'bg-gradient-to-r from-[#9945FF] to-[#7c3aed] text-white shadow-lg shadow-purple-500/30'
+              }`}
+              style={{
+                boxShadow: isIdea 
+                  ? '0 0 30px rgba(255,215,0,0.3)' 
+                  : '0 0 30px rgba(153,69,255,0.3)',
+              }}
             >
+              {/* Shimmer effect */}
+              <div className="absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-700 bg-gradient-to-r from-transparent via-white/20 to-transparent" />
+              
               {isSaving ? (
-                <Loader2 className="w-5 h-5 animate-spin" />
+                <Loader2 className="w-5 h-5 animate-spin relative z-10" />
               ) : (
                 <>
-                  {isIdea ? <Lightbulb className="w-5 h-5" /> : <Rocket className="w-5 h-5" />}
-                  Save Changes
+                  {isIdea ? <Lightbulb className="w-5 h-5 relative z-10" /> : <Rocket className="w-5 h-5 relative z-10" />}
+                  <span className="relative z-10">Save Changes</span>
                 </>
               )}
-            </button>
-            <button 
+            </motion.button>
+            <motion.button 
               onClick={onClose}
-              className="px-8 py-4 border border-white/10 rounded-xl hover:bg-white/5 text-gray-300 transition-colors font-bold"
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              className="px-8 py-4 border border-white/10 rounded-xl hover:bg-white/5 hover:border-white/20 text-gray-300 transition-all font-bold"
             >
               Cancel
-            </button>
+            </motion.button>
           </div>
+        </div>
         </div>
       </motion.div>
     </div>

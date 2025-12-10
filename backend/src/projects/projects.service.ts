@@ -156,6 +156,7 @@ export class ProjectsService {
     const supabase = this.supabaseService.getAdminClient();
 
     // OPTIMIZATION: Only select columns needed for recommended cards
+    // Include 'problem' for preview text in recommended idea cards
     let query = supabase
       .from("projects")
       .select(
@@ -175,6 +176,7 @@ export class ProjectsService {
         is_anonymous,
         created_at,
         ai_score,
+        problem,
         author:users!projects_author_id_fkey(
           username,
           wallet,
@@ -221,6 +223,7 @@ export class ProjectsService {
               },
         bounty: p.bounty,
         imageUrl: p.image_url,
+        problem: p.problem, // Include for recommended cards preview
         isAnonymous: p.is_anonymous,
         createdAt: p.created_at,
       };
