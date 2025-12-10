@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { supabase } from '../lib/supabase';
 import { RealtimeChannel } from '@supabase/supabase-js';
 
@@ -10,21 +10,25 @@ interface UseRealtimeProjectsProps {
 
 /**
  * Hook to subscribe to realtime project updates from Supabase
- *
- * Usage:
- * ```ts
- * useRealtimeProjects({
- *   onNewProject: (project) => {
- *     setProjects(prev => [project, ...prev]);
- *   }
- * });
- * ```
+ * Uses refs to prevent re-subscribing when callbacks change
  */
 export function useRealtimeProjects({
   onNewProject,
   onUpdateProject,
   onDeleteProject,
 }: UseRealtimeProjectsProps = {}) {
+  // Use refs to store callbacks to prevent re-subscribing on every render
+  const onNewProjectRef = useRef(onNewProject);
+  const onUpdateProjectRef = useRef(onUpdateProject);
+  const onDeleteProjectRef = useRef(onDeleteProject);
+
+  // Update refs when callbacks change
+  useEffect(() => {
+    onNewProjectRef.current = onNewProject;
+    onUpdateProjectRef.current = onUpdateProject;
+    onDeleteProjectRef.current = onDeleteProject;
+  }, [onNewProject, onUpdateProject, onDeleteProject]);
+
   useEffect(() => {
     let channel: RealtimeChannel;
 
@@ -41,8 +45,8 @@ export function useRealtimeProjects({
           },
           (payload) => {
             console.log('🆕 New project created:', payload.new);
-            if (onNewProject) {
-              onNewProject(payload.new);
+            if (onNewProjectRef.current) {
+              onNewProjectRef.current(payload.new);
             }
           }
         )
@@ -55,8 +59,8 @@ export function useRealtimeProjects({
           },
           (payload) => {
             console.log('📝 Project updated:', payload.new);
-            if (onUpdateProject) {
-              onUpdateProject(payload.new);
+            if (onUpdateProjectRef.current) {
+              onUpdateProjectRef.current(payload.new);
             }
           }
         )
@@ -69,8 +73,8 @@ export function useRealtimeProjects({
           },
           (payload) => {
             console.log('🗑️ Project deleted:', payload.old.id);
-            if (onDeleteProject) {
-              onDeleteProject(payload.old.id);
+            if (onDeleteProjectRef.current) {
+              onDeleteProjectRef.current(payload.old.id);
             }
           }
         )
@@ -92,5 +96,5 @@ export function useRealtimeProjects({
         supabase.removeChannel(channel);
       }
     };
-  }, [onNewProject, onUpdateProject, onDeleteProject]);
+  }, []); // Empty dependency array - only subscribe once on mount
 }

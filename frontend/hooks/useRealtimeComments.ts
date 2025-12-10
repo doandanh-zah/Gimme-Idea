@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { supabase } from '../lib/supabase';
 import { RealtimeChannel } from '@supabase/supabase-js';
 
@@ -11,16 +11,7 @@ interface UseRealtimeCommentsProps {
 
 /**
  * Hook to subscribe to realtime comment updates for a specific project
- *
- * Usage:
- * ```ts
- * useRealtimeComments({
- *   projectId: '123',
- *   onNewComment: (comment) => {
- *     setComments(prev => [...prev, comment]);
- *   }
- * });
- * ```
+ * Uses refs to prevent re-subscribing when callbacks change
  */
 export function useRealtimeComments({
   projectId,
@@ -28,6 +19,18 @@ export function useRealtimeComments({
   onUpdateComment,
   onDeleteComment,
 }: UseRealtimeCommentsProps) {
+  // Use refs to store callbacks to prevent re-subscribing on every render
+  const onNewCommentRef = useRef(onNewComment);
+  const onUpdateCommentRef = useRef(onUpdateComment);
+  const onDeleteCommentRef = useRef(onDeleteComment);
+
+  // Update refs when callbacks change
+  useEffect(() => {
+    onNewCommentRef.current = onNewComment;
+    onUpdateCommentRef.current = onUpdateComment;
+    onDeleteCommentRef.current = onDeleteComment;
+  }, [onNewComment, onUpdateComment, onDeleteComment]);
+
   useEffect(() => {
     if (!projectId) return;
 
@@ -47,8 +50,8 @@ export function useRealtimeComments({
           },
           (payload) => {
             console.log('💬 New comment:', payload.new);
-            if (onNewComment) {
-              onNewComment(payload.new);
+            if (onNewCommentRef.current) {
+              onNewCommentRef.current(payload.new);
             }
           }
         )
@@ -62,8 +65,8 @@ export function useRealtimeComments({
           },
           (payload) => {
             console.log('✏️ Comment updated:', payload.new);
-            if (onUpdateComment) {
-              onUpdateComment(payload.new);
+            if (onUpdateCommentRef.current) {
+              onUpdateCommentRef.current(payload.new);
             }
           }
         )
@@ -77,8 +80,8 @@ export function useRealtimeComments({
           },
           (payload) => {
             console.log('🗑️ Comment deleted:', payload.old.id);
-            if (onDeleteComment) {
-              onDeleteComment(payload.old.id);
+            if (onDeleteCommentRef.current) {
+              onDeleteCommentRef.current(payload.old.id);
             }
           }
         )
@@ -100,5 +103,5 @@ export function useRealtimeComments({
         supabase.removeChannel(channel);
       }
     };
-  }, [projectId, onNewComment, onUpdateComment, onDeleteComment]);
+  }, [projectId]); // Only re-subscribe when projectId changes
 }
