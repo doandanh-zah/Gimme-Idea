@@ -15,7 +15,7 @@ import { createUniqueSlug } from '../lib/slug-utils';
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
 const RECIPIENT_WALLET = 'FzcnaZMYcoAYpLgr7Wym2b8hrKYk3VXsRxWSLuvZKLJm';
 const MIN_DONATION_USD = 1;
-const SOL_PRICE_USD = 220; // Approximate, should fetch from API
+const SOL_PRICE_USD = 145; // Approximate price, update periodically
 
 interface Message {
   id: string;
