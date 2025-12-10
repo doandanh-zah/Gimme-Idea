@@ -24,7 +24,7 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   },
   global: {
     headers: {
-      'x-client-info': 'gimme-idea-web', // Helps identify client in logs
+      "x-client-info": "gimme-idea-web", // Helps identify client in logs
     },
   },
 });

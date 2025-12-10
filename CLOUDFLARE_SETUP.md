@@ -3,13 +3,27 @@
 ## Kiến trúc tối ưu
 
 ```
-Frontend (Vercel) → Cloudflare CDN → Backend (Render) + Supabase
+User → Cloudflare (DNS + CDN) → Vercel (Frontend)
+                              → Render (Backend API)
+                              → Supabase (DB + Auth + Realtime)
 ```
 
 ### Mục đích:
-- **Supabase**: Database, Auth (Google OAuth), Realtime
-- **Cloudflare**: CDN, Edge Cache, DDoS Protection
+- **Supabase**: Database, Auth (Google OAuth), Realtime (trực tiếp, không qua Cloudflare)
+- **Cloudflare**: DNS Proxy, CDN, Edge Cache, DDoS Protection
 - **Giảm egress** bằng cách cache public API responses
+
+---
+
+## Cách hoạt động
+
+### Cloudflare làm DNS Proxy
+1. User truy cập `gimmeidea.com`
+2. Request đi qua Cloudflare (cache static assets)
+3. Cloudflare forward đến Vercel (frontend vẫn chạy trên Vercel)
+4. Vercel trả về HTML/JS → Cloudflare cache → User
+
+**Quan trọng**: Vercel vẫn là nơi host frontend, Cloudflare chỉ là proxy ở giữa.
 
 ---
 
@@ -17,17 +31,40 @@ Frontend (Vercel) → Cloudflare CDN → Backend (Render) + Supabase
 
 ### Bước 1: Thêm domain vào Cloudflare
 1. Đăng nhập Cloudflare Dashboard
-2. Add Site → Nhập domain của bạn
-3. Chọn plan Free
-4. Cập nhật Nameservers tại nhà đăng ký domain
+2. Add Site → Nhập domain `gimmeidea.com`
+3. Chọn plan **Free**
+4. Cloudflare sẽ scan DNS hiện tại và import
 
-### Bước 2: Cấu hình DNS
+### Bước 2: Cập nhật Nameservers
+1. Cloudflare sẽ cho bạn 2 nameservers (vd: `ada.ns.cloudflare.com`)
+2. Vào nhà đăng ký domain (GoDaddy, Namecheap, etc.)
+3. Thay đổi Nameservers từ mặc định → Cloudflare nameservers
+4. Đợi 1-24 giờ để DNS propagate
+
+### Bước 3: Cấu hình DNS Records trong Cloudflare
+
 ```
-Type    Name              Content                         Proxy
-A       @                 76.76.21.21 (Vercel)           ✅ Proxied
-CNAME   www               cname.vercel-dns.com           ✅ Proxied
-CNAME   api               your-backend.onrender.com      ✅ Proxied
+Type    Name    Content                             Proxy Status
+────────────────────────────────────────────────────────────────
+A       @       76.76.21.21                         ✅ Proxied (orange cloud)
+CNAME   www     cname.vercel-dns.com                ✅ Proxied
+CNAME   api     gimme-idea-backend.onrender.com     ✅ Proxied
 ```
+
+**Lưu ý quan trọng:**
+- `76.76.21.21` là IP của Vercel
+- Bật **Proxy** (orange cloud) để traffic đi qua Cloudflare
+- Vercel vẫn serve frontend, Cloudflare chỉ cache
+
+### Bước 4: Cấu hình SSL/TLS
+1. Vào Cloudflare → SSL/TLS → Overview
+2. Chọn **Full (strict)** mode
+3. Edge Certificates → Enable "Always Use HTTPS"
+
+### Bước 5: Giữ domain trên Vercel
+1. **KHÔNG XÓA** domain khỏi Vercel
+2. Vercel cần biết domain để serve frontend
+3. Chỉ Nameservers thay đổi, không phải cấu hình Vercel
 
 ### Bước 3: Cấu hình Page Rules (Caching)
 

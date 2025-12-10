@@ -1,14 +1,25 @@
-import { Controller, Get, Post, Patch, Delete, Body, Param, Query, UseGuards, UseInterceptors } from '@nestjs/common';
-import { ProjectsService } from './projects.service';
-import { CreateProjectDto } from './dto/create-project.dto';
-import { UpdateProjectDto } from './dto/update-project.dto';
-import { QueryProjectsDto } from './dto/query-projects.dto';
-import { AuthGuard } from '../common/guards/auth.guard';
-import { CurrentUser } from '../common/decorators/user.decorator';
-import { CacheControlInterceptor } from '../common/interceptors/cache-control.interceptor';
-import { ApiResponse, Project } from '../shared/types';
+import {
+  Controller,
+  Get,
+  Post,
+  Patch,
+  Delete,
+  Body,
+  Param,
+  Query,
+  UseGuards,
+  UseInterceptors,
+} from "@nestjs/common";
+import { ProjectsService } from "./projects.service";
+import { CreateProjectDto } from "./dto/create-project.dto";
+import { UpdateProjectDto } from "./dto/update-project.dto";
+import { QueryProjectsDto } from "./dto/query-projects.dto";
+import { AuthGuard } from "../common/guards/auth.guard";
+import { CurrentUser } from "../common/decorators/user.decorator";
+import { CacheControlInterceptor } from "../common/interceptors/cache-control.interceptor";
+import { ApiResponse, Project } from "../shared/types";
 
-@Controller('projects')
+@Controller("projects")
 export class ProjectsController {
   constructor(private projectsService: ProjectsService) {}
 
@@ -19,7 +30,9 @@ export class ProjectsController {
    */
   @Get()
   @UseInterceptors(new CacheControlInterceptor(120, 60)) // 2 min cache, 1 min stale
-  async findAll(@Query() query: QueryProjectsDto): Promise<ApiResponse<Project[]>> {
+  async findAll(
+    @Query() query: QueryProjectsDto
+  ): Promise<ApiResponse<Project[]>> {
     return this.projectsService.findAll(query);
   }
 
@@ -28,11 +41,11 @@ export class ProjectsController {
    * Get top recommended ideas based on AI score
    * Cached for 5 minutes at edge
    */
-  @Get('recommended')
+  @Get("recommended")
   @UseInterceptors(new CacheControlInterceptor(300, 60)) // 5 min cache, 1 min stale
   async getRecommended(
-    @Query('limit') limit?: number,
-    @Query('category') category?: string
+    @Query("limit") limit?: number,
+    @Query("category") category?: string
   ): Promise<ApiResponse<Project[]>> {
     return this.projectsService.getRecommendedIdeas(limit || 3, category);
   }
@@ -42,9 +55,9 @@ export class ProjectsController {
    * Get single project by ID
    * Cached for 1 minute at edge
    */
-  @Get(':id')
+  @Get(":id")
   @UseInterceptors(new CacheControlInterceptor(60, 30)) // 1 min cache, 30s stale
-  async findOne(@Param('id') id: string): Promise<ApiResponse<Project>> {
+  async findOne(@Param("id") id: string): Promise<ApiResponse<Project>> {
     return this.projectsService.findOne(id);
   }
 
@@ -55,7 +68,7 @@ export class ProjectsController {
   @Post()
   @UseGuards(AuthGuard)
   async create(
-    @CurrentUser('userId') userId: string,
+    @CurrentUser("userId") userId: string,
     @Body() createDto: CreateProjectDto
   ): Promise<ApiResponse<Project>> {
     return this.projectsService.create(userId, createDto);
@@ -65,11 +78,11 @@ export class ProjectsController {
    * PATCH /api/projects/:id
    * Update project (requires authentication)
    */
-  @Patch(':id')
+  @Patch(":id")
   @UseGuards(AuthGuard)
   async update(
-    @Param('id') id: string,
-    @CurrentUser('userId') userId: string,
+    @Param("id") id: string,
+    @CurrentUser("userId") userId: string,
     @Body() updateDto: UpdateProjectDto
   ): Promise<ApiResponse<Project>> {
     return this.projectsService.update(id, userId, updateDto);
@@ -79,11 +92,11 @@ export class ProjectsController {
    * DELETE /api/projects/:id
    * Delete project (requires authentication)
    */
-  @Delete(':id')
+  @Delete(":id")
   @UseGuards(AuthGuard)
   async remove(
-    @Param('id') id: string,
-    @CurrentUser('userId') userId: string
+    @Param("id") id: string,
+    @CurrentUser("userId") userId: string
   ): Promise<ApiResponse<void>> {
     return this.projectsService.remove(id, userId);
   }
@@ -92,11 +105,11 @@ export class ProjectsController {
    * POST /api/projects/:id/vote
    * Vote for project (requires authentication)
    */
-  @Post(':id/vote')
+  @Post(":id/vote")
   @UseGuards(AuthGuard)
   async vote(
-    @Param('id') id: string,
-    @CurrentUser('userId') userId: string
+    @Param("id") id: string,
+    @CurrentUser("userId") userId: string
   ): Promise<ApiResponse<{ votes: number }>> {
     return this.projectsService.vote(id, userId);
   }
