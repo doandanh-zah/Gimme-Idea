@@ -36,7 +36,7 @@ const Hero: React.FC = () => {
           >
             <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/5 border border-white/10 mb-6 backdrop-blur-sm">
               <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
-              <span className="text-xs font-mono text-green-400 uppercase tracking-wide">Solana Devnet Beta Compatible</span>
+              <span className="text-xs font-mono text-green-400 uppercase tracking-wide">Solana Mainnet Compatible</span>
             </div>
             
             <h1 className="text-5xl lg:text-7xl font-display font-bold leading-tight mb-6">
@@ -105,7 +105,7 @@ const Hero: React.FC = () => {
             <div className="p-6 font-mono text-sm text-gray-300 space-y-2">
               <p><span className="text-green-400">➜</span> <span className="text-blue-400">~</span> gimme-idea init</p>
               <p className="text-gray-500">Initializing project environment...</p>
-              <p className="text-gray-500">Connecting to Solana Devnet...</p>
+              <p className="text-gray-500">Connecting to Solana Mainnet...</p>
               <p><span className="text-green-400">✔</span> Wallet connected: <span className="text-gold">8xF3...92a</span></p>
               <p><span className="text-green-400">✔</span> Fetching community feedback...</p>
               <div className="p-3 bg-white/5 rounded border-l-2 border-gold mt-4">
