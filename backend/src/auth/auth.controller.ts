@@ -1,4 +1,4 @@
-import { Controller, Post, Get, Body, UseGuards } from "@nestjs/common";
+import { Controller, Post, Get, Body, UseGuards, Param } from "@nestjs/common";
 import { AuthService } from "./auth.service";
 import { LoginDto } from "./dto/login.dto";
 import { EmailLoginDto } from "./dto/email-login.dto";
@@ -58,6 +58,17 @@ export class AuthController {
     @CurrentUser("userId") userId: string
   ): Promise<ApiResponse<User>> {
     return this.authService.getCurrentUser(userId);
+  }
+
+  /**
+   * GET /api/auth/check-wallet/:walletAddress
+   * Check if a wallet is already linked to an account
+   */
+  @Get("check-wallet/:walletAddress")
+  async checkWalletExists(
+    @Param("walletAddress") walletAddress: string
+  ): Promise<ApiResponse<{ exists: boolean; userId?: string }>> {
+    return this.authService.checkWalletExists(walletAddress);
   }
 
   /**

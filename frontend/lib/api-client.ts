@@ -264,4 +264,9 @@ export const apiClient = {
       method: "POST",
       body: JSON.stringify(params),
     }),
+
+  checkWalletExists: (walletAddress: string) =>
+    apiFetch<{ exists: boolean; userId?: string }>(
+      `/auth/check-wallet/${walletAddress}`
+    ),
 };

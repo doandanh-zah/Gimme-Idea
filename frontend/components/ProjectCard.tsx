@@ -8,13 +8,15 @@ import { useAppStore } from '../lib/store';
 import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
 import { motion, AnimatePresence } from 'framer-motion';
+import { createUniqueSlug } from '../lib/slug-utils';
+import { AuthorLink } from './AuthorLink';
 
 interface ProjectCardProps {
   project: Project;
 }
 
 export const ProjectCard: React.FC<ProjectCardProps> = ({ project }) => {
-  const { voteProject, openUserProfile } = useAppStore();
+  const { voteProject } = useAppStore();
   const router = useRouter();
   const [isLiked, setIsLiked] = useState(false);
   const [showBurst, setShowBurst] = useState(false);
@@ -36,14 +38,9 @@ export const ProjectCard: React.FC<ProjectCardProps> = ({ project }) => {
     }
   };
 
-  const handleAuthorClick = (e: React.MouseEvent) => {
-      e.stopPropagation();
-      if (project.isAnonymous || !project.author) return;
-      openUserProfile(project.author);
-  };
-
   const handleCardClick = () => {
-    const route = isIdea ? `/idea/${project.id}` : `/projects/${project.id}`;
+    const slug = createUniqueSlug(project.title, project.id);
+    const route = isIdea ? `/idea/${slug}` : `/projects/${slug}`;
     router.push(route);
   };
 
@@ -163,26 +160,14 @@ export const ProjectCard: React.FC<ProjectCardProps> = ({ project }) => {
             </div>
           </div>
 
-          <div
-             onClick={handleAuthorClick}
-             className={`flex items-center gap-1.5 text-xs text-gray-500 font-mono transition-colors duration-200 z-20 ${project.isAnonymous ? 'cursor-default' : 'cursor-pointer hover:text-white'}`}
-          >
-             {project.isAnonymous ? (
-                 <>
-                    <div className="w-3.5 h-3.5 rounded-full bg-gray-800 flex items-center justify-center border border-white/10">
-                        <EyeOff className="w-2 h-2 text-gray-400" />
-                    </div>
-                    <span>Anonymous</span>
-                 </>
-             ) : (
-                 <>
-                    {project.author?.avatar && (
-                        <img src={project.author.avatar} alt="avatar" className="w-3.5 h-3.5 rounded-full border border-white/10" />
-                    )}
-                    <span>{project.author?.username || 'Anon'}</span>
-                 </>
-             )}
-          </div>
+          <AuthorLink
+             username={project.author?.username || 'Anonymous'}
+             avatar={project.author?.avatar}
+             isAnonymous={project.isAnonymous || !project.author}
+             showAvatar={true}
+             avatarSize="sm"
+             className="text-xs text-gray-500 font-mono z-20"
+          />
         </div>
       </div>
     </div>

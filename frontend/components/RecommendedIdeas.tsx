@@ -7,6 +7,8 @@ import { useAppStore } from '../lib/store';
 import { Project } from '../lib/types';
 import { useRouter } from 'next/navigation';
 import axios from 'axios';
+import { AuthorLink } from './AuthorLink';
+import { createUniqueSlug } from '../lib/slug-utils';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
 
@@ -37,8 +39,9 @@ export const RecommendedIdeas = () => {
     fetchRecommended();
   }, [selectedCategory]);
 
-  const handleViewIdea = (id: string) => {
-    router.push(`/idea/${id}`);
+  const handleViewIdea = (idea: Project) => {
+    const slug = createUniqueSlug(idea.title, idea.id);
+    router.push(`/idea/${slug}`);
   };
 
   if (isLoading) {
@@ -120,7 +123,7 @@ export const RecommendedIdeas = () => {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: index * 0.08, duration: 0.25, ease: "easeOut" }}
-            onClick={() => handleViewIdea(idea.id)}
+            onClick={() => handleViewIdea(idea)}
             whileHover={{ scale: 1.01 }}
             whileTap={{ scale: 0.99 }}
             className="relative p-6 rounded-2xl transition-all duration-200 cursor-pointer group border border-[#FFD700]/10 bg-gradient-to-br from-[#FFD700]/[0.03] to-transparent hover:shadow-[0_8px_40px_rgba(255,215,0,0.12)] min-h-[320px] flex flex-col overflow-hidden"
@@ -160,11 +163,15 @@ export const RecommendedIdeas = () => {
                 <span className="text-gray-500">💬 {idea.feedbackCount || 0}</span>
                 <span className="text-gray-500">👍 {idea.votes || 0}</span>
               </div>
-              {idea.author && !idea.isAnonymous && (
-                <span className="text-xs text-gray-600 font-mono">
-                  @{idea.author.username}
-                </span>
-              )}
+              <AuthorLink
+                username={idea.author?.username || 'Anonymous'}
+                avatar={idea.author?.avatar}
+                isAnonymous={idea.isAnonymous || !idea.author}
+                showAvatar={false}
+                className="text-xs text-gray-600 font-mono"
+              >
+                {idea.author && !idea.isAnonymous ? `@${idea.author.username}` : undefined}
+              </AuthorLink>
             </div>
           </motion.div>
         ))}

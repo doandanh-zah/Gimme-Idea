@@ -10,6 +10,7 @@ import toast from 'react-hot-toast';
 import { Comment } from '../lib/types';
 import { useRealtimeComments } from '../hooks/useRealtimeComments';
 import { MarkdownContent } from './MarkdownContent';
+import { AuthorLink, AuthorAvatar } from './AuthorLink';
 
 interface CommentItemProps {
     comment: Comment;
@@ -62,22 +63,26 @@ const CommentItem: React.FC<CommentItemProps> = ({
     };
 
     const authorName = comment.isAnonymous ? 'Anonymous' : (comment.author?.username || 'Anonymous');
-    const authorInitial = authorName[0].toUpperCase();
     const tipsAmount = comment.tipsAmount || comment.tips || 0;
     const timestamp = comment.createdAt || comment.timestamp || '';
 
     return (
         <div className={`flex gap-4 animate-in fade-in slide-in-from-bottom-2 duration-300 ${isReply ? 'ml-12 mt-4' : ''}`}>
-            <div className="w-10 h-10 rounded-full bg-white/5 border border-white/10 flex items-center justify-center font-bold text-gray-400 flex-shrink-0 overflow-hidden">
-                {comment.author?.avatar ? (
-                    <img src={comment.author.avatar} alt={authorName} className="w-full h-full object-cover" />
-                ) : (
-                    authorInitial
-                )}
-            </div>
+            <AuthorAvatar
+                username={comment.author?.username || 'Anonymous'}
+                avatar={comment.author?.avatar}
+                isAnonymous={comment.isAnonymous}
+                size="lg"
+            />
             <div className="flex-grow">
                 <div className="flex items-center gap-2 mb-1">
-                    <span className="font-bold text-sm">{authorName}</span>
+                    <AuthorLink
+                        username={comment.author?.username || 'Anonymous'}
+                        avatar={comment.author?.avatar}
+                        isAnonymous={comment.isAnonymous}
+                        showAvatar={false}
+                        className="font-bold text-sm"
+                    />
                     <span className="text-xs text-gray-500">{new Date(timestamp).toLocaleDateString()}</span>
                     {tipsAmount > 0 && (
                         <span className="text-[10px] bg-gold/10 text-gold px-1.5 py-0.5 rounded border border-gold/20 flex items-center gap-1">
@@ -330,21 +335,17 @@ export const ProjectDetail = () => {
          <div className="flex flex-col justify-center">
             <h1 className="text-4xl md:text-5xl font-display font-bold mb-4">{project.title}</h1>
             
-            <div
-                className="flex items-center gap-3 mb-6 cursor-pointer hover:opacity-80 transition-opacity"
-                onClick={() => project.author && openUserProfile(project.author)}
-            >
-                <div className="w-8 h-8 rounded-full bg-white/10 overflow-hidden">
-                    {project.author?.avatar ? (
-                        <img src={project.author.avatar} alt={project.author.username} />
-                    ) : (
-                        <div className="w-full h-full bg-purple-500" />
-                    )}
-                </div>
-                <div>
-                    <p className="text-sm font-bold">{project.author?.username || 'Anonymous'}</p>
-                    <p className="text-xs text-gray-400 font-mono">{project.author?.wallet || 'Hidden'}</p>
-                </div>
+            <div className="flex items-center gap-3 mb-6">
+                <AuthorLink
+                    username={project.author?.username || 'Anonymous'}
+                    avatar={project.author?.avatar}
+                    isAnonymous={!project.author}
+                    showAvatar={true}
+                    avatarSize="md"
+                />
+                {project.author?.wallet && (
+                    <span className="text-xs text-gray-400 font-mono">{project.author.wallet.slice(0, 4)}...{project.author.wallet.slice(-4)}</span>
+                )}
             </div>
 
             <p className="text-gray-300 text-lg mb-8 leading-relaxed">{project.description}</p>

@@ -7,9 +7,10 @@ import { useAuth } from '../contexts/AuthContext';
 import { useRouter } from 'next/navigation';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { motion } from 'framer-motion';
-import { Camera, Edit2, Save, X, Github, Twitter, Facebook, Send, Pencil, Trash2, ArrowLeft, Wallet, AlertCircle, RefreshCw, Check } from 'lucide-react';
+import { Camera, Edit2, Save, X, Github, Twitter, Facebook, Send, Pencil, Trash2, ArrowLeft, Wallet, AlertCircle, RefreshCw, Check, Repeat } from 'lucide-react';
 import { ProjectCard } from './ProjectCard';
 import { WalletReminderBadge } from './WalletReminderBadge';
+import { WalletRequiredModal } from './WalletRequiredModal';
 import toast from 'react-hot-toast';
 import { Project } from '../lib/types';
 import { apiClient } from '../lib/api-client';
@@ -33,6 +34,8 @@ export const Profile = () => {
   const [isReconnecting, setIsReconnecting] = useState(false);
   const [userStats, setUserStats] = useState<UserStats | null>(null);
   const [isLoadingStats, setIsLoadingStats] = useState(false);
+  const [showWalletModal, setShowWalletModal] = useState(false);
+  const [walletModalMode, setWalletModalMode] = useState<'reconnect' | 'connect' | 'change'>('reconnect');
   const fileInputRef = useRef<HTMLInputElement>(null);
   
   // Determine which profile to show: the viewedUser (from clicking an author) or the logged-in user
@@ -336,31 +339,56 @@ export const Profile = () => {
                                           <p className="text-gray-500 text-sm mb-2">{displayUser.email}</p>
                                         )}
                                         {displayUser.wallet ? (
-                                          <div className="flex items-center gap-2 mb-4">
+                                          <div className="flex flex-wrap items-center gap-2 mb-4">
                                             <p className="text-gray-400 font-mono text-sm bg-white/5 inline-block px-2 py-1 rounded">
                                               <Wallet className="w-3 h-3 inline mr-1" />
                                               {displayUser.wallet.slice(0, 8)}...{displayUser.wallet.slice(-6)}
                                             </p>
                                             {isOwnProfile && (
-                                              isWalletConnected ? (
-                                                <span className="text-green-400 text-xs flex items-center gap-1 bg-green-500/10 px-2 py-1 rounded">
-                                                  <Check className="w-3 h-3" /> Connected
-                                                </span>
-                                              ) : (
+                                              <>
+                                                {isWalletConnected ? (
+                                                  <span className="text-green-400 text-xs flex items-center gap-1 bg-green-500/10 px-2 py-1 rounded">
+                                                    <Check className="w-3 h-3" /> Connected
+                                                  </span>
+                                                ) : (
+                                                  <button
+                                                    onClick={() => {
+                                                      setWalletModalMode('reconnect');
+                                                      setShowWalletModal(true);
+                                                    }}
+                                                    disabled={isReconnecting}
+                                                    className="text-purple-400 text-xs flex items-center gap-1 bg-purple-500/10 hover:bg-purple-500/20 px-2 py-1 rounded transition-colors disabled:opacity-50"
+                                                  >
+                                                    <RefreshCw className={`w-3 h-3 ${isReconnecting ? 'animate-spin' : ''}`} />
+                                                    {isReconnecting ? 'Connecting...' : 'Reconnect'}
+                                                  </button>
+                                                )}
                                                 <button
-                                                  onClick={handleReconnectWallet}
-                                                  disabled={isReconnecting}
-                                                  className="text-purple-400 text-xs flex items-center gap-1 bg-purple-500/10 hover:bg-purple-500/20 px-2 py-1 rounded transition-colors disabled:opacity-50"
+                                                  onClick={() => {
+                                                    setWalletModalMode('change');
+                                                    setShowWalletModal(true);
+                                                  }}
+                                                  className="text-yellow-400 text-xs flex items-center gap-1 bg-yellow-500/10 hover:bg-yellow-500/20 px-2 py-1 rounded transition-colors"
                                                 >
-                                                  <RefreshCw className={`w-3 h-3 ${isReconnecting ? 'animate-spin' : ''}`} />
-                                                  {isReconnecting ? 'Connecting...' : 'Reconnect'}
+                                                  <Repeat className="w-3 h-3" />
+                                                  Change Wallet
                                                 </button>
-                                              )
+                                              </>
                                             )}
                                           </div>
+                                        ) : isOwnProfile ? (
+                                          <button
+                                            onClick={() => {
+                                              setWalletModalMode('connect');
+                                              setShowWalletModal(true);
+                                            }}
+                                            className="text-yellow-400 font-medium text-sm mb-4 bg-yellow-500/10 hover:bg-yellow-500/20 inline-flex items-center gap-2 px-3 py-2 rounded-lg transition-colors"
+                                          >
+                                            <Wallet className="w-4 h-4" />
+                                            Connect Wallet to Receive Tips
+                                          </button>
                                         ) : (
-                                          <p className="text-yellow-400 font-mono text-sm mb-4 bg-yellow-500/10 inline-block px-2 py-1 rounded">
-                                            <AlertCircle className="w-3 h-3 inline mr-1" />
+                                          <p className="text-gray-500 font-mono text-sm mb-4 bg-white/5 inline-block px-2 py-1 rounded">
                                             No wallet connected
                                           </p>
                                         )}
@@ -610,6 +638,17 @@ export const Profile = () => {
                 </motion.div>
             </div>
         )}
+
+        {/* Wallet Required Modal */}
+        <WalletRequiredModal
+          isOpen={showWalletModal}
+          onClose={() => setShowWalletModal(false)}
+          mode={walletModalMode}
+          onSuccess={() => {
+            setShowWalletModal(false);
+            refreshUser();
+          }}
+        />
     </motion.div>
   );
 };

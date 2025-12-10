@@ -308,10 +308,17 @@ export const useAppStore = create<AppState>((set, get) => ({
     }
   },
 
-  fetchProjectById: async (id) => {
+  fetchProjectById: async (idOrPrefix) => {
     try {
       const state = get();
-      const existingProject = state.projects.find((p) => p.id === id);
+
+      // First try exact match, then try prefix match (for slug URLs with 8-char ID suffix)
+      let existingProject = state.projects.find((p) => p.id === idOrPrefix);
+      if (!existingProject && idOrPrefix.length === 8) {
+        existingProject = state.projects.find((p) =>
+          p.id.startsWith(idOrPrefix)
+        );
+      }
 
       // Return existing project if it has comments already loaded
       if (
@@ -322,8 +329,11 @@ export const useAppStore = create<AppState>((set, get) => ({
         return existingProject;
       }
 
+      // Use existing project's full ID if found, otherwise use the provided ID
+      const projectId = existingProject?.id || idOrPrefix;
+
       // Fetch full project data with comments
-      const response = await apiClient.getProject(id);
+      const response = await apiClient.getProject(projectId);
       if (response.success && response.data) {
         // Map imageUrl to image for frontend compatibility
         const project = {
@@ -336,6 +346,7 @@ export const useAppStore = create<AppState>((set, get) => ({
         }
 
         // Update or add project to store
+        const id = project.id;
         if (existingProject) {
           set((state) => ({
             projects: state.projects.map((p) => (p.id === id ? project : p)),

@@ -9,6 +9,8 @@ import { LoadingLightbulb, LoadingStatus } from './LoadingLightbulb';
 import { useWallet, useConnection } from '@solana/wallet-adapter-react';
 import { PublicKey, Transaction, SystemProgram, LAMPORTS_PER_SOL } from '@solana/web3.js';
 import { apiClient } from '../lib/api-client';
+import { useAuth } from '../contexts/AuthContext';
+import { WalletRequiredModal } from './WalletRequiredModal';
 
 interface PaymentModalProps {
   isOpen: boolean;
@@ -33,10 +35,13 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
 }) => {
   const { publicKey, sendTransaction } = useWallet();
   const { connection } = useConnection();
+  const { user } = useAuth();
   const [amount, setAmount] = useState('10');
   const [processing, setProcessing] = useState(false);
   const [status, setStatus] = useState<LoadingStatus>('loading');
   const [txHash, setTxHash] = useState('');
+  const [showWalletModal, setShowWalletModal] = useState(false);
+  const [walletModalMode, setWalletModalMode] = useState<'reconnect' | 'connect'>('connect');
 
   // Reset state when opening
   useEffect(() => {
@@ -49,7 +54,16 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
 
   const handlePayment = async () => {
     if (!publicKey) {
-      toast.error('Please connect your wallet first');
+      // Determine the right message and action based on user's wallet status
+      if (user?.wallet) {
+        // User has wallet linked but not connected (needs reconnect)
+        setWalletModalMode('reconnect');
+        setShowWalletModal(true);
+      } else {
+        // User doesn't have wallet linked
+        setWalletModalMode('connect');
+        setShowWalletModal(true);
+      }
       return;
     }
 
@@ -295,6 +309,14 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
                 )}
             </AnimatePresence>
         </motion.div>
+
+        {/* Wallet Required Modal */}
+        <WalletRequiredModal
+          isOpen={showWalletModal}
+          onClose={() => setShowWalletModal(false)}
+          mode={walletModalMode}
+          onSuccess={() => setShowWalletModal(false)}
+        />
     </div>
   );
 };

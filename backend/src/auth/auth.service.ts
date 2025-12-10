@@ -340,4 +340,31 @@ export class AuthService {
       data: userResponse,
     };
   }
+
+  /**
+   * Check if a wallet is already linked to an account
+   */
+  async checkWalletExists(
+    walletAddress: string
+  ): Promise<ApiResponse<{ exists: boolean; userId?: string }>> {
+    const supabase = this.supabaseService.getAdminClient();
+
+    const { data: user, error } = await supabase
+      .from("users")
+      .select("id")
+      .eq("wallet", walletAddress)
+      .single();
+
+    if (error || !user) {
+      return {
+        success: true,
+        data: { exists: false },
+      };
+    }
+
+    return {
+      success: true,
+      data: { exists: true, userId: user.id },
+    };
+  }
 }
