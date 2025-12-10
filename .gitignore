@@ -54,6 +54,3 @@ test-ledger/
 tmp/
 temp/
 Thumbs.db
-
-# Security: Ignore admin seeding data
-backend/database/admin_seeding.sql
