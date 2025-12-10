@@ -25,43 +25,43 @@ const Hero: React.FC = () => {
       </div>
 
       {/* Content Container */}
-      <div className="max-w-7xl mx-auto px-6 relative z-10 grid lg:grid-cols-2 gap-12 items-center">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 relative z-10 grid lg:grid-cols-2 gap-8 lg:gap-12 items-center">
         
         {/* Left Column: Text */}
-        <div className="text-left space-y-8">
+        <div className="text-center lg:text-left space-y-6 sm:space-y-8">
           <motion.div
              initial={{ opacity: 0, x: -50 }}
              animate={{ opacity: 1, x: 0 }}
              transition={{ duration: 0.8 }}
           >
-            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/5 border border-white/10 mb-6 backdrop-blur-sm">
+            <div className="inline-flex items-center gap-2 px-3 sm:px-4 py-1.5 rounded-full bg-white/5 border border-white/10 mb-4 sm:mb-6 backdrop-blur-sm">
               <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
-              <span className="text-xs font-mono text-green-400 uppercase tracking-wide">Solana Mainnet Compatible</span>
+              <span className="text-[10px] sm:text-xs font-mono text-green-400 uppercase tracking-wide">Solana Devnet Compatible</span>
             </div>
             
-            <h1 className="text-5xl lg:text-7xl font-display font-bold leading-tight mb-6">
+            <h1 className="text-3xl sm:text-5xl lg:text-7xl font-display font-bold leading-tight mb-4 sm:mb-6">
               Ship faster with <br />
               <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#9945FF] to-[#ffd700]">Real Feedback.</span>
             </h1>
             
-            <p className="text-lg text-gray-400 max-w-xl leading-relaxed">
+            <p className="text-sm sm:text-lg text-gray-400 max-w-xl mx-auto lg:mx-0 leading-relaxed">
               Don't build in a silo. Validate your <span className="text-gold font-mono">Solana</span> protocols with a community of builders before you deploy capital. 
               Earn reputation and USDC for quality code reviews.
             </p>
 
-            <div className="flex flex-wrap gap-4 mt-8">
+            <div className="flex flex-col sm:flex-row flex-wrap gap-3 sm:gap-4 mt-6 sm:mt-8 justify-center lg:justify-start">
               <button
                 onClick={() => openSubmitModal('idea')}
-                className="px-8 py-4 bg-white text-black font-bold rounded-full hover:bg-gold transition-all duration-300 transform hover:scale-105 flex items-center gap-2"
+                className="px-6 sm:px-8 py-3 sm:py-4 bg-white text-black font-bold rounded-full hover:bg-gold transition-all duration-300 transform hover:scale-105 flex items-center justify-center gap-2 text-sm sm:text-base"
               >
-                <Plus className="w-5 h-5" />
+                <Plus className="w-4 h-4 sm:w-5 sm:h-5" />
                 Share Your Idea
               </button>
               <button
                 onClick={() => router.push('/idea')}
-                className="px-8 py-4 bg-transparent border border-white/20 text-white font-bold rounded-full hover:border-white hover:bg-white/5 transition-all duration-300 flex items-center gap-2"
+                className="px-6 sm:px-8 py-3 sm:py-4 bg-transparent border border-white/20 text-white font-bold rounded-full hover:border-white hover:bg-white/5 transition-all duration-300 flex items-center justify-center gap-2 text-sm sm:text-base"
               >
-                <LayoutGrid className="w-5 h-5" />
+                <LayoutGrid className="w-4 h-4 sm:w-5 sm:h-5" />
                 Explore Ideas
               </button>
             </div>
@@ -105,7 +105,7 @@ const Hero: React.FC = () => {
             <div className="p-6 font-mono text-sm text-gray-300 space-y-2">
               <p><span className="text-green-400">➜</span> <span className="text-blue-400">~</span> gimme-idea init</p>
               <p className="text-gray-500">Initializing project environment...</p>
-              <p className="text-gray-500">Connecting to Solana Mainnet...</p>
+              <p className="text-gray-500">Connecting to Solana Devnet...</p>
               <p><span className="text-green-400">✔</span> Wallet connected: <span className="text-gold">8xF3...92a</span></p>
               <p><span className="text-green-400">✔</span> Fetching community feedback...</p>
               <div className="p-3 bg-white/5 rounded border-l-2 border-gold mt-4">

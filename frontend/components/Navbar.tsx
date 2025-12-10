@@ -156,22 +156,22 @@ const Navbar = () => {
   }, []);
 
   return (
-    <nav className="fixed top-6 left-0 right-0 z-50 flex justify-center px-4 pointer-events-none">
+    <nav className="fixed top-4 sm:top-6 left-0 right-0 z-50 flex justify-center px-2 sm:px-4 pointer-events-none">
       <motion.div 
         initial={{ y: -100, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
-        className="pointer-events-auto bg-[#0F0F0F]/90 backdrop-blur-xl border border-white/5 rounded-full px-6 py-3 flex items-center justify-between w-full max-w-5xl shadow-2xl shadow-purple-900/10 relative"
+        className="pointer-events-auto bg-[#0F0F0F]/90 backdrop-blur-xl border border-white/5 rounded-full px-3 sm:px-6 py-2 sm:py-3 flex items-center justify-between w-full max-w-5xl shadow-2xl shadow-purple-900/10 relative"
       >
         {/* Logo */}
-        <button onClick={() => { setView('landing'); setSelectedProject(null); router.push('/home'); }} className="flex items-center gap-3 group">
-          <div className="relative w-10 h-10 flex items-center justify-center">
+        <button onClick={() => { setView('landing'); setSelectedProject(null); router.push('/home'); }} className="flex items-center gap-2 sm:gap-3 group">
+          <div className="relative w-8 h-8 sm:w-10 sm:h-10 flex items-center justify-center">
              <div className="absolute inset-0 bg-[#FFD700]/20 rounded-full blur-md opacity-50 group-hover:opacity-100 transition-opacity duration-300" />
              <Image
                src="/asset/logo-gmi.png"
                alt="Gimme Idea Logo"
                width={36}
                height={36}
-               className="relative z-10 object-contain"
+               className="relative z-10 object-contain w-7 h-7 sm:w-9 sm:h-9"
                priority
              />
           </div>
@@ -374,9 +374,9 @@ const Navbar = () => {
               <div className="relative group">
                   <div
                     onClick={() => setShowUserMenu(!showUserMenu)}
-                    className="flex items-center gap-2 px-1 pr-4 py-1 bg-white/5 hover:bg-white/10 border border-white/10 rounded-full cursor-pointer transition-all"
+                    className="flex items-center gap-1 sm:gap-2 px-1 sm:pr-3 py-1 bg-white/5 hover:bg-white/10 border border-white/10 rounded-full cursor-pointer transition-all"
                   >
-                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-purple-500 to-blue-500 overflow-hidden relative">
+                    <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-gradient-to-br from-purple-500 to-blue-500 overflow-hidden relative flex-shrink-0">
                         {user.avatar && (
                           <Image
                             src={user.avatar}
@@ -387,11 +387,11 @@ const Navbar = () => {
                           />
                         )}
                     </div>
-                    <div className="hidden sm:flex flex-col items-start">
-                      <span className="text-sm font-mono font-medium text-gray-300 group-hover:text-white max-w-[100px] truncate">{user.username}</span>
+                    <div className="hidden sm:flex flex-col items-start min-w-0">
+                      <span className="text-xs sm:text-sm font-mono font-medium text-gray-300 group-hover:text-white max-w-[80px] sm:max-w-[100px] truncate">{user.username}</span>
                       {user.needsWalletConnect && (
-                        <span className="text-[10px] text-yellow-400 flex items-center gap-1">
-                          <AlertCircle className="w-3 h-3" /> No wallet
+                        <span className="text-[9px] sm:text-[10px] text-yellow-400 flex items-center gap-1">
+                          <AlertCircle className="w-2.5 h-2.5 sm:w-3 sm:h-3" /> No wallet
                         </span>
                       )}
                     </div>
@@ -399,28 +399,28 @@ const Navbar = () => {
 
                   {/* Dropdown Menu */}
                   {showUserMenu && (
-                     <div className="absolute top-full right-0 mt-2 w-56 bg-[#0F0F0F] border border-white/10 rounded-xl shadow-xl overflow-hidden py-1 z-50">
-                        <div className="px-4 py-3 border-b border-white/5">
-                          <p className="text-sm font-medium text-white truncate">{user.username}</p>
-                          <p className="text-xs text-gray-400 truncate">{user.email || user.wallet}</p>
+                     <div className="absolute top-full right-0 mt-2 w-48 sm:w-56 bg-[#0F0F0F] border border-white/10 rounded-xl shadow-xl overflow-hidden py-1 z-50">
+                        <div className="px-3 sm:px-4 py-2 sm:py-3 border-b border-white/5">
+                          <p className="text-xs sm:text-sm font-medium text-white truncate">{user.username}</p>
+                          <p className="text-[10px] sm:text-xs text-gray-400 truncate">{user.email || user.wallet}</p>
                         </div>
                         <button
                              onClick={() => { router.push('/profile'); setShowUserMenu(false); }}
-                             className="w-full text-left px-4 py-3 text-sm text-gray-300 hover:bg-white/5 hover:text-white flex items-center gap-2"
+                             className="w-full text-left px-3 sm:px-4 py-2 sm:py-3 text-xs sm:text-sm text-gray-300 hover:bg-white/5 hover:text-white flex items-center gap-2"
                         >
                             <UserIcon className="w-4 h-4" /> My Profile
                         </button>
                         {user.needsWalletConnect && (
                           <button
                                onClick={() => { setShowWalletPopup(true); setShowUserMenu(false); }}
-                               className="w-full text-left px-4 py-3 text-sm text-yellow-400 hover:bg-yellow-500/10 flex items-center gap-2"
+                               className="w-full text-left px-3 sm:px-4 py-2 sm:py-3 text-xs sm:text-sm text-yellow-400 hover:bg-yellow-500/10 flex items-center gap-2"
                           >
                               <Wallet className="w-4 h-4" /> Connect Wallet
                           </button>
                         )}
                         <button
                              onClick={() => { signOut(); setShowUserMenu(false); router.push('/home'); }}
-                             className="w-full text-left px-4 py-3 text-sm text-red-400 hover:bg-red-500/10 flex items-center gap-2 border-t border-white/5"
+                             className="w-full text-left px-3 sm:px-4 py-2 sm:py-3 text-xs sm:text-sm text-red-400 hover:bg-red-500/10 flex items-center gap-2 border-t border-white/5"
                         >
                             <LogOut className="w-4 h-4" /> Log Out
                         </button>

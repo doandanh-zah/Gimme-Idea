@@ -123,38 +123,38 @@ export default function Dashboard({ mode }: DashboardProps) {
           </div>
       </div>
 
-      <div className="pt-32 px-6 max-w-7xl mx-auto">
+      <div className="pt-24 sm:pt-32 px-4 sm:px-6 max-w-7xl mx-auto">
         
         {/* Header */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-12">
+        <div className="flex flex-col gap-4 sm:gap-6 mb-8 sm:mb-12">
           <div>
-            <h1 className="text-4xl font-display font-bold mb-2 tracking-tight">
+            <h1 className="text-2xl sm:text-4xl font-display font-bold mb-2 tracking-tight">
               Explore <span className={`text-transparent bg-clip-text bg-gradient-to-r ${mode === 'project' ? 'from-[#9945FF] to-[#7c3aed]' : 'from-[#FFD700] to-[#FDB931]'}`}>
                 {mode === 'project' ? 'Projects' : 'Ideas'}
               </span>
             </h1>
-            <p className="text-gray-300">
+            <p className="text-gray-300 text-sm sm:text-base">
                 {mode === 'project' 
                     ? "Discover live protocols and beta dApps." 
                     : "Raw concepts seeking feedback and co-founders."}
             </p>
           </div>
           
-          <div className="flex gap-3 flex-wrap">
+          <div className="flex gap-2 sm:gap-3 flex-wrap">
              {mode === 'idea' && (
                <button
                  onClick={() => setShowAIChat(true)}
-                 className="px-4 py-2 border border-[#FFD700]/30 bg-[#FFD700]/10 rounded-full text-sm font-mono transition-colors flex items-center gap-2 hover:bg-[#FFD700]/20 text-white"
+                 className="px-3 sm:px-4 py-2 border border-[#FFD700]/30 bg-[#FFD700]/10 rounded-full text-xs sm:text-sm font-mono transition-colors flex items-center gap-2 hover:bg-[#FFD700]/20 text-white"
                >
                  Find by AI
                </button>
              )}
              <button
                onClick={() => openSubmitModal(mode)}
-               className={`px-6 py-2 bg-gradient-to-r ${mode === 'project' ? 'from-[#9945FF] to-[#8035e0] text-white' : 'from-[#FFD700] to-[#FDB931] text-black'} rounded-full text-sm font-bold hover:shadow-lg transition-all flex items-center gap-2`}
+               className={`px-4 sm:px-6 py-2 bg-gradient-to-r ${mode === 'project' ? 'from-[#9945FF] to-[#8035e0] text-white' : 'from-[#FFD700] to-[#FDB931] text-black'} rounded-full text-xs sm:text-sm font-bold hover:shadow-lg transition-all flex items-center gap-2`}
              >
                {mode === 'project' ? <Rocket className="w-4 h-4" /> : <Lightbulb className="w-4 h-4" />}
-               Submit {mode === 'project' ? 'Project' : 'Idea'}
+               <span className="hidden sm:inline">Submit</span> {mode === 'project' ? 'Project' : 'Idea'}
              </button>
           </div>
         </div>
@@ -166,19 +166,19 @@ export default function Dashboard({ mode }: DashboardProps) {
 
         {/* Search & Categories */}
         {searchQuery && (
-            <div className="mb-6 flex items-center gap-2">
+            <div className="mb-4 sm:mb-6 flex flex-wrap items-center gap-2 text-sm">
                 <span className="text-gray-400">Search results for:</span>
                 <span className="text-white font-bold">"{searchQuery}"</span>
                 <button onClick={() => setSearchQuery('')} className="ml-2 p-1 hover:bg-white/10 rounded-full"><X className="w-4 h-4" /></button>
             </div>
         )}
 
-        <div className="flex overflow-x-auto gap-2 mb-10 pb-2 scrollbar-hide">
+        <div className="flex overflow-x-auto gap-2 mb-6 sm:mb-10 pb-2 scrollbar-hide -mx-4 px-4 sm:mx-0 sm:px-0">
           {categories.map(cat => (
             <button
               key={cat}
               onClick={() => setCategoryFilter(cat)}
-              className={`px-5 py-2 rounded-full text-sm whitespace-nowrap border transition-all duration-300 ${
+              className={`px-3 sm:px-5 py-1.5 sm:py-2 rounded-full text-xs sm:text-sm whitespace-nowrap border transition-all duration-300 ${
                 categoryFilter === cat 
                   ? 'bg-white text-black border-white font-bold shadow-[0_0_15px_rgba(255,255,255,0.3)]' 
                   : 'bg-white/10 text-gray-300 border-white/10 hover:border-white/30 hover:bg-white/20 hover:text-white'
@@ -191,17 +191,17 @@ export default function Dashboard({ mode }: DashboardProps) {
 
         {/* Grid */}
         {isLoading ? (
-          <div className="flex flex-col items-center justify-center py-32">
+          <div className="flex flex-col items-center justify-center py-20 sm:py-32">
             <motion.div
               animate={{ rotate: 360 }}
               transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-              className="w-16 h-16 border-4 border-white/10 border-t-white rounded-full mb-4"
+              className="w-12 h-12 sm:w-16 sm:h-16 border-4 border-white/10 border-t-white rounded-full mb-4"
             />
-            <p className="text-gray-400 animate-pulse">Loading {mode}s...</p>
+            <p className="text-gray-400 animate-pulse text-sm sm:text-base">Loading {mode}s...</p>
           </div>
         ) : (
           <>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10 mt-10">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 lg:gap-10 mt-6 sm:mt-10">
               {filteredProjects.map((project, index) => (
                 <motion.div
                   key={project.id}

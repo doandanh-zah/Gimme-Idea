@@ -230,7 +230,7 @@ export const ConnectWalletPopup = () => {
 
   // Full popup version
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center px-4">
+    <div className="fixed inset-0 z-[100] flex items-center justify-center px-3 sm:px-4">
       {/* Backdrop */}
       <motion.div 
         initial={{ opacity: 0 }}
@@ -244,7 +244,7 @@ export const ConnectWalletPopup = () => {
         initial={{ scale: 0.9, opacity: 0, y: 20 }}
         animate={{ scale: 1, opacity: 1, y: 0 }}
         exit={{ scale: 0.9, opacity: 0, y: 20 }}
-        className="relative w-full max-w-md bg-[#0F0F0F] border border-white/10 rounded-3xl p-8 shadow-2xl shadow-purple-900/20 overflow-hidden"
+        className="relative w-full max-w-md bg-[#0F0F0F] border border-white/10 rounded-2xl sm:rounded-3xl p-5 sm:p-8 shadow-2xl shadow-purple-900/20 overflow-hidden"
       >
         {/* Top Gradient Line */}
         <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-purple-500 via-[#FFD700] to-green-500" />
@@ -258,28 +258,28 @@ export const ConnectWalletPopup = () => {
               exit={{ opacity: 0, x: -20 }}
               className="text-center"
             >
-              <div className="w-20 h-20 bg-purple-500/20 rounded-full flex items-center justify-center mx-auto mb-6">
-                <Wallet className="w-10 h-10 text-purple-400" />
+              <div className="w-16 h-16 sm:w-20 sm:h-20 bg-purple-500/20 rounded-full flex items-center justify-center mx-auto mb-4 sm:mb-6">
+                <Wallet className="w-8 h-8 sm:w-10 sm:h-10 text-purple-400" />
               </div>
               
-              <h2 className="text-2xl font-bold text-white mb-3">
+              <h2 className="text-xl sm:text-2xl font-bold text-white mb-2 sm:mb-3">
                 Do you want to connect wallet?
               </h2>
               
-              <p className="text-gray-400 mb-8 leading-relaxed">
+              <p className="text-gray-400 text-sm sm:text-base mb-6 sm:mb-8 leading-relaxed">
                 Connect your Solana wallet to receive tips from the community for your awesome ideas!
               </p>
 
-              <div className="flex gap-4 justify-center">
+              <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center">
                 <button
                   onClick={() => setStep('select-wallet')}
-                  className="px-8 py-3 bg-gradient-to-r from-purple-600 to-purple-500 hover:from-purple-500 hover:to-purple-400 text-white font-bold rounded-full transition-all transform hover:scale-105 shadow-lg shadow-purple-500/25"
+                  className="w-full sm:w-auto px-6 sm:px-8 py-2.5 sm:py-3 bg-gradient-to-r from-purple-600 to-purple-500 hover:from-purple-500 hover:to-purple-400 text-white font-bold rounded-full transition-all transform hover:scale-105 shadow-lg shadow-purple-500/25 text-sm sm:text-base"
                 >
                   Okay
                 </button>
                 <button
                   onClick={handleSkip}
-                  className="px-8 py-3 bg-zinc-800 hover:bg-zinc-700 text-white font-semibold rounded-full transition-all border border-zinc-700"
+                  className="w-full sm:w-auto px-6 sm:px-8 py-2.5 sm:py-3 bg-zinc-800 hover:bg-zinc-700 text-white font-semibold rounded-full transition-all border border-zinc-700 text-sm sm:text-base"
                 >
                   Skip for now
                 </button>
@@ -295,28 +295,28 @@ export const ConnectWalletPopup = () => {
               exit={{ opacity: 0, x: -20 }}
               className="text-center"
             >
-              <div className="w-20 h-20 bg-yellow-500/20 rounded-full flex items-center justify-center mx-auto mb-6">
-                <AlertTriangle className="w-10 h-10 text-yellow-400" />
+              <div className="w-16 h-16 sm:w-20 sm:h-20 bg-yellow-500/20 rounded-full flex items-center justify-center mx-auto mb-4 sm:mb-6">
+                <AlertTriangle className="w-8 h-8 sm:w-10 sm:h-10 text-yellow-400" />
               </div>
               
-              <h2 className="text-2xl font-bold text-white mb-3">
+              <h2 className="text-xl sm:text-2xl font-bold text-white mb-2 sm:mb-3">
                 Heads up!
               </h2>
               
-              <p className="text-gray-400 mb-8 leading-relaxed">
+              <p className="text-gray-400 text-sm sm:text-base mb-6 sm:mb-8 leading-relaxed">
                 If you don't connect a wallet, you won't be able to receive tips from other users.
               </p>
 
-              <div className="flex gap-4 justify-center">
+              <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center">
                 <button
                   onClick={() => setStep('select-wallet')}
-                  className="px-8 py-3 bg-gradient-to-r from-[#FFD700] to-[#FDB931] text-black font-bold rounded-full transition-all transform hover:scale-105 shadow-lg shadow-yellow-500/25"
+                  className="w-full sm:w-auto px-6 sm:px-8 py-2.5 sm:py-3 bg-gradient-to-r from-[#FFD700] to-[#FDB931] text-black font-bold rounded-full transition-all transform hover:scale-105 shadow-lg shadow-yellow-500/25 text-sm sm:text-base"
                 >
                   Connect now
                 </button>
                 <button
                   onClick={handleUnderstood}
-                  className="px-8 py-3 bg-zinc-800 hover:bg-zinc-700 text-white font-semibold rounded-full transition-all border border-zinc-700"
+                  className="w-full sm:w-auto px-6 sm:px-8 py-2.5 sm:py-3 bg-zinc-800 hover:bg-zinc-700 text-white font-semibold rounded-full transition-all border border-zinc-700 text-sm sm:text-base"
                 >
                   Maybe later
                 </button>
@@ -333,32 +333,32 @@ export const ConnectWalletPopup = () => {
             >
               <button
                 onClick={() => setStep('initial')}
-                className="absolute top-6 left-6 p-2 text-gray-400 hover:text-white transition-colors"
+                className="absolute top-4 left-4 sm:top-6 sm:left-6 p-2 text-gray-400 hover:text-white transition-colors"
               >
                 <ArrowLeft className="w-5 h-5" />
               </button>
 
               <button
                 onClick={handleUnderstood}
-                className="absolute top-6 right-6 p-2 text-gray-400 hover:text-white transition-colors"
+                className="absolute top-4 right-4 sm:top-6 sm:right-6 p-2 text-gray-400 hover:text-white transition-colors"
               >
                 <X className="w-5 h-5" />
               </button>
 
               <div className="text-center pt-4">
-                <div className="w-16 h-16 bg-purple-500/20 rounded-full flex items-center justify-center mx-auto mb-6">
-                  <Wallet className="w-8 h-8 text-purple-400" />
+                <div className="w-14 h-14 sm:w-16 sm:h-16 bg-purple-500/20 rounded-full flex items-center justify-center mx-auto mb-4 sm:mb-6">
+                  <Wallet className="w-7 h-7 sm:w-8 sm:h-8 text-purple-400" />
                 </div>
                 
-                <h2 className="text-2xl font-bold text-white mb-2">
+                <h2 className="text-xl sm:text-2xl font-bold text-white mb-2">
                   Select Wallet
                 </h2>
                 
-                <p className="text-gray-400 mb-6">
+                <p className="text-gray-400 text-sm sm:text-base mb-4 sm:mb-6">
                   Choose your preferred Solana wallet
                 </p>
 
-                <div className="space-y-3">
+                <div className="space-y-2 sm:space-y-3">
                   {wallets.filter(w => w.readyState === 'Installed' || w.readyState === 'Loadable').length > 0 ? (
                     walletOptions.map((wallet) => {
                       const isInstalled = wallets.some(
@@ -372,15 +372,15 @@ export const ConnectWalletPopup = () => {
                         <button
                           key={wallet.name}
                           onClick={() => handleConnect(wallet.name)}
-                          className={`w-full flex items-center justify-between p-4 rounded-xl border border-white/5 bg-white/5 transition-all duration-300 group ${wallet.color}`}
+                          className={`w-full flex items-center justify-between p-3 sm:p-4 rounded-xl border border-white/5 bg-white/5 transition-all duration-300 group ${wallet.color}`}
                         >
-                          <div className="flex items-center gap-4">
-                            <div className="w-12 h-12 rounded-full bg-white/10 flex items-center justify-center p-2.5">
+                          <div className="flex items-center gap-3 sm:gap-4">
+                            <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-white/10 flex items-center justify-center p-2 sm:p-2.5">
                               <img src={wallet.icon} alt={wallet.name} className="w-full h-full object-contain" />
                             </div>
-                            <span className="font-bold text-lg text-white">{wallet.name}</span>
+                            <span className="font-bold text-base sm:text-lg text-white">{wallet.name}</span>
                           </div>
-                          <div className={`w-2.5 h-2.5 rounded-full bg-gray-600 transition-all ${
+                          <div className={`w-2 h-2 sm:w-2.5 sm:h-2.5 rounded-full bg-gray-600 transition-all ${
                             wallet.name === 'Phantom' ? 'group-hover:bg-[#AB9FF2] group-hover:shadow-[0_0_10px_#AB9FF2]' :
                             'group-hover:bg-[#FFD700] group-hover:shadow-[0_0_10px_#FFD700]'
                           }`} />
@@ -389,13 +389,13 @@ export const ConnectWalletPopup = () => {
                     })
                   ) : (
                     <div className="text-gray-400 py-4">
-                      <p className="mb-4">No wallet found. Please install:</p>
-                      <div className="flex gap-4 justify-center">
+                      <p className="mb-4 text-sm sm:text-base">No wallet found. Please install:</p>
+                      <div className="flex gap-3 sm:gap-4 justify-center">
                         <a
                           href="https://phantom.app/"
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="px-6 py-2 bg-purple-600 hover:bg-purple-500 text-white rounded-full transition-all"
+                          className="px-4 sm:px-6 py-2 bg-purple-600 hover:bg-purple-500 text-white rounded-full transition-all text-sm"
                         >
                           Phantom
                         </a>
@@ -403,7 +403,7 @@ export const ConnectWalletPopup = () => {
                           href="https://solflare.com/"
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="px-6 py-2 bg-orange-600 hover:bg-orange-500 text-white rounded-full transition-all"
+                          className="px-4 sm:px-6 py-2 bg-orange-600 hover:bg-orange-500 text-white rounded-full transition-all text-sm"
                         >
                           Solflare
                         </a>
@@ -412,7 +412,7 @@ export const ConnectWalletPopup = () => {
                   )}
                 </div>
 
-                <p className="text-xs text-gray-500 mt-6">
+                <p className="text-[10px] sm:text-xs text-gray-500 mt-4 sm:mt-6">
                   You can always connect or change your wallet later in Profile settings.
                 </p>
               </div>
@@ -425,7 +425,7 @@ export const ConnectWalletPopup = () => {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="py-8"
+              className="py-6 sm:py-8"
             >
               <LoadingLightbulb text="Connecting wallet..." />
             </motion.div>

@@ -1,8 +1,8 @@
-import { Injectable, OnModuleInit } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
-import { Connection, PublicKey, Transaction } from '@solana/web3.js';
-import * as nacl from 'tweetnacl';
-import * as bs58 from 'bs58';
+import { Injectable, OnModuleInit } from "@nestjs/common";
+import { ConfigService } from "@nestjs/config";
+import { Connection, PublicKey, Transaction } from "@solana/web3.js";
+import * as nacl from "tweetnacl";
+import * as bs58 from "bs58";
 
 @Injectable()
 export class SolanaService implements OnModuleInit {
@@ -12,9 +12,11 @@ export class SolanaService implements OnModuleInit {
   constructor(private configService: ConfigService) {}
 
   onModuleInit() {
-    const rpcUrl = this.configService.get<string>('SOLANA_RPC_URL') || 'https://api.devnet.solana.com';
-    this.network = this.configService.get<string>('SOLANA_NETWORK') || 'devnet';
-    this.connection = new Connection(rpcUrl, 'confirmed');
+    const rpcUrl =
+      this.configService.get<string>("SOLANA_RPC_URL") ||
+      "https://api.devnet.solana.com";
+    this.network = this.configService.get<string>("SOLANA_NETWORK") || "devnet";
+    this.connection = new Connection(rpcUrl, "confirmed");
   }
 
   getConnection(): Connection {
@@ -35,20 +37,23 @@ export class SolanaService implements OnModuleInit {
     message: string
   ): boolean {
     try {
-      console.log('=== Signature Verification Debug ===');
-      console.log('PublicKey:', publicKey);
-      console.log('Signature (base58):', signature);
-      console.log('Message:', JSON.stringify(message));
-      console.log('Message length:', message.length);
-      console.log('Message bytes:', Buffer.from(message).toString('hex').slice(0, 100));
+      console.log("=== Signature Verification Debug ===");
+      console.log("PublicKey:", publicKey);
+      console.log("Signature (base58):", signature);
+      console.log("Message:", JSON.stringify(message));
+      console.log("Message length:", message.length);
+      console.log(
+        "Message bytes:",
+        Buffer.from(message).toString("hex").slice(0, 100)
+      );
 
       const publicKeyBytes = new PublicKey(publicKey).toBytes();
       const signatureBytes = bs58.decode(signature);
       const messageBytes = new TextEncoder().encode(message);
 
-      console.log('PublicKey bytes length:', publicKeyBytes.length);
-      console.log('Signature bytes length:', signatureBytes.length);
-      console.log('Message bytes length:', messageBytes.length);
+      console.log("PublicKey bytes length:", publicKeyBytes.length);
+      console.log("Signature bytes length:", signatureBytes.length);
+      console.log("Message bytes length:", messageBytes.length);
 
       const isValid = nacl.sign.detached.verify(
         messageBytes,
@@ -56,12 +61,12 @@ export class SolanaService implements OnModuleInit {
         publicKeyBytes
       );
 
-      console.log('Verification result:', isValid);
-      console.log('=================================');
+      console.log("Verification result:", isValid);
+      console.log("=================================");
 
       return isValid;
     } catch (error) {
-      console.error('Signature verification error:', error);
+      console.error("Signature verification error:", error);
       return false;
     }
   }
@@ -79,7 +84,7 @@ export class SolanaService implements OnModuleInit {
   }> {
     try {
       const transaction = await this.connection.getTransaction(txHash, {
-        maxSupportedTransactionVersion: 0
+        maxSupportedTransactionVersion: 0,
       });
 
       if (!transaction || !transaction.meta || transaction.meta.err) {
@@ -101,10 +106,10 @@ export class SolanaService implements OnModuleInit {
         from,
         to,
         amount: amount / 1e9, // Convert lamports to SOL
-        timestamp: transaction.blockTime || Date.now() / 1000
+        timestamp: transaction.blockTime || Date.now() / 1000,
       };
     } catch (error) {
-      console.error('Transaction verification error:', error);
+      console.error("Transaction verification error:", error);
       return { isValid: false };
     }
   }
@@ -113,11 +118,12 @@ export class SolanaService implements OnModuleInit {
    * Get Solscan link for transaction
    */
   getSolscanLink(txHash: string): string {
-    const baseUrl = this.network === 'mainnet-beta'
-      ? 'https://solscan.io/tx/'
-      : 'https://solscan.io/tx/';
+    const baseUrl =
+      this.network === "mainnet-beta"
+        ? "https://solscan.io/tx/"
+        : "https://solscan.io/tx/";
 
-    const cluster = this.network === 'mainnet-beta' ? '' : '?cluster=devnet';
+    const cluster = this.network === "mainnet-beta" ? "" : "?cluster=devnet";
     return `${baseUrl}${txHash}${cluster}`;
   }
 

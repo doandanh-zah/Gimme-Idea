@@ -152,7 +152,7 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center px-4">
+    <div className="fixed inset-0 z-[100] flex items-center justify-center px-3 sm:px-4">
         <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" onClick={processing ? undefined : onClose} />
         
         <motion.div 
@@ -164,7 +164,7 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
             }}
             exit={{ scale: 0.9, opacity: 0 }}
             transition={{ duration: 0.3 }}
-            className="relative w-full max-w-md bg-[#0F0F0F] border rounded-2xl p-6 shadow-2xl overflow-hidden min-h-[400px] flex flex-col"
+            className="relative w-full max-w-md bg-[#0F0F0F] border rounded-2xl p-4 sm:p-6 shadow-2xl overflow-hidden min-h-[350px] sm:min-h-[400px] flex flex-col"
             style={{
                 boxShadow: status === 'success' ? '0 0 40px rgba(20, 241, 149, 0.1)' : '0 0 20px rgba(0,0,0,0.5)'
             }}
@@ -172,7 +172,7 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
             {/* Close Button */}
             <button 
                 onClick={onClose} 
-                className="absolute top-4 right-4 text-gray-400 hover:text-white z-20"
+                className="absolute top-3 right-3 sm:top-4 sm:right-4 text-gray-400 hover:text-white z-20"
             >
                 <X className="w-5 h-5" />
             </button>
@@ -215,7 +215,7 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
                                 initial={{ opacity: 0, y: 10 }}
                                 animate={{ opacity: 1, y: 0 }}
                                 transition={{ delay: 0.3 }}
-                                className="text-2xl font-bold text-white mb-2"
+                                className="text-xl sm:text-2xl font-bold text-white mb-2"
                             >
                                 Transfer Complete
                             </motion.h2>
@@ -224,22 +224,22 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
                                 initial={{ opacity: 0, y: 10 }}
                                 animate={{ opacity: 1, y: 0 }}
                                 transition={{ delay: 0.5 }}
-                                className="bg-white/5 border border-white/10 rounded-xl p-4 w-full max-w-[280px] mx-auto mt-4"
+                                className="bg-white/5 border border-white/10 rounded-xl p-3 sm:p-4 w-full max-w-[280px] mx-auto mt-4"
                             >
-                                <div className="flex justify-between text-sm mb-2">
+                                <div className="flex justify-between text-xs sm:text-sm mb-2">
                                     <span className="text-gray-400">Amount</span>
                                     <span className="font-bold text-white">{amount} SOL</span>
                                 </div>
-                                <div className="flex justify-between text-sm">
+                                <div className="flex justify-between text-xs sm:text-sm">
                                     <span className="text-gray-400">To</span>
-                                    <span className="font-bold text-white truncate max-w-[120px]">{recipientName}</span>
+                                    <span className="font-bold text-white truncate max-w-[100px] sm:max-w-[120px]">{recipientName}</span>
                                 </div>
                                 <div className="w-full h-px bg-white/10 my-3" />
                                 <a 
-                                    href={`https://solscan.io/tx/${txHash}`}
+                                    href={`https://solscan.io/tx/${txHash}?cluster=devnet`}
                                     target="_blank"
                                     rel="noopener noreferrer"
-                                    className="flex justify-center items-center gap-2 text-xs font-mono text-green-400 hover:text-green-300 hover:underline transition-colors"
+                                    className="flex justify-center items-center gap-2 text-[10px] sm:text-xs font-mono text-green-400 hover:text-green-300 hover:underline transition-colors"
                                 >
                                     View on Solscan <ExternalLink className="w-3 h-3" />
                                 </a>
@@ -265,35 +265,35 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
                         exit={{ opacity: 0 }}
                         className="h-full flex flex-col"
                     >
-                        <h2 className="text-2xl font-bold mb-1">
+                        <h2 className="text-xl sm:text-2xl font-bold mb-1">
                             {context === 'project' ? 'Support Project' : 'Tip Contributor'}
                         </h2>
-                        <p className="text-gray-400 text-sm mb-6">Send SOL to <span className="text-white font-bold">{recipientName}</span></p>
+                        <p className="text-gray-400 text-xs sm:text-sm mb-4 sm:mb-6">Send SOL to <span className="text-white font-bold">{recipientName}</span></p>
 
-                        <div className="space-y-4 mb-8">
+                        <div className="space-y-3 sm:space-y-4 mb-6 sm:mb-8">
                             <div>
-                                <label className="block text-xs text-gray-500 mb-1 font-mono uppercase">Amount (SOL)</label>
+                                <label className="block text-[10px] sm:text-xs text-gray-500 mb-1 font-mono uppercase">Amount (SOL)</label>
                                 <div className="relative">
                                     <input
                                         type="number"
                                         value={amount}
                                         onChange={(e) => setAmount(e.target.value)}
                                         step="0.1"
-                                        className="w-full bg-white/5 border border-white/10 rounded-xl p-4 text-2xl font-bold outline-none focus:border-primary transition-colors text-white"
+                                        className="w-full bg-white/5 border border-white/10 rounded-xl p-3 sm:p-4 text-xl sm:text-2xl font-bold outline-none focus:border-primary transition-colors text-white"
                                     />
-                                    <span className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 font-mono">SOL</span>
+                                    <span className="absolute right-3 sm:right-4 top-1/2 -translate-y-1/2 text-gray-500 font-mono text-sm sm:text-base">SOL</span>
                                 </div>
                             </div>
-                            <div className="flex gap-2">
+                            <div className="flex gap-1.5 sm:gap-2">
                                 {['0.1', '0.5', '1', '2', '5'].map((val) => (
                                     <button 
                                         key={val}
                                         onClick={() => setAmount(val)}
-                                        className={`flex-1 py-2 rounded-lg text-sm font-medium border transition-all ${
+                                        className={`flex-1 py-2 rounded-lg text-xs sm:text-sm font-medium border transition-all ${
                                             amount === val ? 'bg-primary/20 border-primary text-white' : 'bg-transparent border-white/10 text-gray-400 hover:bg-white/5'
                                         }`}
                                     >
-                                        {val} SOL
+                                        {val}
                                     </button>
                                 ))}
                             </div>
@@ -301,7 +301,7 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
 
                         <button 
                             onClick={handlePayment}
-                            className="w-full py-4 bg-white text-black font-bold rounded-xl hover:bg-accent transition-colors flex items-center justify-center gap-2 mt-auto"
+                            className="w-full py-3 sm:py-4 bg-white text-black font-bold rounded-xl hover:bg-accent transition-colors flex items-center justify-center gap-2 mt-auto text-sm sm:text-base"
                         >
                             Send Contribution
                         </button>

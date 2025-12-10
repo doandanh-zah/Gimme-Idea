@@ -110,6 +110,30 @@ export const WalletRequiredModal: React.FC<WalletRequiredModalProps> = ({
     handleWalletChange();
   }, [step, connected, publicKey, signMessage, user, mode, setUser, onSuccess, onClose, disconnect]);
 
+  // Track if we're in reconnect mode and waiting for connection
+  const isReconnectingRef = useRef(false);
+
+  // Handle reconnect wallet verification (after publicKey updates)
+  useEffect(() => {
+    const verifyReconnection = async () => {
+      if (!isReconnectingRef.current || !connected || !publicKey || !user?.wallet) return;
+      
+      isReconnectingRef.current = false;
+      setIsProcessing(false);
+      
+      if (publicKey.toBase58() === user.wallet) {
+        toast.success('Wallet reconnected successfully!');
+        onSuccess?.();
+        onClose();
+      } else {
+        toast.error('Connected wallet does not match your profile. Please use the correct wallet or change your wallet in Profile.');
+        await disconnect();
+      }
+    };
+
+    verifyReconnection();
+  }, [connected, publicKey, user?.wallet, onSuccess, onClose, disconnect]);
+
   const handleReconnect = async () => {
     if (!user?.wallet) return;
 
@@ -121,28 +145,21 @@ export const WalletRequiredModal: React.FC<WalletRequiredModalProps> = ({
       
       if (!availableWallet) {
         toast.error('No wallet extension found. Please install Phantom or Solflare.');
+        setIsProcessing(false);
         return;
       }
 
+      isReconnectingRef.current = true;
       select(availableWallet.adapter.name);
       await connect();
-      
-      // Check if connected wallet matches
-      if (publicKey && publicKey.toBase58() === user.wallet) {
-        toast.success('Wallet reconnected successfully!');
-        onSuccess?.();
-        onClose();
-      } else if (publicKey) {
-        toast.error('Connected wallet does not match your profile. Please use the correct wallet or change your wallet in Profile.');
-        await disconnect();
-      }
+      // The useEffect above will handle verification after publicKey updates
     } catch (error: any) {
       console.error('Reconnect error:', error);
+      isReconnectingRef.current = false;
+      setIsProcessing(false);
       if (!error.message?.includes('User rejected')) {
         toast.error('Failed to reconnect wallet');
       }
-    } finally {
-      setIsProcessing(false);
     }
   };
 
@@ -202,7 +219,7 @@ export const WalletRequiredModal: React.FC<WalletRequiredModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center px-4">
+    <div className="fixed inset-0 z-[100] flex items-center justify-center px-3 sm:px-4">
       <motion.div 
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
@@ -215,13 +232,13 @@ export const WalletRequiredModal: React.FC<WalletRequiredModalProps> = ({
         initial={{ scale: 0.9, opacity: 0, y: 20 }}
         animate={{ scale: 1, opacity: 1, y: 0 }}
         exit={{ scale: 0.9, opacity: 0, y: 20 }}
-        className="relative w-full max-w-md bg-[#0F0F0F] border border-white/10 rounded-3xl p-8 shadow-2xl overflow-hidden"
+        className="relative w-full max-w-md bg-[#0F0F0F] border border-white/10 rounded-2xl sm:rounded-3xl p-5 sm:p-8 shadow-2xl overflow-hidden"
       >
         <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-purple-500 via-[#FFD700] to-green-500" />
 
         <button
           onClick={onClose}
-          className="absolute top-4 right-4 p-2 text-gray-400 hover:text-white transition-colors"
+          className="absolute top-3 right-3 sm:top-4 sm:right-4 p-2 text-gray-400 hover:text-white transition-colors"
         >
           <X className="w-5 h-5" />
         </button>
@@ -235,22 +252,22 @@ export const WalletRequiredModal: React.FC<WalletRequiredModalProps> = ({
               exit={{ opacity: 0 }}
               className="text-center"
             >
-              <div className="w-20 h-20 bg-purple-500/20 rounded-full flex items-center justify-center mx-auto mb-6">
+              <div className="w-16 h-16 sm:w-20 sm:h-20 bg-purple-500/20 rounded-full flex items-center justify-center mx-auto mb-4 sm:mb-6">
                 {mode === 'reconnect' ? (
-                  <RefreshCw className="w-10 h-10 text-purple-400" />
+                  <RefreshCw className="w-8 h-8 sm:w-10 sm:h-10 text-purple-400" />
                 ) : (
-                  <Wallet className="w-10 h-10 text-purple-400" />
+                  <Wallet className="w-8 h-8 sm:w-10 sm:h-10 text-purple-400" />
                 )}
               </div>
               
-              <h2 className="text-2xl font-bold text-white mb-3">{getTitle()}</h2>
-              <p className="text-gray-400 mb-6 leading-relaxed">{getDescription()}</p>
+              <h2 className="text-xl sm:text-2xl font-bold text-white mb-2 sm:mb-3">{getTitle()}</h2>
+              <p className="text-gray-400 text-sm sm:text-base mb-4 sm:mb-6 leading-relaxed">{getDescription()}</p>
 
               {user?.wallet && mode === 'reconnect' && (
-                <div className="bg-white/5 border border-white/10 rounded-xl p-4 mb-6">
-                  <p className="text-xs text-gray-500 mb-1">Your linked wallet:</p>
-                  <p className="text-sm font-mono text-white">
-                    {user.wallet.slice(0, 8)}...{user.wallet.slice(-6)}
+                <div className="bg-white/5 border border-white/10 rounded-xl p-3 sm:p-4 mb-4 sm:mb-6">
+                  <p className="text-[10px] sm:text-xs text-gray-500 mb-1">Your linked wallet:</p>
+                  <p className="text-xs sm:text-sm font-mono text-white">
+                    {user.wallet.slice(0, 6)}...{user.wallet.slice(-4)}
                   </p>
                 </div>
               )}
@@ -260,7 +277,7 @@ export const WalletRequiredModal: React.FC<WalletRequiredModalProps> = ({
                   <button
                     onClick={handleReconnect}
                     disabled={isProcessing}
-                    className="px-8 py-3 bg-gradient-to-r from-purple-600 to-purple-500 hover:from-purple-500 hover:to-purple-400 text-white font-bold rounded-full transition-all transform hover:scale-105 shadow-lg disabled:opacity-50 flex items-center gap-2"
+                    className="px-5 sm:px-8 py-2.5 sm:py-3 bg-gradient-to-r from-purple-600 to-purple-500 hover:from-purple-500 hover:to-purple-400 text-white font-bold rounded-full transition-all transform hover:scale-105 shadow-lg disabled:opacity-50 flex items-center gap-2 text-sm sm:text-base"
                   >
                     {isProcessing ? (
                       <>Processing...</>
@@ -274,7 +291,7 @@ export const WalletRequiredModal: React.FC<WalletRequiredModalProps> = ({
                 ) : (
                   <button
                     onClick={() => setStep('select')}
-                    className="px-8 py-3 bg-gradient-to-r from-purple-600 to-purple-500 hover:from-purple-500 hover:to-purple-400 text-white font-bold rounded-full transition-all transform hover:scale-105 shadow-lg flex items-center gap-2"
+                    className="px-5 sm:px-8 py-2.5 sm:py-3 bg-gradient-to-r from-purple-600 to-purple-500 hover:from-purple-500 hover:to-purple-400 text-white font-bold rounded-full transition-all transform hover:scale-105 shadow-lg flex items-center gap-2 text-sm sm:text-base"
                   >
                     <Wallet className="w-4 h-4" />
                     Select Wallet
@@ -293,14 +310,14 @@ export const WalletRequiredModal: React.FC<WalletRequiredModalProps> = ({
               exit={{ opacity: 0, x: -20 }}
               className="text-center"
             >
-              <div className="w-16 h-16 bg-purple-500/20 rounded-full flex items-center justify-center mx-auto mb-6">
-                <Wallet className="w-8 h-8 text-purple-400" />
+              <div className="w-14 h-14 sm:w-16 sm:h-16 bg-purple-500/20 rounded-full flex items-center justify-center mx-auto mb-4 sm:mb-6">
+                <Wallet className="w-7 h-7 sm:w-8 sm:h-8 text-purple-400" />
               </div>
               
-              <h2 className="text-2xl font-bold text-white mb-2">Select Wallet</h2>
-              <p className="text-gray-400 mb-6">Choose your preferred Solana wallet</p>
+              <h2 className="text-xl sm:text-2xl font-bold text-white mb-2">Select Wallet</h2>
+              <p className="text-gray-400 text-sm sm:text-base mb-4 sm:mb-6">Choose your preferred Solana wallet</p>
 
-              <div className="space-y-3">
+              <div className="space-y-2 sm:space-y-3">
                 {walletOptions.map((wallet) => {
                   const isInstalled = wallets.some(
                     w => w.adapter.name.toLowerCase().includes(wallet.name.toLowerCase()) &&
@@ -313,13 +330,13 @@ export const WalletRequiredModal: React.FC<WalletRequiredModalProps> = ({
                     <button
                       key={wallet.name}
                       onClick={() => handleConnectWallet(wallet.name)}
-                      className={`w-full flex items-center justify-between p-4 rounded-xl border border-white/5 bg-white/5 transition-all duration-300 group ${wallet.color}`}
+                      className={`w-full flex items-center justify-between p-3 sm:p-4 rounded-xl border border-white/5 bg-white/5 transition-all duration-300 group ${wallet.color}`}
                     >
-                      <div className="flex items-center gap-4">
-                        <div className="w-12 h-12 rounded-full bg-white/10 flex items-center justify-center p-2.5">
+                      <div className="flex items-center gap-3 sm:gap-4">
+                        <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-white/10 flex items-center justify-center p-2 sm:p-2.5">
                           <img src={wallet.icon} alt={wallet.name} className="w-full h-full object-contain" />
                         </div>
-                        <span className="font-bold text-lg text-white">{wallet.name}</span>
+                        <span className="font-bold text-base sm:text-lg text-white">{wallet.name}</span>
                       </div>
                     </button>
                   );
@@ -334,7 +351,7 @@ export const WalletRequiredModal: React.FC<WalletRequiredModalProps> = ({
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="py-8"
+              className="py-6 sm:py-8"
             >
               <LoadingLightbulb text="Connecting wallet..." />
             </motion.div>

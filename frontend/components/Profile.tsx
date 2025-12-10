@@ -146,7 +146,8 @@ export const Profile = () => {
       );
   }
 
-  const userProjects = projects.filter(p => p.author.username === displayUser.username);
+  // Filter only ideas (type='idea') for the user
+  const userIdeas = projects.filter(p => p.author.username === displayUser.username && p.type === 'idea');
 
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
 
@@ -256,19 +257,19 @@ export const Profile = () => {
             )}
         </div>
 
-        <div className="max-w-5xl mx-auto px-6 relative -mt-20">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 relative -mt-20">
             {/* Wallet Reminder Badge for users without wallet */}
             {isOwnProfile && displayUser.needsWalletConnect && (
               <WalletReminderBadge onConnect={() => setShowWalletPopup(true)} />
             )}
 
             {/* Header / Info Card */}
-            <div className="bg-[#0A0A0A]/90 backdrop-blur-xl border border-white/10 rounded-2xl p-8 shadow-2xl relative">
-                <div className="flex flex-col md:flex-row gap-8 items-start">
+            <div className="bg-[#0A0A0A]/90 backdrop-blur-xl border border-white/10 rounded-2xl p-4 sm:p-8 shadow-2xl relative">
+                <div className="flex flex-col md:flex-row gap-4 sm:gap-8 items-center md:items-start">
                     
                     {/* Avatar */}
-                    <div className="relative group">
-                        <div className="w-32 h-32 rounded-full border-4 border-[#0A0A0A] overflow-hidden bg-gray-800 shadow-lg">
+                    <div className="relative group flex-shrink-0">
+                        <div className="w-24 h-24 sm:w-32 sm:h-32 rounded-full border-4 border-[#0A0A0A] overflow-hidden bg-gray-800 shadow-lg">
                             <img src={isEditing ? editForm.avatar : displayUser.avatar} alt="Profile" className="w-full h-full object-cover" />
                         </div>
                         
@@ -298,11 +299,11 @@ export const Profile = () => {
                     </div>
 
                     {/* Info */}
-                    <div className="flex-grow w-full">
-                        <div className="flex justify-between items-start">
-                            <div className="w-full">
+                    <div className="flex-grow w-full min-w-0">
+                        <div className="flex flex-col sm:flex-row justify-between items-center sm:items-start gap-4">
+                            <div className="w-full min-w-0 text-center sm:text-left">
                                 {isEditing ? (
-                                    <div className="space-y-4 max-w-lg">
+                                    <div className="space-y-4 max-w-lg mx-auto sm:mx-0">
                                         <div>
                                             <label className="text-xs text-gray-500 uppercase">Username</label>
                                             <input 
@@ -322,18 +323,18 @@ export const Profile = () => {
                                     </div>
                                 ) : (
                                     <>
-                                        <h1 className="text-3xl font-bold font-display mb-2">{displayUser.username}</h1>
+                                        <h1 className="text-2xl sm:text-3xl font-bold font-display mb-2 break-words">{displayUser.username}</h1>
                                         {displayUser.email && (
-                                          <p className="text-gray-500 text-sm mb-2">{displayUser.email}</p>
+                                          <p className="text-gray-500 text-sm mb-2 truncate">{displayUser.email}</p>
                                         )}
                                         {displayUser.wallet ? (
-                                          <div className="flex flex-wrap items-center gap-2 mb-4">
-                                            <p className="text-gray-400 font-mono text-sm bg-white/5 inline-block px-2 py-1 rounded">
+                                          <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2 mb-4">
+                                            <p className="text-gray-400 font-mono text-xs sm:text-sm bg-white/5 inline-block px-2 py-1 rounded">
                                               <Wallet className="w-3 h-3 inline mr-1" />
-                                              {displayUser.wallet.slice(0, 8)}...{displayUser.wallet.slice(-6)}
+                                              {displayUser.wallet.slice(0, 6)}...{displayUser.wallet.slice(-4)}
                                             </p>
                                             {isOwnProfile && (
-                                              <>
+                                              <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2">
                                                 {isWalletConnected ? (
                                                   <span className="text-green-400 text-xs flex items-center gap-1 bg-green-500/10 px-2 py-1 rounded">
                                                     <Check className="w-3 h-3" /> Connected
@@ -359,9 +360,9 @@ export const Profile = () => {
                                                   className="text-yellow-400 text-xs flex items-center gap-1 bg-yellow-500/10 hover:bg-yellow-500/20 px-2 py-1 rounded transition-colors"
                                                 >
                                                   <Repeat className="w-3 h-3" />
-                                                  Change Wallet
+                                                  Change
                                                 </button>
-                                              </>
+                                              </div>
                                             )}
                                           </div>
                                         ) : isOwnProfile ? (
@@ -373,14 +374,15 @@ export const Profile = () => {
                                             className="text-yellow-400 font-medium text-sm mb-4 bg-yellow-500/10 hover:bg-yellow-500/20 inline-flex items-center gap-2 px-3 py-2 rounded-lg transition-colors"
                                           >
                                             <Wallet className="w-4 h-4" />
-                                            Connect Wallet to Receive Tips
+                                            <span className="hidden sm:inline">Connect Wallet to Receive Tips</span>
+                                            <span className="sm:hidden">Connect Wallet</span>
                                           </button>
                                         ) : (
                                           <p className="text-gray-500 font-mono text-sm mb-4 bg-white/5 inline-block px-2 py-1 rounded">
                                             No wallet connected
                                           </p>
                                         )}
-                                        <p className="text-gray-300 leading-relaxed max-w-2xl mb-6">{displayUser.bio || "No bio yet."}</p>
+                                        <p className="text-gray-300 leading-relaxed max-w-2xl mb-6 text-sm sm:text-base">{displayUser.bio || "No bio yet."}</p>
                                     </>
                                 )}
                             </div>
@@ -388,16 +390,16 @@ export const Profile = () => {
                             {isOwnProfile && !isEditing && (
                                 <button 
                                     onClick={() => setIsEditing(true)}
-                                    className="px-4 py-2 border border-white/10 hover:bg-white/5 rounded-full flex items-center gap-2 text-sm transition-colors"
+                                    className="px-3 sm:px-4 py-2 border border-white/10 hover:bg-white/5 rounded-full flex items-center gap-2 text-sm transition-colors flex-shrink-0 whitespace-nowrap"
                                 >
-                                    <Edit2 className="w-4 h-4" /> Edit Profile
+                                    <Edit2 className="w-4 h-4" /> <span className="hidden sm:inline">Edit Profile</span><span className="sm:hidden">Edit</span>
                                 </button>
                             )}
                         </div>
 
                         {/* Social Links Editing */}
                         {isEditing && (
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6 max-w-2xl">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-6 max-w-2xl">
                                 <div>
                                     <label className="text-xs text-gray-500 uppercase flex items-center gap-2"><Twitter className="w-3 h-3" /> X (Twitter)</label>
                                     <input 
@@ -439,41 +441,41 @@ export const Profile = () => {
 
                         {/* Social Links Display */}
                         {!isEditing && (
-                            <div className="flex gap-4 mt-2">
+                            <div className="flex gap-3 sm:gap-4 mt-2 justify-center sm:justify-start">
                                 {displayUser.socials?.twitter && (
                                     <a href={displayUser.socials.twitter} target="_blank" className="p-2 bg-white/5 rounded-full hover:bg-blue-400/20 hover:text-blue-400 transition-colors">
-                                        <Twitter className="w-5 h-5" />
+                                        <Twitter className="w-4 h-4 sm:w-5 sm:h-5" />
                                     </a>
                                 )}
                                 {displayUser.socials?.github && (
                                     <a href={displayUser.socials.github} target="_blank" className="p-2 bg-white/5 rounded-full hover:bg-gray-500/20 hover:text-white transition-colors">
-                                        <Github className="w-5 h-5" />
+                                        <Github className="w-4 h-4 sm:w-5 sm:h-5" />
                                     </a>
                                 )}
                                 {displayUser.socials?.telegram && (
                                     <a href={displayUser.socials.telegram} target="_blank" className="p-2 bg-white/5 rounded-full hover:bg-blue-500/20 hover:text-blue-500 transition-colors">
-                                        <Send className="w-5 h-5" />
+                                        <Send className="w-4 h-4 sm:w-5 sm:h-5" />
                                     </a>
                                 )}
                                 {displayUser.socials?.facebook && (
                                     <a href={displayUser.socials.facebook} target="_blank" className="p-2 bg-white/5 rounded-full hover:bg-blue-600/20 hover:text-blue-600 transition-colors">
-                                        <Facebook className="w-5 h-5" />
+                                        <Facebook className="w-4 h-4 sm:w-5 sm:h-5" />
                                     </a>
                                 )}
                             </div>
                         )}
 
                         {isEditing && (
-                            <div className="flex gap-3 mt-8">
+                            <div className="flex flex-col sm:flex-row gap-3 mt-8">
                                 <button 
                                     onClick={handleSaveProfile}
-                                    className="px-8 py-3 bg-[#ffd700] hover:bg-[#ffed4a] text-black rounded-full font-bold flex items-center gap-2 shadow-[0_0_20px_rgba(255,215,0,0.3)] hover:scale-105 transition-all"
+                                    className="px-6 sm:px-8 py-3 bg-[#ffd700] hover:bg-[#ffed4a] text-black rounded-full font-bold flex items-center justify-center gap-2 shadow-[0_0_20px_rgba(255,215,0,0.3)] hover:scale-105 transition-all"
                                 >
-                                    <Save className="w-4 h-4" /> Save Changes
+                                    <Save className="w-4 h-4" /> Save
                                 </button>
                                 <button 
                                     onClick={handleCancelProfile}
-                                    className="px-6 py-3 bg-white/5 hover:bg-white/10 border border-white/10 rounded-full text-gray-300 flex items-center gap-2 transition-colors"
+                                    className="px-6 py-3 bg-white/5 hover:bg-white/10 border border-white/10 rounded-full text-gray-300 flex items-center justify-center gap-2 transition-colors"
                                 >
                                     <X className="w-4 h-4" /> Cancel
                                 </button>
@@ -483,45 +485,45 @@ export const Profile = () => {
                 </div>
 
                 {/* Stats Row */}
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-10 pt-8 border-t border-white/5">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 mt-8 sm:mt-10 pt-6 sm:pt-8 border-t border-white/5">
                     <div className="text-center">
-                        <div className="text-2xl font-bold text-white">
+                        <div className="text-xl sm:text-2xl font-bold text-white">
                           {isLoadingStats ? '...' : (userStats?.reputation ?? 0)}
                         </div>
-                        <div className="text-xs text-gray-500 uppercase">Reputation</div>
+                        <div className="text-[10px] sm:text-xs text-gray-500 uppercase">Reputation</div>
                     </div>
                     <div className="text-center">
-                        <div className="text-2xl font-bold text-purple-400">
+                        <div className="text-xl sm:text-2xl font-bold text-purple-400">
                           {isLoadingStats ? '...' : (userStats?.ideasCount ?? 0)}
                         </div>
-                        <div className="text-xs text-gray-500 uppercase">Ideas</div>
+                        <div className="text-[10px] sm:text-xs text-gray-500 uppercase">Ideas</div>
                     </div>
                     <div className="text-center">
-                        <div className="text-2xl font-bold text-gold">
+                        <div className="text-xl sm:text-2xl font-bold text-gold">
                           {isLoadingStats ? '...' : (userStats?.projectsCount ?? 0)}
                         </div>
-                        <div className="text-xs text-gray-500 uppercase">Projects</div>
+                        <div className="text-[10px] sm:text-xs text-gray-500 uppercase">Projects</div>
                     </div>
                     <div className="text-center">
-                        <div className="text-2xl font-bold text-green-400">
+                        <div className="text-xl sm:text-2xl font-bold text-green-400">
                           {isLoadingStats ? '...' : (userStats?.feedbackCount ?? 0)}
                         </div>
-                        <div className="text-xs text-gray-500 uppercase">Feedback</div>
+                        <div className="text-[10px] sm:text-xs text-gray-500 uppercase">Feedback</div>
                     </div>
                 </div>
             </div>
 
-            {/* My Projects / User Projects */}
-            <div className="mt-12">
-                <h2 className="text-2xl font-bold mb-6">{isOwnProfile ? "My Projects" : `${displayUser.username}'s Projects`}</h2>
-                {userProjects.length > 0 ? (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        {userProjects.map(project => (
+            {/* My Ideas / User Ideas */}
+            <div className="mt-8 sm:mt-12">
+                <h2 className="text-xl sm:text-2xl font-bold mb-4 sm:mb-6">{isOwnProfile ? "My Ideas" : `${displayUser.username}'s Ideas`}</h2>
+                {userIdeas.length > 0 ? (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
+                        {userIdeas.map(project => (
                             <div key={project.id} className="relative group">
                                 <ProjectCard project={project} />
-                                {/* Actions Overlay - Moved to Bottom Right of the IMAGE to avoid overlapping text */}
+                                {/* Actions Overlay - Positioned at top right corner of the card */}
                                 {isOwnProfile && (
-                                    <div className="absolute top-24 right-2 z-20 flex gap-2">
+                                    <div className="absolute top-3 right-3 z-20 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                                         <button 
                                             onClick={(e) => {
                                                 e.stopPropagation();
@@ -549,9 +551,9 @@ export const Profile = () => {
                     </div>
                 ) : (
                     <div className="text-center py-12 bg-white/5 rounded-xl border border-dashed border-white/10">
-                        <p className="text-gray-500 mb-4">No projects deployed yet.</p>
+                        <p className="text-gray-500 mb-4">No ideas shared yet.</p>
                         {isOwnProfile && (
-                            <button onClick={() => openSubmitModal('project')} className="text-accent font-bold hover:underline">Start Building</button>
+                            <button onClick={() => openSubmitModal('idea')} className="text-accent font-bold hover:underline">Share Your First Idea</button>
                         )}
                     </div>
                 )}

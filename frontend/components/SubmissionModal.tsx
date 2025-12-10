@@ -301,32 +301,32 @@ export const SubmissionModal = () => {
                 initial={{ scale: 0.95, opacity: 0, y: 20 }}
                 animate={{ scale: 1, opacity: 1, y: 0 }}
                 exit={{ scale: 0.95, opacity: 0, y: 20 }}
-                className="relative w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden"
+                className="relative w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden mx-2 sm:mx-4"
             >
                 {/* Main Container */}
                 <div className="relative bg-[#0D0D12] border border-white/10 rounded-2xl overflow-hidden flex flex-col max-h-[90vh]">
                     
                     {/* Header */}
-                    <div className="relative px-8 py-6 border-b border-white/10 flex-shrink-0">
-                        <div className="relative z-10 flex justify-between items-center">
-                            <div className="flex items-center gap-4">
+                    <div className="relative px-4 sm:px-8 py-4 sm:py-6 border-b border-white/10 flex-shrink-0">
+                        <div className="relative z-10 flex justify-between items-center gap-3">
+                            <div className="flex items-center gap-3 sm:gap-4 min-w-0">
                                 <div 
-                                    className={`w-12 h-12 rounded-xl flex items-center justify-center bg-gradient-to-br ${themeColor} text-white`}
+                                    className={`w-10 h-10 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center bg-gradient-to-br ${themeColor} text-white flex-shrink-0`}
                                 >
-                                    {isProject ? <Rocket className="w-6 h-6" /> : <Lightbulb className="w-6 h-6" />}
+                                    {isProject ? <Rocket className="w-5 h-5 sm:w-6 sm:h-6" /> : <Lightbulb className="w-5 h-5 sm:w-6 sm:h-6" />}
                                 </div>
-                                <div>
-                                    <h2 className="text-xl font-bold text-white">
+                                <div className="min-w-0">
+                                    <h2 className="text-base sm:text-xl font-bold text-white truncate">
                                         {isProject ? 'Launch Project' : 'Share Your Idea'}
                                     </h2>
-                                    <p className="text-sm text-gray-400 mt-0.5">
-                                        {isProject ? 'Showcase your build to the Solana community' : 'Validate your concept with builders'}
+                                    <p className="text-xs sm:text-sm text-gray-400 mt-0.5 truncate">
+                                        {isProject ? 'Showcase your build' : 'Validate your concept'}
                                     </p>
                                 </div>
                             </div>
                             <button 
                                 onClick={closeSubmitModal} 
-                                className="w-10 h-10 rounded-xl bg-white/5 hover:bg-white/10 flex items-center justify-center transition-all text-gray-400 hover:text-white border border-white/10 hover:border-white/20"
+                                className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-white/5 hover:bg-white/10 flex items-center justify-center transition-all text-gray-400 hover:text-white border border-white/10 hover:border-white/20 flex-shrink-0"
                             >
                                 <X className="w-5 h-5" />
                             </button>
@@ -334,11 +334,11 @@ export const SubmissionModal = () => {
                     </div>
 
                     {/* Scrollable Form Area */}
-                    <div className="overflow-y-auto p-8 custom-scrollbar flex-1">
-                        <form onSubmit={handleSubmit} className="space-y-8">
+                    <div className="overflow-y-auto p-4 sm:p-8 custom-scrollbar flex-1">
+                        <form onSubmit={handleSubmit} className="space-y-6 sm:space-y-8">
                             
                             {/* Common Fields */}
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
                                 <div className="space-y-2 md:col-span-2">
                                     <label className="text-xs font-bold text-gray-400 uppercase tracking-wider ml-1 flex items-center gap-2">
                                         {submitType === 'idea' ? 'Idea Name' : 'Project Name'}
@@ -347,7 +347,7 @@ export const SubmissionModal = () => {
                                     <input 
                                         value={formData.title}
                                         onChange={(e) => setFormData({...formData, title: e.target.value})}
-                                        className="w-full bg-[#141419] border border-white/10 rounded-xl px-5 py-4 outline-none focus:border-white/30 text-white placeholder:text-gray-600 transition-all font-medium hover:border-white/20 focus:shadow-[0_0_20px_rgba(255,255,255,0.05)]"
+                                        className="w-full bg-[#141419] border border-white/10 rounded-xl px-4 sm:px-5 py-3 sm:py-4 outline-none focus:border-white/30 text-white placeholder:text-gray-600 transition-all font-medium hover:border-white/20 focus:shadow-[0_0_20px_rgba(255,255,255,0.05)] text-sm sm:text-base"
                                         placeholder={submitType === 'idea' ? "e.g. Decentralized Uber for Solana" : "e.g. SolStream Protocol"}
                                     />
                                 </div>

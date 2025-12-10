@@ -8,9 +8,12 @@ import { useAppStore } from '../lib/store';
 import { apiClient } from '../lib/api-client';
 import { useWallet, useConnection } from '@solana/wallet-adapter-react';
 import { PublicKey, Transaction, SystemProgram, LAMPORTS_PER_SOL } from '@solana/web3.js';
+import { useAuth } from '../contexts/AuthContext';
+import { WalletRequiredModal } from './WalletRequiredModal';
 
 export const Donate = () => {
-    const { user, openConnectReminder } = useAppStore();
+    const { openConnectReminder } = useAppStore();
+    const { user } = useAuth();
     const { publicKey, sendTransaction } = useWallet();
     const { connection } = useConnection();
     const [copied, setCopied] = useState(false);
@@ -18,6 +21,8 @@ export const Donate = () => {
     const [isProcessing, setIsProcessing] = useState(false);
     const [isSuccess, setIsSuccess] = useState(false);
     const [txHash, setTxHash] = useState('');
+    const [showWalletModal, setShowWalletModal] = useState(false);
+    const [walletModalMode, setWalletModalMode] = useState<'reconnect' | 'connect'>('connect');
     const [contributorName, setContributorName] = useState('');
     const [stars, setStars] = useState<{ id: number; top: string; left: string; size: number; duration: string; opacity: number }[]>([]);
 
@@ -44,8 +49,22 @@ export const Donate = () => {
     };
 
     const handleDonate = async () => {
-        if (!user || !publicKey) {
+        // First check if user is signed in
+        if (!user) {
             openConnectReminder();
+            return;
+        }
+
+        // Then check if wallet is connected
+        if (!publicKey) {
+            if (user.wallet) {
+                // User has wallet linked but not connected (needs reconnect)
+                setWalletModalMode('reconnect');
+            } else {
+                // User doesn't have wallet linked
+                setWalletModalMode('connect');
+            }
+            setShowWalletModal(true);
             return;
         }
 
@@ -123,7 +142,7 @@ export const Donate = () => {
     };
 
     return (
-        <div className="min-h-screen pt-24 pb-12 px-6 relative overflow-hidden flex items-center">
+        <div className="min-h-screen pt-20 sm:pt-24 pb-12 px-4 sm:px-6 relative overflow-hidden flex items-center">
 
             {/* Background with Stars & Grid (same as landing page) */}
             <div className="fixed inset-0 z-[-1] pointer-events-none">
@@ -154,12 +173,12 @@ export const Donate = () => {
                 <motion.div
                     initial={{ opacity: 0, y: -20 }}
                     animate={{ opacity: 1, y: 0 }}
-                    className="text-center mb-8"
+                    className="text-center mb-6 sm:mb-8"
                 >
-                    <h1 className="text-4xl md:text-5xl font-display font-bold mb-2 leading-tight">
-                        <Heart className="inline w-8 h-8 text-red-400 fill-current mb-2" /> Support <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-500">Gimme Idea</span>
+                    <h1 className="text-2xl sm:text-4xl md:text-5xl font-display font-bold mb-2 leading-tight">
+                        <Heart className="inline w-6 h-6 sm:w-8 sm:h-8 text-red-400 fill-current mb-1 sm:mb-2" /> Support <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-500">Gimme Idea</span>
                     </h1>
-                    <p className="text-gray-400 text-sm max-w-2xl mx-auto">
+                    <p className="text-gray-400 text-xs sm:text-sm max-w-2xl mx-auto">
                         Help us keep the servers running and coffee flowing ☕
                     </p>
                 </motion.div>
@@ -168,12 +187,12 @@ export const Donate = () => {
                     initial={{ opacity: 0, y: -20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.1 }}
-                    className="text-center mb-12 max-w-2xl mx-auto"
+                    className="text-center mb-8 sm:mb-12 max-w-2xl mx-auto px-2"
                 >
-                    <p className="text-xl text-gray-300 font-display font-bold mb-4 leading-relaxed">
+                    <p className="text-base sm:text-xl text-gray-300 font-display font-bold mb-3 sm:mb-4 leading-relaxed">
                         Fuel the Revolution. Your contribution directly supports server costs, coffee, and open-source development for Gimme Idea.
                     </p>
-                    <p className="text-sm text-gray-500">
+                    <p className="text-xs sm:text-sm text-gray-500">
                         Your support is our infrastructure. Thank you for fueling the mission.
                     </p>
                 </motion.div>
@@ -242,7 +261,7 @@ export const Donate = () => {
                                             <div className="flex justify-between items-center text-sm">
                                                 <span className="text-gray-500">Transaction</span>
                                                 <a
-                                                    href={txHash ? `https://solscan.io/tx/${txHash}` : '#'}
+                                                    href={txHash ? `https://solscan.io/tx/${txHash}?cluster=devnet` : '#'}
                                                     target="_blank"
                                                     rel="noopener noreferrer"
                                                     className="text-blue-400 hover:text-blue-300 font-mono flex items-center gap-1"
@@ -476,6 +495,14 @@ export const Donate = () => {
                     </div>
                 </div>
             </div>
+
+            {/* Wallet Required Modal */}
+            <WalletRequiredModal
+                isOpen={showWalletModal}
+                onClose={() => setShowWalletModal(false)}
+                mode={walletModalMode}
+                onSuccess={() => setShowWalletModal(false)}
+            />
         </div>
     );
 };

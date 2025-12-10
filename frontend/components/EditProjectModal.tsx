@@ -170,7 +170,7 @@ export const EditProjectModal = ({ project, isOpen, onClose, onSave }: EditProje
   if (!isOpen || !project) return null;
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center px-4">
+    <div className="fixed inset-0 z-[100] flex items-center justify-center px-2 sm:px-4">
       <motion.div 
         initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
         onClick={onClose}
@@ -186,33 +186,33 @@ export const EditProjectModal = ({ project, isOpen, onClose, onSave }: EditProje
         <div className="relative bg-[#0D0D12] border border-white/10 rounded-2xl overflow-hidden flex flex-col max-h-[90vh]">
           
           {/* Header */}
-          <div className="relative px-8 py-6 border-b border-white/10 flex-shrink-0">
+          <div className="relative px-4 sm:px-8 py-4 sm:py-6 border-b border-white/10 flex-shrink-0">
             <div className="relative z-10 flex justify-between items-center">
-              <div className="flex items-center gap-4">
-                <div className={`w-12 h-12 rounded-xl flex items-center justify-center text-white ${isIdea ? 'bg-[#FFD700]' : 'bg-[#9945FF]'}`}>
-                  {isIdea ? <Lightbulb className="w-6 h-6" /> : <Rocket className="w-6 h-6" />}
+              <div className="flex items-center gap-3 sm:gap-4">
+                <div className={`w-10 h-10 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center text-white ${isIdea ? 'bg-[#FFD700]' : 'bg-[#9945FF]'}`}>
+                  {isIdea ? <Lightbulb className="w-5 h-5 sm:w-6 sm:h-6" /> : <Rocket className="w-5 h-5 sm:w-6 sm:h-6" />}
                 </div>
                 <div>
-                  <h2 className="text-xl font-bold text-white">
+                  <h2 className="text-lg sm:text-xl font-bold text-white">
                     Edit {isIdea ? 'Idea' : 'Project'}
                   </h2>
-                  <p className="text-sm text-gray-400 mt-0.5">
+                  <p className="text-xs sm:text-sm text-gray-400 mt-0.5 hidden sm:block">
                     Update your {isIdea ? 'idea' : 'project'} details
                   </p>
                 </div>
               </div>
               <button 
                 onClick={onClose} 
-                className="w-10 h-10 rounded-xl bg-white/5 hover:bg-white/10 flex items-center justify-center transition-all text-gray-400 hover:text-white border border-white/10 hover:border-white/20"
+                className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-white/5 hover:bg-white/10 flex items-center justify-center transition-all text-gray-400 hover:text-white border border-white/10 hover:border-white/20"
               >
-                <X className="w-5 h-5" />
+                <X className="w-4 h-4 sm:w-5 sm:h-5" />
               </button>
             </div>
           </div>
 
           {/* Scrollable Form Area */}
-          <div className="overflow-y-auto p-8 custom-scrollbar flex-1">
-            <form onSubmit={handleSubmit} className="space-y-8">
+          <div className="overflow-y-auto p-4 sm:p-8 custom-scrollbar flex-1">
+            <form onSubmit={handleSubmit} className="space-y-6 sm:space-y-8">
               
               {/* Title */}
               <div className="space-y-2">
@@ -230,18 +230,18 @@ export const EditProjectModal = ({ project, isOpen, onClose, onSave }: EditProje
 
               {/* Categories */}
               <div className="space-y-2">
-                <label className="text-xs font-bold text-gray-400 uppercase tracking-wider ml-1 flex items-center gap-2">
+                <label className="text-[10px] sm:text-xs font-bold text-gray-400 uppercase tracking-wider ml-1 flex items-center gap-2">
                   Categories
                   <span className="text-red-400">*</span>
-                  <span className="text-gray-600 font-normal text-[10px]">(Select up to 3)</span>
+                  <span className="text-gray-600 font-normal text-[10px]">(Up to 3)</span>
                 </label>
-                <div className="flex flex-wrap gap-2">
+                <div className="flex flex-wrap gap-1.5 sm:gap-2">
                   {categories.map(cat => (
                     <button
                       key={cat}
                       type="button"
                       onClick={() => toggleCategory(cat)}
-                      className={`px-4 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 ${
+                      className={`px-2.5 sm:px-4 py-2 sm:py-2.5 rounded-xl text-xs sm:text-sm font-medium transition-all duration-200 ${
                         formData.categories.includes(cat)
                           ? isIdea
                             ? 'bg-[#FFD700] text-black border border-[#FFD700]'
@@ -410,19 +410,19 @@ export const EditProjectModal = ({ project, isOpen, onClose, onSave }: EditProje
           </div>
 
           {/* Footer */}
-          <div className="p-6 border-t border-white/10 bg-[#0A0A0F] flex-shrink-0">
+          <div className="p-4 sm:p-6 border-t border-white/10 bg-[#0A0A0F] flex-shrink-0">
             <button 
               onClick={handleSubmit}
               disabled={isSaving}
-              className={`w-full py-4 rounded-xl font-bold text-lg flex items-center justify-center gap-3 transition-all hover:opacity-90 disabled:opacity-50 ${
+              className={`w-full py-3 sm:py-4 rounded-xl font-bold text-base sm:text-lg flex items-center justify-center gap-2 sm:gap-3 transition-all hover:opacity-90 disabled:opacity-50 ${
                 isIdea ? 'bg-[#FFD700] text-black' : 'bg-[#9945FF] text-white'
               }`}
             >
               {isSaving ? (
-                <Loader2 className="w-5 h-5 animate-spin" />
+                <Loader2 className="w-4 h-4 sm:w-5 sm:h-5 animate-spin" />
               ) : (
                 <>
-                  {isIdea ? <Lightbulb className="w-5 h-5" /> : <Rocket className="w-5 h-5" />}
+                  {isIdea ? <Lightbulb className="w-4 h-4 sm:w-5 sm:h-5" /> : <Rocket className="w-4 h-4 sm:w-5 sm:h-5" />}
                   <span>Save Changes</span>
                 </>
               )}

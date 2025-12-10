@@ -25,9 +25,9 @@ services:
       - key: JWT_EXPIRES_IN
         value: 7d
       - key: SOLANA_NETWORK
-        value: mainnet-beta
+        value: devnet
       - key: SOLANA_RPC_URL
-        value: https://api.mainnet-beta.solana.com
+        value: https://api.devnet.solana.com
       - key: FRONTEND_URL
         sync: false
     healthCheckPath: /api

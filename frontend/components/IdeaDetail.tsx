@@ -294,34 +294,34 @@ export const IdeaDetail = () => {
   };
 
   return (
-    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="min-h-screen pt-32 pb-20 px-6">
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="min-h-screen pt-24 sm:pt-32 pb-20 px-4 sm:px-6">
         <div className="max-w-4xl mx-auto">
             {/* Nav */}
-            <button onClick={() => router.push('/idea')} className="flex items-center gap-2 text-gray-400 hover:text-white mb-8">
+            <button onClick={() => router.push('/idea')} className="flex items-center gap-2 text-gray-400 hover:text-white mb-6 sm:mb-8 text-sm">
                 <ArrowLeft className="w-4 h-4" /> Back to Ideas
             </button>
 
             {/* Header */}
-            <div className="mb-12">
-                <div className="flex flex-col md:flex-row justify-between items-start gap-4 mb-6">
-                     <h1 className="text-4xl md:text-5xl font-display font-bold leading-tight">{project.title}</h1>
-                     <div className="flex items-center gap-3">
+            <div className="mb-8 sm:mb-12">
+                <div className="flex flex-col gap-4 mb-6">
+                     <h1 className="text-2xl sm:text-4xl md:text-5xl font-display font-bold leading-tight">{project.title}</h1>
+                     <div className="flex flex-wrap items-center gap-2 sm:gap-3">
                          <button
                             onClick={handleShareToX}
-                            className="bg-[#1DA1F2] text-white px-5 py-2 rounded-full font-bold flex items-center gap-2 hover:scale-105 transition-transform shadow-[0_0_20px_rgba(29,161,242,0.3)]"
+                            className="bg-[#1DA1F2] text-white px-4 sm:px-5 py-2 rounded-full font-bold flex items-center gap-2 hover:scale-105 transition-transform shadow-[0_0_20px_rgba(29,161,242,0.3)] text-sm"
                          >
-                             <Share2 className="w-4 h-4" /> Share to 𝕏
+                             <Share2 className="w-4 h-4" /> Share
                          </button>
                          <button
                             onClick={handleVote}
-                            className="bg-[#FFD700] text-black px-6 py-2 rounded-full font-bold flex items-center gap-2 hover:scale-105 transition-transform shadow-[0_0_20px_rgba(255,215,0,0.3)]"
+                            className="bg-[#FFD700] text-black px-4 sm:px-6 py-2 rounded-full font-bold flex items-center gap-2 hover:scale-105 transition-transform shadow-[0_0_20px_rgba(255,215,0,0.3)] text-sm"
                          >
-                             <ThumbsUp className="w-4 h-4" /> {project.votes} Support
+                             <ThumbsUp className="w-4 h-4" /> {project.votes}
                          </button>
                      </div>
                 </div>
 
-                <div className="flex items-center gap-4 text-sm text-gray-400 mb-8 border-b border-white/10 pb-8">
+                <div className="flex flex-wrap items-center gap-3 sm:gap-4 text-xs sm:text-sm text-gray-400 mb-6 sm:mb-8 border-b border-white/10 pb-6 sm:pb-8">
                      <AuthorLink
                          username={project.author?.username || 'Anonymous'}
                          avatar={project.author?.avatar}
