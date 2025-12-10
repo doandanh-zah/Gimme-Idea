@@ -163,19 +163,19 @@ const Navbar = () => {
         className="pointer-events-auto bg-[#0F0F0F]/90 backdrop-blur-xl border border-white/5 rounded-full px-3 sm:px-6 py-2 sm:py-3 flex items-center justify-between w-full max-w-5xl shadow-2xl shadow-purple-900/10 relative"
       >
         {/* Logo */}
-        <button onClick={() => { setView('landing'); setSelectedProject(null); router.push('/home'); }} className="flex items-center gap-2 sm:gap-3 group">
-          <div className="relative w-8 h-8 sm:w-10 sm:h-10 flex items-center justify-center">
+        <button onClick={() => { setView('landing'); setSelectedProject(null); router.push('/home'); }} className="flex items-center gap-1.5 sm:gap-2 group">
+          <div className="relative w-7 h-7 sm:w-10 sm:h-10 flex items-center justify-center">
              <div className="absolute inset-0 bg-[#FFD700]/20 rounded-full blur-md opacity-50 group-hover:opacity-100 transition-opacity duration-300" />
              <Image
                src="/asset/logo-gmi.png"
                alt="Gimme Idea Logo"
                width={36}
                height={36}
-               className="relative z-10 object-contain w-7 h-7 sm:w-9 sm:h-9"
+               className="relative z-10 object-contain w-6 h-6 sm:w-9 sm:h-9"
                priority
              />
           </div>
-          <span className="hidden sm:block font-fugaz text-xl tracking-wide">
+          <span className="font-quantico font-bold text-base sm:text-xl tracking-wide">
             <span className="text-white">Gimme</span>
             <span className="text-[#FFD700]">Idea</span>
           </span>

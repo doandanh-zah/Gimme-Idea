@@ -1,7 +1,7 @@
 'use client';
 
 import './globals.css';
-import { Inter, JetBrains_Mono, Space_Grotesk, Fugaz_One } from 'next/font/google';
+import { Inter, JetBrains_Mono, Space_Grotesk, Quantico } from 'next/font/google';
 import { Toaster } from 'react-hot-toast';
 import { WalletProvider } from '../components/WalletProvider';
 import { AuthProvider } from '../contexts/AuthContext';
@@ -15,7 +15,7 @@ import React from 'react';
 const inter = Inter({ subsets: ['latin'], variable: '--font-inter' });
 const mono = JetBrains_Mono({ subsets: ['latin'], variable: '--font-mono' });
 const space = Space_Grotesk({ subsets: ['latin'], variable: '--font-space' });
-const fugaz = Fugaz_One({ weight: '400', subsets: ['latin'], variable: '--font-fugaz' });
+const quantico = Quantico({ weight: ['400', '700'], subsets: ['latin'], variable: '--font-quantico' });
 
 export default function RootLayout({
   children,
@@ -29,7 +29,7 @@ export default function RootLayout({
         <meta name="description" content="Share and validate your Solana ideas with the community" />
         <link rel="icon" href="/favicon.ico" />
       </head>
-      <body className={`${inter.variable} ${mono.variable} ${space.variable} ${fugaz.variable} font-sans bg-background text-white min-h-screen selection:bg-accent selection:text-black`}>
+      <body className={`${inter.variable} ${mono.variable} ${space.variable} ${quantico.variable} font-sans bg-background text-white min-h-screen selection:bg-accent selection:text-black`}>
         {/* Google Analytics */}
         <Script
           src="https://www.googletagmanager.com/gtag/js?id=G-65VF8CLCR7"
