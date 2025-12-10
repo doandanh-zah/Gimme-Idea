@@ -7,9 +7,9 @@ import { useRouter } from 'next/navigation';
 import axios from 'axios';
 import { Project } from '../lib/types';
 import toast from 'react-hot-toast';
-import { useWallet } from '@solana/wallet-adapter-react';
+import { useWallet, useConnection } from '@solana/wallet-adapter-react';
 import { useWalletModal } from '@solana/wallet-adapter-react-ui';
-import { Connection, PublicKey, Transaction, SystemProgram, LAMPORTS_PER_SOL } from '@solana/web3.js';
+import { PublicKey, Transaction, SystemProgram, LAMPORTS_PER_SOL } from '@solana/web3.js';
 import { createUniqueSlug } from '../lib/slug-utils';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
@@ -54,6 +54,7 @@ export const AIChatModal: React.FC<AIChatModalProps> = ({ isOpen, onClose }) => 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
   const { publicKey, sendTransaction, connected } = useWallet();
+  const { connection } = useConnection();
   const { setVisible: setWalletModalVisible } = useWalletModal();
 
   // Load sessions from localStorage
@@ -303,11 +304,7 @@ export const AIChatModal: React.FC<AIChatModalProps> = ({ isOpen, onClose }) => 
       const solAmount = donationAmount / SOL_PRICE_USD;
       const lamports = Math.floor(solAmount * LAMPORTS_PER_SOL);
 
-      const connection = new Connection(
-        process.env.NEXT_PUBLIC_RPC_URL || 'https://api.mainnet-beta.solana.com',
-        'confirmed'
-      );
-
+      // Use connection from wallet adapter (already configured with proper RPC)
       const transaction = new Transaction().add(
         SystemProgram.transfer({
           fromPubkey: publicKey,
