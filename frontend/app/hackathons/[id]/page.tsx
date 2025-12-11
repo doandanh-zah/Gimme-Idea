@@ -38,7 +38,7 @@ const LEADERBOARD = [
   { rank: 3, name: 'ChainReaction', points: 890 },
 ];
 
-export default function HackathonDashboard() {
+export default function HackathonDashboard({ params }: { params: { id: string } }) {
   const [activeTab, setActiveTab] = useState('tracks');
 
   return (

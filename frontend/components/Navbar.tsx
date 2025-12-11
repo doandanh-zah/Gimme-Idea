@@ -43,12 +43,12 @@ const Navbar = () => {
   // Dynamic Menu State
   const [moreLinks, setMoreLinks] = useState([
     {
-      name: 'Hackathon',
-      route: '/hackathon',
+      name: 'Hackathons',
+      route: '/hackathons',
       icon: Trophy,
       status: 'open',
       highlight: { badge: 'LIVE', borderColor: '#14F195' },
-      id: 'hackathon',
+      id: 'hackathons',
       isActive: true,
     },
     {
