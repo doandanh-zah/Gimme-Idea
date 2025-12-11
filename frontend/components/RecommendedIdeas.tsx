@@ -221,11 +221,8 @@ export const RecommendedIdeas = () => {
                     <MedalIcon className="w-6 h-6 text-black" />
                   </div>
                   <div>
-                    <div className="text-[10px] font-medium text-gray-500 uppercase tracking-widest mb-0.5">
-                      AI Recommended
-                    </div>
                     <div 
-                      className="text-sm font-bold"
+                      className="text-lg font-extrabold tracking-tight"
                       style={{ color: medal.color }}
                     >
                       {medal.label}

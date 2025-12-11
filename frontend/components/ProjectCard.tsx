@@ -105,21 +105,21 @@ export const ProjectCard: React.FC<ProjectCardProps> = ({ project }) => {
         }}
       />
 
-      {/* Diagonal white shimmer effect on hover - subtle and realistic */}
+      {/* Diagonal white shimmer effect on hover - slow vertical sweep */}
       {hasShimmered && (
         <motion.div
           className="absolute inset-0 pointer-events-none overflow-hidden rounded-2xl z-20"
           initial={{ opacity: 1 }}
           animate={{ opacity: 0 }}
-          transition={{ duration: 0.6, delay: 0.4 }}
+          transition={{ duration: 1.2, delay: 0.8 }}
         >
           <motion.div
-            className="absolute w-[200%] h-full"
-            initial={{ x: '-100%', rotate: -20 }}
-            animate={{ x: '100%' }}
-            transition={{ duration: 0.6, ease: "easeOut" }}
+            className="absolute w-full h-[300%]"
+            initial={{ y: '-100%', rotate: -15 }}
+            animate={{ y: '100%' }}
+            transition={{ duration: 1.2, ease: "easeInOut" }}
             style={{
-              background: 'linear-gradient(110deg, transparent 30%, rgba(255,255,255,0.08) 45%, rgba(255,255,255,0.15) 50%, rgba(255,255,255,0.08) 55%, transparent 70%)',
+              background: 'linear-gradient(180deg, transparent 30%, rgba(255,255,255,0.06) 45%, rgba(255,255,255,0.12) 50%, rgba(255,255,255,0.06) 55%, transparent 70%)',
               transformOrigin: 'center center',
             }}
           />

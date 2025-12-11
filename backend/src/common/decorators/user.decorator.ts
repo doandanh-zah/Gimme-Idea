@@ -8,7 +8,8 @@ export const CurrentUser = createParamDecorator(
     if (!user) return undefined;
 
     // Map 'id' to 'userId' since JWT payload uses 'userId'
-    if (data === "id") {
+    // Also support both 'id' and 'userId' as they mean the same thing
+    if (data === "id" || data === "userId") {
       return user.userId || user.id;
     }
 

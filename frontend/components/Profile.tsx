@@ -61,6 +61,8 @@ export const Profile = () => {
   // Follow system state
   const [showFollowModal, setShowFollowModal] = useState(false);
   const [followModalTab, setFollowModalTab] = useState<'followers' | 'following'>('followers');
+  const [localFollowersCount, setLocalFollowersCount] = useState(0);
+  const [localFollowingCount, setLocalFollowingCount] = useState(0);
   
   // Generate stars on mount
   useEffect(() => {
@@ -138,6 +140,30 @@ export const Profile = () => {
 
     fetchStats();
   }, [displayUser?.username]);
+
+  // Fetch follow stats for displayUser
+  useEffect(() => {
+    const fetchFollowStats = async () => {
+      if (!displayUser?.id) return;
+      
+      try {
+        const response = await apiClient.getFollowStats(displayUser.id);
+        if (response.success && response.data) {
+          setLocalFollowersCount(response.data.followersCount);
+          setLocalFollowingCount(response.data.followingCount);
+        }
+      } catch (error) {
+        console.error('Failed to fetch follow stats:', error);
+      }
+    };
+
+    fetchFollowStats();
+  }, [displayUser?.id]);
+
+  // Handler for when follow status changes
+  const handleFollowChange = (isFollowing: boolean) => {
+    setLocalFollowersCount(prev => isFollowing ? prev + 1 : Math.max(0, prev - 1));
+  };
 
   const isWalletConnected = connected && publicKey && displayUser?.wallet && 
     publicKey.toBase58() === displayUser.wallet;
@@ -520,6 +546,7 @@ export const Profile = () => {
                                 <FollowButton
                                     targetUserId={displayUser.id}
                                     targetUsername={displayUser.username}
+                                    onFollowChange={handleFollowChange}
                                 />
                             )}
                         </div>
@@ -569,7 +596,7 @@ export const Profile = () => {
                             className="flex items-center gap-1.5 hover:text-purple-400 transition-colors group"
                         >
                             <span className="font-bold text-white group-hover:text-purple-400">
-                                {displayUser.followersCount || 0}
+                                {localFollowersCount}
                             </span>
                             <span className="text-gray-400 text-sm">Followers</span>
                         </button>
@@ -581,7 +608,7 @@ export const Profile = () => {
                             className="flex items-center gap-1.5 hover:text-purple-400 transition-colors group"
                         >
                             <span className="font-bold text-white group-hover:text-purple-400">
-                                {displayUser.followingCount || 0}
+                                {localFollowingCount}
                             </span>
                             <span className="text-gray-400 text-sm">Following</span>
                         </button>
