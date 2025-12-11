@@ -21,14 +21,13 @@ export function useNotifications() {
       setIsLoading(true);
       try {
         const response = await apiClient.getNotifications({ limit, offset });
-        if (response.success && response.data) {
+        // API returns { success, notifications } directly, not wrapped in data
+        if (response.success) {
+          const notifs = (response as any).notifications || [];
           if (offset === 0) {
-            setNotifications(response.data.notifications || []);
+            setNotifications(notifs);
           } else {
-            setNotifications((prev) => [
-              ...prev,
-              ...(response.data?.notifications || []),
-            ]);
+            setNotifications((prev) => [...prev, ...notifs]);
           }
         }
       } catch (error) {
@@ -46,8 +45,9 @@ export function useNotifications() {
 
     try {
       const response = await apiClient.getUnreadNotificationCount();
-      if (response.success && response.data) {
-        setUnreadCount(response.data.unreadCount || 0);
+      // API returns { success, unreadCount } directly
+      if (response.success) {
+        setUnreadCount((response as any).unreadCount || 0);
       }
     } catch (error) {
       console.error("Failed to fetch unread count:", error);
