@@ -51,9 +51,9 @@ export default function HackathonsList() {
             <p className="text-gray-400">Join our global community of builders and ship products.</p>
           </div>
           <div className="flex gap-2">
-            <button className="bg-[#FFD700] text-black font-bold px-4 py-2 rounded hover:bg-[#FFD700]/90 transition-colors">
+            <a href="https://forms.gle/your-sponsor-form-link" target="_blank" rel="noopener noreferrer" className="bg-[#FFD700] text-black font-bold px-4 py-2 rounded hover:bg-[#FFD700]/90 transition-colors">
               Apply as Sponsor
-            </button>
+            </a>
           </div>
         </div>
 
