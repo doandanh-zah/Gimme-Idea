@@ -407,22 +407,40 @@ const CommentItem: React.FC<CommentItemProps> = ({ comment, projectId, isReply =
                     </div>
                 )}
 
-                {comment.replies?.map(reply => (
-                    <CommentItem 
-                        key={reply.id} 
-                        comment={reply} 
-                        projectId={projectId} 
-                        isReply={true} 
-                        onTip={onTip} 
-                        ideaOwnerUsername={ideaOwnerUsername}
-                        ideaContext={ideaContext}
-                        parentAIComment={comment.is_ai_generated ? comment.content : parentAIComment}
-                        parentCommentAuthor={comment.is_ai_generated ? AI_BOT_NAME : (comment.isAnonymous ? 'Anonymous' : comment.author?.username)}
-                        isParentAI={comment.is_ai_generated}
-                        activeReplyId={activeReplyId}
-                        setActiveReplyId={setActiveReplyId}
-                    />
-                ))}
+                {comment.replies?.map((reply, index, allReplies) => {
+                    // For first reply, tag the parent comment author
+                    // For subsequent replies, tag the author of the previous reply in the thread
+                    let replyToAuthor: string;
+                    if (index === 0) {
+                        // First reply in thread - tag the parent comment author
+                        replyToAuthor = comment.is_ai_generated 
+                            ? AI_BOT_NAME 
+                            : (comment.isAnonymous ? 'Anonymous' : (comment.author?.username || 'Anonymous'));
+                    } else {
+                        // Find the previous reply to determine who this reply is to
+                        const prevReply = allReplies[index - 1];
+                        replyToAuthor = prevReply.is_ai_generated 
+                            ? AI_BOT_NAME 
+                            : (prevReply.isAnonymous ? 'Anonymous' : (prevReply.author?.username || 'Anonymous'));
+                    }
+                    
+                    return (
+                        <CommentItem 
+                            key={reply.id} 
+                            comment={reply} 
+                            projectId={projectId} 
+                            isReply={true} 
+                            onTip={onTip} 
+                            ideaOwnerUsername={ideaOwnerUsername}
+                            ideaContext={ideaContext}
+                            parentAIComment={comment.is_ai_generated ? comment.content : parentAIComment}
+                            parentCommentAuthor={replyToAuthor}
+                            isParentAI={comment.is_ai_generated}
+                            activeReplyId={activeReplyId}
+                            setActiveReplyId={setActiveReplyId}
+                        />
+                    );
+                })}
             </div>
         </div>
     );
