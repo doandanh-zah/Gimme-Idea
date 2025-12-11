@@ -5,6 +5,13 @@ export const CurrentUser = createParamDecorator(
     const request = ctx.switchToHttp().getRequest();
     const user = request.user;
 
+    if (!user) return undefined;
+
+    // Map 'id' to 'userId' since JWT payload uses 'userId'
+    if (data === 'id') {
+      return user.userId || user.id;
+    }
+
     return data ? user?.[data] : user;
   },
 );
