@@ -515,16 +515,23 @@ export class ProjectsService {
         this.logger.error("Failed to update project AI score", updateError);
       }
 
-      // Create comment with AI feedback (WITHOUT showing score)
-      const commentContent = `${
-        feedback.comment
-      }\n\n**💪 Strengths:**\n${feedback.strengths
-        .map((s) => `• ${s}`)
-        .join("\n")}\n\n**⚠️ Areas for Improvement:**\n${feedback.weaknesses
-        .map((w) => `• ${w}`)
-        .join("\n")}\n\n**💡 Suggestions:**\n${feedback.suggestions
-        .map((s) => `• ${s}`)
-        .join("\n")}`;
+      // Create comment with AI feedback - natural conversational format
+      // The main comment already contains the comprehensive feedback
+      // Add strengths, weaknesses, and suggestions in a clean format
+      let commentContent = feedback.comment;
+      
+      // Only add structured sections if they have meaningful content
+      if (feedback.strengths && feedback.strengths.length > 0) {
+        commentContent += `\n\n**💪 Điểm mạnh:**\n${feedback.strengths.map((s) => `• ${s}`).join("\n")}`;
+      }
+      
+      if (feedback.weaknesses && feedback.weaknesses.length > 0) {
+        commentContent += `\n\n**⚠️ Cần cải thiện:**\n${feedback.weaknesses.map((w) => `• ${w}`).join("\n")}`;
+      }
+      
+      if (feedback.suggestions && feedback.suggestions.length > 0) {
+        commentContent += `\n\n**💡 Gợi ý:**\n${feedback.suggestions.map((s) => `• ${s}`).join("\n")}`;
+      }
 
       const { error: commentError } = await supabase.from("comments").insert({
         project_id: projectId,

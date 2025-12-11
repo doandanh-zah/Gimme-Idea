@@ -2,6 +2,7 @@ import { create } from "zustand";
 import { Project, User, Comment, Notification } from "./types";
 import { apiClient } from "./api-client";
 import { buildCommentTree } from "./comment-utils";
+import { supabase } from "./supabase";
 
 type View =
   | "landing"
@@ -71,7 +72,7 @@ interface AppState {
   handleRealtimeNewProject: (project: any) => void;
   handleRealtimeUpdateProject: (project: any) => void;
   handleRealtimeDeleteProject: (projectId: string) => void;
-  handleRealtimeNewComment: (projectId: string, comment: any) => void;
+  handleRealtimeNewComment: (projectId: string, comment: any) => Promise<void>;
   handleRealtimeUpdateComment: (projectId: string, comment: any) => void;
   handleRealtimeDeleteComment: (projectId: string, commentId: string) => void;
 
@@ -534,7 +535,7 @@ export const useAppStore = create<AppState>((set, get) => ({
     }));
   },
 
-  handleRealtimeNewComment: (projectId, commentData) => {
+  handleRealtimeNewComment: async (projectId, commentData) => {
     const state = get();
 
     // IMPORTANT: Skip realtime updates for comments created by current user
@@ -548,6 +549,23 @@ export const useAppStore = create<AppState>((set, get) => ({
       return;
     }
 
+    // Fetch author info if not anonymous
+    let author = null;
+    if (!commentData.is_anonymous && commentData.user_id) {
+      try {
+        const { data: userData } = await supabase
+          .from("users")
+          .select("username, wallet, avatar")
+          .eq("id", commentData.user_id)
+          .single();
+        if (userData) {
+          author = userData;
+        }
+      } catch (error) {
+        console.error("Failed to fetch author for realtime comment:", error);
+      }
+    }
+
     set((state) => {
       const project = state.projects.find((p) => p.id === projectId);
       if (!project) return state;
@@ -556,13 +574,15 @@ export const useAppStore = create<AppState>((set, get) => ({
         id: commentData.id,
         projectId: commentData.project_id,
         content: commentData.content,
-        author: commentData.is_anonymous ? null : commentData.author,
+        author: commentData.is_anonymous ? null : author,
         likes: commentData.likes || 0,
         dislikes: commentData.dislikes || 0,
         parentCommentId: commentData.parent_comment_id,
         isAnonymous: commentData.is_anonymous,
         tipsAmount: commentData.tips_amount || 0,
         createdAt: commentData.created_at,
+        is_ai_generated: commentData.is_ai_generated,
+        ai_model: commentData.ai_model,
         replies: [],
       };
 

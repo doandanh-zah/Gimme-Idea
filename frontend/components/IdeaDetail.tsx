@@ -4,13 +4,12 @@
 import React, { useState } from 'react';
 import { useAppStore } from '../lib/store';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, ThumbsUp, ThumbsDown, MessageCircle, Send, EyeOff, User, DollarSign, Share2, Pencil, Trash2, X, Check, Loader2, Sparkles } from 'lucide-react';
+import { ArrowLeft, ThumbsUp, ThumbsDown, MessageCircle, Send, EyeOff, User, DollarSign, Share2, Pencil, Trash2, X, Check, Loader2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';
 import { Comment } from '../lib/types';
 import { PaymentModal } from './PaymentModal';
 import { useRealtimeComments } from '../hooks/useRealtimeComments';
-import { AICommentBadge } from './AICommentBadge';
 import { MarkdownContent } from './MarkdownContent';
 import { MarkdownGuide } from './MarkdownGuide';
 import { AuthorLink, AuthorAvatar } from './AuthorLink';
@@ -205,9 +204,6 @@ const CommentItem: React.FC<CommentItemProps> = ({ comment, projectId, isReply =
                             Idea Owner
                         </span>
                     )}
-                    {comment.is_ai_generated && (
-                        <AICommentBadge model={comment.ai_model} />
-                    )}
                     <span className="text-xs text-gray-600">{new Date(timestamp).toLocaleDateString()}</span>
                     {tipsAmount > 0 && (
                         <span className="text-[10px] bg-gold/10 text-gold px-1.5 py-0.5 rounded border border-gold/20 flex items-center gap-1">
@@ -358,17 +354,11 @@ const CommentItem: React.FC<CommentItemProps> = ({ comment, projectId, isReply =
                                 <X className="w-4 h-4" />
                             </button>
                         </div>
-                        {comment.is_ai_generated && (
-                            <div className="flex items-center gap-2 text-xs text-purple-400 mb-3 bg-purple-500/10 px-3 py-2 rounded-lg">
-                                <Sparkles className="w-3 h-3" />
-                                <span>AI will automatically reply to your question</span>
-                            </div>
-                        )}
                         <textarea 
                             value={replyText}
                             onChange={(e) => setReplyText(e.target.value)}
                             className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-white text-sm focus:border-purple-500 outline-none resize-none min-h-[80px]"
-                            placeholder={comment.is_ai_generated ? "Ask AI a follow-up question..." : "Write a reply..."}
+                            placeholder="Write a reply..."
                             disabled={isSubmittingReply}
                         />
                          <div className="flex justify-between items-center mt-3">
