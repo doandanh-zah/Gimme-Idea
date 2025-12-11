@@ -16,6 +16,9 @@ import { MarkdownGuide } from './MarkdownGuide';
 import { AuthorLink, AuthorAvatar } from './AuthorLink';
 import { apiClient } from '../lib/api-client';
 
+// AI Bot display name
+const AI_BOT_NAME = 'Gimme Sensei';
+
 interface IdeaContext {
     title: string;
     problem: string;
@@ -33,11 +36,12 @@ interface CommentItemProps {
     parentAIComment?: string; // Content of parent AI comment for context
     parentCommentAuthor?: string; // Username of parent comment author (for showing "replying to @...")
     isParentAI?: boolean; // Whether parent comment is from AI
+    activeReplyId: string | null; // Currently active reply form
+    setActiveReplyId: (id: string | null) => void; // Function to set active reply
 }
 
-const CommentItem: React.FC<CommentItemProps> = ({ comment, projectId, isReply = false, onTip, ideaOwnerUsername, ideaContext, parentAIComment, parentCommentAuthor, isParentAI }) => {
+const CommentItem: React.FC<CommentItemProps> = ({ comment, projectId, isReply = false, onTip, ideaOwnerUsername, ideaContext, parentAIComment, parentCommentAuthor, isParentAI, activeReplyId, setActiveReplyId }) => {
     const { user, likeComment, dislikeComment, replyComment, fetchProjectById } = useAppStore();
-    const [replyingTo, setReplyingTo] = useState(false);
     const [replyText, setReplyText] = useState('');
     const [isAnonReply, setIsAnonReply] = useState(false);
     const [showBurst, setShowBurst] = useState(false);
@@ -47,6 +51,10 @@ const CommentItem: React.FC<CommentItemProps> = ({ comment, projectId, isReply =
     const [isAIThinking, setIsAIThinking] = useState(false);
     const [isDeleting, setIsDeleting] = useState(false);
     const [isSavingEdit, setIsSavingEdit] = useState(false);
+    const [isSubmittingReply, setIsSubmittingReply] = useState(false);
+
+    // Check if this comment's reply form is active
+    const isReplyFormOpen = activeReplyId === comment.id;
 
     const isOwnComment = user && !comment.isAnonymous && comment.author?.username === user.username;
 
@@ -111,11 +119,17 @@ const CommentItem: React.FC<CommentItemProps> = ({ comment, projectId, isReply =
             toast.error("Please connect wallet to reply");
             return;
         }
+        if (!replyText.trim()) {
+            toast.error("Reply cannot be empty");
+            return;
+        }
+        
+        setIsSubmittingReply(true);
         try {
             await replyComment(projectId, comment.id, replyText, isAnonReply);
             const userQuestion = replyText;
             setReplyText('');
-            setReplyingTo(false);
+            setActiveReplyId(null); // Close reply form
             toast.success('Reply posted!');
             
             // If replying to an AI comment, trigger AI auto-reply
@@ -150,6 +164,17 @@ const CommentItem: React.FC<CommentItemProps> = ({ comment, projectId, isReply =
             }
         } catch (error) {
             toast.error('Failed to post reply');
+        } finally {
+            setIsSubmittingReply(false);
+        }
+    };
+
+    const handleToggleReply = () => {
+        if (isReplyFormOpen) {
+            setActiveReplyId(null);
+            setReplyText('');
+        } else {
+            setActiveReplyId(comment.id);
         }
     };
 
@@ -279,10 +304,10 @@ const CommentItem: React.FC<CommentItemProps> = ({ comment, projectId, isReply =
                     )}
 
                     <button 
-                        onClick={() => setReplyingTo(!replyingTo)} 
-                        className={`flex items-center gap-1 hover:text-white ${replyingTo ? 'text-white' : ''}`}
+                        onClick={handleToggleReply} 
+                        className={`flex items-center gap-1 hover:text-white ${isReplyFormOpen ? 'text-white' : ''}`}
                     >
-                        <MessageCircle className="w-3 h-3" /> Reply
+                        <MessageCircle className="w-3 h-3" /> {isReplyFormOpen ? 'Cancel' : 'Reply'}
                     </button>
 
                     <button
@@ -316,24 +341,25 @@ const CommentItem: React.FC<CommentItemProps> = ({ comment, projectId, isReply =
                     )}
                 </div>
 
-                {replyingTo && (
-                    <form onSubmit={handleReplySubmit} className="mt-3 bg-white/5 p-3 rounded-lg animate-in fade-in slide-in-from-top-1">
+                {isReplyFormOpen && (
+                    <form onSubmit={handleReplySubmit} className="mt-3 bg-white/5 border border-white/10 p-4 rounded-xl animate-in fade-in slide-in-from-top-2">
                         {/* Reply tag - show who you're replying to */}
-                        <div className="flex items-center gap-2 text-xs mb-2">
+                        <div className="flex items-center gap-2 text-xs mb-3">
                             <span className="text-gray-400">Replying to</span>
                             <span className={`font-semibold ${comment.is_ai_generated ? 'text-purple-400' : 'text-blue-400'}`}>
-                                @{comment.is_ai_generated ? 'Gimme AI' : (comment.isAnonymous ? 'Anonymous' : comment.author?.username || 'Anonymous')}
+                                @{comment.is_ai_generated ? AI_BOT_NAME : (comment.isAnonymous ? 'Anonymous' : comment.author?.username || 'Anonymous')}
                             </span>
                             <button 
                                 type="button" 
-                                onClick={() => setReplyingTo(false)}
-                                className="ml-auto text-gray-500 hover:text-white"
+                                onClick={() => { setActiveReplyId(null); setReplyText(''); }}
+                                className="ml-auto text-gray-500 hover:text-white transition-colors"
+                                title="Cancel reply"
                             >
-                                <X className="w-3 h-3" />
+                                <X className="w-4 h-4" />
                             </button>
                         </div>
                         {comment.is_ai_generated && (
-                            <div className="flex items-center gap-2 text-xs text-purple-400 mb-2 bg-purple-500/10 px-2 py-1 rounded">
+                            <div className="flex items-center gap-2 text-xs text-purple-400 mb-3 bg-purple-500/10 px-3 py-2 rounded-lg">
                                 <Sparkles className="w-3 h-3" />
                                 <span>AI will automatically reply to your question</span>
                             </div>
@@ -341,15 +367,42 @@ const CommentItem: React.FC<CommentItemProps> = ({ comment, projectId, isReply =
                         <textarea 
                             value={replyText}
                             onChange={(e) => setReplyText(e.target.value)}
-                            className="w-full bg-transparent border-none outline-none text-white text-sm"
+                            className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-white text-sm focus:border-purple-500 outline-none resize-none min-h-[80px]"
                             placeholder={comment.is_ai_generated ? "Ask AI a follow-up question..." : "Write a reply..."}
+                            disabled={isSubmittingReply}
                         />
-                         <div className="flex justify-between items-center mt-2 border-t border-white/5 pt-2">
-                             <label className="flex items-center gap-2 text-xs text-gray-400 cursor-pointer">
-                                <input type="checkbox" checked={isAnonReply} onChange={e => setIsAnonReply(e.target.checked)} />
+                         <div className="flex justify-between items-center mt-3">
+                             <label className="flex items-center gap-2 text-xs text-gray-400 cursor-pointer hover:text-gray-300 transition-colors">
+                                <input type="checkbox" checked={isAnonReply} onChange={e => setIsAnonReply(e.target.checked)} className="rounded" disabled={isSubmittingReply} />
                                 Reply Anonymously
                              </label>
-                             <button type="submit" className="text-xs bg-white text-black px-3 py-1 rounded font-bold hover:bg-gray-200">Post</button>
+                             <div className="flex gap-2">
+                                 <button 
+                                     type="button"
+                                     onClick={() => { setActiveReplyId(null); setReplyText(''); }}
+                                     className="text-xs bg-gray-700 hover:bg-gray-600 text-white px-4 py-2 rounded-lg font-medium transition-colors"
+                                     disabled={isSubmittingReply}
+                                 >
+                                     Cancel
+                                 </button>
+                                 <button 
+                                     type="submit" 
+                                     className="text-xs bg-white text-black px-4 py-2 rounded-lg font-bold hover:bg-gray-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                                     disabled={isSubmittingReply || !replyText.trim()}
+                                 >
+                                     {isSubmittingReply ? (
+                                         <>
+                                             <Loader2 className="w-3 h-3 animate-spin" />
+                                             Posting...
+                                         </>
+                                     ) : (
+                                         <>
+                                             <Send className="w-3 h-3" />
+                                             Post Reply
+                                         </>
+                                     )}
+                                 </button>
+                             </div>
                          </div>
                     </form>
                 )}
@@ -360,7 +413,7 @@ const CommentItem: React.FC<CommentItemProps> = ({ comment, projectId, isReply =
                         <div className="w-8 h-8 rounded-full bg-purple-500/20 flex items-center justify-center">
                             <Loader2 className="w-4 h-4 animate-spin" />
                         </div>
-                        <span>Gimme AI is thinking...</span>
+                        <span>{AI_BOT_NAME} is thinking...</span>
                     </div>
                 )}
 
@@ -374,8 +427,10 @@ const CommentItem: React.FC<CommentItemProps> = ({ comment, projectId, isReply =
                         ideaOwnerUsername={ideaOwnerUsername}
                         ideaContext={ideaContext}
                         parentAIComment={comment.is_ai_generated ? comment.content : parentAIComment}
-                        parentCommentAuthor={comment.is_ai_generated ? 'Gimme AI' : (comment.isAnonymous ? 'Anonymous' : comment.author?.username)}
+                        parentCommentAuthor={comment.is_ai_generated ? AI_BOT_NAME : (comment.isAnonymous ? 'Anonymous' : comment.author?.username)}
                         isParentAI={comment.is_ai_generated}
+                        activeReplyId={activeReplyId}
+                        setActiveReplyId={setActiveReplyId}
                     />
                 ))}
             </div>
@@ -399,6 +454,9 @@ export const IdeaDetail = () => {
   const [commentText, setCommentText] = useState('');
   const [isAnonComment, setIsAnonComment] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Reply form state - only one reply form can be open at a time
+  const [activeReplyId, setActiveReplyId] = useState<string | null>(null);
 
   // Payment Modal State
   const [showPayment, setShowPayment] = useState(false);
@@ -576,16 +634,17 @@ export const IdeaDetail = () => {
                             <textarea 
                                 value={commentText}
                                 onChange={e => setCommentText(e.target.value)}
-                                className="w-full bg-transparent border-b border-white/10 outline-none text-white min-h-[80px] mb-4"
+                                className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 outline-none text-white min-h-[100px] mb-4 focus:border-purple-500 transition-colors resize-none"
                                 placeholder="Add your insight or question..."
+                                disabled={isSubmitting}
                             />
                             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                                 <div className="flex items-center gap-4">
-                                    <label className="flex items-center gap-2 text-sm text-gray-400 cursor-pointer select-none whitespace-nowrap">
-                                        <div className={`w-5 h-5 flex-shrink-0 border rounded flex items-center justify-center ${isAnonComment ? 'bg-[#FFD700] border-[#FFD700]' : 'border-gray-500'}`}>
+                                    <label className="flex items-center gap-2 text-sm text-gray-400 cursor-pointer select-none whitespace-nowrap hover:text-gray-300 transition-colors">
+                                        <div className={`w-5 h-5 flex-shrink-0 border rounded flex items-center justify-center transition-colors ${isAnonComment ? 'bg-[#FFD700] border-[#FFD700]' : 'border-gray-500'}`}>
                                             {isAnonComment && <EyeOff className="w-3 h-3 text-black" />}
                                         </div>
-                                        <input type="checkbox" checked={isAnonComment} onChange={e => setIsAnonComment(e.target.checked)} className="hidden" />
+                                        <input type="checkbox" checked={isAnonComment} onChange={e => setIsAnonComment(e.target.checked)} className="hidden" disabled={isSubmitting} />
                                         Comment Anonymously
                                     </label>
                                     <MarkdownGuide />
@@ -593,9 +652,19 @@ export const IdeaDetail = () => {
                                 <button
                                     type="submit"
                                     disabled={isSubmitting || !commentText.trim()}
-                                    className="bg-white text-black px-6 py-2 rounded-full font-bold flex items-center gap-2 hover:bg-[#FFD700] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                    className="bg-white text-black px-6 py-2.5 rounded-full font-bold flex items-center gap-2 hover:bg-[#FFD700] transition-colors disabled:opacity-50 disabled:cursor-not-allowed min-w-[120px] justify-center"
                                 >
-                                    {isSubmitting ? 'Sending...' : 'Send'} <Send className="w-4 h-4" />
+                                    {isSubmitting ? (
+                                        <>
+                                            <Loader2 className="w-4 h-4 animate-spin" />
+                                            Posting...
+                                        </>
+                                    ) : (
+                                        <>
+                                            <Send className="w-4 h-4" />
+                                            Post
+                                        </>
+                                    )}
                                 </button>
                             </div>
                         </form>
@@ -616,6 +685,8 @@ export const IdeaDetail = () => {
                                 solution: project.solution || '',
                                 opportunity: project.opportunity,
                             }}
+                            activeReplyId={activeReplyId}
+                            setActiveReplyId={setActiveReplyId}
                         />
                     ))}
                 </div>

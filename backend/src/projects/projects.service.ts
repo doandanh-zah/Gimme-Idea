@@ -322,6 +322,8 @@ export class ProjectsService {
             isAnonymous: c.is_anonymous,
             tipsAmount: c.tips_amount || 0,
             createdAt: c.created_at,
+            is_ai_generated: c.is_ai_generated,
+            ai_model: c.ai_model,
           }))
         : [],
     };

@@ -135,8 +135,8 @@ export class CommentsService {
         isAnonymous: c.is_anonymous,
         tipsAmount: c.tips_amount || 0,
         createdAt: c.created_at,
-        isAiGenerated: c.is_ai_generated,
-        aiModel: c.ai_model,
+        is_ai_generated: c.is_ai_generated,
+        ai_model: c.ai_model,
       };
     });
 

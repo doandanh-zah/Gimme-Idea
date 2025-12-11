@@ -2,6 +2,16 @@ import { Injectable, Logger } from "@nestjs/common";
 import OpenAI from "openai";
 import { SupabaseService } from "../shared/supabase.service";
 
+// AI Bot Account Configuration
+const AI_BOT_CONFIG = {
+  username: "Gimme Sensei",
+  wallet: "FzcnaZMYcoAYpLgr7Wym2b8hrKYk3VXsRxWSLuvZKLJm",
+  email: "doanzah2710@gmail.com",
+  avatar:
+    "https://api.dicebear.com/7.x/bottts/svg?seed=gimme-sensei&backgroundColor=6366f1",
+  bio: "AI-powered startup advisor & mentor",
+};
+
 export interface IdeaFeedbackRequest {
   title: string;
   problem: string;
@@ -674,25 +684,67 @@ Respond with JSON only:
         previousAIComment
       );
 
-      // Get or create AI bot user
+      // Get or create AI bot user - find by wallet (most reliable)
       const { data: aiUser, error: userError } = await supabase
         .from("users")
         .select("id")
-        .eq("username", "Gimme AI")
+        .eq("wallet", AI_BOT_CONFIG.wallet)
         .single();
 
       if (userError || !aiUser) {
+        // Try to find by username as fallback
+        const { data: aiUserByName } = await supabase
+          .from("users")
+          .select("id")
+          .eq("username", AI_BOT_CONFIG.username)
+          .single();
+
+        if (aiUserByName) {
+          // Use existing user found by username
+          const { data: comment, error: commentError } = await supabase
+            .from("comments")
+            .insert({
+              project_id: projectId,
+              user_id: aiUserByName.id,
+              parent_comment_id: parentCommentId,
+              content: aiReply,
+              is_anonymous: false,
+              likes: 0,
+              tips_amount: 0,
+              is_ai_generated: true,
+              ai_model: "gpt-4o-mini",
+              ai_tokens_used: 0,
+              created_at: new Date().toISOString(),
+            })
+            .select(
+              `*, author:users!comments_user_id_fkey(username, wallet, avatar)`
+            )
+            .single();
+
+          if (commentError) {
+            this.logger.error(
+              "Failed to create AI reply comment",
+              commentError
+            );
+            return { success: false, error: "Failed to create AI reply" };
+          }
+
+          await supabase.rpc("increment_feedback_count", {
+            project_id: projectId,
+          });
+          return { success: true, comment };
+        }
+
         // Create AI user if doesn't exist
         const { data: newAiUser, error: createError } = await supabase
           .from("users")
           .insert({
-            username: "Gimme AI",
-            wallet: "AI_SYSTEM_WALLET",
-            avatar:
-              "https://api.dicebear.com/7.x/bottts/svg?seed=gimme-ai&backgroundColor=6366f1",
+            username: AI_BOT_CONFIG.username,
+            wallet: AI_BOT_CONFIG.wallet,
+            avatar: AI_BOT_CONFIG.avatar,
             reputation_score: 1000,
             balance: 0,
-            bio: "AI-powered startup advisor",
+            bio: AI_BOT_CONFIG.bio,
           })
           .select("id")
           .single();
