@@ -69,6 +69,53 @@ const Navbar = () => {
     },
   ]);
 
+  const searchInputRef = useRef<HTMLInputElement>(null);
+  const notificationRef = useRef<HTMLDivElement>(null);
+  const moreMenuRef = useRef<HTMLDivElement>(null); // Ref for 'More' menu
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+        if (notificationRef.current && !notificationRef.current.contains(event.target as Node)) {
+            setShowNotifications(false);
+        }
+        // Handle click outside for 'More' menu
+        if (moreMenuRef.current && !moreMenuRef.current.contains(event.target as Node)) {
+            setShowMoreMenu(false);
+        }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  useEffect(() => {
+      if (showSearch && searchInputRef.current) {
+          searchInputRef.current.focus();
+      }
+  }, [showSearch]);
+
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+      setSearchQuery(e.target.value);
+  };
+
+  const handleNotificationClick = () => {
+      setShowNotifications(!showNotifications);
+      setShowMoreMenu(false); // Close other menus
+  };
+
+  const handleMoreMenuClick = () => {
+    setShowMoreMenu(!showMoreMenu);
+    setShowNotifications(false); // Close other menus
+  };
+
+  const navLinks = [
+    { name: 'HOME', route: '/home', icon: LayoutGrid },
+    { name: 'IDEA', route: '/idea', icon: Lightbulb },
+    { name: 'PROJECT', route: '/projects', icon: Rocket },
+    { name: 'Donate me', route: '/donate', icon: Heart },
+    { name: 'More', isDropdown: true, icon: MoreHorizontal } // New 'More' entry
+  ];
+
+
   return (
     <nav className="fixed top-4 sm:top-6 left-0 right-0 z-50 flex justify-center px-2 sm:px-4 pointer-events-none">
       <motion.div 
