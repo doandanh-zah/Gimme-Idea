@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Wallet, AlertCircle, RefreshCw, ArrowRight } from 'lucide-react';
+import { X, Wallet, AlertCircle, RefreshCw, ArrowRight, Smartphone } from 'lucide-react';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { apiClient } from '@/lib/api-client';
@@ -11,6 +11,13 @@ import toast from 'react-hot-toast';
 import bs58 from 'bs58';
 
 type ModalMode = 'reconnect' | 'connect' | 'change';
+
+// Helper to detect mobile browser
+const isMobileBrowser = () => {
+  if (typeof window === 'undefined') return false;
+  const userAgent = navigator.userAgent || navigator.vendor || (window as any).opera;
+  return /android|webos|iphone|ipad|ipod|blackberry|iemobile|opera mini/i.test(userAgent.toLowerCase());
+};
 
 interface WalletRequiredModalProps {
   isOpen: boolean;
@@ -29,7 +36,13 @@ export const WalletRequiredModal: React.FC<WalletRequiredModalProps> = ({
   const { wallets, select, connect, publicKey, signMessage, connected, disconnect } = useWallet();
   const [isProcessing, setIsProcessing] = useState(false);
   const [step, setStep] = useState<'prompt' | 'select' | 'connecting'>('prompt');
+  const [isMobile, setIsMobile] = useState(false);
   const isLinkingRef = useRef(false);
+
+  // Detect mobile on mount
+  useEffect(() => {
+    setIsMobile(isMobileBrowser());
+  }, []);
 
   // Reset when modal opens
   useEffect(() => {
@@ -139,12 +152,27 @@ export const WalletRequiredModal: React.FC<WalletRequiredModalProps> = ({
 
     setIsProcessing(true);
     try {
-      const availableWallet = wallets.find(w => 
-        w.readyState === 'Installed' || w.readyState === 'Loadable'
-      );
+      let availableWallet;
+      
+      // On mobile, prefer Mobile Wallet Adapter
+      if (isMobile) {
+        availableWallet = wallets.find(w => 
+          w.adapter.name.toLowerCase().includes('mobile') ||
+          w.adapter.name.toLowerCase().includes('solana mobile')
+        );
+      }
+      
+      // Fallback to regular wallets
+      if (!availableWallet) {
+        availableWallet = wallets.find(w => 
+          w.readyState === 'Installed' || w.readyState === 'Loadable'
+        );
+      }
       
       if (!availableWallet) {
-        toast.error('No wallet extension found. Please install Phantom or Solflare.');
+        toast.error(isMobile 
+          ? 'No wallet found. Please install Phantom or Solflare app.'
+          : 'No wallet extension found. Please install Phantom or Solflare.');
         setIsProcessing(false);
         return;
       }
@@ -163,14 +191,34 @@ export const WalletRequiredModal: React.FC<WalletRequiredModalProps> = ({
     }
   };
 
-  const handleConnectWallet = async (walletName: string) => {
-    const selectedWallet = wallets.find(w =>
-      w.adapter.name.toLowerCase().includes(walletName.toLowerCase())
-    );
+  const handleConnectWallet = async (walletName: string, isMobileAdapter?: boolean) => {
+    let selectedWallet;
+    
+    // For Mobile Wallet Adapter, find the adapter with "Mobile" in its name
+    if (isMobileAdapter) {
+      selectedWallet = wallets.find(w =>
+        w.adapter.name.toLowerCase().includes('mobile') ||
+        w.adapter.name.toLowerCase().includes('solana mobile')
+      );
+    } else {
+      selectedWallet = wallets.find(w =>
+        w.adapter.name.toLowerCase().includes(walletName.toLowerCase())
+      );
+    }
 
     if (!selectedWallet) {
-      toast.error(`${walletName} wallet not found`);
-      return;
+      // On mobile, if no mobile adapter found, try to find a regular wallet
+      if (isMobileAdapter) {
+        selectedWallet = wallets.find(w =>
+          w.adapter.name.toLowerCase().includes('phantom') ||
+          w.adapter.name.toLowerCase().includes('solflare')
+        );
+      }
+      
+      if (!selectedWallet) {
+        toast.error(`${walletName} wallet not found. Please install a Solana wallet app.`);
+        return;
+      }
     }
 
     try {
@@ -190,8 +238,15 @@ export const WalletRequiredModal: React.FC<WalletRequiredModalProps> = ({
   };
 
   const walletOptions = [
-    { name: 'Phantom', icon: '/asset/phantom-logo.svg', color: 'hover:bg-[#AB9FF2]/20' },
-    { name: 'Solflare', icon: '/asset/solflare-logo.png', color: 'hover:bg-[#FFD700]/20' },
+    // Mobile Wallet Adapter - shows first on mobile devices
+    ...(isMobile ? [{
+      name: 'Mobile Wallet',
+      icon: '', // We'll use Smartphone icon component instead
+      color: 'hover:bg-[#9945FF]/20',
+      isMobileAdapter: true,
+    }] : []),
+    { name: 'Phantom', icon: '/asset/phantom-logo.svg', color: 'hover:bg-[#AB9FF2]/20', isMobileAdapter: false },
+    { name: 'Solflare', icon: '/asset/solflare-logo.png', color: 'hover:bg-[#FFD700]/20', isMobileAdapter: false },
   ];
 
   if (!isOpen) return null;
@@ -318,29 +373,56 @@ export const WalletRequiredModal: React.FC<WalletRequiredModalProps> = ({
               <p className="text-gray-400 text-sm sm:text-base mb-4 sm:mb-6">Choose your preferred Solana wallet</p>
 
               <div className="space-y-2 sm:space-y-3">
-                {walletOptions.map((wallet) => {
-                  const isInstalled = wallets.some(
-                    w => w.adapter.name.toLowerCase().includes(wallet.name.toLowerCase()) &&
-                         (w.readyState === 'Installed' || w.readyState === 'Loadable')
-                  );
-
-                  if (!isInstalled) return null;
-
-                  return (
+                {/* On mobile, show all options including Mobile Wallet Adapter */}
+                {isMobile ? (
+                  walletOptions.map((wallet) => (
                     <button
                       key={wallet.name}
-                      onClick={() => handleConnectWallet(wallet.name)}
+                      onClick={() => handleConnectWallet(wallet.name, wallet.isMobileAdapter)}
                       className={`w-full flex items-center justify-between p-3 sm:p-4 rounded-xl border border-white/5 bg-white/5 transition-all duration-300 group ${wallet.color}`}
                     >
                       <div className="flex items-center gap-3 sm:gap-4">
                         <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-white/10 flex items-center justify-center p-2 sm:p-2.5">
-                          <img src={wallet.icon} alt={wallet.name} className="w-full h-full object-contain" />
+                          {wallet.isMobileAdapter ? (
+                            <Smartphone className="w-6 h-6 text-purple-400" />
+                          ) : (
+                            <img src={wallet.icon} alt={wallet.name} className="w-full h-full object-contain" />
+                          )}
                         </div>
-                        <span className="font-bold text-base sm:text-lg text-white">{wallet.name}</span>
+                        <div className="text-left">
+                          <span className="font-bold text-base sm:text-lg text-white block">{wallet.name}</span>
+                          {wallet.isMobileAdapter && (
+                            <span className="text-xs text-gray-400">Opens your wallet app</span>
+                          )}
+                        </div>
                       </div>
                     </button>
-                  );
-                })}
+                  ))
+                ) : (
+                  walletOptions.map((wallet) => {
+                    const isInstalled = wallets.some(
+                      w => w.adapter.name.toLowerCase().includes(wallet.name.toLowerCase()) &&
+                           (w.readyState === 'Installed' || w.readyState === 'Loadable')
+                    );
+
+                    if (!isInstalled) return null;
+
+                    return (
+                      <button
+                        key={wallet.name}
+                        onClick={() => handleConnectWallet(wallet.name, wallet.isMobileAdapter)}
+                        className={`w-full flex items-center justify-between p-3 sm:p-4 rounded-xl border border-white/5 bg-white/5 transition-all duration-300 group ${wallet.color}`}
+                      >
+                        <div className="flex items-center gap-3 sm:gap-4">
+                          <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-white/10 flex items-center justify-center p-2 sm:p-2.5">
+                            <img src={wallet.icon} alt={wallet.name} className="w-full h-full object-contain" />
+                          </div>
+                          <span className="font-bold text-base sm:text-lg text-white">{wallet.name}</span>
+                        </div>
+                      </button>
+                    );
+                  })
+                )}
               </div>
             </motion.div>
           )}

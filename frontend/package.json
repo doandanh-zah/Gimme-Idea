@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@hookform/resolvers": "latest",
+    "@solana-mobile/wallet-adapter-mobile": "^2.2.5",
     "@solana/spl-token": "^0.4.14",
     "@solana/wallet-adapter-react": "latest",
     "@solana/wallet-adapter-react-ui": "latest",
@@ -32,8 +33,8 @@
     "react-syntax-highlighter": "latest",
     "recharts": "latest",
     "rehype-raw": "^7.0.0",
-    "remark-gfm": "^4.0.1",
     "remark-breaks": "^4.0.0",
+    "remark-gfm": "^4.0.1",
     "tailwind-merge": "latest",
     "tailwindcss": "^3.3.0",
     "zod": "latest",

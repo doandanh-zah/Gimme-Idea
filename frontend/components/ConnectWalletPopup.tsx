@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Wallet, AlertTriangle, ArrowLeft, ChevronUp } from 'lucide-react';
+import { X, Wallet, AlertTriangle, ArrowLeft, ChevronUp, Smartphone } from 'lucide-react';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { apiClient } from '@/lib/api-client';
@@ -15,9 +15,17 @@ type Step = 'initial' | 'warning' | 'select-wallet' | 'connecting';
 // Key to track if user has dismissed the popup before
 const WALLET_POPUP_DISMISSED_KEY = 'gimme_wallet_popup_dismissed';
 
+// Helper to detect mobile browser
+const isMobileBrowser = () => {
+  if (typeof window === 'undefined') return false;
+  const userAgent = navigator.userAgent || navigator.vendor || (window as any).opera;
+  return /android|webos|iphone|ipad|ipod|blackberry|iemobile|opera mini/i.test(userAgent.toLowerCase());
+};
+
 export const ConnectWalletPopup = () => {
   const [step, setStep] = useState<Step>('initial');
   const [isMinimized, setIsMinimized] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
   const { showWalletPopup, setShowWalletPopup, setIsNewUser, user, setUser, refreshUser } = useAuth();
   const { wallets, select, connect, publicKey, signMessage, connected, disconnect } = useWallet();
   
@@ -36,6 +44,11 @@ export const ConnectWalletPopup = () => {
       }
     }
   }, [showWalletPopup]);
+
+  // Detect mobile browser
+  useEffect(() => {
+    setIsMobile(isMobileBrowser());
+  }, []);
 
   // Reset step when popup opens
   useEffect(() => {
@@ -112,14 +125,34 @@ export const ConnectWalletPopup = () => {
     linkWalletToAccount();
   }, [step, connected, publicKey, signMessage, user, setUser, setIsNewUser, setShowWalletPopup, disconnect]);
 
-  const handleConnect = async (walletName: string) => {
-    const selectedWallet = wallets.find(w =>
-      w.adapter.name.toLowerCase().includes(walletName.toLowerCase())
-    );
+  const handleConnect = async (walletName: string, isMobileAdapter?: boolean) => {
+    let selectedWallet;
+    
+    // For Mobile Wallet Adapter, find the adapter with "Mobile" in its name
+    if (isMobileAdapter) {
+      selectedWallet = wallets.find(w =>
+        w.adapter.name.toLowerCase().includes('mobile') ||
+        w.adapter.name.toLowerCase().includes('solana mobile')
+      );
+    } else {
+      selectedWallet = wallets.find(w =>
+        w.adapter.name.toLowerCase().includes(walletName.toLowerCase())
+      );
+    }
 
     if (!selectedWallet) {
-      toast.error(`${walletName} wallet not found`);
-      return;
+      // On mobile, if no mobile adapter found, try to find a regular wallet
+      if (isMobileAdapter) {
+        selectedWallet = wallets.find(w =>
+          w.adapter.name.toLowerCase().includes('phantom') ||
+          w.adapter.name.toLowerCase().includes('solflare')
+        );
+      }
+      
+      if (!selectedWallet) {
+        toast.error(`${walletName} wallet not found. Please install a Solana wallet app.`);
+        return;
+      }
     }
 
     try {
@@ -170,15 +203,24 @@ export const ConnectWalletPopup = () => {
   };
 
   const walletOptions = [
+    // Mobile Wallet Adapter - shows first on mobile devices
+    ...(isMobile ? [{
+      name: 'Mobile Wallet',
+      icon: '', // We'll use Smartphone icon component instead
+      color: 'hover:bg-[#9945FF]/20 hover:border-[#9945FF]/50',
+      isMobileAdapter: true,
+    }] : []),
     {
       name: 'Phantom',
       icon: '/asset/phantom-logo.svg',
-      color: 'hover:bg-[#AB9FF2]/20 hover:border-[#AB9FF2]/50'
+      color: 'hover:bg-[#AB9FF2]/20 hover:border-[#AB9FF2]/50',
+      isMobileAdapter: false,
     },
     {
       name: 'Solflare',
       icon: '/asset/solflare-logo.png',
-      color: 'hover:bg-[#FFD700]/20 hover:border-[#FFD700]/50'
+      color: 'hover:bg-[#FFD700]/20 hover:border-[#FFD700]/50',
+      isMobileAdapter: false,
     },
   ];
 
@@ -359,7 +401,37 @@ export const ConnectWalletPopup = () => {
                 </p>
 
                 <div className="space-y-2 sm:space-y-3">
-                  {wallets.filter(w => w.readyState === 'Installed' || w.readyState === 'Loadable').length > 0 ? (
+                  {/* On mobile, always show options (deep link to wallet apps) */}
+                  {isMobile ? (
+                    walletOptions.map((wallet) => (
+                      <button
+                        key={wallet.name}
+                        onClick={() => handleConnect(wallet.name, wallet.isMobileAdapter)}
+                        className={`w-full flex items-center justify-between p-3 sm:p-4 rounded-xl border border-white/5 bg-white/5 transition-all duration-300 group ${wallet.color}`}
+                      >
+                        <div className="flex items-center gap-3 sm:gap-4">
+                          <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-white/10 flex items-center justify-center p-2 sm:p-2.5">
+                            {wallet.isMobileAdapter ? (
+                              <Smartphone className="w-6 h-6 text-purple-400" />
+                            ) : (
+                              <img src={wallet.icon} alt={wallet.name} className="w-full h-full object-contain" />
+                            )}
+                          </div>
+                          <div className="text-left">
+                            <span className="font-bold text-base sm:text-lg text-white block">{wallet.name}</span>
+                            {wallet.isMobileAdapter && (
+                              <span className="text-xs text-gray-400">Opens your wallet app</span>
+                            )}
+                          </div>
+                        </div>
+                        <div className={`w-2 h-2 sm:w-2.5 sm:h-2.5 rounded-full bg-gray-600 transition-all ${
+                          wallet.name === 'Phantom' ? 'group-hover:bg-[#AB9FF2] group-hover:shadow-[0_0_10px_#AB9FF2]' :
+                          wallet.name === 'Mobile Wallet' ? 'group-hover:bg-[#9945FF] group-hover:shadow-[0_0_10px_#9945FF]' :
+                          'group-hover:bg-[#FFD700] group-hover:shadow-[0_0_10px_#FFD700]'
+                        }`} />
+                      </button>
+                    ))
+                  ) : wallets.filter(w => w.readyState === 'Installed' || w.readyState === 'Loadable').length > 0 ? (
                     walletOptions.map((wallet) => {
                       const isInstalled = wallets.some(
                         w => w.adapter.name.toLowerCase().includes(wallet.name.toLowerCase()) &&
@@ -371,7 +443,7 @@ export const ConnectWalletPopup = () => {
                       return (
                         <button
                           key={wallet.name}
-                          onClick={() => handleConnect(wallet.name)}
+                          onClick={() => handleConnect(wallet.name, wallet.isMobileAdapter)}
                           className={`w-full flex items-center justify-between p-3 sm:p-4 rounded-xl border border-white/5 bg-white/5 transition-all duration-300 group ${wallet.color}`}
                         >
                           <div className="flex items-center gap-3 sm:gap-4">
@@ -389,7 +461,7 @@ export const ConnectWalletPopup = () => {
                     })
                   ) : (
                     <div className="text-gray-400 py-4">
-                      <p className="mb-4 text-sm sm:text-base">No wallet found. Please install:</p>
+                      <p className="mb-4 text-sm sm:text-base">No wallet extension found. Please install:</p>
                       <div className="flex gap-3 sm:gap-4 justify-center">
                         <a
                           href="https://phantom.app/"
