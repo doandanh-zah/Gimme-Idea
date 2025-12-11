@@ -231,7 +231,13 @@ export const Profile = () => {
         animate={{ opacity: 1 }}
         className="min-h-screen pt-20 sm:pt-24 pb-20 px-4 sm:px-6"
     >
-        <div className="max-w-3xl mx-auto">
+        {/* Background Effects */}
+        <div className="fixed inset-0 z-[-1] pointer-events-none">
+            <div className="absolute top-[-20%] left-[-10%] w-[600px] h-[600px] bg-[#2e1065] rounded-full blur-[120px] opacity-20" />
+            <div className="absolute bottom-[-20%] right-[-10%] w-[500px] h-[500px] bg-[#422006] rounded-full blur-[120px] opacity-20" />
+        </div>
+
+        <div className="max-w-5xl mx-auto">
             {/* Back Button */}
             {!isOwnProfile && (
                 <button
@@ -248,13 +254,13 @@ export const Profile = () => {
             )}
 
             {/* Profile Header Card */}
-            <div className="bg-[#0A0A0A] border border-white/10 rounded-2xl overflow-hidden">
+            <div className="bg-gradient-to-br from-white/[0.08] to-white/[0.02] backdrop-blur-xl border border-white/10 rounded-2xl overflow-hidden">
                 {/* Top Section with Avatar */}
                 <div className="p-6 pb-4">
                     <div className="flex items-start gap-4">
                         {/* Avatar */}
                         <div className="relative group flex-shrink-0">
-                            <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-full border-4 border-[#0A0A0A] ring-2 ring-white/10 overflow-hidden bg-gray-800">
+                            <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-full border-4 border-black/50 ring-2 ring-purple-500/30 overflow-hidden bg-gray-800">
                                 <img 
                                     src={isEditing ? editForm.avatar : displayUser.avatar} 
                                     alt="Profile" 
@@ -542,7 +548,7 @@ export const Profile = () => {
                 {activeTab === 'ideas' ? (
                     <>
                         {userIdeas.length > 0 ? (
-                            <div className="space-y-4">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 {userIdeas.map(project => (
                                     <div key={project.id} className="relative group">
                                         <ProjectCard project={project} />
@@ -574,7 +580,7 @@ export const Profile = () => {
                                 ))}
                             </div>
                         ) : (
-                            <div className="text-center py-16 bg-[#0A0A0A] border border-white/10 rounded-2xl">
+                            <div className="text-center py-16 bg-white/5 border border-dashed border-white/10 rounded-2xl">
                                 <Lightbulb className="w-12 h-12 mx-auto mb-4 text-gray-600" />
                                 <p className="text-gray-500 mb-4">No ideas shared yet</p>
                                 {isOwnProfile && (
@@ -589,7 +595,7 @@ export const Profile = () => {
                         )}
                     </>
                 ) : (
-                    <div className="bg-[#0A0A0A] border border-white/10 rounded-2xl p-6">
+                    <div className="bg-white/5 border border-white/10 rounded-2xl p-6">
                         <h3 className="font-bold mb-4">About {displayUser.username}</h3>
                         
                         <div className="space-y-4 text-sm">
