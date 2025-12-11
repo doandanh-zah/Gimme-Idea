@@ -2,6 +2,13 @@
 -- Fix type mismatch between VARCHAR columns and TEXT return types
 
 -- =====================
+-- DROP OLD FUNCTIONS FIRST
+-- =====================
+DROP FUNCTION IF EXISTS get_user_notifications(UUID, INTEGER, INTEGER, BOOLEAN);
+DROP FUNCTION IF EXISTS get_followers(UUID, INTEGER, INTEGER);
+DROP FUNCTION IF EXISTS get_following(UUID, INTEGER, INTEGER);
+
+-- =====================
 -- FIX: get_user_notifications function
 -- Cast VARCHAR columns to TEXT explicitly
 -- =====================
