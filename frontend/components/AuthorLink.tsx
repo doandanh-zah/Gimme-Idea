@@ -85,7 +85,7 @@ export const AuthorAvatar: React.FC<{
 
   if (isAnonymous) {
     return (
-      <div className={`${sizeClasses[size]} rounded-full overflow-hidden bg-gray-700 flex items-center justify-center ${className}`}>
+      <div className={`flex-shrink-0 ${sizeClasses[size]} rounded-full overflow-hidden bg-gray-700 flex items-center justify-center ${className}`}>
         <span className="text-xs text-gray-400">?</span>
       </div>
     );
@@ -94,13 +94,13 @@ export const AuthorAvatar: React.FC<{
   return (
     <Link
       href={`/profile/${encodeURIComponent(username)}`}
-      className={`block ${sizeClasses[size]} rounded-full overflow-hidden border border-white/10 hover:border-purple-400/50 transition-colors ${className}`}
+      className={`block flex-shrink-0 ${sizeClasses[size]} rounded-full overflow-hidden border border-white/10 hover:border-purple-400/50 transition-colors ${className}`}
       onClick={(e) => e.stopPropagation()}
     >
       <img
         src={avatar || defaultAvatar}
         alt={username}
-        className="w-full h-full object-cover"
+        className="w-full h-full object-cover rounded-full"
       />
     </Link>
   );
