@@ -31,9 +31,11 @@ interface CommentItemProps {
     ideaOwnerUsername?: string;
     ideaContext?: IdeaContext;
     parentAIComment?: string; // Content of parent AI comment for context
+    parentCommentAuthor?: string; // Username of parent comment author (for showing "replying to @...")
+    isParentAI?: boolean; // Whether parent comment is from AI
 }
 
-const CommentItem: React.FC<CommentItemProps> = ({ comment, projectId, isReply = false, onTip, ideaOwnerUsername, ideaContext, parentAIComment }) => {
+const CommentItem: React.FC<CommentItemProps> = ({ comment, projectId, isReply = false, onTip, ideaOwnerUsername, ideaContext, parentAIComment, parentCommentAuthor, isParentAI }) => {
     const { user, likeComment, dislikeComment, replyComment, fetchProjectById } = useAppStore();
     const [replyingTo, setReplyingTo] = useState(false);
     const [replyText, setReplyText] = useState('');
@@ -221,6 +223,12 @@ const CommentItem: React.FC<CommentItemProps> = ({ comment, projectId, isReply =
                     </div>
                 ) : (
                     <div className="text-gray-300 text-sm leading-relaxed mb-3">
+                        {/* Show reply tag if this is a reply */}
+                        {isReply && parentCommentAuthor && (
+                            <span className={`text-xs mr-1 ${isParentAI ? 'text-purple-400' : 'text-blue-400'}`}>
+                                @{parentCommentAuthor}
+                            </span>
+                        )}
                         <MarkdownContent content={comment.content} />
                     </div>
                 )}
@@ -310,6 +318,20 @@ const CommentItem: React.FC<CommentItemProps> = ({ comment, projectId, isReply =
 
                 {replyingTo && (
                     <form onSubmit={handleReplySubmit} className="mt-3 bg-white/5 p-3 rounded-lg animate-in fade-in slide-in-from-top-1">
+                        {/* Reply tag - show who you're replying to */}
+                        <div className="flex items-center gap-2 text-xs mb-2">
+                            <span className="text-gray-400">Replying to</span>
+                            <span className={`font-semibold ${comment.is_ai_generated ? 'text-purple-400' : 'text-blue-400'}`}>
+                                @{comment.is_ai_generated ? 'Gimme AI' : (comment.isAnonymous ? 'Anonymous' : comment.author?.username || 'Anonymous')}
+                            </span>
+                            <button 
+                                type="button" 
+                                onClick={() => setReplyingTo(false)}
+                                className="ml-auto text-gray-500 hover:text-white"
+                            >
+                                <X className="w-3 h-3" />
+                            </button>
+                        </div>
                         {comment.is_ai_generated && (
                             <div className="flex items-center gap-2 text-xs text-purple-400 mb-2 bg-purple-500/10 px-2 py-1 rounded">
                                 <Sparkles className="w-3 h-3" />
@@ -352,6 +374,8 @@ const CommentItem: React.FC<CommentItemProps> = ({ comment, projectId, isReply =
                         ideaOwnerUsername={ideaOwnerUsername}
                         ideaContext={ideaContext}
                         parentAIComment={comment.is_ai_generated ? comment.content : parentAIComment}
+                        parentCommentAuthor={comment.is_ai_generated ? 'Gimme AI' : (comment.isAnonymous ? 'Anonymous' : comment.author?.username)}
+                        isParentAI={comment.is_ai_generated}
                     />
                 ))}
             </div>
