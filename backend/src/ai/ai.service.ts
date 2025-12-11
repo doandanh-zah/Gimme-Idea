@@ -1,6 +1,6 @@
-import { Injectable, Logger } from '@nestjs/common';
-import OpenAI from 'openai';
-import { SupabaseService } from '../shared/supabase.service';
+import { Injectable, Logger } from "@nestjs/common";
+import OpenAI from "openai";
+import { SupabaseService } from "../shared/supabase.service";
 
 export interface IdeaFeedbackRequest {
   title: string;
@@ -23,8 +23,8 @@ export interface MarketAssessment {
   strengths: string[];
   weaknesses: string[];
   recommendations: string[];
-  marketSize: 'small' | 'medium' | 'large';
-  competitionLevel: 'low' | 'medium' | 'high';
+  marketSize: "small" | "medium" | "large";
+  competitionLevel: "low" | "medium" | "high";
 }
 
 @Injectable()
@@ -35,10 +35,10 @@ export class AIService {
   constructor(private supabaseService: SupabaseService) {
     const apiKey = process.env.OPENAI_API_KEY;
     if (!apiKey) {
-      this.logger.warn('OPENAI_API_KEY not found in environment variables');
+      this.logger.warn("OPENAI_API_KEY not found in environment variables");
     }
     this.openai = new OpenAI({
-      apiKey: apiKey || 'sk-dummy-key', // Fallback for development
+      apiKey: apiKey || "sk-dummy-key", // Fallback for development
     });
   }
 
@@ -59,7 +59,7 @@ ${idea.problem}
 ${idea.solution}
 
 **Opportunity:**
-${idea.opportunity || 'Not specified'}
+${idea.opportunity || "Not specified"}
 
 **SCORING CRITERIA (Total 100 points):**
 1. Problem & Solution Fit (30 pts)
@@ -157,27 +157,29 @@ Format your response as JSON:
 
     try {
       const completion = await this.openai.chat.completions.create({
-        model: 'gpt-4o-mini', // Using faster, cheaper model
+        model: "gpt-4o-mini", // Using faster, cheaper model
         messages: [
           {
-            role: 'system',
+            role: "system",
             content:
-              'You are a strict startup investor evaluating ideas for investment. Be encouraging but maintain high standards. Score rigorously - most ideas should be 40-70 points. Always respond with valid JSON in Vietnamese.',
+              "You are a strict startup investor evaluating ideas for investment. Be encouraging but maintain high standards. Score rigorously - most ideas should be 40-70 points. Always respond with valid JSON in Vietnamese.",
           },
           {
-            role: 'user',
+            role: "user",
             content: prompt,
           },
         ],
         temperature: 0.5, // Reduced for more consistent, rigorous scoring
         max_tokens: 1000,
-        response_format: { type: 'json_object' },
+        response_format: { type: "json_object" },
       });
 
       const response = completion.choices[0].message.content;
       const feedback = JSON.parse(response);
 
-      this.logger.log(`AI feedback generated successfully with score: ${feedback.score}`);
+      this.logger.log(
+        `AI feedback generated successfully with score: ${feedback.score}`
+      );
 
       return {
         comment: feedback.comment,
@@ -187,62 +189,88 @@ Format your response as JSON:
         suggestions: feedback.suggestions || [],
       };
     } catch (error) {
-      this.logger.error('Failed to generate AI feedback:', error);
-      throw new Error('Failed to generate AI feedback');
+      this.logger.error("Failed to generate AI feedback:", error);
+      throw new Error("Failed to generate AI feedback");
     }
   }
 
   /**
-   * Generate AI reply to user comment
+   * Generate AI reply to user comment - strict, realistic, market-focused
    */
   async generateReplyToUser(
     userMessage: string,
     ideaContext: IdeaFeedbackRequest,
-    conversationHistory?: Array<{ role: string; content: string }>,
+    previousAIComment?: string,
+    conversationHistory?: Array<{ role: string; content: string }>
   ): Promise<string> {
-    this.logger.log('Generating AI reply to user message');
+    this.logger.log("Generating AI reply to user message");
 
-    const contextPrompt = `You are discussing this idea:
-**Title:** ${ideaContext.title}
-**Problem:** ${ideaContext.problem}
-**Solution:** ${ideaContext.solution}
+    const contextPrompt = `You are a strict, experienced startup advisor with a background in venture capital (Y Combinator, Sequoia level). 
 
-The user is asking you a question or making a comment. Respond helpfully and concisely (2-3 sentences max). Be encouraging but honest.`;
+**THE IDEA BEING DISCUSSED:**
+- Title: ${ideaContext.title}
+- Problem: ${ideaContext.problem}
+- Solution: ${ideaContext.solution}
+${ideaContext.opportunity ? `- Opportunity: ${ideaContext.opportunity}` : ""}
+
+${
+  previousAIComment ? `**YOUR PREVIOUS FEEDBACK:**\n${previousAIComment}\n` : ""
+}
+
+**YOUR PERSONALITY & RULES:**
+1. Be REALISTIC and PRACTICAL - no sugar-coating, no hype
+2. Focus on MARKET REALITY - real competition, real user behavior, real business models
+3. Be DIRECT and CONCISE - 2-4 sentences max, get to the point
+4. If the question is vague, ask for clarification
+5. If the idea has fundamental flaws, say so politely but firmly
+6. Reference REAL examples, competitors, or market data when relevant
+7. Don't give generic startup advice - be SPECIFIC to this idea
+8. You can be critical but always CONSTRUCTIVE and PROFESSIONAL
+9. If you don't know something, admit it
+10. Respond in the SAME LANGUAGE as the user's question
+
+**AVOID:**
+- Overly optimistic or encouraging responses
+- Generic startup buzzwords
+- Saying "great question" or similar fillers
+- Being rude or dismissive (be firm but respectful)`;
 
     const messages = [
       {
-        role: 'system',
+        role: "system",
         content: contextPrompt,
       },
       ...(conversationHistory || []),
       {
-        role: 'user',
+        role: "user",
         content: userMessage,
       },
     ];
 
     try {
       const completion = await this.openai.chat.completions.create({
-        model: 'gpt-4o-mini',
+        model: "gpt-4o-mini",
         messages: messages as any,
-        temperature: 0.7,
-        max_tokens: 200,
+        temperature: 0.6,
+        max_tokens: 300,
       });
 
       const reply = completion.choices[0].message.content;
-      this.logger.log('AI reply generated successfully');
+      this.logger.log("AI reply generated successfully");
 
       return reply;
     } catch (error) {
-      this.logger.error('Failed to generate AI reply:', error);
-      throw new Error('Failed to generate AI reply');
+      this.logger.error("Failed to generate AI reply:", error);
+      throw new Error("Failed to generate AI reply");
     }
   }
 
   /**
    * Generate market assessment for an idea
    */
-  async generateMarketAssessment(idea: IdeaFeedbackRequest): Promise<MarketAssessment> {
+  async generateMarketAssessment(
+    idea: IdeaFeedbackRequest
+  ): Promise<MarketAssessment> {
     this.logger.log(`Generating market assessment for: ${idea.title}`);
 
     const prompt = `You are a market analyst. Assess the market potential of this business idea.
@@ -250,7 +278,7 @@ The user is asking you a question or making a comment. Respond helpfully and con
 **Idea:** ${idea.title}
 **Problem:** ${idea.problem}
 **Solution:** ${idea.solution}
-**Opportunity:** ${idea.opportunity || 'Not specified'}
+**Opportunity:** ${idea.opportunity || "Not specified"}
 
 Analyze:
 1. Market size potential (small/medium/large)
@@ -273,26 +301,28 @@ Respond with valid JSON:
 
     try {
       const completion = await this.openai.chat.completions.create({
-        model: 'gpt-4o-mini',
+        model: "gpt-4o-mini",
         messages: [
           {
-            role: 'system',
-            content: 'You are a market analyst. Respond with valid JSON only.',
+            role: "system",
+            content: "You are a market analyst. Respond with valid JSON only.",
           },
           {
-            role: 'user',
+            role: "user",
             content: prompt,
           },
         ],
         temperature: 0.6,
         max_tokens: 800,
-        response_format: { type: 'json_object' },
+        response_format: { type: "json_object" },
       });
 
       const response = completion.choices[0].message.content;
       const assessment = JSON.parse(response);
 
-      this.logger.log(`Market assessment generated with score: ${assessment.score}`);
+      this.logger.log(
+        `Market assessment generated with score: ${assessment.score}`
+      );
 
       return {
         score: assessment.score,
@@ -304,15 +334,18 @@ Respond with valid JSON:
         competitionLevel: assessment.competitionLevel,
       };
     } catch (error) {
-      this.logger.error('Failed to generate market assessment:', error);
-      throw new Error('Failed to generate market assessment');
+      this.logger.error("Failed to generate market assessment:", error);
+      throw new Error("Failed to generate market assessment");
     }
   }
 
   /**
    * Check if user can use AI features (has credits)
    */
-  async checkUserAIQuota(userId: string, projectId: string): Promise<{
+  async checkUserAIQuota(
+    userId: string,
+    projectId: string
+  ): Promise<{
     canUse: boolean;
     freeRemaining: number;
     paidCredits: number;
@@ -322,7 +355,7 @@ Respond with valid JSON:
     const supabase = this.supabaseService.getAdminClient();
 
     try {
-      const { data, error } = await supabase.rpc('can_user_use_ai', {
+      const { data, error } = await supabase.rpc("can_user_use_ai", {
         p_user_id: userId,
         p_project_id: projectId,
       });
@@ -337,8 +370,8 @@ Respond with valid JSON:
         maxFreeInteractions: data.maxFreeInteractions,
       };
     } catch (error) {
-      this.logger.error('Failed to check AI quota:', error);
-      throw new Error('Failed to check AI quota');
+      this.logger.error("Failed to check AI quota:", error);
+      throw new Error("Failed to check AI quota");
     }
   }
 
@@ -348,14 +381,14 @@ Respond with valid JSON:
   async trackAIInteraction(
     userId: string,
     projectId: string,
-    interactionType: 'feedback' | 'reply',
+    interactionType: "feedback" | "reply" | "auto_reply",
     commentId?: string,
-    tokensUsed: number = 0,
+    tokensUsed: number = 0
   ): Promise<boolean> {
     const supabase = this.supabaseService.getAdminClient();
 
     try {
-      const { data, error } = await supabase.rpc('track_ai_interaction', {
+      const { data, error } = await supabase.rpc("track_ai_interaction", {
         p_user_id: userId,
         p_project_id: projectId,
         p_interaction_type: interactionType,
@@ -366,13 +399,13 @@ Respond with valid JSON:
       if (error) throw error;
 
       this.logger.log(
-        `AI interaction tracked: ${interactionType} for user ${userId} on project ${projectId}`,
+        `AI interaction tracked: ${interactionType} for user ${userId} on project ${projectId}`
       );
 
       return data;
     } catch (error) {
-      this.logger.error('Failed to track AI interaction:', error);
-      throw new Error('Failed to track AI interaction');
+      this.logger.error("Failed to track AI interaction:", error);
+      throw new Error("Failed to track AI interaction");
     }
   }
 
@@ -381,7 +414,7 @@ Respond with valid JSON:
    */
   async findMatchingIdeas(
     interest: string,
-    strengths: string,
+    strengths: string
   ): Promise<{ ideas: any[]; reasoning: string }> {
     this.logger.log(`Finding matching ideas for interest: ${interest}`);
 
@@ -390,17 +423,19 @@ Respond with valid JSON:
     try {
       // Fetch top ideas from database
       const { data: ideas, error } = await supabase
-        .from('projects')
-        .select(`
+        .from("projects")
+        .select(
+          `
           *,
           author:users!projects_author_id_fkey(
             username,
             wallet,
             avatar
           )
-        `)
-        .eq('type', 'idea')
-        .order('ai_score', { ascending: false, nullsFirst: false })
+        `
+        )
+        .eq("type", "idea")
+        .order("ai_score", { ascending: false, nullsFirst: false })
         .limit(20);
 
       if (error) throw error;
@@ -412,12 +447,16 @@ Their interest: ${interest}
 Their strengths: ${strengths}
 
 Here are the available ideas:
-${ideas.map((idea, idx) => `
+${ideas
+  .map(
+    (idea, idx) => `
 ${idx + 1}. ${idea.title} (${idea.category})
    Problem: ${idea.problem}
    Solution: ${idea.solution}
    Votes: ${idea.votes || 0}
-`).join('\n')}
+`
+  )
+  .join("\n")}
 
 Pick the 3 best matches for this person. Think about what would actually be a good fit for their skills and what they want to work on.
 
@@ -428,24 +467,27 @@ Return valid JSON:
 }`;
 
       const completion = await this.openai.chat.completions.create({
-        model: 'gpt-4o-mini',
+        model: "gpt-4o-mini",
         messages: [
           {
-            role: 'system',
-            content: 'You help people find ideas that match their skills. Be conversational and natural - avoid rigid templates or formal language. Respond with valid JSON only.',
+            role: "system",
+            content:
+              "You help people find ideas that match their skills. Be conversational and natural - avoid rigid templates or formal language. Respond with valid JSON only.",
           },
           {
-            role: 'user',
+            role: "user",
             content: prompt,
           },
         ],
         temperature: 0.7,
         max_tokens: 500,
-        response_format: { type: 'json_object' },
+        response_format: { type: "json_object" },
       });
 
       const response = JSON.parse(completion.choices[0].message.content);
-      const topIdeas = response.topIdeas.map((idx: number) => ideas[idx - 1]).filter(Boolean);
+      const topIdeas = response.topIdeas
+        .map((idx: number) => ideas[idx - 1])
+        .filter(Boolean);
 
       // Format ideas for frontend
       const formattedIdeas = topIdeas.map((idea: any) => ({
@@ -457,11 +499,13 @@ Return valid JSON:
         votes: idea.votes || 0,
         feedbackCount: idea.feedback_count || 0,
         tags: idea.tags || [],
-        author: idea.is_anonymous ? null : {
-          username: idea.author?.username,
-          wallet: idea.author?.wallet,
-          avatar: idea.author?.avatar,
-        },
+        author: idea.is_anonymous
+          ? null
+          : {
+              username: idea.author?.username,
+              wallet: idea.author?.wallet,
+              avatar: idea.author?.avatar,
+            },
         isAnonymous: idea.is_anonymous,
       }));
 
@@ -470,8 +514,8 @@ Return valid JSON:
         reasoning: response.reasoning,
       };
     } catch (error) {
-      this.logger.error('Failed to find matching ideas:', error);
-      throw new Error('Failed to find matching ideas');
+      this.logger.error("Failed to find matching ideas:", error);
+      throw new Error("Failed to find matching ideas");
     }
   }
 
@@ -481,9 +525,9 @@ Return valid JSON:
   async continueConversation(
     message: string,
     context: { interest: string; strengths: string },
-    history: Array<{ role: string; content: string }>,
+    history: Array<{ role: string; content: string }>
   ): Promise<string> {
-    this.logger.log('Continuing AI conversation');
+    this.logger.log("Continuing AI conversation");
 
     const systemPrompt = `You're a friendly startup advisor helping someone find and develop business ideas.
 
@@ -495,31 +539,263 @@ Be helpful and natural in your responses. Keep it conversational - like you're t
 
     const messages = [
       {
-        role: 'system',
+        role: "system",
         content: systemPrompt,
       },
       ...history,
       {
-        role: 'user',
+        role: "user",
         content: message,
       },
     ];
 
     try {
       const completion = await this.openai.chat.completions.create({
-        model: 'gpt-4o-mini',
+        model: "gpt-4o-mini",
         messages: messages as any,
         temperature: 0.7,
         max_tokens: 200,
       });
 
       const reply = completion.choices[0].message.content;
-      this.logger.log('AI conversation continued successfully');
+      this.logger.log("AI conversation continued successfully");
 
       return reply;
     } catch (error) {
-      this.logger.error('Failed to continue conversation:', error);
-      throw new Error('Failed to continue conversation');
+      this.logger.error("Failed to continue conversation:", error);
+      throw new Error("Failed to continue conversation");
+    }
+  }
+
+  /**
+   * Check if user message warrants an AI reply
+   * Only reply to questions, challenges, criticisms, or requests for clarification
+   * Skip: thank you, compliments, meaningless messages, simple agreements
+   */
+  async shouldAIReply(
+    userMessage: string
+  ): Promise<{ shouldReply: boolean; reason: string }> {
+    this.logger.log("Checking if AI should reply to user message");
+
+    const prompt = `Analyze this user message and determine if it warrants an AI reply.
+
+USER MESSAGE: "${userMessage}"
+
+SHOULD REPLY if the message is:
+- A question (asking for info, clarification, advice)
+- A challenge or disagreement (questioning the AI's feedback)
+- Criticism or pushback (user defending their idea)
+- A request for more details or specifics
+- A meaningful continuation of the discussion
+
+SHOULD NOT REPLY if the message is:
+- A thank you or expression of gratitude ("thanks", "thank you", "cảm ơn", "tks")
+- A compliment or praise ("great advice", "helpful", "hay quá", "good point")
+- A simple agreement ("ok", "yes", "agree", "đúng rồi", "I see")
+- Meaningless or empty message (".", "...", "hmm", "lol", emoji only)
+- A goodbye or closing statement ("bye", "see you", "tạm biệt")
+
+Respond with JSON only:
+{
+  "shouldReply": true/false,
+  "reason": "brief explanation"
+}`;
+
+    try {
+      const completion = await this.openai.chat.completions.create({
+        model: "gpt-4o-mini",
+        messages: [
+          {
+            role: "system",
+            content: "You analyze user intent. Respond with valid JSON only.",
+          },
+          { role: "user", content: prompt },
+        ],
+        temperature: 0.3,
+        max_tokens: 100,
+        response_format: { type: "json_object" },
+      });
+
+      const response = JSON.parse(completion.choices[0].message.content);
+      this.logger.log(
+        `shouldAIReply result: ${response.shouldReply} - ${response.reason}`
+      );
+
+      return {
+        shouldReply: response.shouldReply,
+        reason: response.reason,
+      };
+    } catch (error) {
+      this.logger.error("Failed to check if should reply:", error);
+      // Default to not replying on error to avoid unwanted responses
+      return { shouldReply: false, reason: "Error analyzing message" };
+    }
+  }
+
+  /**
+   * Create AI reply comment in database
+   * Called when user replies to an AI-generated comment
+   * Only replies if user asks a question or challenges/criticizes
+   */
+  async createAIReplyComment(
+    projectId: string,
+    parentCommentId: string,
+    userQuestion: string,
+    ideaContext: IdeaFeedbackRequest,
+    previousAIComment: string
+  ): Promise<{
+    success: boolean;
+    comment?: any;
+    error?: string;
+    skipped?: boolean;
+    skipReason?: string;
+  }> {
+    this.logger.log(`Creating AI reply for comment ${parentCommentId}`);
+
+    const supabase = this.supabaseService.getAdminClient();
+
+    try {
+      // First, check if user message warrants a reply
+      const { shouldReply, reason } = await this.shouldAIReply(userQuestion);
+
+      if (!shouldReply) {
+        this.logger.log(`Skipping AI reply: ${reason}`);
+        return {
+          success: true,
+          skipped: true,
+          skipReason: reason,
+        };
+      }
+
+      // Generate AI reply
+      const aiReply = await this.generateReplyToUser(
+        userQuestion,
+        ideaContext,
+        previousAIComment
+      );
+
+      // Get or create AI bot user
+      const { data: aiUser, error: userError } = await supabase
+        .from("users")
+        .select("id")
+        .eq("username", "Gimme AI")
+        .single();
+
+      if (userError || !aiUser) {
+        // Create AI user if doesn't exist
+        const { data: newAiUser, error: createError } = await supabase
+          .from("users")
+          .insert({
+            username: "Gimme AI",
+            wallet: "AI_SYSTEM_WALLET",
+            avatar:
+              "https://api.dicebear.com/7.x/bottts/svg?seed=gimme-ai&backgroundColor=6366f1",
+            reputation_score: 1000,
+            balance: 0,
+            bio: "AI-powered startup advisor",
+          })
+          .select("id")
+          .single();
+
+        if (createError) {
+          this.logger.error("Failed to create AI bot user", createError);
+          return { success: false, error: "Failed to create AI user" };
+        }
+
+        // Create AI reply comment
+        const { data: comment, error: commentError } = await supabase
+          .from("comments")
+          .insert({
+            project_id: projectId,
+            user_id: newAiUser.id,
+            parent_comment_id: parentCommentId,
+            content: aiReply,
+            is_anonymous: false,
+            likes: 0,
+            tips_amount: 0,
+            is_ai_generated: true,
+            ai_model: "gpt-4o-mini",
+            ai_tokens_used: 0,
+            created_at: new Date().toISOString(),
+          })
+          .select(
+            `
+            *,
+            author:users!comments_user_id_fkey(username, wallet, avatar)
+          `
+          )
+          .single();
+
+        if (commentError) {
+          this.logger.error("Failed to create AI reply comment", commentError);
+          return { success: false, error: "Failed to create AI reply" };
+        }
+
+        // Increment feedback count
+        await supabase.rpc("increment_feedback_count", {
+          project_id: projectId,
+        });
+
+        return { success: true, comment };
+      }
+
+      // Create AI reply comment with existing AI user
+      const { data: comment, error: commentError } = await supabase
+        .from("comments")
+        .insert({
+          project_id: projectId,
+          user_id: aiUser.id,
+          parent_comment_id: parentCommentId,
+          content: aiReply,
+          is_anonymous: false,
+          likes: 0,
+          tips_amount: 0,
+          is_ai_generated: true,
+          ai_model: "gpt-4o-mini",
+          ai_tokens_used: 0,
+          created_at: new Date().toISOString(),
+        })
+        .select(
+          `
+          *,
+          author:users!comments_user_id_fkey(username, wallet, avatar)
+        `
+        )
+        .single();
+
+      if (commentError) {
+        this.logger.error("Failed to create AI reply comment", commentError);
+        return { success: false, error: "Failed to create AI reply" };
+      }
+
+      // Increment feedback count
+      await supabase.rpc("increment_feedback_count", { project_id: projectId });
+
+      this.logger.log(`AI reply created for comment ${parentCommentId}`);
+
+      return {
+        success: true,
+        comment: {
+          id: comment.id,
+          projectId: comment.project_id,
+          content: comment.content,
+          author: {
+            username: comment.author.username,
+            wallet: comment.author.wallet,
+            avatar: comment.author.avatar,
+          },
+          likes: comment.likes || 0,
+          parentCommentId: comment.parent_comment_id,
+          isAnonymous: false,
+          tipsAmount: 0,
+          createdAt: comment.created_at,
+          is_ai_generated: true,
+          ai_model: "gpt-4o-mini",
+        },
+      };
+    } catch (error) {
+      this.logger.error("Failed to create AI reply:", error);
+      return { success: false, error: "Failed to generate AI reply" };
     }
   }
 }

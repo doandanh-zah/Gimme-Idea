@@ -4,7 +4,7 @@
 import React, { useState } from 'react';
 import { useAppStore } from '../lib/store';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, ThumbsUp, ThumbsDown, MessageCircle, Send, EyeOff, User, DollarSign, Share2, Pencil, Trash2, X, Check } from 'lucide-react';
+import { ArrowLeft, ThumbsUp, ThumbsDown, MessageCircle, Send, EyeOff, User, DollarSign, Share2, Pencil, Trash2, X, Check, Loader2, Sparkles } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';
 import { Comment } from '../lib/types';
@@ -16,15 +16,24 @@ import { MarkdownGuide } from './MarkdownGuide';
 import { AuthorLink, AuthorAvatar } from './AuthorLink';
 import { apiClient } from '../lib/api-client';
 
+interface IdeaContext {
+    title: string;
+    problem: string;
+    solution: string;
+    opportunity?: string;
+}
+
 interface CommentItemProps {
     comment: Comment;
     projectId: string;
     isReply?: boolean;
     onTip: (commentId: string, author: string, wallet: string) => void;
     ideaOwnerUsername?: string;
+    ideaContext?: IdeaContext;
+    parentAIComment?: string; // Content of parent AI comment for context
 }
 
-const CommentItem: React.FC<CommentItemProps> = ({ comment, projectId, isReply = false, onTip, ideaOwnerUsername }) => {
+const CommentItem: React.FC<CommentItemProps> = ({ comment, projectId, isReply = false, onTip, ideaOwnerUsername, ideaContext, parentAIComment }) => {
     const { user, likeComment, dislikeComment, replyComment, fetchProjectById } = useAppStore();
     const [replyingTo, setReplyingTo] = useState(false);
     const [replyText, setReplyText] = useState('');
@@ -33,6 +42,7 @@ const CommentItem: React.FC<CommentItemProps> = ({ comment, projectId, isReply =
     const [hasLiked, setHasLiked] = useState(false);
     const [isEditing, setIsEditing] = useState(false);
     const [editText, setEditText] = useState(comment.content);
+    const [isAIThinking, setIsAIThinking] = useState(false);
     const [isDeleting, setIsDeleting] = useState(false);
     const [isSavingEdit, setIsSavingEdit] = useState(false);
 
@@ -101,9 +111,41 @@ const CommentItem: React.FC<CommentItemProps> = ({ comment, projectId, isReply =
         }
         try {
             await replyComment(projectId, comment.id, replyText, isAnonReply);
+            const userQuestion = replyText;
             setReplyText('');
             setReplyingTo(false);
             toast.success('Reply posted!');
+            
+            // If replying to an AI comment, trigger AI auto-reply
+            if (comment.is_ai_generated && ideaContext) {
+                setIsAIThinking(true);
+                try {
+                    const response = await apiClient.createAIAutoReply({
+                        projectId,
+                        parentCommentId: comment.id,
+                        userQuestion,
+                        previousAIComment: comment.content,
+                        ideaContext,
+                    });
+                    
+                    if (response.success && response.data) {
+                        // Check if AI skipped the reply (not a question/challenge)
+                        if (response.data.skipped) {
+                            // Don't show anything - user's comment was posted, AI just didn't need to reply
+                            console.log('AI skipped reply:', response.data.skipReason);
+                        } else {
+                            // Refresh to get the new AI reply
+                            await fetchProjectById(projectId);
+                            toast.success('AI has replied!', { icon: '🤖' });
+                        }
+                    }
+                } catch (aiError) {
+                    console.error('AI auto-reply failed:', aiError);
+                    // Don't show error - the user's comment was still posted
+                } finally {
+                    setIsAIThinking(false);
+                }
+            }
         } catch (error) {
             toast.error('Failed to post reply');
         }
@@ -268,11 +310,17 @@ const CommentItem: React.FC<CommentItemProps> = ({ comment, projectId, isReply =
 
                 {replyingTo && (
                     <form onSubmit={handleReplySubmit} className="mt-3 bg-white/5 p-3 rounded-lg animate-in fade-in slide-in-from-top-1">
+                        {comment.is_ai_generated && (
+                            <div className="flex items-center gap-2 text-xs text-purple-400 mb-2 bg-purple-500/10 px-2 py-1 rounded">
+                                <Sparkles className="w-3 h-3" />
+                                <span>AI will automatically reply to your question</span>
+                            </div>
+                        )}
                         <textarea 
                             value={replyText}
                             onChange={(e) => setReplyText(e.target.value)}
                             className="w-full bg-transparent border-none outline-none text-white text-sm"
-                            placeholder="Write a reply..."
+                            placeholder={comment.is_ai_generated ? "Ask AI a follow-up question..." : "Write a reply..."}
                         />
                          <div className="flex justify-between items-center mt-2 border-t border-white/5 pt-2">
                              <label className="flex items-center gap-2 text-xs text-gray-400 cursor-pointer">
@@ -284,8 +332,27 @@ const CommentItem: React.FC<CommentItemProps> = ({ comment, projectId, isReply =
                     </form>
                 )}
 
+                {/* AI Thinking Indicator */}
+                {isAIThinking && (
+                    <div className="mt-3 ml-12 flex items-center gap-2 text-sm text-purple-400 animate-pulse">
+                        <div className="w-8 h-8 rounded-full bg-purple-500/20 flex items-center justify-center">
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                        </div>
+                        <span>Gimme AI is thinking...</span>
+                    </div>
+                )}
+
                 {comment.replies?.map(reply => (
-                    <CommentItem key={reply.id} comment={reply} projectId={projectId} isReply={true} onTip={onTip} ideaOwnerUsername={ideaOwnerUsername} />
+                    <CommentItem 
+                        key={reply.id} 
+                        comment={reply} 
+                        projectId={projectId} 
+                        isReply={true} 
+                        onTip={onTip} 
+                        ideaOwnerUsername={ideaOwnerUsername}
+                        ideaContext={ideaContext}
+                        parentAIComment={comment.is_ai_generated ? comment.content : parentAIComment}
+                    />
                 ))}
             </div>
         </div>
@@ -519,6 +586,12 @@ export const IdeaDetail = () => {
                             projectId={project.id} 
                             onTip={openCommentTip}
                             ideaOwnerUsername={project.author.username}
+                            ideaContext={{
+                                title: project.title,
+                                problem: project.problem || '',
+                                solution: project.solution || '',
+                                opportunity: project.opportunity,
+                            }}
                         />
                     ))}
                 </div>

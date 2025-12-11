@@ -3,14 +3,15 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useAppStore } from '../lib/store';
 import { useAuth } from '../contexts/AuthContext';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { motion } from 'framer-motion';
-import { Camera, Edit2, Save, X, Github, Twitter, Facebook, Send, Pencil, Trash2, ArrowLeft, Wallet, Check, Repeat, Loader2, Lightbulb, MessageSquare, Heart, Star, Calendar, Link as LinkIcon, ImageIcon, ThumbsUp } from 'lucide-react';
+import { Camera, Edit2, Save, X, Github, Twitter, Facebook, Send, Pencil, Trash2, ArrowLeft, Wallet, Check, Repeat, Loader2, Lightbulb, MessageSquare, Heart, Star, Calendar, Link as LinkIcon, ImageIcon, ThumbsUp, TrendingUp } from 'lucide-react';
 import { ProjectCard } from './ProjectCard';
 import { WalletReminderBadge } from './WalletReminderBadge';
 import { WalletRequiredModal } from './WalletRequiredModal';
 import { EditProjectModal } from './EditProjectModal';
+import { ImageCropper } from './ImageCropper';
 import toast from 'react-hot-toast';
 import { Project } from '../lib/types';
 import { apiClient } from '../lib/api-client';
@@ -27,9 +28,10 @@ interface UserStats {
 }
 
 export const Profile = () => {
-  const { user, viewedUser, projects, updateUserProfile, updateProject, deleteProject, openSubmitModal } = useAppStore();
-  const { setShowWalletPopup, refreshUser } = useAuth();
+  const { user, viewedUser, projects, updateUserProfile, updateProject, deleteProject, openSubmitModal, setViewedUser } = useAppStore();
+  const { setShowWalletPopup, refreshUser, isLoading: authLoading } = useAuth();
   const router = useRouter();
+  const pathname = usePathname();
   const { connected, publicKey, connect, select, wallets, disconnect } = useWallet();
   const [isEditing, setIsEditing] = useState(false);
   const [editingProject, setEditingProject] = useState<Project | null>(null);
@@ -40,9 +42,29 @@ export const Profile = () => {
   const [walletModalMode, setWalletModalMode] = useState<'reconnect' | 'connect' | 'change'>('reconnect');
   const [activeTab, setActiveTab] = useState<'ideas' | 'about'>('ideas');
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const coverInputRef = useRef<HTMLInputElement>(null);
   
-  const displayUser = viewedUser || user;
+  // Image cropper states
+  const [showAvatarCropper, setShowAvatarCropper] = useState(false);
+  const [showCoverCropper, setShowCoverCropper] = useState(false);
+  const [avatarFile, setAvatarFile] = useState<File | null>(null);
+  const [coverFile, setCoverFile] = useState<File | null>(null);
+  const [isUploadingCover, setIsUploadingCover] = useState(false);
+  const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
+  
+  // Determine if this is the "My Profile" page (not viewing someone else)
+  const isMyProfilePage = pathname === '/profile';
+  
+  // If on My Profile page, always show current user. Otherwise show viewedUser or fallback to user.
+  const displayUser = isMyProfilePage ? user : (viewedUser || user);
   const isOwnProfile = user && displayUser && user.username === displayUser.username;
+
+  // Clear viewedUser when entering My Profile page
+  useEffect(() => {
+    if (isMyProfilePage && viewedUser) {
+      setViewedUser(null);
+    }
+  }, [isMyProfilePage, viewedUser, setViewedUser]);
 
   const [editForm, setEditForm] = useState({
       username: '',
@@ -54,9 +76,6 @@ export const Profile = () => {
       avatar: '',
       coverImage: ''
   });
-
-  const coverInputRef = useRef<HTMLInputElement>(null);
-  const [isUploadingCover, setIsUploadingCover] = useState(false);
 
   useEffect(() => {
       if (displayUser) {
@@ -140,6 +159,15 @@ export const Profile = () => {
     }
   };
 
+  // Show loading while auth is initializing
+  if (authLoading) {
+      return (
+          <div className="min-h-screen flex items-center justify-center pt-20">
+              <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-accent"></div>
+          </div>
+      );
+  }
+
   if (!displayUser) {
       return (
           <div className="min-h-screen flex items-center justify-center pt-20">
@@ -153,8 +181,6 @@ export const Profile = () => {
 
   const userIdeas = projects.filter(p => p.author.username === displayUser.username && p.type === 'idea');
 
-  const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
-
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -165,14 +191,27 @@ export const Profile = () => {
         return;
     }
 
-    const maxSize = 2 * 1024 * 1024;
+    const maxSize = 5 * 1024 * 1024;
     if (file.size > maxSize) {
-        toast.error('Image size must be less than 2MB');
+        toast.error('Image size must be less than 5MB');
         return;
     }
 
+    // Open cropper instead of direct upload
+    setAvatarFile(file);
+    setShowAvatarCropper(true);
+    // Reset input
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  };
+
+  const handleAvatarCropComplete = async (croppedDataUrl: string) => {
     setIsUploadingAvatar(true);
     try {
+        // Convert data URL to File
+        const response = await fetch(croppedDataUrl);
+        const blob = await response.blob();
+        const file = new File([blob], 'avatar.jpg', { type: 'image/jpeg' });
+        
         const imageUrl = await uploadAvatar(file);
         setEditForm({ ...editForm, avatar: imageUrl });
         toast.success('Avatar uploaded! Remember to save your profile.');
@@ -181,6 +220,7 @@ export const Profile = () => {
         toast.error(error.message || 'Failed to upload avatar. Please try again.');
     } finally {
         setIsUploadingAvatar(false);
+        setAvatarFile(null);
     }
   };
 
@@ -194,14 +234,27 @@ export const Profile = () => {
         return;
     }
 
-    const maxSize = 5 * 1024 * 1024; // 5MB for cover
+    const maxSize = 10 * 1024 * 1024; // 10MB for cover
     if (file.size > maxSize) {
-        toast.error('Image size must be less than 5MB');
+        toast.error('Image size must be less than 10MB');
         return;
     }
 
+    // Open cropper instead of direct upload
+    setCoverFile(file);
+    setShowCoverCropper(true);
+    // Reset input
+    if (coverInputRef.current) coverInputRef.current.value = '';
+  };
+
+  const handleCoverCropComplete = async (croppedDataUrl: string) => {
     setIsUploadingCover(true);
     try {
+        // Convert data URL to File
+        const response = await fetch(croppedDataUrl);
+        const blob = await response.blob();
+        const file = new File([blob], 'cover.jpg', { type: 'image/jpeg' });
+        
         const imageUrl = await uploadAvatar(file);
         setEditForm({ ...editForm, coverImage: imageUrl });
         toast.success('Cover uploaded! Remember to save your profile.');
@@ -210,6 +263,7 @@ export const Profile = () => {
         toast.error(error.message || 'Failed to upload cover. Please try again.');
     } finally {
         setIsUploadingCover(false);
+        setCoverFile(null);
     }
   };
 
@@ -296,8 +350,8 @@ export const Profile = () => {
 
             {/* Profile Header Card */}
             <div className="bg-gradient-to-br from-white/[0.08] to-white/[0.02] backdrop-blur-xl border border-white/10 rounded-2xl overflow-hidden">
-                {/* Cover Image */}
-                <div className="relative h-32 sm:h-40 bg-gradient-to-br from-purple-900/50 via-blue-900/30 to-pink-900/30 overflow-hidden">
+                {/* Cover Image - taller for X/Twitter style */}
+                <div className="relative h-36 sm:h-48 bg-gradient-to-br from-purple-900/50 via-blue-900/30 to-pink-900/30 overflow-hidden">
                     {(isEditing ? editForm.coverImage : displayUser.coverImage) ? (
                         <img 
                             src={isEditing ? editForm.coverImage : displayUser.coverImage} 
@@ -329,7 +383,7 @@ export const Profile = () => {
                         <button 
                             onClick={() => !isUploadingCover && coverInputRef.current?.click()}
                             disabled={isUploadingCover}
-                            className="absolute bottom-3 right-3 flex items-center gap-2 px-3 py-1.5 bg-black/60 hover:bg-black/80 rounded-full text-sm text-white transition-colors border border-white/20"
+                            className="absolute bottom-3 right-3 z-10 flex items-center gap-2 px-3 py-1.5 bg-black/60 hover:bg-black/80 rounded-full text-sm text-white transition-colors border border-white/20 cursor-pointer"
                         >
                             {isUploadingCover ? (
                                 <>
@@ -346,12 +400,13 @@ export const Profile = () => {
                     )}
                 </div>
 
-                {/* Top Section with Avatar */}
-                <div className="p-6 pb-4 -mt-10 sm:-mt-12 relative z-10">
-                    <div className="flex items-start gap-4">
+                {/* Profile Section - X/Twitter Style Layout */}
+                <div className="relative px-4 sm:px-6">
+                    {/* Avatar Row - Avatar overlaps cover, Edit button on right */}
+                    <div className="flex justify-between items-end -mt-12 sm:-mt-16 mb-3">
                         {/* Avatar */}
                         <div className="relative group flex-shrink-0">
-                            <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-full border-4 border-black/50 ring-2 ring-purple-500/30 overflow-hidden bg-gray-800">
+                            <div className="w-24 h-24 sm:w-32 sm:h-32 rounded-full border-4 border-[#0a0a0a] overflow-hidden bg-gray-800 shadow-xl">
                                 <img 
                                     src={isEditing ? editForm.avatar : displayUser.avatar} 
                                     alt="Profile" 
@@ -375,59 +430,58 @@ export const Profile = () => {
                                     className="absolute inset-0 flex items-center justify-center bg-black/60 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
                                 >
                                     {isUploadingAvatar ? (
-                                        <Loader2 className="w-6 h-6 text-white animate-spin" />
+                                        <Loader2 className="w-8 h-8 text-white animate-spin" />
                                     ) : (
-                                        <Camera className="w-6 h-6 text-white" />
+                                        <Camera className="w-8 h-8 text-white" />
                                     )}
                                 </button>
                             )}
                         </div>
 
-                        {/* Name & Actions */}
-                        <div className="flex-grow min-w-0 pt-1">
-                            <div className="flex items-start justify-between gap-2">
-                                <div className="min-w-0">
-                                    {isEditing ? (
-                                        <input 
-                                            value={editForm.username}
-                                            onChange={e => setEditForm({...editForm, username: e.target.value})}
-                                            className="bg-white/5 border border-white/20 rounded-lg px-3 py-1.5 text-lg font-bold focus:border-purple-500 outline-none text-white w-full max-w-[200px]"
-                                        />
-                                    ) : (
-                                        <h1 className="text-xl sm:text-2xl font-bold truncate">{displayUser.username}</h1>
-                                    )}
-                                    {displayUser.email && (
-                                        <p className="text-gray-500 text-sm truncate">{displayUser.email}</p>
-                                    )}
-                                </div>
-                                
-                                {isOwnProfile && !isEditing && (
-                                    <button 
-                                        onClick={() => setIsEditing(true)}
-                                        className="px-4 py-1.5 border border-white/20 hover:bg-white/5 rounded-full text-sm font-medium transition-colors flex-shrink-0"
-                                    >
-                                        Edit profile
-                                    </button>
-                                )}
-                            </div>
-                        </div>
+                        {/* Edit Profile Button - positioned to the right */}
+                        {isOwnProfile && !isEditing && (
+                            <button 
+                                onClick={() => setIsEditing(true)}
+                                className="px-5 py-2 border border-white/30 hover:bg-white/10 rounded-full text-sm font-bold transition-colors"
+                            >
+                                Edit profile
+                            </button>
+                        )}
                     </div>
 
+                    {/* Name & Info Section - Below Avatar */}
+                    <div className="pb-4">
+                        {/* Username & Email */}
+                        <div className="mb-3">
+                            {isEditing ? (
+                                <input 
+                                    value={editForm.username}
+                                    onChange={e => setEditForm({...editForm, username: e.target.value})}
+                                    className="bg-white/5 border border-white/20 rounded-lg px-3 py-2 text-xl font-bold focus:border-purple-500 outline-none text-white w-full max-w-[250px]"
+                                />
+                            ) : (
+                                <h1 className="text-xl sm:text-2xl font-bold">{displayUser.username}</h1>
+                            )}
+                            {displayUser.email && (
+                                <p className="text-gray-500 text-sm mt-0.5">{displayUser.email}</p>
+                            )}
+                        </div>
+
                     {/* Bio */}
-                    <div className="mt-4">
                         {isEditing ? (
                             <textarea 
                                 value={editForm.bio}
                                 onChange={e => setEditForm({...editForm, bio: e.target.value})}
                                 placeholder="Write something about yourself..."
-                                className="w-full bg-white/5 border border-white/20 rounded-xl px-4 py-3 focus:border-purple-500 outline-none text-white resize-none h-20 text-sm"
+                                className="w-full bg-white/5 border border-white/20 rounded-xl px-4 py-3 focus:border-purple-500 outline-none text-white resize-none h-20 text-sm mb-4"
                             />
-                        ) : (
-                            <p className="text-gray-300 text-sm leading-relaxed">
-                                {displayUser.bio || (isOwnProfile ? "Add a bio to tell people about yourself." : "No bio yet.")}
+                        ) : displayUser.bio ? (
+                            <p className="text-gray-300 text-sm leading-relaxed mb-4">
+                                {displayUser.bio}
                             </p>
-                        )}
-                    </div>
+                        ) : isOwnProfile ? (
+                            <p className="text-gray-500 text-sm mb-4">Add a bio to tell people about yourself.</p>
+                        ) : null}
 
                     {/* Meta Info */}
                     <div className="flex flex-wrap items-center gap-x-4 gap-y-2 mt-4 text-sm text-gray-500">
@@ -569,6 +623,7 @@ export const Profile = () => {
                             </button>
                         </div>
                     )}
+                    </div>
                 </div>
 
                 {/* Stats Bar */}
@@ -590,11 +645,11 @@ export const Profile = () => {
                         </div>
                     </div>
                     <div className="py-4 text-center hover:bg-white/5 transition-colors cursor-default border-l border-white/10">
-                        <div className="text-lg sm:text-xl font-bold text-pink-400">
-                            {isLoadingStats ? '—' : (userStats?.likesReceived ?? 0)}
+                        <div className="text-lg sm:text-xl font-bold text-green-400">
+                            {isLoadingStats ? '—' : (userStats?.votesReceived ?? 0)}
                         </div>
                         <div className="text-[10px] sm:text-xs text-gray-500 uppercase flex items-center justify-center gap-1">
-                            <Heart className="w-3 h-3" /> Likes
+                            <TrendingUp className="w-3 h-3" /> Votes
                         </div>
                     </div>
                     <div className="py-4 text-center hover:bg-white/5 transition-colors cursor-default border-l border-white/10">
@@ -778,6 +833,36 @@ export const Profile = () => {
             refreshUser();
           }}
         />
+
+        {/* Avatar Cropper Modal */}
+        {avatarFile && (
+          <ImageCropper
+            isOpen={showAvatarCropper}
+            onClose={() => {
+              setShowAvatarCropper(false);
+              setAvatarFile(null);
+            }}
+            imageFile={avatarFile}
+            aspectRatio={1}
+            onCropComplete={handleAvatarCropComplete}
+            title="Crop Avatar"
+          />
+        )}
+
+        {/* Cover Cropper Modal */}
+        {coverFile && (
+          <ImageCropper
+            isOpen={showCoverCropper}
+            onClose={() => {
+              setShowCoverCropper(false);
+              setCoverFile(null);
+            }}
+            imageFile={coverFile}
+            aspectRatio={3}
+            onCropComplete={handleCoverCropComplete}
+            title="Crop Cover Image"
+          />
+        )}
     </motion.div>
   );
 };

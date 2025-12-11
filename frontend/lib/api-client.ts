@@ -238,6 +238,27 @@ export const apiClient = {
       body: JSON.stringify(data),
     }),
 
+  // AI Auto-Reply: Automatically create AI reply comment when user replies to AI comment
+  createAIAutoReply: (data: {
+    projectId: string;
+    parentCommentId: string;
+    userQuestion: string;
+    previousAIComment: string;
+    ideaContext: {
+      title: string;
+      problem: string;
+      solution: string;
+      opportunity?: string;
+    };
+  }) =>
+    apiFetch<{ comment?: any; skipped?: boolean; skipReason?: string }>(
+      "/ai/auto-reply",
+      {
+        method: "POST",
+        body: JSON.stringify(data),
+      }
+    ),
+
   generateMarketAssessment: (data: {
     projectId: string;
     title: string;

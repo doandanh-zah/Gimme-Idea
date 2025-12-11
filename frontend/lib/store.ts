@@ -41,6 +41,7 @@ interface AppState {
   closeSubmitModal: () => void;
 
   setUser: (user: User | null) => void;
+  setViewedUser: (user: User | null) => void;
   updateUserProfile: (data: Partial<User>) => Promise<void>;
 
   openUserProfile: (author: {
@@ -132,6 +133,10 @@ export const useAppStore = create<AppState>((set, get) => ({
 
   setUser: (user) => {
     set({ user });
+  },
+
+  setViewedUser: (user) => {
+    set({ viewedUser: user });
   },
 
   updateUserProfile: async (data) => {
