@@ -83,27 +83,35 @@ export default function HackathonDashboard({ params }: { params: { id: string } 
               </div>
             </div>
           )}
+
+          {/* Tasks */}
+           {hackathon.tasks && hackathon.tasks.length > 0 && (
+            <div className="bg-[#111] border border-white/5 rounded-xl p-4">
+               <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider">Your Tasks</h3>
+                  <span className="text-[10px] bg-green-900/30 text-green-400 px-1.5 py-0.5 rounded">
+                    {hackathon.tasks.filter(t => t.done).length}/{hackathon.tasks.length}
+                  </span>
+               </div>
+               <div className="space-y-3">
+                 {hackathon.tasks.map((task) => (
+                   <div key={task.id} className="flex items-start gap-3 group">
+                      <button className={`mt-0.5 w-4 h-4 rounded border flex items-center justify-center transition-colors
+                        ${task.done ? 'bg-green-500 border-green-500 text-black' : 'border-gray-600 hover:border-gray-400'}`}>
+                        {task.done && <CheckCircle2 className="w-3 h-3" />}
+                      </button>
+                      <span className={`text-xs ${task.done ? 'text-gray-500 line-through' : 'text-gray-300'}`}>
+                        {task.text}
+                      </span>
+                   </div>
+                 ))}
+               </div>
+            </div>
+          )}
         </aside>
 
 
         {/* --- CENTER COLUMN: MAIN CONTENT (55%) --- */}
-        <main className="lg:col-span-6 space-y-6">
-          
-          {/* Image Banner */}
-          {hackathon.image_url && (
-            <div className="relative w-full aspect-video rounded-xl overflow-hidden shadow-lg border border-white/5 bg-gradient-to-br from-[#1a1a1a] to-[#0a0a0a]">
-              <Image 
-                src={hackathon.image_url} 
-                alt={`${hackathon.title} Banner`} 
-                layout="fill" 
-                objectFit="cover" 
-                className="opacity-80 hover:opacity-100 transition-opacity duration-300"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-[#0a0a0a]/70 via-transparent to-transparent" />
-            </div>
-          )}
-
-          {/* Top Stats Bar */}
           <div className="grid grid-cols-3 gap-4">
             <div className="bg-[#111] border border-white/5 rounded-xl p-4 flex flex-col items-center justify-center">
                <Trophy className="w-5 h-5 text-yellow-500 mb-1" />
@@ -215,35 +223,11 @@ export default function HackathonDashboard({ params }: { params: { id: string } 
                  <a href={resource.link} target="_blank" rel="noopener noreferrer" key={i} className="w-full text-left flex items-center gap-2 px-3 py-2 rounded hover:bg-white/5 text-xs transition-colors">
                     <ResourceIcon className="w-3.5 h-3.5" /> {resource.name}
                  </a>
-               )})}
-            </div>
-          )}
-
-          {/* Tasks */}
-           {hackathon.tasks && hackathon.tasks.length > 0 && (
-            <div className="bg-[#111] border border-white/5 rounded-xl p-4">
-               <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider">Your Tasks</h3>
-                  <span className="text-[10px] bg-green-900/30 text-green-400 px-1.5 py-0.5 rounded">
-                    {hackathon.tasks.filter(t => t.done).length}/{hackathon.tasks.length}
-                  </span>
-               </div>
-               <div className="space-y-3">
-                 {hackathon.tasks.map((task) => (
-                   <div key={task.id} className="flex items-start gap-3 group">
-                      <button className={`mt-0.5 w-4 h-4 rounded border flex items-center justify-center transition-colors
-                        ${task.done ? 'bg-green-500 border-green-500 text-black' : 'border-gray-600 hover:border-gray-400'}`}>
-                        {task.done && <CheckCircle2 className="w-3 h-3" />}
-                      </button>
-                      <span className={`text-xs ${task.done ? 'text-gray-500 line-through' : 'text-gray-300'}`}>
-                        {task.text}
-                      </span>
-                   </div>
-                 ))}
-               </div>
-            </div>
-          )}
-
+                              )})} 
+                           </div>
+                         )}
+               
+               
         </aside>
 
       </div>
