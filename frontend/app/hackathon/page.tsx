@@ -169,47 +169,29 @@ export default function HackathonDashboard() {
         {/* --- RIGHT COLUMN: PERSONAL DASHBOARD (25%) --- */}
         <aside className="lg:col-span-3 space-y-6">
           
-          {/* Compact Ticket (Stackable Design) or Join Button */}
-          {isUserRegistered ? (
-            <div className="bg-gradient-to-b from-[#1a1a1a] to-[#111] border border-white/10 rounded-xl p-0 overflow-hidden shadow-lg relative group">
-              {/* Decorative Top Line */}
-              <div className="h-1 w-full bg-gradient-to-r from-purple-500 via-blue-500 to-green-500" />
-              
-              <div className="p-4">
-                <div className="flex items-center gap-3 mb-3">
-                  <div className="w-10 h-10 rounded bg-white/10 flex items-center justify-center">
-                      <Image src="/asset/logo-gmi.png" width={24} height={24} alt="Team" className="opacity-80" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <h4 className="text-white font-bold truncate">Project Alpha</h4>
-                    <p className="text-[10px] text-gray-500 uppercase">ID: #8821</p>
-                  </div>
-                  <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
-                </div>
-                
-                <div className="flex items-center justify-between text-xs text-gray-400 border-t border-white/5 pt-3">
-                  <span>Team: <span className="text-white">SolanaGods</span></span>
-                  <span className="bg-white/5 px-1.5 py-0.5 rounded text-[10px]">VERIFIED</span>
-                </div>
-              </div>
-            </div>
-          ) : (
-            <div className="bg-gradient-to-b from-[#1a1a1a] to-[#111] border border-white/10 rounded-xl p-4 text-center space-y-4">
-              <p className="text-gray-400 text-sm">You haven't joined this Hackathon yet!</p>
-              <button className="relative px-4 py-2 bg-white text-black font-bold text-sm rounded-full overflow-hidden hover:scale-105 transition-transform duration-300">
-                <div className="absolute inset-0 bg-gradient-to-r from-purple-400 to-blue-500 opacity-0 group-hover:opacity-20 transition-opacity duration-300"></div>
-                <span className="flex items-center justify-center gap-2">
-                  <Trophy className="w-4 h-4" /> Join Hackathon Now!
-                </span>
-              </button>
-              <button 
-                onClick={() => setIsUserRegistered(true)} // Mock button to toggle state
-                className="text-xs text-gray-500 hover:text-white underline"
-              >
-                (Mock: See my Ticket)
-              </button>
-            </div>
-          )}
+          {/* Compact Ticket (Stackable Design) */}
+          <div className="bg-gradient-to-b from-[#1a1a1a] to-[#111] border border-white/10 rounded-xl p-0 overflow-hidden shadow-lg relative group">
+             {/* Decorative Top Line */}
+             <div className="h-1 w-full bg-gradient-to-r from-purple-500 via-blue-500 to-green-500" />
+             
+             <div className="p-4">
+               <div className="flex items-center gap-3 mb-3">
+                 <div className="w-10 h-10 rounded bg-white/10 flex items-center justify-center">
+                    <Image src="/asset/logo-gmi.png" width={24} height={24} alt="Team" className="opacity-80" />
+                 </div>
+                 <div className="flex-1 min-w-0">
+                   <h4 className="text-white font-bold truncate">Project Alpha</h4>
+                   <p className="text-[10px] text-gray-500 uppercase">ID: #8821</p>
+                 </div>
+                 <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+               </div>
+               
+               <div className="flex items-center justify-between text-xs text-gray-400 border-t border-white/5 pt-3">
+                 <span>Team: <span className="text-white">SolanaGods</span></span>
+                 <span className="bg-white/5 px-1.5 py-0.5 rounded text-[10px]">VERIFIED</span>
+               </div>
+             </div>
+          </div>
 
           {/* Checklist */}
           <div className="bg-[#111] border border-white/5 rounded-xl p-4">
