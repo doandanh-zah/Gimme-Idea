@@ -5,6 +5,8 @@ import { motion } from 'framer-motion';
 import { Calendar, Users, Trophy, ArrowRight, Zap } from 'lucide-react';
 import Link from 'next/link';
 
+import SponsorModal from '@/components/SponsorModal';
+
 // --- MOCK DATA ---
 const HACKATHONS = [
   { 
@@ -40,6 +42,8 @@ const HACKATHONS = [
 ];
 
 export default function HackathonsList() {
+  const [isSponsorModalOpen, setIsSponsorModalOpen] = useState(false);
+
   return (
     <div className="min-h-screen bg-[#0a0a0a] text-gray-300 pt-20 pb-10 px-4 font-sans text-sm">
       <div className="max-w-[1000px] mx-auto space-y-8">
@@ -51,9 +55,12 @@ export default function HackathonsList() {
             <p className="text-gray-400">Join our global community of builders and ship products.</p>
           </div>
           <div className="flex gap-2">
-            <a href="https://forms.gle/your-sponsor-form-link" target="_blank" rel="noopener noreferrer" className="bg-[#FFD700] text-black font-bold px-4 py-2 rounded hover:bg-[#FFD700]/90 transition-colors">
+            <button 
+              onClick={() => setIsSponsorModalOpen(true)}
+              className="bg-[#FFD700] text-black font-bold px-4 py-2 rounded hover:bg-[#FFD700]/90 transition-colors"
+            >
               Apply as Sponsor
-            </a>
+            </button>
           </div>
         </div>
 
@@ -130,6 +137,8 @@ export default function HackathonsList() {
         </div>
 
       </div>
+      
+      <SponsorModal isOpen={isSponsorModalOpen} onClose={() => setIsSponsorModalOpen(false)} />
     </div>
   );
 }
