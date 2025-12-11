@@ -14,6 +14,7 @@ interface UserStats {
   feedbackCount: number;
   tipsReceived: number;
   likesReceived: number;
+  votesReceived: number; // Total votes on user's ideas
 }
 
 @Injectable()
@@ -42,6 +43,7 @@ export class UsersService {
       username: user.username,
       bio: user.bio,
       avatar: user.avatar,
+      coverImage: user.cover_image,
       reputationScore: user.reputation_score || 0,
       balance: user.balance || 0,
       socialLinks: user.social_links,
@@ -85,6 +87,7 @@ export class UsersService {
         username: updateDto.username,
         bio: updateDto.bio,
         avatar: updateDto.avatar,
+        cover_image: updateDto.coverImage,
         social_links: updateDto.socialLinks,
       })
       .eq("id", userId)
@@ -101,6 +104,7 @@ export class UsersService {
       username: user.username,
       bio: user.bio,
       avatar: user.avatar,
+      coverImage: user.cover_image,
       reputationScore: user.reputation_score || 0,
       balance: user.balance || 0,
       socialLinks: user.social_links,
@@ -201,6 +205,15 @@ export class UsersService {
     const likesReceived =
       userComments?.reduce((sum, c) => sum + (c.likes || 0), 0) || 0;
 
+    // Get total votes received on user's ideas/projects
+    const { data: userProjects } = await supabase
+      .from("projects")
+      .select("id, votes")
+      .eq("author_id", user.id);
+
+    const votesReceived =
+      userProjects?.reduce((sum, p) => sum + (p.votes || 0), 0) || 0;
+
     // Get tips received count (transactions where user received tips)
     const { count: tipsCount } = await supabase
       .from("transactions")
@@ -236,6 +249,7 @@ export class UsersService {
         feedbackCount: feedbackCount || 0,
         tipsReceived: tipsCount || 0,
         likesReceived,
+        votesReceived,
       },
     };
   }

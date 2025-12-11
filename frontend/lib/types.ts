@@ -75,6 +75,7 @@ export interface User {
   balance: number; // USDC
   projects: string[]; // Project IDs
   avatar?: string;
+  coverImage?: string; // Profile cover/banner image
   bio?: string;
   socials?: {
     twitter?: string;

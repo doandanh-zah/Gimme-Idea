@@ -4,7 +4,7 @@
 import React, { useState } from 'react';
 import { useAppStore } from '../lib/store';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, ThumbsUp, ThumbsDown, MessageCircle, Send, EyeOff, User, DollarSign, Share2 } from 'lucide-react';
+import { ArrowLeft, ThumbsUp, ThumbsDown, MessageCircle, Send, EyeOff, User, DollarSign, Share2, Pencil, Trash2, X, Check } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';
 import { Comment } from '../lib/types';
@@ -14,21 +14,71 @@ import { AICommentBadge } from './AICommentBadge';
 import { MarkdownContent } from './MarkdownContent';
 import { MarkdownGuide } from './MarkdownGuide';
 import { AuthorLink, AuthorAvatar } from './AuthorLink';
+import { apiClient } from '../lib/api-client';
 
 interface CommentItemProps {
     comment: Comment;
     projectId: string;
     isReply?: boolean;
     onTip: (commentId: string, author: string, wallet: string) => void;
+    ideaOwnerUsername?: string;
 }
 
-const CommentItem: React.FC<CommentItemProps> = ({ comment, projectId, isReply = false, onTip }) => {
-    const { user, likeComment, dislikeComment, replyComment } = useAppStore();
+const CommentItem: React.FC<CommentItemProps> = ({ comment, projectId, isReply = false, onTip, ideaOwnerUsername }) => {
+    const { user, likeComment, dislikeComment, replyComment, fetchProjectById } = useAppStore();
     const [replyingTo, setReplyingTo] = useState(false);
     const [replyText, setReplyText] = useState('');
     const [isAnonReply, setIsAnonReply] = useState(false);
     const [showBurst, setShowBurst] = useState(false);
     const [hasLiked, setHasLiked] = useState(false);
+    const [isEditing, setIsEditing] = useState(false);
+    const [editText, setEditText] = useState(comment.content);
+    const [isDeleting, setIsDeleting] = useState(false);
+    const [isSavingEdit, setIsSavingEdit] = useState(false);
+
+    const isOwnComment = user && !comment.isAnonymous && comment.author?.username === user.username;
+
+    const handleEditSave = async () => {
+        if (!editText.trim()) {
+            toast.error('Comment cannot be empty');
+            return;
+        }
+        setIsSavingEdit(true);
+        try {
+            const response = await apiClient.updateComment(comment.id, editText);
+            if (response.success) {
+                toast.success('Comment updated!');
+                setIsEditing(false);
+                // Refresh project to get updated comments
+                fetchProjectById(projectId);
+            } else {
+                toast.error(response.error || 'Failed to update comment');
+            }
+        } catch (error) {
+            toast.error('Failed to update comment');
+        } finally {
+            setIsSavingEdit(false);
+        }
+    };
+
+    const handleDelete = async () => {
+        if (!window.confirm('Are you sure you want to delete this comment?')) return;
+        setIsDeleting(true);
+        try {
+            const response = await apiClient.deleteComment(comment.id);
+            if (response.success) {
+                toast.success('Comment deleted');
+                // Refresh project to get updated comments
+                fetchProjectById(projectId);
+            } else {
+                toast.error(response.error || 'Failed to delete comment');
+            }
+        } catch (error) {
+            toast.error('Failed to delete comment');
+        } finally {
+            setIsDeleting(false);
+        }
+    };
 
     const handleLike = () => {
         if (!hasLiked) {
@@ -80,6 +130,12 @@ const CommentItem: React.FC<CommentItemProps> = ({ comment, projectId, isReply =
                         showAvatar={false}
                         className="font-bold text-sm"
                     />
+                    {!comment.isAnonymous && comment.author?.username && ideaOwnerUsername && 
+                     comment.author.username === ideaOwnerUsername && (
+                        <span className="text-[10px] bg-amber-500/20 text-amber-400 px-1.5 py-0.5 rounded-full border border-amber-500/30 font-medium">
+                            Idea Owner
+                        </span>
+                    )}
                     {comment.is_ai_generated && (
                         <AICommentBadge model={comment.ai_model} />
                     )}
@@ -90,9 +146,42 @@ const CommentItem: React.FC<CommentItemProps> = ({ comment, projectId, isReply =
                         </span>
                     )}
                 </div>
-                <div className="text-gray-300 text-sm leading-relaxed mb-3">
-                    <MarkdownContent content={comment.content} />
-                </div>
+                
+                {/* Comment Content - Edit or View mode */}
+                {isEditing ? (
+                    <div className="mb-3">
+                        <textarea
+                            value={editText}
+                            onChange={(e) => setEditText(e.target.value)}
+                            className="w-full bg-white/5 border border-white/20 rounded-lg px-3 py-2 text-sm text-white focus:border-purple-500 outline-none resize-none"
+                            rows={3}
+                            disabled={isSavingEdit}
+                        />
+                        <div className="flex gap-2 mt-2">
+                            <button
+                                onClick={handleEditSave}
+                                disabled={isSavingEdit}
+                                className="flex items-center gap-1 text-xs bg-green-600 hover:bg-green-700 text-white px-3 py-1.5 rounded-full transition-colors disabled:opacity-50"
+                            >
+                                <Check className="w-3 h-3" /> {isSavingEdit ? 'Saving...' : 'Save'}
+                            </button>
+                            <button
+                                onClick={() => {
+                                    setIsEditing(false);
+                                    setEditText(comment.content);
+                                }}
+                                disabled={isSavingEdit}
+                                className="flex items-center gap-1 text-xs bg-gray-700 hover:bg-gray-600 text-white px-3 py-1.5 rounded-full transition-colors"
+                            >
+                                <X className="w-3 h-3" /> Cancel
+                            </button>
+                        </div>
+                    </div>
+                ) : (
+                    <div className="text-gray-300 text-sm leading-relaxed mb-3">
+                        <MarkdownContent content={comment.content} />
+                    </div>
+                )}
                 
                 {/* Actions */}
                 <div className="flex items-center gap-4 text-xs text-gray-500">
@@ -156,6 +245,25 @@ const CommentItem: React.FC<CommentItemProps> = ({ comment, projectId, isReply =
                     >
                         <DollarSign className="w-3 h-3" /> Tip SOL
                     </button>
+
+                    {/* Edit/Delete for own comments */}
+                    {isOwnComment && !isEditing && (
+                        <>
+                            <button
+                                onClick={() => setIsEditing(true)}
+                                className="flex items-center gap-1 hover:text-purple-400 transition-colors"
+                            >
+                                <Pencil className="w-3 h-3" /> Edit
+                            </button>
+                            <button
+                                onClick={handleDelete}
+                                disabled={isDeleting}
+                                className="flex items-center gap-1 hover:text-red-400 transition-colors disabled:opacity-50"
+                            >
+                                <Trash2 className="w-3 h-3" /> {isDeleting ? 'Deleting...' : 'Delete'}
+                            </button>
+                        </>
+                    )}
                 </div>
 
                 {replyingTo && (
@@ -177,7 +285,7 @@ const CommentItem: React.FC<CommentItemProps> = ({ comment, projectId, isReply =
                 )}
 
                 {comment.replies?.map(reply => (
-                    <CommentItem key={reply.id} comment={reply} projectId={projectId} isReply={true} onTip={onTip} />
+                    <CommentItem key={reply.id} comment={reply} projectId={projectId} isReply={true} onTip={onTip} ideaOwnerUsername={ideaOwnerUsername} />
                 ))}
             </div>
         </div>
@@ -410,6 +518,7 @@ export const IdeaDetail = () => {
                             comment={comment} 
                             projectId={project.id} 
                             onTip={openCommentTip}
+                            ideaOwnerUsername={project.author.username}
                         />
                     ))}
                 </div>

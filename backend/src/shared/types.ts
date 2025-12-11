@@ -59,6 +59,7 @@ export interface User {
   username: string;
   bio?: string;
   avatar?: string;
+  coverImage?: string; // Profile cover/banner image
   reputationScore: number;
   balance?: number; // Track tips received
   socialLinks?: {

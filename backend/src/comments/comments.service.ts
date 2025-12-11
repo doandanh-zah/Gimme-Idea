@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException } from "@nestjs/common";
+import {
+  Injectable,
+  NotFoundException,
+  ForbiddenException,
+} from "@nestjs/common";
 import { SupabaseService } from "../shared/supabase.service";
 import { CreateCommentDto } from "./dto/create-comment.dto";
 import { ApiResponse, Comment } from "../shared/types";
@@ -187,6 +191,119 @@ export class CommentsService {
       success: true,
       data: { likes: newLikes },
       message: "Like added successfully",
+    };
+  }
+
+  /**
+   * Update a comment (owner only)
+   */
+  async update(
+    commentId: string,
+    userId: string,
+    content: string
+  ): Promise<ApiResponse<Comment>> {
+    const supabase = this.supabaseService.getAdminClient();
+
+    // Check ownership
+    const { data: comment, error: findError } = await supabase
+      .from("comments")
+      .select("user_id")
+      .eq("id", commentId)
+      .single();
+
+    if (findError || !comment) {
+      throw new NotFoundException("Comment not found");
+    }
+
+    if (comment.user_id !== userId) {
+      throw new ForbiddenException("You can only edit your own comments");
+    }
+
+    // Update comment
+    const { data: updated, error } = await supabase
+      .from("comments")
+      .update({ content, updated_at: new Date().toISOString() })
+      .eq("id", commentId)
+      .select(
+        `
+        *,
+        author:users!comments_user_id_fkey(username, wallet, avatar)
+      `
+      )
+      .single();
+
+    if (error) {
+      throw new Error(`Failed to update comment: ${error.message}`);
+    }
+
+    const commentResponse: Comment = {
+      id: updated.id,
+      projectId: updated.project_id,
+      content: updated.content,
+      author: updated.is_anonymous
+        ? null
+        : {
+            username: updated.author.username,
+            wallet: updated.author.wallet,
+            avatar: updated.author.avatar,
+          },
+      likes: updated.likes || 0,
+      parentCommentId: updated.parent_comment_id,
+      isAnonymous: updated.is_anonymous,
+      tipsAmount: updated.tips_amount || 0,
+      createdAt: updated.created_at,
+    };
+
+    return {
+      success: true,
+      data: commentResponse,
+      message: "Comment updated successfully",
+    };
+  }
+
+  /**
+   * Delete a comment (owner only)
+   */
+  async delete(
+    commentId: string,
+    userId: string
+  ): Promise<ApiResponse<{ deleted: boolean }>> {
+    const supabase = this.supabaseService.getAdminClient();
+
+    // Check ownership
+    const { data: comment, error: findError } = await supabase
+      .from("comments")
+      .select("user_id, project_id")
+      .eq("id", commentId)
+      .single();
+
+    if (findError || !comment) {
+      throw new NotFoundException("Comment not found");
+    }
+
+    if (comment.user_id !== userId) {
+      throw new ForbiddenException("You can only delete your own comments");
+    }
+
+    // Delete comment
+    const { error } = await supabase
+      .from("comments")
+      .delete()
+      .eq("id", commentId);
+
+    if (error) {
+      throw new Error(`Failed to delete comment: ${error.message}`);
+    }
+
+    // Decrement feedback count on project
+    await supabase.rpc("decrement_feedback_count", {
+      project_id: comment.project_id,
+    });
+
+    return {
+      success: true,
+      data: { deleted: true },
+      message: "Comment deleted successfully",
     };
   }
 }

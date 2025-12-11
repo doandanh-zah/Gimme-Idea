@@ -6,7 +6,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useRouter } from 'next/navigation';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { motion } from 'framer-motion';
-import { Camera, Edit2, Save, X, Github, Twitter, Facebook, Send, Pencil, Trash2, ArrowLeft, Wallet, Check, Repeat, Loader2, Lightbulb, MessageSquare, Heart, Star, Calendar, Link as LinkIcon } from 'lucide-react';
+import { Camera, Edit2, Save, X, Github, Twitter, Facebook, Send, Pencil, Trash2, ArrowLeft, Wallet, Check, Repeat, Loader2, Lightbulb, MessageSquare, Heart, Star, Calendar, Link as LinkIcon, ImageIcon, ThumbsUp } from 'lucide-react';
 import { ProjectCard } from './ProjectCard';
 import { WalletReminderBadge } from './WalletReminderBadge';
 import { WalletRequiredModal } from './WalletRequiredModal';
@@ -23,6 +23,7 @@ interface UserStats {
   feedbackCount: number;
   tipsReceived: number;
   likesReceived: number;
+  votesReceived: number;
 }
 
 export const Profile = () => {
@@ -50,8 +51,12 @@ export const Profile = () => {
       github: '',
       telegram: '',
       facebook: '',
-      avatar: ''
+      avatar: '',
+      coverImage: ''
   });
+
+  const coverInputRef = useRef<HTMLInputElement>(null);
+  const [isUploadingCover, setIsUploadingCover] = useState(false);
 
   useEffect(() => {
       if (displayUser) {
@@ -62,7 +67,8 @@ export const Profile = () => {
             github: displayUser.socials?.github || '',
             telegram: displayUser.socials?.telegram || '',
             facebook: displayUser.socials?.facebook || '',
-            avatar: displayUser.avatar || ''
+            avatar: displayUser.avatar || '',
+            coverImage: displayUser.coverImage || ''
           });
       }
   }, [displayUser]);
@@ -75,7 +81,11 @@ export const Profile = () => {
       try {
         const response = await apiClient.getUserStats(displayUser.username);
         if (response.success && response.data) {
-          setUserStats(response.data);
+          const data = response.data as any;
+          setUserStats({
+            ...response.data,
+            votesReceived: data.votesReceived ?? 0,
+          });
         }
       } catch (error) {
         console.error('Failed to fetch user stats:', error);
@@ -174,6 +184,35 @@ export const Profile = () => {
     }
   };
 
+  const handleCoverUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const validTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+    if (!validTypes.includes(file.type)) {
+        toast.error('Please upload JPEG, PNG, GIF, or WebP image.');
+        return;
+    }
+
+    const maxSize = 5 * 1024 * 1024; // 5MB for cover
+    if (file.size > maxSize) {
+        toast.error('Image size must be less than 5MB');
+        return;
+    }
+
+    setIsUploadingCover(true);
+    try {
+        const imageUrl = await uploadAvatar(file);
+        setEditForm({ ...editForm, coverImage: imageUrl });
+        toast.success('Cover uploaded! Remember to save your profile.');
+    } catch (error: any) {
+        console.error('Cover upload error:', error);
+        toast.error(error.message || 'Failed to upload cover. Please try again.');
+    } finally {
+        setIsUploadingCover(false);
+    }
+  };
+
   const handleSaveProfile = async () => {
       if (!isOwnProfile) return;
       try {
@@ -181,6 +220,7 @@ export const Profile = () => {
               username: editForm.username,
               bio: editForm.bio,
               avatar: editForm.avatar,
+              coverImage: editForm.coverImage,
               socialLinks: {
                   twitter: editForm.twitter,
                   github: editForm.github,
@@ -206,7 +246,8 @@ export const Profile = () => {
         github: user.socials?.github || '',
         telegram: user.socials?.telegram || '',
         facebook: user.socials?.facebook || '',
-        avatar: user.avatar || ''
+        avatar: user.avatar || '',
+        coverImage: user.coverImage || ''
       });
       setIsEditing(false);
   };
@@ -255,8 +296,58 @@ export const Profile = () => {
 
             {/* Profile Header Card */}
             <div className="bg-gradient-to-br from-white/[0.08] to-white/[0.02] backdrop-blur-xl border border-white/10 rounded-2xl overflow-hidden">
+                {/* Cover Image */}
+                <div className="relative h-32 sm:h-40 bg-gradient-to-br from-purple-900/50 via-blue-900/30 to-pink-900/30 overflow-hidden">
+                    {(isEditing ? editForm.coverImage : displayUser.coverImage) ? (
+                        <img 
+                            src={isEditing ? editForm.coverImage : displayUser.coverImage} 
+                            alt="Cover" 
+                            className="w-full h-full object-cover"
+                        />
+                    ) : (
+                        <div className="absolute inset-0 bg-gradient-to-br from-purple-900/50 via-blue-900/30 to-pink-900/30">
+                            <div className="absolute inset-0 opacity-30">
+                                <div className="absolute top-4 left-8 w-2 h-2 bg-white rounded-full animate-pulse" />
+                                <div className="absolute top-12 left-1/4 w-1 h-1 bg-white/60 rounded-full" />
+                                <div className="absolute top-6 right-1/3 w-1.5 h-1.5 bg-white/80 rounded-full animate-pulse" />
+                                <div className="absolute bottom-8 right-12 w-1 h-1 bg-white/50 rounded-full" />
+                                <div className="absolute top-1/2 left-1/2 w-2 h-2 bg-purple-300/50 rounded-full animate-pulse" />
+                            </div>
+                        </div>
+                    )}
+                    
+                    <input 
+                        type="file" 
+                        ref={coverInputRef} 
+                        className="hidden" 
+                        accept="image/*" 
+                        onChange={handleCoverUpload} 
+                        disabled={isUploadingCover}
+                    />
+
+                    {isEditing && (
+                        <button 
+                            onClick={() => !isUploadingCover && coverInputRef.current?.click()}
+                            disabled={isUploadingCover}
+                            className="absolute bottom-3 right-3 flex items-center gap-2 px-3 py-1.5 bg-black/60 hover:bg-black/80 rounded-full text-sm text-white transition-colors border border-white/20"
+                        >
+                            {isUploadingCover ? (
+                                <>
+                                    <Loader2 className="w-4 h-4 animate-spin" />
+                                    <span>Uploading...</span>
+                                </>
+                            ) : (
+                                <>
+                                    <ImageIcon className="w-4 h-4" />
+                                    <span>{editForm.coverImage ? 'Change' : 'Add'} cover</span>
+                                </>
+                            )}
+                        </button>
+                    )}
+                </div>
+
                 {/* Top Section with Avatar */}
-                <div className="p-6 pb-4">
+                <div className="p-6 pb-4 -mt-10 sm:-mt-12 relative z-10">
                     <div className="flex items-start gap-4">
                         {/* Avatar */}
                         <div className="relative group flex-shrink-0">

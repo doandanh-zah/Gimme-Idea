@@ -146,6 +146,17 @@ export const apiClient = {
       method: "POST",
     }),
 
+  updateComment: (commentId: string, content: string) =>
+    apiFetch<any>(`/comments/${commentId}`, {
+      method: "PATCH",
+      body: JSON.stringify({ content }),
+    }),
+
+  deleteComment: (commentId: string) =>
+    apiFetch<{ deleted: boolean }>(`/comments/${commentId}`, {
+      method: "DELETE",
+    }),
+
   // Payments
   verifyTransaction: (data: {
     signature: string;
