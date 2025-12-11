@@ -1,4 +1,4 @@
-import { createParamDecorator, ExecutionContext } from '@nestjs/common';
+import { createParamDecorator, ExecutionContext } from "@nestjs/common";
 
 export const CurrentUser = createParamDecorator(
   (data: string | undefined, ctx: ExecutionContext) => {
@@ -8,10 +8,10 @@ export const CurrentUser = createParamDecorator(
     if (!user) return undefined;
 
     // Map 'id' to 'userId' since JWT payload uses 'userId'
-    if (data === 'id') {
+    if (data === "id") {
       return user.userId || user.id;
     }
 
     return data ? user?.[data] : user;
-  },
+  }
 );
