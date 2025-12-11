@@ -1,252 +1,245 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Check, Circle, Clock, QrCode, ArrowRight, Trophy, MapPin, Calendar, User, Users } from 'lucide-react';
+import { 
+  Trophy, Calendar, Users, Clock, ChevronRight, 
+  Target, Zap, MessageSquare, FileText, CheckCircle2, 
+  AlertCircle, MoreHorizontal, Github, Disc, Link as LinkIcon 
+} from 'lucide-react';
 import Image from 'next/image';
-import { useRouter } from 'next/navigation';
 
-// Mock Data
-const TIMELINE_STEPS = [
-  {
-    id: 1,
-    title: 'Registration',
-    date: 'Dec 01 - Dec 15',
-    status: 'completed',
-    description: 'Registration opens for all teams.'
-  },
-  {
-    id: 2,
-    title: 'Idea Submission',
-    date: 'Dec 16 - Dec 20',
-    status: 'completed',
-    description: 'Submit detailed description & initial MVP.'
-  },
-  {
-    id: 3,
-    title: 'Qualifying Round',
-    date: 'Dec 21 - Dec 25',
-    status: 'current',
-    description: 'Judges score and select Top 10.'
-  },
-  {
-    id: 4,
-    title: 'Final Round',
-    date: 'Dec 30, 2025',
-    status: 'upcoming',
-    description: 'Product Demo & Live Pitching.'
-  }
+// --- MOCK DATA ---
+const TIMELINE = [
+  { id: 1, title: 'Registration', date: 'Dec 01', status: 'done' },
+  { id: 2, title: 'Team Formation', date: 'Dec 10', status: 'done' },
+  { id: 3, title: 'Submission', date: 'Dec 20', status: 'active' },
+  { id: 4, title: 'Voting', date: 'Dec 25', status: 'pending' },
+  { id: 5, title: 'Demo Day', date: 'Dec 30', status: 'pending' },
 ];
 
-const PROJECT_INFO = {
-  name: 'Gimme Idea Platform',
-  id: '#0012',
-  team: 'Alpha Team',
-  category: 'Web3 / Blockchain',
-  status: 'Waiting for Review',
-  thumbnail: '/asset/logo-gmi.png', // Fallback to logo if no mock image
-};
+const TASKS = [
+  { id: 1, text: 'Join Discord Server', done: true },
+  { id: 2, text: 'Create Team Profile', done: true },
+  { id: 3, text: 'Submit Project Proposal', done: false },
+  { id: 4, text: 'Upload Demo Video', done: false },
+];
 
-export default function HackathonPage() {
-  const router = useRouter();
+const TRACKS = [
+  { title: 'DeFi Revolution', reward: '$5,000', icon: Zap, color: 'text-yellow-400' },
+  { title: 'NFT Utility', reward: '$3,000', icon: Disc, color: 'text-purple-400' },
+  { title: 'Gaming & Metaverse', reward: '$4,000', icon: Target, color: 'text-green-400' },
+  { title: 'Social Graph', reward: '$2,000', icon: Users, color: 'text-blue-400' },
+];
+
+const LEADERBOARD = [
+  { rank: 1, name: 'Alpha Squad', points: 980 },
+  { rank: 2, name: 'BlockBuilders', points: 945 },
+  { rank: 3, name: 'ChainReaction', points: 890 },
+];
+
+export default function HackathonDashboard() {
+  const [activeTab, setActiveTab] = useState('tracks');
 
   return (
-    <div className="min-h-screen bg-[#0F0F0F] text-white pt-24 pb-20 px-4 sm:px-6 lg:px-8 font-sans">
-      <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-12">
+    <div className="min-h-screen bg-[#0a0a0a] text-gray-300 pt-20 pb-10 px-4 font-sans text-sm">
+      <div className="max-w-[1400px] mx-auto grid grid-cols-1 lg:grid-cols-12 gap-6">
         
-        {/* LEFT COLUMN: VERTICAL TIMELINE (25-30%) */}
-        <aside className="lg:col-span-3 relative">
-          <div className="sticky top-28">
-            <h3 className="text-xl font-bold font-quantico mb-8 text-gray-400 uppercase tracking-widest border-b border-white/10 pb-2">
-              Timeline
-            </h3>
-            
-            <div className="relative border-l-2 border-white/10 ml-3 space-y-10 pb-4">
-              {TIMELINE_STEPS.map((step, index) => {
-                const isCompleted = step.status === 'completed';
-                const isCurrent = step.status === 'current';
-                
-                return (
-                  <div key={step.id} className="relative pl-8 group">
-                    {/* Node Circle */}
-                    <div 
-                      className={`absolute -left-[9px] top-0 w-4 h-4 rounded-full border-2 transition-all duration-300 z-10 bg-[#0F0F0F]
-                        ${isCompleted ? 'border-green-500 bg-green-500' : 
-                          isCurrent ? 'border-[#FFD700] bg-[#FFD700] scale-125 shadow-[0_0_10px_#FFD700]' : 
-                          'border-gray-600 bg-[#0F0F0F]'}`}
-                    >
-                      {isCompleted && <Check className="w-2.5 h-2.5 text-black absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" />}
-                    </div>
-
-                    {/* Content */}
-                    <div className={`transition-all duration-300 ${isCurrent ? 'opacity-100 scale-105 origin-left' : 'opacity-60 group-hover:opacity-100'}`}>
-                      <h4 className={`text-lg font-bold ${isCurrent ? 'text-[#FFD700]' : isCompleted ? 'text-green-400' : 'text-gray-300'}`}>
-                        {step.title}
-                      </h4>
-                      <div className="flex items-center gap-2 text-xs text-gray-500 mt-1 font-mono">
-                        <Calendar className="w-3 h-3" />
-                        {step.date}
-                      </div>
-                      {isCurrent && (
-                        <p className="text-sm text-gray-400 mt-2 leading-relaxed">
-                          {step.description}
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                );
-              })}
+        {/* --- LEFT COLUMN: META & TIMELINE (20%) --- */}
+        <aside className="lg:col-span-3 space-y-6">
+          {/* Event Info Card */}
+          <div className="bg-[#111] border border-white/5 rounded-xl p-4">
+            <h1 className="text-xl font-bold text-white font-quantico">GIMME<span className="text-[#FFD700]">HACK</span></h1>
+            <p className="text-xs text-gray-500 mt-1">Winter Season 2025</p>
+            <div className="mt-4 flex items-center gap-2 text-[#FFD700] bg-[#FFD700]/5 px-3 py-2 rounded-lg border border-[#FFD700]/10">
+              <Clock className="w-4 h-4" />
+              <span className="font-mono font-bold">04D : 12H : 30M</span>
             </div>
+          </div>
+
+          {/* Slim Vertical Timeline */}
+          <div className="bg-[#111] border border-white/5 rounded-xl p-4">
+            <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-4">Timeline</h3>
+            <div className="relative border-l border-white/10 ml-2 space-y-6">
+              {TIMELINE.map((step) => (
+                <div key={step.id} className="relative pl-6 group cursor-default">
+                  <div className={`absolute -left-[5px] top-1 w-2.5 h-2.5 rounded-full border-2 transition-all
+                    ${step.status === 'done' ? 'bg-green-500 border-green-500' : 
+                      step.status === 'active' ? 'bg-[#FFD700] border-[#FFD700] shadow-[0_0_8px_#FFD700]' : 
+                      'bg-[#111] border-gray-600'}`} 
+                  />
+                  <div className={`${step.status === 'active' ? 'text-white' : 'text-gray-500'}`}>
+                    <p className="font-medium text-xs md:text-sm">{step.title}</p>
+                    <p className="text-[10px] font-mono opacity-70">{step.date}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Quick Links */}
+          <div className="bg-[#111] border border-white/5 rounded-xl p-4 space-y-2">
+             <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Resources</h3>
+             <button className="w-full text-left flex items-center gap-2 px-3 py-2 rounded hover:bg-white/5 text-xs transition-colors">
+                <Github className="w-3.5 h-3.5" /> API Documentation
+             </button>
+             <button className="w-full text-left flex items-center gap-2 px-3 py-2 rounded hover:bg-white/5 text-xs transition-colors">
+                <MessageSquare className="w-3.5 h-3.5" /> Mentor Discord
+             </button>
+             <button className="w-full text-left flex items-center gap-2 px-3 py-2 rounded hover:bg-white/5 text-xs transition-colors">
+                <FileText className="w-3.5 h-3.5" /> Submission Guide
+             </button>
           </div>
         </aside>
 
-        {/* RIGHT COLUMN: MAIN DASHBOARD (70-75%) */}
-        <main className="lg:col-span-9 space-y-8">
+
+        {/* --- CENTER COLUMN: MAIN CONTENT (55%) --- */}
+        <main className="lg:col-span-6 space-y-6">
           
-          {/* A. HEADER & PRIZE POOL */}
-          <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6 border-b border-white/10 pb-8">
-            <div>
-              <div className="flex items-center gap-3 mb-2">
-                <span className="px-3 py-1 rounded-full bg-green-500/10 border border-green-500/30 text-green-400 text-xs font-bold uppercase tracking-wider animate-pulse">
-                  Live: Qualifying Round
-                </span>
-              </div>
-              <h1 className="text-4xl md:text-5xl font-black font-quantico text-transparent bg-clip-text bg-gradient-to-r from-white via-gray-200 to-gray-500">
-                GIMME IDEA <br/> <span className="text-[#FFD700]">HACKATHON 2025</span>
-              </h1>
+          {/* Top Stats Bar */}
+          <div className="grid grid-cols-3 gap-4">
+            <div className="bg-[#111] border border-white/5 rounded-xl p-4 flex flex-col items-center justify-center">
+               <Trophy className="w-5 h-5 text-yellow-500 mb-1" />
+               <span className="text-lg font-bold text-white">$50,000</span>
+               <span className="text-[10px] text-gray-500 uppercase">Prize Pool</span>
             </div>
+            <div className="bg-[#111] border border-white/5 rounded-xl p-4 flex flex-col items-center justify-center">
+               <Users className="w-5 h-5 text-blue-500 mb-1" />
+               <span className="text-lg font-bold text-white">342</span>
+               <span className="text-[10px] text-gray-500 uppercase">Participants</span>
+            </div>
+            <div className="bg-[#111] border border-white/5 rounded-xl p-4 flex flex-col items-center justify-center">
+               <Target className="w-5 h-5 text-red-500 mb-1" />
+               <span className="text-lg font-bold text-white">12</span>
+               <span className="text-[10px] text-gray-500 uppercase">Tracks</span>
+            </div>
+          </div>
 
-            {/* Prize Block */}
-            <div className="relative group">
-               <div className="absolute inset-0 bg-gradient-to-r from-[#FFD700] to-orange-600 rounded-xl blur opacity-20 group-hover:opacity-40 transition-opacity duration-500"></div>
-               <div className="relative bg-[#1A1A1A] border border-[#FFD700]/30 rounded-xl p-6 min-w-[280px] text-center">
-                  <div className="flex items-center justify-center gap-2 text-[#FFD700] mb-1">
-                    <Trophy className="w-5 h-5" />
-                    <span className="text-sm font-bold uppercase tracking-widest">Prize Pool</span>
-                  </div>
-                  <div className="text-4xl font-black text-white font-mono tracking-tighter">
-                    $1,000<span className="text-xl text-gray-500">.00</span>
-                  </div>
+          {/* Navigation Tabs */}
+          <div className="flex border-b border-white/10">
+             {['Tracks', 'Activity', 'Rules'].map((tab) => (
+               <button
+                 key={tab}
+                 onClick={() => setActiveTab(tab.toLowerCase())}
+                 className={`px-6 py-3 text-sm font-medium transition-colors relative ${
+                   activeTab === tab.toLowerCase() ? 'text-[#FFD700]' : 'text-gray-500 hover:text-white'
+                 }`}
+               >
+                 {tab}
+                 {activeTab === tab.toLowerCase() && (
+                   <motion.div layoutId="underline" className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#FFD700]" />
+                 )}
+               </button>
+             ))}
+          </div>
+
+          {/* Tab Content Area */}
+          <div className="min-h-[400px]">
+             {activeTab === 'tracks' && (
+               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                 {TRACKS.map((track, i) => (
+                   <motion.div 
+                     key={i}
+                     initial={{ opacity: 0, y: 10 }}
+                     animate={{ opacity: 1, y: 0 }}
+                     transition={{ delay: i * 0.1 }}
+                     className="bg-[#151515] border border-white/5 p-4 rounded-xl hover:border-white/20 transition-colors group"
+                   >
+                      <div className="flex justify-between items-start mb-3">
+                        <div className={`p-2 rounded-lg bg-white/5 ${track.color}`}>
+                          <track.icon className="w-5 h-5" />
+                        </div>
+                        <span className="text-xs font-mono text-gray-500 bg-white/5 px-2 py-1 rounded">
+                          {track.reward}
+                        </span>
+                      </div>
+                      <h4 className="font-bold text-white mb-1 group-hover:text-[#FFD700] transition-colors">{track.title}</h4>
+                      <p className="text-xs text-gray-500 line-clamp-2">Build innovative solutions utilizing {track.title.toLowerCase()} technology.</p>
+                   </motion.div>
+                 ))}
                </div>
-            </div>
+             )}
+             {activeTab === 'activity' && (
+                <div className="text-center py-10 text-gray-500">Live activity feed connecting...</div>
+             )}
           </div>
-
-          {/* B. TICKET PROJECT CARD */}
-          <div className="py-4">
-            <h2 className="text-xl font-bold mb-6 text-gray-300 flex items-center gap-2">
-              <span className="w-1 h-6 bg-[#FFD700] rounded-full"></span>
-              Your Entry Ticket
-            </h2>
-
-            {/* TICKET CONTAINER */}
-            <motion.div 
-              whileHover={{ y: -5, rotateX: 5 }}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5 }}
-              className="relative w-full max-w-4xl mx-auto perspective-1000"
-            >
-              <div className="relative flex flex-col md:flex-row h-auto md:h-64 bg-[#1A1A1A] rounded-2xl border border-white/10 overflow-hidden shadow-2xl shadow-black/50 group">
-                
-                {/* 1. TICKET BODY (70%) */}
-                <div className="flex-1 p-6 md:p-8 relative flex flex-col justify-between z-10">
-                   {/* Background Glow */}
-                   <div className="absolute top-0 right-0 w-64 h-64 bg-purple-500/10 rounded-full blur-[80px] -z-10"></div>
-
-                   <div className="flex items-start gap-6">
-                      {/* Thumbnail */}
-                      <div className="w-24 h-24 md:w-32 md:h-32 rounded-xl bg-gradient-to-br from-gray-800 to-black border border-white/10 flex items-center justify-center overflow-hidden shrink-0">
-                         <Image 
-                           src={PROJECT_INFO.thumbnail} 
-                           alt="Project Thumb" 
-                           width={80} 
-                           height={80} 
-                           className="object-contain opacity-80 group-hover:scale-110 transition-transform duration-500"
-                         />
-                      </div>
-                      
-                      {/* Info */}
-                      <div>
-                        <div className="inline-block px-2 py-1 rounded bg-white/5 border border-white/10 text-[10px] text-gray-400 uppercase tracking-wider mb-2">
-                          {PROJECT_INFO.category}
-                        </div>
-                        <h3 className="text-2xl md:text-3xl font-bold text-white mb-2 font-quantico">
-                          {PROJECT_INFO.name}
-                        </h3>
-                        <div className="flex items-center gap-2 text-gray-400">
-                          <Users className="w-4 h-4" />
-                          <span className="font-medium">{PROJECT_INFO.team}</span>
-                        </div>
-                      </div>
-                   </div>
-
-                   <div className="mt-4 md:mt-0 pt-4 border-t border-dashed border-white/10 flex items-center gap-6 text-sm text-gray-500">
-                      <div className="flex items-center gap-2">
-                        <Calendar className="w-4 h-4" />
-                        <span>Submitted: Dec 19, 2025</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <MapPin className="w-4 h-4" />
-                        <span>Remote</span>
-                      </div>
-                   </div>
-                </div>
-
-                {/* DIVIDER LINE (Dashed + Notches) */}
-                <div className="relative hidden md:flex flex-col items-center justify-center w-0 border-r-2 border-dashed border-[#333] my-4">
-                   <div className="absolute -top-6 w-8 h-8 bg-[#0F0F0F] rounded-full z-20"></div>
-                   <div className="absolute -bottom-6 w-8 h-8 bg-[#0F0F0F] rounded-full z-20"></div>
-                </div>
-                {/* Mobile Divider */}
-                <div className="md:hidden w-full h-0 border-b-2 border-dashed border-[#333] relative mx-4">
-                   <div className="absolute -left-6 -top-4 w-8 h-8 bg-[#0F0F0F] rounded-full z-20"></div>
-                   <div className="absolute -right-14 -top-4 w-8 h-8 bg-[#0F0F0F] rounded-full z-20"></div>
-                </div>
-
-                {/* 2. TICKET STUB (30%) */}
-                <div className="w-full md:w-64 bg-[#151515] p-6 md:p-8 flex flex-col items-center justify-center relative border-l-0 md:border-l border-white/5">
-                   {/* Status Badge */}
-                   <div className="absolute top-4 right-4 md:top-6 md:right-6">
-                      <div className="w-2 h-2 rounded-full bg-yellow-500 animate-pulse"></div>
-                   </div>
-
-                   {/* QR Code */}
-                   <div className="bg-white p-2 rounded-lg mb-4">
-                     <QrCode className="w-20 h-20 text-black" />
-                   </div>
-                   
-                   <div className="text-center space-y-1">
-                      <p className="text-[10px] text-gray-500 uppercase tracking-widest">Project ID</p>
-                      <p className="text-xl font-mono font-bold text-white tracking-widest">{PROJECT_INFO.id}</p>
-                   </div>
-
-                   <div className="mt-4 px-3 py-1 rounded-full bg-[#FFD700]/10 border border-[#FFD700]/20 text-[#FFD700] text-xs font-bold">
-                      {PROJECT_INFO.status}
-                   </div>
-                </div>
-
-              </div>
-            </motion.div>
-          </div>
-
-          {/* C. FOOTER ACTION */}
-          <div className="pt-8 flex flex-col items-center">
-            <button 
-              onClick={() => router.push('/projects')}
-              className="group relative px-8 py-4 bg-white text-black font-bold text-lg rounded-full overflow-hidden hover:scale-105 transition-transform duration-300"
-            >
-               <div className="absolute inset-0 bg-gradient-to-r from-purple-400 to-blue-500 opacity-0 group-hover:opacity-20 transition-opacity duration-300"></div>
-               <span className="flex items-center gap-3">
-                 Explore Project Gallery
-                 <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-               </span>
-            </button>
-            <p className="mt-4 text-gray-500 text-sm">
-              Check out other projects and get inspired
-            </p>
-          </div>
-
         </main>
+
+
+        {/* --- RIGHT COLUMN: PERSONAL DASHBOARD (25%) --- */}
+        <aside className="lg:col-span-3 space-y-6">
+          
+          {/* Compact Ticket (Stackable Design) */}
+          <div className="bg-gradient-to-b from-[#1a1a1a] to-[#111] border border-white/10 rounded-xl p-0 overflow-hidden shadow-lg relative group">
+             {/* Decorative Top Line */}
+             <div className="h-1 w-full bg-gradient-to-r from-purple-500 via-blue-500 to-green-500" />
+             
+             <div className="p-4">
+               <div className="flex items-center gap-3 mb-3">
+                 <div className="w-10 h-10 rounded bg-white/10 flex items-center justify-center">
+                    <Image src="/asset/logo-gmi.png" width={24} height={24} alt="Team" className="opacity-80" />
+                 </div>
+                 <div className="flex-1 min-w-0">
+                   <h4 className="text-white font-bold truncate">Project Alpha</h4>
+                   <p className="text-[10px] text-gray-500 uppercase">ID: #8821</p>
+                 </div>
+                 <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+               </div>
+               
+               <div className="flex items-center justify-between text-xs text-gray-400 border-t border-white/5 pt-3">
+                 <span>Team: <span className="text-white">SolanaGods</span></span>
+                 <span className="bg-white/5 px-1.5 py-0.5 rounded text-[10px]">VERIFIED</span>
+               </div>
+             </div>
+          </div>
+
+          {/* Checklist */}
+          <div className="bg-[#111] border border-white/5 rounded-xl p-4">
+             <div className="flex items-center justify-between mb-4">
+                <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider">Your Tasks</h3>
+                <span className="text-[10px] bg-green-900/30 text-green-400 px-1.5 py-0.5 rounded">2/4</span>
+             </div>
+             <div className="space-y-3">
+               {TASKS.map((task) => (
+                 <div key={task.id} className="flex items-start gap-3 group">
+                    <button className={`mt-0.5 w-4 h-4 rounded border flex items-center justify-center transition-colors
+                      ${task.done ? 'bg-green-500 border-green-500 text-black' : 'border-gray-600 hover:border-gray-400'}`}>
+                      {task.done && <CheckCircle2 className="w-3 h-3" />}
+                    </button>
+                    <span className={`text-xs ${task.done ? 'text-gray-500 line-through' : 'text-gray-300'}`}>
+                      {task.text}
+                    </span>
+                 </div>
+               ))}
+             </div>
+          </div>
+
+          {/* Mini Leaderboard */}
+          <div className="bg-[#111] border border-white/5 rounded-xl p-4">
+             <div className="flex items-center justify-between mb-4">
+                <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider">Top Teams</h3>
+                <MoreHorizontal className="w-4 h-4 text-gray-600 cursor-pointer hover:text-white" />
+             </div>
+             <div className="space-y-3">
+               {LEADERBOARD.map((team) => (
+                 <div key={team.rank} className="flex items-center justify-between text-xs">
+                    <div className="flex items-center gap-3">
+                       <span className={`w-5 h-5 rounded flex items-center justify-center font-bold text-[10px] 
+                         ${team.rank === 1 ? 'bg-yellow-500/20 text-yellow-500' : 
+                           team.rank === 2 ? 'bg-gray-400/20 text-gray-400' : 
+                           'bg-orange-700/20 text-orange-600'}`}>
+                         {team.rank}
+                       </span>
+                       <span className="text-gray-300">{team.name}</span>
+                    </div>
+                    <span className="font-mono text-gray-500">{team.points} pts</span>
+                 </div>
+               ))}
+             </div>
+          </div>
+
+        </aside>
+
       </div>
     </div>
   );
