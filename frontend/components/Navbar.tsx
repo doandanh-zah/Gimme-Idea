@@ -60,12 +60,11 @@ const Navbar = () => {
       isActive: true,
     },
     {
-      name: 'Donate me',
-      route: '/donate',
-      icon: Heart,
+      name: 'Docs',
+      route: '/docs',
+      icon: Info,
       status: 'open',
-      highlight: { borderColor: '#FF6B6B', textColor: '#FF6B6B' },
-      id: 'donate',
+      id: 'docs',
       isActive: true,
     },
     {
