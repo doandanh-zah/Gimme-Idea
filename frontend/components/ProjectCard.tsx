@@ -19,7 +19,6 @@ export const ProjectCard: React.FC<ProjectCardProps> = ({ project }) => {
   const router = useRouter();
   const [isLiked, setIsLiked] = useState(false);
   const [showBurst, setShowBurst] = useState(false);
-  const [hasShimmered, setHasShimmered] = useState(false);
 
   const isIdea = project.type === 'idea';
 
@@ -45,25 +44,12 @@ export const ProjectCard: React.FC<ProjectCardProps> = ({ project }) => {
     router.push(route);
   };
 
-  const handleMouseEnter = () => {
-    if (!hasShimmered) {
-      setHasShimmered(true);
-    }
-  };
-
-  const handleMouseLeave = () => {
-    // Reset after leaving so next hover will shimmer again
-    setTimeout(() => setHasShimmered(false), 500);
-  };
-
   return (
     <motion.div
       onClick={handleCardClick}
-      onMouseEnter={handleMouseEnter}
-      onMouseLeave={handleMouseLeave}
-      whileHover={{ y: -8, scale: 1.02 }}
+      whileHover={{ y: -6, scale: 1.01 }}
       whileTap={{ scale: 0.98 }}
-      transition={{ type: "spring", stiffness: 300, damping: 20 }}
+      transition={{ type: "spring", stiffness: 400, damping: 25 }}
       className="relative rounded-2xl overflow-hidden cursor-pointer flex flex-col h-full group"
     >
       {/* Card background - more transparent */}
@@ -103,27 +89,6 @@ export const ProjectCard: React.FC<ProjectCardProps> = ({ project }) => {
           ? 'shadow-[inset_0_1px_0_rgba(255,215,0,0.2),inset_0_-1px_0_rgba(255,215,0,0.1)]'
           : 'shadow-[inset_0_1px_0_rgba(153,69,255,0.2),inset_0_-1px_0_rgba(153,69,255,0.1)]'
       }`} />
-
-      {/* Diagonal white shimmer effect on hover - slow vertical sweep */}
-      {hasShimmered && (
-        <motion.div
-          className="absolute inset-0 pointer-events-none overflow-hidden rounded-2xl z-20"
-          initial={{ opacity: 1 }}
-          animate={{ opacity: 0 }}
-          transition={{ duration: 1.2, delay: 0.8 }}
-        >
-          <motion.div
-            className="absolute w-full h-[300%]"
-            initial={{ y: '-100%', rotate: -15 }}
-            animate={{ y: '100%' }}
-            transition={{ duration: 1.2, ease: "easeInOut" }}
-            style={{
-              background: 'linear-gradient(180deg, transparent 30%, rgba(255,255,255,0.06) 45%, rgba(255,255,255,0.12) 50%, rgba(255,255,255,0.06) 55%, transparent 70%)',
-              transformOrigin: 'center center',
-            }}
-          />
-        </motion.div>
-      )}
 
       {/* Visual Header - Only show large banner for Projects */}
       {!isIdea && (
