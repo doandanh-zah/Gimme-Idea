@@ -86,7 +86,7 @@ export const BookmarkModal: React.FC<BookmarkModalProps> = ({
       // Create the feed
       const createRes = await apiClient.createFeed({
         name: newFeedName.trim(),
-        isPublic: true,
+        visibility: 'private',
       });
 
       if (createRes.success && createRes.data) {

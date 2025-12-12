@@ -79,6 +79,10 @@ END WHERE visibility IS NULL OR visibility = 'public';
 -- =============================================
 -- 3. REMOVE MEMBERS SYSTEM
 -- =============================================
+-- First, drop RLS policies that depend on feed_members table
+DROP POLICY IF EXISTS "Members can add items to feeds" ON feed_items;
+DROP POLICY IF EXISTS "Members can view feed items" ON feed_items;
+
 -- Drop members count column
 ALTER TABLE feeds DROP COLUMN IF EXISTS members_count;
 
@@ -90,8 +94,8 @@ DROP TRIGGER IF EXISTS trigger_decrement_feed_members ON feed_members;
 DROP FUNCTION IF EXISTS increment_feed_members_count();
 DROP FUNCTION IF EXISTS decrement_feed_members_count();
 
--- Drop feed_members table
-DROP TABLE IF EXISTS feed_members;
+-- Drop feed_members table (CASCADE to remove any remaining dependencies)
+DROP TABLE IF EXISTS feed_members CASCADE;
 
 -- =============================================
 -- 4. UPDATE RLS POLICIES FOR NEW VISIBILITY
