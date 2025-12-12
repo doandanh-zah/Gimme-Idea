@@ -447,11 +447,11 @@ export const apiClient = {
   getFeedsForBookmark: (projectId: string) =>
     apiFetch<any>(`/feeds/for-bookmark/${projectId}`),
 
-  // Get single feed by ID
-  getFeed: (feedId: string) => apiFetch<any>(`/feeds/${feedId}`),
+  // Get single feed by ID or slug
+  getFeed: (feedIdOrSlug: string) => apiFetch<any>(`/feeds/${feedIdOrSlug}`),
 
   // Get items in a feed
-  getFeedItems: (feedId: string, params?: { limit?: number; offset?: number }) => {
+  getFeedItems: (feedIdOrSlug: string, params?: { limit?: number; offset?: number }) => {
     const query = params
       ? new URLSearchParams(
           Object.entries(params)
@@ -459,18 +459,18 @@ export const apiClient = {
             .map(([k, v]) => [k, String(v)])
         ).toString()
       : "";
-    return apiFetch<any>(`/feeds/${feedId}/items${query ? `?${query}` : ""}`);
+    return apiFetch<any>(`/feeds/${feedIdOrSlug}/items${query ? `?${query}` : ""}`);
   },
 
   // Create a new feed
-  createFeed: (data: { name: string; description?: string; coverImage?: string; isPublic?: boolean }) =>
+  createFeed: (data: { name: string; description?: string; coverImage?: string; visibility?: 'private' | 'unlisted' | 'public' }) =>
     apiFetch<any>("/feeds", {
       method: "POST",
       body: JSON.stringify(data),
     }),
 
   // Update a feed
-  updateFeed: (feedId: string, data: { name?: string; description?: string; coverImage?: string; isPublic?: boolean }) =>
+  updateFeed: (feedId: string, data: { name?: string; description?: string; coverImage?: string; visibility?: 'private' | 'unlisted' | 'public' }) =>
     apiFetch<any>(`/feeds/${feedId}`, {
       method: "PATCH",
       body: JSON.stringify(data),

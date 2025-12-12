@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Loader2, Globe, Lock, Image as ImageIcon } from 'lucide-react';
+import { X, Loader2, Globe, Lock, Link2, Image as ImageIcon } from 'lucide-react';
 import { apiClient } from '@/lib/api-client';
 import { Feed } from '@/lib/types';
 import toast from 'react-hot-toast';
@@ -20,7 +20,7 @@ export const CreateFeedModal: React.FC<CreateFeedModalProps> = ({
 }) => {
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
-  const [isPublic, setIsPublic] = useState(true);
+  const [visibility, setVisibility] = useState<'public' | 'unlisted' | 'private'>('public');
   const [isLoading, setIsLoading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -36,7 +36,7 @@ export const CreateFeedModal: React.FC<CreateFeedModalProps> = ({
       const response = await apiClient.createFeed({
         name: name.trim(),
         description: description.trim() || undefined,
-        isPublic,
+        visibility,
       });
 
       if (response.success && response.data) {
@@ -44,7 +44,7 @@ export const CreateFeedModal: React.FC<CreateFeedModalProps> = ({
         // Reset form
         setName('');
         setDescription('');
-        setIsPublic(true);
+        setVisibility('public');
       } else {
         toast.error(response.error || 'Failed to create feed');
       }
@@ -128,37 +128,58 @@ export const CreateFeedModal: React.FC<CreateFeedModalProps> = ({
               <label className="block text-sm font-medium text-gray-300 mb-3">
                 Visibility
               </label>
-              <div className="flex gap-3">
+              <div className="space-y-2">
+                {/* Public */}
                 <button
                   type="button"
-                  onClick={() => setIsPublic(true)}
-                  className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-xl border transition-all ${
-                    isPublic
-                      ? 'bg-[#FFD700]/20 border-[#FFD700]/50 text-[#FFD700]'
-                      : 'bg-white/5 border-white/10 text-gray-400 hover:bg-white/10'
+                  onClick={() => setVisibility('public')}
+                  className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl border transition-all text-left ${
+                    visibility === 'public'
+                      ? 'bg-[#FFD700]/20 border-[#FFD700]/50'
+                      : 'bg-white/5 border-white/10 hover:bg-white/10'
                   }`}
                 >
-                  <Globe className="w-4 h-4" />
-                  <span className="font-medium">Public</span>
+                  <Globe className={`w-5 h-5 ${visibility === 'public' ? 'text-[#FFD700]' : 'text-gray-400'}`} />
+                  <div>
+                    <p className={`font-medium ${visibility === 'public' ? 'text-[#FFD700]' : 'text-white'}`}>Public</p>
+                    <p className="text-xs text-gray-500">Shown in Discover, anyone can see</p>
+                  </div>
                 </button>
+
+                {/* Unlisted */}
                 <button
                   type="button"
-                  onClick={() => setIsPublic(false)}
-                  className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-xl border transition-all ${
-                    !isPublic
-                      ? 'bg-purple-500/20 border-purple-500/50 text-purple-400'
-                      : 'bg-white/5 border-white/10 text-gray-400 hover:bg-white/10'
+                  onClick={() => setVisibility('unlisted')}
+                  className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl border transition-all text-left ${
+                    visibility === 'unlisted'
+                      ? 'bg-blue-500/20 border-blue-500/50'
+                      : 'bg-white/5 border-white/10 hover:bg-white/10'
                   }`}
                 >
-                  <Lock className="w-4 h-4" />
-                  <span className="font-medium">Private</span>
+                  <Link2 className={`w-5 h-5 ${visibility === 'unlisted' ? 'text-blue-400' : 'text-gray-400'}`} />
+                  <div>
+                    <p className={`font-medium ${visibility === 'unlisted' ? 'text-blue-400' : 'text-white'}`}>Unlisted</p>
+                    <p className="text-xs text-gray-500">Not in Discover, but anyone with link can view</p>
+                  </div>
+                </button>
+
+                {/* Private */}
+                <button
+                  type="button"
+                  onClick={() => setVisibility('private')}
+                  className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl border transition-all text-left ${
+                    visibility === 'private'
+                      ? 'bg-purple-500/20 border-purple-500/50'
+                      : 'bg-white/5 border-white/10 hover:bg-white/10'
+                  }`}
+                >
+                  <Lock className={`w-5 h-5 ${visibility === 'private' ? 'text-purple-400' : 'text-gray-400'}`} />
+                  <div>
+                    <p className={`font-medium ${visibility === 'private' ? 'text-purple-400' : 'text-white'}`}>Private</p>
+                    <p className="text-xs text-gray-500">Only you can see this feed</p>
+                  </div>
                 </button>
               </div>
-              <p className="text-xs text-gray-500 mt-2">
-                {isPublic
-                  ? 'Anyone can see this feed and its ideas'
-                  : 'Only you can see this feed'}
-              </p>
             </div>
 
             {/* Submit */}

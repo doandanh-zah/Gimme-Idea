@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Rss, Plus, TrendingUp, Star, Sparkles, Gem, Users, 
   Bookmark, ChevronRight, Loader2, Search, X, Lock,
-  Globe, Eye, MoreHorizontal
+  Globe, Eye, MoreHorizontal, Link2, ChevronDown
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
@@ -24,16 +24,24 @@ const FEED_TYPE_CONFIG = {
   custom: { icon: Bookmark, color: '#3B82F6', label: 'Custom' },
 };
 
+// Visibility icons
+const VISIBILITY_CONFIG = {
+  public: { icon: Globe, color: '#FFD700', label: 'Public' },
+  unlisted: { icon: Link2, color: '#3B82F6', label: 'Unlisted' },
+  private: { icon: Lock, color: '#9945FF', label: 'Private' },
+};
+
 export default function FeedsPage() {
   const router = useRouter();
   const { user } = useAuth();
   
-  const [featuredFeeds, setFeaturedFeeds] = useState<Feed[]>([]);
+  const [discoverFeeds, setDiscoverFeeds] = useState<Feed[]>([]);
+  const [allPublicFeeds, setAllPublicFeeds] = useState<Feed[]>([]);
   const [myFeeds, setMyFeeds] = useState<Feed[]>([]);
   const [followingFeeds, setFollowingFeeds] = useState<Feed[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [showCreateModal, setShowCreateModal] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
+  const [showAllPublicFeeds, setShowAllPublicFeeds] = useState(false);
   
   // Background stars
   const [stars, setStars] = useState<{ id: number; top: string; left: string; size: number; duration: string; opacity: number }[]>([]);
@@ -57,10 +65,12 @@ export default function FeedsPage() {
   const loadFeeds = async () => {
     setIsLoading(true);
     try {
-      // Load featured/discover feeds
-      const discoverRes = await apiClient.getDiscoverFeeds();
-      if (discoverRes.success && discoverRes.data) {
-        setFeaturedFeeds(discoverRes.data);
+      // Load all public feeds
+      const publicRes = await apiClient.getFeeds({ limit: 50 });
+      if (publicRes.success && publicRes.data) {
+        setAllPublicFeeds(publicRes.data);
+        // Top 3 for discover section
+        setDiscoverFeeds(publicRes.data.slice(0, 3));
       }
 
       // Load user's feeds if logged in
@@ -110,16 +120,18 @@ export default function FeedsPage() {
     toast.success('Feed created successfully!');
   };
 
-  const FeedCard = ({ feed, showFollowButton = true }: { feed: Feed; showFollowButton?: boolean }) => {
+  const FeedCard = ({ feed, showFollowButton = true, showVisibility = false }: { feed: Feed; showFollowButton?: boolean; showVisibility?: boolean }) => {
     const config = FEED_TYPE_CONFIG[feed.feedType] || FEED_TYPE_CONFIG.custom;
+    const visConfig = VISIBILITY_CONFIG[feed.visibility] || VISIBILITY_CONFIG.public;
     const IconComponent = config.icon;
+    const VisIcon = visConfig.icon;
 
     return (
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         whileHover={{ scale: 1.02, y: -4 }}
-        onClick={() => router.push(`/feeds/${feed.id}`)}
+        onClick={() => router.push(`/feeds/${feed.slug}`)}
         className="relative bg-gradient-to-br from-white/[0.08] to-white/[0.02] border border-white/10 rounded-2xl p-5 cursor-pointer group overflow-hidden"
       >
         {/* Glow effect */}
@@ -139,11 +151,19 @@ export default function FeedsPage() {
             <IconComponent className="w-6 h-6" style={{ color: config.color }} />
           </div>
           
-          {feed.isFeatured && (
-            <span className="px-2 py-1 text-[10px] font-bold rounded-full bg-[#FFD700]/20 text-[#FFD700] border border-[#FFD700]/30">
-              FEATURED
-            </span>
-          )}
+          <div className="flex items-center gap-2">
+            {showVisibility && (
+              <span className="flex items-center gap-1 px-2 py-1 text-[10px] rounded-full bg-white/5 text-gray-400">
+                <VisIcon className="w-3 h-3" />
+                {visConfig.label}
+              </span>
+            )}
+            {feed.isFeatured && (
+              <span className="px-2 py-1 text-[10px] font-bold rounded-full bg-[#FFD700]/20 text-[#FFD700] border border-[#FFD700]/30">
+                FEATURED
+              </span>
+            )}
+          </div>
         </div>
 
         {/* Feed name */}
@@ -168,12 +188,6 @@ export default function FeedsPage() {
             <Users className="w-3.5 h-3.5" />
             {feed.followersCount} followers
           </span>
-          {feed.membersCount > 1 && (
-            <span className="flex items-center gap-1">
-              <Eye className="w-3.5 h-3.5" />
-              {feed.membersCount} members
-            </span>
-          )}
         </div>
 
         {/* Creator & Actions */}
@@ -277,22 +291,40 @@ export default function FeedsPage() {
           )}
         </div>
 
-        {/* Featured Feeds */}
-        {featuredFeeds.length > 0 && (
-          <section className="mb-12">
-            <h2 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
+        {/* Discover New Feeds */}
+        <section className="mb-12">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-xl font-bold text-white flex items-center gap-2">
               <Star className="w-5 h-5 text-[#FFD700]" />
-              Discover Feeds
+              Discover New Feeds
             </h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-              {featuredFeeds.map((feed) => (
+            {allPublicFeeds.length > 3 && (
+              <button
+                onClick={() => setShowAllPublicFeeds(!showAllPublicFeeds)}
+                className="flex items-center gap-1 text-sm text-[#FFD700] hover:text-[#FFD700]/80 transition-colors"
+              >
+                {showAllPublicFeeds ? 'Show Less' : `More (${allPublicFeeds.length - 3})`}
+                <ChevronDown className={`w-4 h-4 transition-transform ${showAllPublicFeeds ? 'rotate-180' : ''}`} />
+              </button>
+            )}
+          </div>
+          
+          {discoverFeeds.length > 0 ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {(showAllPublicFeeds ? allPublicFeeds : discoverFeeds).map((feed) => (
                 <FeedCard key={feed.id} feed={feed} />
               ))}
             </div>
-          </section>
-        )}
+          ) : (
+            <div className="text-center py-12 bg-white/[0.02] border border-white/5 rounded-2xl">
+              <Rss className="w-10 h-10 text-gray-600 mx-auto mb-3" />
+              <p className="text-gray-400">No public feeds yet</p>
+              <p className="text-gray-500 text-sm mt-1">Be the first to create one!</p>
+            </div>
+          )}
+        </section>
 
-        {/* My Feeds */}
+        {/* My Collections */}
         {user && myFeeds.length > 0 && (
           <section className="mb-12">
             <h2 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
@@ -301,7 +333,7 @@ export default function FeedsPage() {
             </h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
               {myFeeds.map((feed) => (
-                <FeedCard key={feed.id} feed={feed} showFollowButton={false} />
+                <FeedCard key={feed.id} feed={feed} showFollowButton={false} showVisibility={true} />
               ))}
             </div>
           </section>
@@ -322,8 +354,8 @@ export default function FeedsPage() {
           </section>
         )}
 
-        {/* Empty state for logged in users */}
-        {user && myFeeds.length === 0 && followingFeeds.length === 0 && featuredFeeds.length === 0 && (
+        {/* Empty state for logged in users with no feeds */}
+        {user && myFeeds.length === 0 && followingFeeds.length === 0 && discoverFeeds.length === 0 && (
           <div className="text-center py-20">
             <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-gradient-to-br from-[#FFD700]/20 to-[#FFD700]/5 flex items-center justify-center">
               <Rss className="w-10 h-10 text-[#FFD700]" />
@@ -340,7 +372,7 @@ export default function FeedsPage() {
         )}
 
         {/* Empty state for guests */}
-        {!user && featuredFeeds.length === 0 && (
+        {!user && discoverFeeds.length === 0 && (
           <div className="text-center py-20">
             <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-gradient-to-br from-[#FFD700]/20 to-[#FFD700]/5 flex items-center justify-center">
               <Lock className="w-10 h-10 text-[#FFD700]" />

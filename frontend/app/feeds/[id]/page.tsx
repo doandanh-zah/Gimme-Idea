@@ -5,7 +5,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { 
   ArrowLeft, Users, Bookmark, Share2, MoreHorizontal, 
   Loader2, Trash2, Edit2, Globe, Lock, ExternalLink,
-  TrendingUp, Star, Sparkles, Gem, ChevronRight
+  TrendingUp, Star, Sparkles, Gem, ChevronRight, Link as LinkIcon,
+  ShieldOff
 } from 'lucide-react';
 import { useRouter, useParams } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
@@ -162,7 +163,9 @@ export default function FeedDetailPage() {
   if (!feed) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center">
-        <h1 className="text-2xl font-bold text-white mb-4">Feed not found</h1>
+        <ShieldOff className="w-16 h-16 text-red-400 mb-4" />
+        <h1 className="text-2xl font-bold text-white mb-2">Feed not available</h1>
+        <p className="text-gray-400 mb-4">This feed may be private or doesn't exist</p>
         <button
           onClick={() => router.push('/feeds')}
           className="text-[#FFD700] hover:underline"
@@ -225,10 +228,21 @@ export default function FeedDetailPage() {
                 <div>
                   <div className="flex items-center gap-3 mb-2">
                     <h1 className="text-2xl sm:text-3xl font-bold text-white">{feed.name}</h1>
-                    {feed.isPublic ? (
-                      <Globe className="w-4 h-4 text-gray-400" />
+                    {feed.visibility === 'public' ? (
+                      <div className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-green-500/20 border border-green-500/30">
+                        <Globe className="w-3 h-3 text-green-400" />
+                        <span className="text-[10px] font-medium text-green-400">Public</span>
+                      </div>
+                    ) : feed.visibility === 'unlisted' ? (
+                      <div className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-blue-500/20 border border-blue-500/30">
+                        <LinkIcon className="w-3 h-3 text-blue-400" />
+                        <span className="text-[10px] font-medium text-blue-400">Unlisted</span>
+                      </div>
                     ) : (
-                      <Lock className="w-4 h-4 text-gray-400" />
+                      <div className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-purple-500/20 border border-purple-500/30">
+                        <Lock className="w-3 h-3 text-purple-400" />
+                        <span className="text-[10px] font-medium text-purple-400">Private</span>
+                      </div>
                     )}
                     {feed.isFeatured && (
                       <span className="px-2 py-0.5 text-[10px] font-bold rounded-full bg-[#FFD700]/20 text-[#FFD700] border border-[#FFD700]/30">
@@ -251,11 +265,6 @@ export default function FeedDetailPage() {
                       <Users className="w-4 h-4" />
                       <span className="text-white font-medium">{feed.followersCount}</span> followers
                     </span>
-                    {feed.membersCount > 1 && (
-                      <span className="flex items-center gap-2 text-gray-400">
-                        <span className="text-white font-medium">{feed.membersCount}</span> members
-                      </span>
-                    )}
                   </div>
                 </div>
 

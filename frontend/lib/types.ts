@@ -172,16 +172,16 @@ export interface AIQuota {
 
 export interface Feed {
   id: string;
+  slug: string;
   creatorId: string;
   name: string;
   description?: string;
   coverImage?: string;
-  isPublic: boolean;
+  visibility: 'private' | 'unlisted' | 'public';
   isFeatured: boolean;
   feedType: 'custom' | 'trending' | 'ai_top' | 'hidden_gems' | 'staff_picks';
   itemsCount: number;
   followersCount: number;
-  membersCount: number;
   createdAt: string;
   updatedAt: string;
   creator?: {
@@ -190,7 +190,6 @@ export interface Feed {
     avatar?: string;
   };
   isFollowing?: boolean;
-  isMember?: boolean;
   hasItem?: boolean; // For bookmark modal
 }
 

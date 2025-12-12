@@ -10,16 +10,16 @@ import { ApiResponse } from '../shared/types';
 
 export interface Feed {
   id: string;
+  slug: string;
   creatorId: string;
   name: string;
   description?: string;
   coverImage?: string;
-  isPublic: boolean;
+  visibility: 'private' | 'unlisted' | 'public';
   isFeatured: boolean;
   feedType: 'custom' | 'trending' | 'ai_top' | 'hidden_gems' | 'staff_picks';
   itemsCount: number;
   followersCount: number;
-  membersCount: number;
   createdAt: string;
   updatedAt: string;
   creator?: {
@@ -28,7 +28,6 @@ export interface Feed {
     avatar?: string;
   };
   isFollowing?: boolean;
-  isMember?: boolean;
 }
 
 export interface FeedItem {
@@ -62,11 +61,10 @@ export class FeedsService {
       name: dto.name,
       description: dto.description || null,
       cover_image: dto.coverImage || null,
-      is_public: dto.isPublic ?? true,
+      visibility: dto.visibility || 'public',
       feed_type: 'custom',
       items_count: 0,
       followers_count: 0,
-      members_count: 1, // Creator is the first member
     };
 
     const { data: feed, error } = await supabase
@@ -82,13 +80,6 @@ export class FeedsService {
       this.logger.error('Failed to create feed:', error);
       throw new Error(`Failed to create feed: ${error.message}`);
     }
-
-    // Add creator as owner member
-    await supabase.from('feed_members').insert({
-      feed_id: feed.id,
-      user_id: userId,
-      role: 'owner',
-    });
 
     return {
       success: true,
@@ -114,7 +105,7 @@ export class FeedsService {
         *,
         creator:users!feeds_creator_id_fkey(username, wallet, avatar)
       `)
-      .eq('is_public', true)
+      .eq('visibility', 'public')
       .order('followers_count', { ascending: false });
 
     if (options?.featured) {
@@ -213,46 +204,55 @@ export class FeedsService {
   }
 
   /**
-   * Get single feed by ID
+   * Get single feed by ID or slug
    */
-  async findOne(feedId: string, userId?: string): Promise<ApiResponse<Feed>> {
+  async findOne(feedIdOrSlug: string, userId?: string): Promise<ApiResponse<Feed>> {
     const supabase = this.supabaseService.getAdminClient();
 
-    const { data: feed, error } = await supabase
+    // Try to find by slug first, then by ID
+    const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(feedIdOrSlug);
+    
+    let query = supabase
       .from('feeds')
       .select(`
         *,
         creator:users!feeds_creator_id_fkey(username, wallet, avatar)
-      `)
-      .eq('id', feedId)
-      .single();
+      `);
+    
+    if (isUUID) {
+      query = query.eq('id', feedIdOrSlug);
+    } else {
+      query = query.eq('slug', feedIdOrSlug);
+    }
+
+    const { data: feed, error } = await query.single();
 
     if (error || !feed) {
       throw new NotFoundException('Feed not found');
     }
 
+    // Check access permissions
+    const isOwner = userId && feed.creator_id === userId;
+    
+    // Private feeds are only accessible by owner
+    if (feed.visibility === 'private' && !isOwner) {
+      throw new ForbiddenException('This feed is private');
+    }
+
     let mappedFeed = this.mapFeed(feed);
 
-    // Check if user is following/member
+    // Check if user is following
     if (userId) {
       const { data: follower } = await supabase
         .from('feed_followers')
         .select('id')
-        .eq('feed_id', feedId)
-        .eq('user_id', userId)
-        .single();
-
-      const { data: member } = await supabase
-        .from('feed_members')
-        .select('id')
-        .eq('feed_id', feedId)
+        .eq('feed_id', feed.id)
         .eq('user_id', userId)
         .single();
 
       mappedFeed = {
         ...mappedFeed,
         isFollowing: !!follower,
-        isMember: !!member,
       };
     }
 
@@ -287,7 +287,7 @@ export class FeedsService {
     if (dto.name) updateData.name = dto.name;
     if (dto.description !== undefined) updateData.description = dto.description;
     if (dto.coverImage !== undefined) updateData.cover_image = dto.coverImage;
-    if (dto.isPublic !== undefined) updateData.is_public = dto.isPublic;
+    if (dto.visibility) updateData.visibility = dto.visibility;
 
     const { data: updatedFeed, error } = await supabase
       .from('feeds')
@@ -395,21 +395,14 @@ export class FeedsService {
   ): Promise<ApiResponse<FeedItem>> {
     const supabase = this.supabaseService.getAdminClient();
 
-    // Check if user is member or owner
-    const { data: member } = await supabase
-      .from('feed_members')
-      .select('id')
-      .eq('feed_id', feedId)
-      .eq('user_id', userId)
-      .single();
-
+    // Check if user is owner
     const { data: feed } = await supabase
       .from('feeds')
       .select('creator_id')
       .eq('id', feedId)
       .single();
 
-    if (!member && feed?.creator_id !== userId) {
+    if (feed?.creator_id !== userId) {
       throw new ForbiddenException('Not authorized to add items to this feed');
     }
 
@@ -583,16 +576,16 @@ export class FeedsService {
     const creator = Array.isArray(feed.creator) ? feed.creator[0] : feed.creator;
     return {
       id: feed.id,
+      slug: feed.slug,
       creatorId: feed.creator_id,
       name: feed.name,
       description: feed.description,
       coverImage: feed.cover_image,
-      isPublic: feed.is_public,
+      visibility: feed.visibility || 'public',
       isFeatured: feed.is_featured,
       feedType: feed.feed_type,
       itemsCount: feed.items_count || 0,
       followersCount: feed.followers_count || 0,
-      membersCount: feed.members_count || 0,
       createdAt: feed.created_at,
       updatedAt: feed.updated_at,
       creator: creator

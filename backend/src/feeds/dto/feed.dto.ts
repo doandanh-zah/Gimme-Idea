@@ -1,4 +1,4 @@
-import { IsString, IsOptional, IsBoolean, MaxLength } from 'class-validator';
+import { IsString, IsOptional, IsBoolean, MaxLength, IsIn } from 'class-validator';
 
 export class CreateFeedDto {
   @IsString()
@@ -15,8 +15,9 @@ export class CreateFeedDto {
   coverImage?: string;
 
   @IsOptional()
-  @IsBoolean()
-  isPublic?: boolean;
+  @IsString()
+  @IsIn(['private', 'unlisted', 'public'])
+  visibility?: 'private' | 'unlisted' | 'public';
 }
 
 export class UpdateFeedDto {
@@ -35,8 +36,9 @@ export class UpdateFeedDto {
   coverImage?: string;
 
   @IsOptional()
-  @IsBoolean()
-  isPublic?: boolean;
+  @IsString()
+  @IsIn(['private', 'unlisted', 'public'])
+  visibility?: 'private' | 'unlisted' | 'public';
 }
 
 export class AddFeedItemDto {
