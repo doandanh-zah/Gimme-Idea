@@ -1,55 +1,50 @@
-import { useWallet } from '@solana/wallet-adapter-react';
-import { useCallback } from 'react';
-import { apiClient } from './api-client';
-import bs58 from 'bs58';
+import { useWallet } from "@solana/wallet-adapter-react";
+import { useCallback } from "react";
+import { apiClient } from "./api-client";
+import bs58 from "bs58";
 
 /**
  * Custom hook for wallet authentication with Sign-In With Solana (SIWS)
  */
 export function useWalletAuth() {
-  const { publicKey, signMessage, connect, disconnect, wallet, connected } = useWallet();
+  const { publicKey, signMessage, connect, disconnect, wallet, connected } =
+    useWallet();
 
   const login = useCallback(async () => {
-    console.log('Login function called, publicKey:', publicKey?.toBase58(), 'signMessage available:', !!signMessage);
-
     if (!publicKey || !signMessage) {
-      throw new Error('Wallet not connected or does not support message signing');
+      throw new Error(
+        "Wallet not connected or does not support message signing"
+      );
     }
 
     try {
       // Create message for signing (SIWS pattern)
       const timestamp = new Date().toISOString();
       const message = `Login to GimmeIdea\n\nTimestamp: ${timestamp}\nWallet: ${publicKey.toBase58()}`;
-      console.log('Message to sign:', message);
 
       // Encode message for signing
       const encodedMessage = new TextEncoder().encode(message);
 
       // Request signature from wallet
-      console.log('Requesting signature from wallet...');
       const signature = await signMessage(encodedMessage);
-      console.log('Signature received:', signature);
 
       // Convert signature to base58 for backend
       const signatureBase58 = bs58.encode(signature);
-      console.log('Signature base58:', signatureBase58);
 
       // Send to backend for verification
-      console.log('Sending to backend for verification...');
       const response = await apiClient.login({
         publicKey: publicKey.toBase58(),
         signature: signatureBase58,
         message,
       });
-      console.log('Backend response:', response);
 
       if (!response.success || !response.data) {
-        throw new Error(response.error || 'Login failed');
+        throw new Error(response.error || "Login failed");
       }
 
       return response.data;
     } catch (error: any) {
-      console.error('Login error:', error);
+      console.error("Login error:", error);
       throw error;
     }
   }, [publicKey, signMessage]);
@@ -66,12 +61,14 @@ export function useWalletAuth() {
       const maxAttempts = 20; // 10 seconds total
 
       while (!publicKey && attempts < maxAttempts) {
-        await new Promise(resolve => setTimeout(resolve, 500));
+        await new Promise((resolve) => setTimeout(resolve, 500));
         attempts++;
       }
 
       if (!publicKey || !signMessage) {
-        throw new Error('Wallet connection timeout or does not support signing');
+        throw new Error(
+          "Wallet connection timeout or does not support signing"
+        );
       }
 
       // Perform login with signature
@@ -79,7 +76,7 @@ export function useWalletAuth() {
 
       return userData;
     } catch (error: any) {
-      console.error('Connect and login error:', error);
+      console.error("Connect and login error:", error);
       await disconnect();
       throw error;
     }

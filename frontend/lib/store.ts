@@ -546,10 +546,6 @@ export const useAppStore = create<AppState>((set, get) => ({
     // (they're already added via optimistic update in addComment)
     // This prevents duplicates with mismatched anonymous status
     if (state.user && commentData.user_id === state.user.id) {
-      console.log(
-        "⏭️ Skipping realtime update for own comment:",
-        commentData.id
-      );
       return;
     }
 
@@ -643,10 +639,6 @@ export const useAppStore = create<AppState>((set, get) => ({
         );
 
         if (commentExistsInProjects || commentExistsInSelected) {
-          console.log(
-            "⏭️ Comment already exists (preventing duplicate):",
-            newComment.id
-          );
           return state;
         }
 
@@ -912,9 +904,7 @@ export const useAppStore = create<AppState>((set, get) => ({
     try {
       // This would require payment verification flow with Solana transaction
       // For now, just update optimistically
-      console.log(
-        "Tip comment functionality requires Solana payment integration"
-      );
+      // TODO: Implement Solana payment integration
       // After payment is verified, the backend would update the tips_amount
       // and we would refresh the project data
     } catch (error) {

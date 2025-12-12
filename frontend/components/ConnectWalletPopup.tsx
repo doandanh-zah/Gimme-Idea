@@ -164,7 +164,6 @@ export const ConnectWalletPopup = () => {
       if (error.message?.includes('MetaMask') || 
           error.message?.includes('Ethereum') ||
           error.name === 'WalletNotSelectedError') {
-        console.log('Ignoring non-Solana wallet error:', error.message);
         return;
       }
       

@@ -44,7 +44,6 @@ export function useRealtimeProjects({
             table: "projects",
           },
           (payload) => {
-            console.log("🆕 New project created:", payload.new);
             if (onNewProjectRef.current) {
               onNewProjectRef.current(payload.new);
             }
@@ -58,7 +57,6 @@ export function useRealtimeProjects({
             table: "projects",
           },
           (payload) => {
-            console.log("📝 Project updated:", payload.new);
             if (onUpdateProjectRef.current) {
               onUpdateProjectRef.current(payload.new);
             }
@@ -72,17 +70,14 @@ export function useRealtimeProjects({
             table: "projects",
           },
           (payload) => {
-            console.log("🗑️ Project deleted:", payload.old.id);
             if (onDeleteProjectRef.current) {
               onDeleteProjectRef.current(payload.old.id);
             }
           }
         )
         .subscribe((status) => {
-          if (status === "SUBSCRIBED") {
-            console.log("✅ Subscribed to projects realtime updates");
-          } else if (status === "CHANNEL_ERROR") {
-            console.error("❌ Failed to subscribe to projects");
+          if (status === "CHANNEL_ERROR") {
+            console.error("Failed to subscribe to projects realtime");
           }
         });
     };
@@ -92,7 +87,6 @@ export function useRealtimeProjects({
     // Cleanup subscription on unmount
     return () => {
       if (channel) {
-        console.log("🔌 Unsubscribing from projects realtime");
         supabase.removeChannel(channel);
       }
     };

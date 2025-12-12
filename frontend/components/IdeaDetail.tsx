@@ -149,7 +149,6 @@ const CommentItem: React.FC<CommentItemProps> = ({ comment, projectId, isReply =
                         // Check if AI skipped the reply (not a question/challenge)
                         if (response.data.skipped) {
                             // Don't show anything - user's comment was posted, AI just didn't need to reply
-                            console.log('AI skipped reply:', response.data.skipReason);
                         } else {
                             // Refresh to get the new AI reply
                             await fetchProjectById(projectId);

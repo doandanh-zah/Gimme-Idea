@@ -49,7 +49,6 @@ export function useRealtimeComments({
             filter: `project_id=eq.${projectId}`,
           },
           (payload) => {
-            console.log("💬 New comment:", payload.new);
             if (onNewCommentRef.current) {
               onNewCommentRef.current(payload.new);
             }
@@ -64,7 +63,6 @@ export function useRealtimeComments({
             filter: `project_id=eq.${projectId}`,
           },
           (payload) => {
-            console.log("✏️ Comment updated:", payload.new);
             if (onUpdateCommentRef.current) {
               onUpdateCommentRef.current(payload.new);
             }
@@ -79,18 +77,15 @@ export function useRealtimeComments({
             filter: `project_id=eq.${projectId}`,
           },
           (payload) => {
-            console.log("🗑️ Comment deleted:", payload.old.id);
             if (onDeleteCommentRef.current) {
               onDeleteCommentRef.current(payload.old.id);
             }
           }
         )
         .subscribe((status) => {
-          if (status === "SUBSCRIBED") {
-            console.log(`✅ Subscribed to comments for project ${projectId}`);
-          } else if (status === "CHANNEL_ERROR") {
+          if (status === "CHANNEL_ERROR") {
             console.error(
-              `❌ Failed to subscribe to comments for project ${projectId}`
+              `Failed to subscribe to comments for project ${projectId}`
             );
           }
         });
@@ -101,7 +96,6 @@ export function useRealtimeComments({
     // Cleanup subscription on unmount or projectId change
     return () => {
       if (channel) {
-        console.log(`🔌 Unsubscribing from comments for project ${projectId}`);
         supabase.removeChannel(channel);
       }
     };

@@ -112,7 +112,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const refreshToken = hashParams.get('refresh_token');
         
         if (accessToken && refreshToken) {
-          console.log('Found tokens in URL hash, setting session...');
           const { data, error } = await supabase.auth.setSession({
             access_token: accessToken,
             refresh_token: refreshToken,
@@ -121,7 +120,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           if (error) {
             console.error('Error setting session from hash:', error);
           } else if (data.session) {
-            console.log('Session set successfully from hash');
             // Clean up URL
             window.history.replaceState(null, '', window.location.pathname);
           }
@@ -149,8 +147,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
-        console.log('Auth state change:', event, session?.user?.email);
-        
         setSession(session);
         setSupabaseUser(session?.user ?? null);
         
