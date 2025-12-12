@@ -25,9 +25,50 @@ export default function RootLayout({
   return (
     <html lang="en">
       <head>
-        <title>Gimme Idea | DSUC</title>
-        <meta name="description" content="Share and validate your Solana ideas with the community" />
+        <title>Gimme Idea | Share your idea and feedback to earn</title>
+        <meta name="description" content="Share your startup ideas, get community feedback, and receive crypto tips. Built on Solana blockchain." />
+        <meta name="keywords" content="startup ideas, solana, crypto, blockchain, community feedback, idea validation" />
         <link rel="icon" href="/favicon.ico" />
+        <link rel="canonical" href="https://gimmeidea.com" />
+        
+        {/* Open Graph */}
+        <meta property="og:type" content="website" />
+        <meta property="og:url" content="https://gimmeidea.com" />
+        <meta property="og:title" content="Gimme Idea | Share & Validate Startup Ideas" />
+        <meta property="og:description" content="Share your startup ideas, get community feedback, and receive crypto tips on Solana." />
+        <meta property="og:image" content="https://gimmeidea.com/OG-img.png" />
+        
+        {/* Twitter Card */}
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:title" content="Gimme Idea | Share & Validate Startup Ideas" />
+        <meta name="twitter:description" content="Share your startup ideas, get community feedback, and receive crypto tips on Solana." />
+        <meta name="twitter:image" content="https://gimmeidea.com/OG-img.png" />
+        
+        {/* Schema Markup - Organization */}
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              "@context": "https://schema.org",
+              "@type": "WebApplication",
+              "name": "Gimme Idea",
+              "url": "https://gimmeidea.com",
+              "description": "A platform to share startup ideas, get community feedback, and receive crypto tips on Solana blockchain.",
+              "applicationCategory": "BusinessApplication",
+              "operatingSystem": "Web",
+              "offers": {
+                "@type": "Offer",
+                "price": "0",
+                "priceCurrency": "USD"
+              },
+              "creator": {
+                "@type": "Organization",
+                "name": "DUT Superteam University Club",
+                "url": "https://gimmeidea.com"
+              }
+            })
+          }}
+        />
       </head>
       <body className={`${inter.variable} ${mono.variable} ${space.variable} ${quantico.variable} font-sans bg-background text-white min-h-screen selection:bg-accent selection:text-black`}>
         {/* Google Analytics */}

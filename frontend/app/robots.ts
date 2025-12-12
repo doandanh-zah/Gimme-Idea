@@ -7,6 +7,6 @@ export default function robots(): MetadataRoute.Robots {
       allow: "/",
       disallow: ["/api/", "/dashboard/", "/auth/"],
     },
-    sitemap: "https://gimmeidea.co/sitemap.xml",
+    sitemap: "https://gimmeidea.com/sitemap.xml",
   };
 }

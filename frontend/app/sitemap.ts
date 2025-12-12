@@ -1,6 +1,6 @@
 import { MetadataRoute } from "next";
 
-const BASE_URL = "https://gimmeidea.co";
+const BASE_URL = "https://gimmeidea.com";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   // Static pages

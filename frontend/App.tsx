@@ -132,16 +132,16 @@ function App() {
       
       {renderContent()}
 
-      <footer className="border-t border-white/10 py-12 px-6 bg-black/90 backdrop-blur-xl">
-        <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-6">
+      <footer className="border-t border-white/10 py-8 px-6 bg-black/90 backdrop-blur-xl">
+        <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-4">
           <div className="text-2xl font-display font-bold">Gimme<span className="text-gold">Idea</span></div>
           <div className="text-gray-500 text-sm font-mono">
             &copy; 2025 Gimme Idea Protocol. Product of DUT Superteam University Club
           </div>
-          <div className="flex gap-6 text-gray-400">
-            <a href="#" className="hover:text-white transition-colors">Twitter</a>
-            <a href="#" className="hover:text-white transition-colors">Discord</a>
-            <a href="#" className="hover:text-white transition-colors">GitHub</a>
+          <div className="flex gap-4 text-gray-400 text-sm">
+            <a href="/terms" className="hover:text-white transition-colors">Terms</a>
+            <span className="text-gray-600">•</span>
+            <a href="/privacy" className="hover:text-white transition-colors">Privacy</a>
           </div>
         </div>
       </footer>

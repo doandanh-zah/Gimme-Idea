@@ -7,9 +7,9 @@ import Link from 'next/link';
 
 export default function TermsPage() {
   return (
-    <div className="min-h-screen bg-[#0A0A0A] text-white">
+    <div className="min-h-screen bg-[#0A0A0A] text-white pt-20">
       {/* Header */}
-      <div className="border-b border-white/5 bg-[#0F0F0F]/80 backdrop-blur-xl sticky top-0 z-50">
+      <div className="border-b border-white/5 bg-[#0F0F0F]/80 backdrop-blur-xl">
         <div className="max-w-4xl mx-auto px-6 py-4 flex items-center gap-4">
           <Link href="/home" className="p-2 hover:bg-white/10 rounded-full transition-colors">
             <ArrowLeft className="w-5 h-5" />
