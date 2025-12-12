@@ -30,7 +30,7 @@ export default function TermsPage() {
           </div>
           <div>
             <h1 className="text-3xl font-bold">Terms of Service</h1>
-            <p className="text-gray-400">Last updated: December 2024</p>
+            <p className="text-gray-400">Last updated: December 2025</p>
           </div>
         </div>
 
@@ -136,8 +136,8 @@ export default function TermsPage() {
             <h2 className="text-xl font-bold text-white mb-4">10. Contact</h2>
             <p className="text-gray-300 leading-relaxed">
               For questions about these Terms, please contact us at{' '}
-              <a href="mailto:support@gimmeidea.com" className="text-[#FFD700] hover:underline">
-                support@gimmeidea.com
+              <a href="mailto:gimmeidea.contact@gmail.com" className="text-[#FFD700] hover:underline">
+                gimmeidea.contact@gmail.com
               </a>
             </p>
           </section>
