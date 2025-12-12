@@ -21,7 +21,7 @@ const LucideIconMap: { [key: string]: React.ElementType } = {
 };
 
 export default function HackathonDashboard({ params }: { params: { id: string } }) {
-  const [activeTab, setActiveTab] = useState('tracks');
+  const [activeTab, setActiveTab] = useState('activity');
   const { id } = params;
 
   const hackathon = HACKATHONS_MOCK_DATA.find(h => h.id === id);
@@ -149,7 +149,7 @@ export default function HackathonDashboard({ params }: { params: { id: string } 
 
           {/* Navigation Tabs */}
           <div className="flex border-b border-white/10">
-             {['Tracks', 'Activity', 'Rules'].map((tab) => (
+             {['Activity', 'Rules', 'Discussions'].map((tab) => (
                <button
                  key={tab}
                  onClick={() => setActiveTab(tab.toLowerCase())}
@@ -167,35 +167,28 @@ export default function HackathonDashboard({ params }: { params: { id: string } 
 
           {/* Tab Content Area */}
           <div className="min-h-[400px]">
-             {activeTab === 'tracks' && (
-               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                 {hackathon.tracks?.map((track, i) => {
-                   const TrackIcon = LucideIconMap[track.icon as keyof typeof LucideIconMap] || Target;
-                   return (
-                     <motion.div 
-                       key={i}
-                       initial={{ opacity: 0, y: 10 }}
-                       animate={{ opacity: 1, y: 0 }}
-                       transition={{ delay: i * 0.1 }}
-                       className="bg-[#151515] border border-white/5 p-4 rounded-xl hover:border-white/20 transition-colors group"
-                     >
-                        <div className="flex justify-between items-start mb-3">
-                          <div className={`p-2 rounded-lg bg-white/5 ${track.color}`}>
-                            <TrackIcon className="w-5 h-5" />
-                          </div>
-                          <span className="text-xs font-mono text-gray-500 bg-white/5 px-2 py-1 rounded">
-                            {track.reward}
-                          </span>
-                        </div>
-                        <h4 className="font-bold text-white mb-1 group-hover:text-[#FFD700] transition-colors">{track.title}</h4>
-                        <p className="text-xs text-gray-500 line-clamp-2">{hackathon.description}</p>
-                     </motion.div>
-                   );
-                 })}
-               </div>
-             )}
              {activeTab === 'activity' && (
-                <div className="text-center py-10 text-gray-500">Live activity feed connecting...</div>
+                <div className="text-center py-10 text-gray-500">
+                    <p>Live activity feed connecting...</p>
+                    <p className="text-xs mt-2">Check back soon for updates from participants!</p>
+                </div>
+             )}
+             {activeTab === 'rules' && (
+                <div className="p-4 text-gray-400 space-y-4">
+                    <h3 className="text-white font-bold">Hackathon Rules</h3>
+                    <ul className="list-disc pl-5 space-y-2 text-sm">
+                        <li>Teams must consist of 1-5 members.</li>
+                        <li>All code must be written during the hackathon period.</li>
+                        <li>Projects must use open-source licenses.</li>
+                        <li>Submission must include a video demo (max 3 mins).</li>
+                    </ul>
+                </div>
+             )}
+             {activeTab === 'discussions' && (
+                <div className="text-center py-10 text-gray-500">
+                    <MessageSquare className="w-8 h-8 mx-auto mb-2 opacity-50" />
+                    <p>Community Discussion Board</p>
+                </div>
              )}
           </div>
         </main>
@@ -230,6 +223,34 @@ export default function HackathonDashboard({ params }: { params: { id: string } 
             </div>
           )}
 
+          {/* Tracks Section (Moved from Center) */}
+          {hackathon.tracks && hackathon.tracks.length > 0 && (
+             <div className="bg-[#111] border border-white/5 rounded-xl p-4 space-y-3">
+                <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Tracks & Bounties</h3>
+                {hackathon.tracks.map((track, i) => {
+                   const TrackIcon = LucideIconMap[track.icon as keyof typeof LucideIconMap] || Target;
+                   return (
+                   <div key={i} className="bg-white/5 border border-white/5 rounded-lg p-3 hover:border-white/20 transition-colors group">
+                      <div className="flex items-center justify-between mb-2">
+                         <div className="flex items-center gap-2">
+                            <div className={`p-1.5 rounded bg-black/40 ${track.color}`}>
+                               <TrackIcon className="w-3.5 h-3.5" />
+                            </div>
+                            <span className="font-bold text-white text-xs">{track.title}</span>
+                         </div>
+                      </div>
+                      <div className="flex items-center justify-between">
+                         <span className="text-[10px] text-gray-500">Reward Pool</span>
+                         <span className="text-xs font-mono text-[#FFD700] bg-[#FFD700]/10 px-2 py-0.5 rounded border border-[#FFD700]/20">
+                            {track.reward}
+                         </span>
+                      </div>
+                   </div>
+                   )
+                })}
+             </div>
+          )}
+
           {/* Resources */}
           {hackathon.resources && hackathon.resources.length > 0 && (
             <div className="bg-[#111] border border-white/5 rounded-xl p-4 space-y-2">
@@ -240,11 +261,10 @@ export default function HackathonDashboard({ params }: { params: { id: string } 
                  <a href={resource.link} target="_blank" rel="noopener noreferrer" key={i} className="w-full text-left flex items-center gap-2 px-3 py-2 rounded hover:bg-white/5 text-xs transition-colors">
                     <ResourceIcon className="w-3.5 h-3.5" /> {resource.name}
                  </a>
-                              )})} 
-                           </div>
-                         )}
-               
-               
+               )})}
+            </div>
+          )}
+
         </aside>
 
       </div>
