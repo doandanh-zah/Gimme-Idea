@@ -10,6 +10,7 @@ import {
 } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
 import { format, isBefore } from 'date-fns';
 import { HACKATHONS_MOCK_DATA } from '@/lib/mock-hackathons';
 
@@ -29,11 +30,14 @@ export default function HackathonDashboard({ params }: { params: { id: string } 
 
   const hackathon = HACKATHONS_MOCK_DATA.find(h => h.id === id);
 
+  const searchParams = useSearchParams();
+  const mockDate = searchParams.get('mockDate');
+
   useEffect(() => {
     if (!hackathon) return;
 
     const updateTimer = () => {
-      const now = new Date();
+      const currentNow = mockDate ? new Date(mockDate) : new Date();
       
       // Collect all milestones (starts and ends)
       const milestones: { date: Date; title: string }[] = [];
@@ -47,10 +51,10 @@ export default function HackathonDashboard({ params }: { params: { id: string } 
       milestones.sort((a, b) => a.date.getTime() - b.date.getTime());
 
       // Find the first step that hasn't happened yet
-      const nextStep = milestones.find(m => m.date > now);
+      const nextStep = milestones.find(m => m.date > currentNow);
 
       if (nextStep) {
-        const diff = nextStep.date.getTime() - now.getTime();
+        const diff = nextStep.date.getTime() - currentNow.getTime();
         
         const days = Math.floor(diff / (1000 * 60 * 60 * 24));
         const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
@@ -67,12 +71,14 @@ export default function HackathonDashboard({ params }: { params: { id: string } 
     };
 
     updateTimer(); // Initial call
-    const interval = setInterval(updateTimer, 1000);
+    // Only set interval if NOT in mock mode (or if we want mock time to progress, which is complex. Static is better for snapshots)
+    if (!mockDate) {
+        const interval = setInterval(updateTimer, 1000);
+        return () => clearInterval(interval);
+    }
+  }, [hackathon, mockDate]);
 
-    return () => clearInterval(interval);
-  }, [hackathon]);
-
-  const now = new Date(); // Get current date/time
+  const now = mockDate ? new Date(mockDate) : new Date(); // Get current date/time (or mock)
 
   const dynamicTimeline = hackathon?.timeline.map((step, index) => {
     const start = new Date(step.startDate);
