@@ -44,7 +44,7 @@ export const HACKATHONS_MOCK_DATA = [
       { id: '1', date: '2026-01-15 09:00:00', message: 'System initialized. Welcome, builder!', type: 'info', config: { effect: 'typewriter' } },
       { id: '2', date: '2026-01-16 10:00:00', message: 'New resource added: Solana Cookbook. Check the Resources tab.', type: 'info' },
       { id: '3', date: '2026-01-20 14:30:00', message: 'Mentor @solana_dev_core joined the Discord server. Ask your questions!', type: 'info' },
-      { id: '4', date: '2026-01-25 00:00:00', message: 'WARNING: Registration closes in', type: 'warning', config: { effect: 'pulse', widget: { type: 'countdown', target: '2026-02-01T17:00:00+07:00' } } },
+      { id: '4', date: '2026-01-25 00:00:00', message: 'WARNING: Registration closes in', type: 'warning', config: { effect: 'pulse', widget: { type: 'countdown', target: '2025-12-29T17:00:00+07:00' } } },
       { id: '5', date: '2026-02-01 17:00:00', message: 'REGISTRATION PHASE CONCLUDED. GOOD LUCK!', type: 'success', config: { effect: 'glitch' } },
       { id: '6', date: '2026-02-05 09:00:00', message: 'IDEA SUBMISSION PHASE ACTIVE!', type: 'success', config: { effect: 'typewriter' } },
       { id: '7', date: '2026-02-10 12:00:00', message: 'Reminder: Submission deadline is in 2 days.', type: 'warning', config: { effect: 'pulse' } },
