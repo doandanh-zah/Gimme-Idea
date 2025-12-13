@@ -29,6 +29,7 @@ export default function HackathonDashboard({ params }: { params: { id: string } 
   if (!hackathon) {
     return (
       <div className="min-h-screen bg-background text-gray-300 pt-32 pb-10 px-4 font-sans text-sm flex items-center justify-center">
+        <div className="text-center">
           <h1 className="text-4xl font-bold text-white font-quantico">404</h1>
           <p className="text-xl text-gray-400 mt-2">Hackathon Not Found</p>
           <Link href="/hackathons">
