@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import {
   Trophy, Calendar, Users, Clock, ChevronRight,
@@ -24,9 +24,47 @@ const LucideIconMap: { [key: string]: React.ElementType } = {
 export default function HackathonDashboard({ params }: { params: { id: string } }) {
   const [activeTab, setActiveTab] = useState('tracks');
   const [expandedTrack, setExpandedTrack] = useState<number | null>(null);
+  const [countdown, setCountdown] = useState({ text: 'Calculating...', label: 'Loading...' });
   const { id } = params;
 
   const hackathon = HACKATHONS_MOCK_DATA.find(h => h.id === id);
+
+  useEffect(() => {
+    if (!hackathon) return;
+
+    const updateTimer = () => {
+      const now = new Date();
+      // Parse timeline dates
+      const timelineDates = hackathon.timeline.map(t => ({ 
+        ...t, 
+        dateObj: new Date(t.date) 
+      })).sort((a, b) => a.dateObj.getTime() - b.dateObj.getTime());
+
+      // Find the first step that hasn't happened yet
+      const nextStep = timelineDates.find(step => step.dateObj > now);
+
+      if (nextStep) {
+        const diff = nextStep.dateObj.getTime() - now.getTime();
+        
+        const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+        const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+        const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+        const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+
+        setCountdown({
+           text: `${String(days).padStart(2, '0')}D : ${String(hours).padStart(2, '0')}H : ${String(minutes).padStart(2, '0')}M : ${String(seconds).padStart(2, '0')}S`,
+           label: `Next: ${nextStep.title}`
+        });
+      } else {
+        setCountdown({ text: 'Hackathon Ended', label: 'Status' });
+      }
+    };
+
+    updateTimer(); // Initial call
+    const interval = setInterval(updateTimer, 1000);
+
+    return () => clearInterval(interval);
+  }, [hackathon]);
 
   const now = new Date(); // Get current date/time
 
@@ -72,9 +110,12 @@ export default function HackathonDashboard({ params }: { params: { id: string } 
             </h1>
             <p className="text-xs text-gray-500 mt-1">{hackathon.title.substring(hackathon.title.indexOf('Season'))}</p>
             {hackathon.countdown && (
-              <div className="mt-4 flex items-center gap-2 text-gold bg-gold/5 px-3 py-2 rounded-lg border-gold/10">
-                <Clock className="w-4 h-4" />
-                <span className="font-mono font-bold">{hackathon.countdown}</span>
+              <div className="mt-4 space-y-1">
+                 <p className="text-[10px] text-gray-500 uppercase tracking-wider">{countdown.label}</p>
+                 <div className="flex items-center gap-2 text-gold bg-gold/5 px-3 py-2 rounded-lg border border-gold/10">
+                    <Clock className="w-4 h-4" />
+                    <span className="font-mono font-bold text-xs md:text-sm">{countdown.text}</span>
+                 </div>
               </div>
             )}
           </div>

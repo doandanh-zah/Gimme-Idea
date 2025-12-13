@@ -10,9 +10,12 @@ export const HACKATHONS_MOCK_DATA = [
     tags: ['Education', 'Solana', 'DeFi', 'Community'],
     countdown: '03M : 05D : 10H',
     timeline: [
-        { id: 1, title: 'Registration Opens', date: '2026-01-01T09:00:00Z', status: 'pending' },
-        { id: 2, title: 'Submission Deadline', date: '2026-02-10T17:00:00Z', status: 'pending' },
-        { id: 3, title: 'Judging & Demo Day', date: '2026-02-15T19:00:00Z', status: 'pending' },
+        { id: 1, title: 'Registration Opens', date: '2026-01-15T09:00:00Z' },
+        { id: 2, title: 'Registration Closes', date: '2026-02-01T17:00:00Z' },
+        { id: 3, title: 'Idea Submission Starts', date: '2026-02-05T09:00:00Z' },
+        { id: 4, title: 'Idea Submission Ends', date: '2026-02-12T17:00:00Z' },
+        { id: 5, title: 'Pitching Event', date: '2026-03-08T09:00:00Z' },
+        { id: 6, title: 'Grand Final: MVP & Tech Demo', date: '2026-03-15T09:00:00Z' },
     ],
     prizes: [
       { rank: '1st Place', reward: '10,000,000 VND' },
