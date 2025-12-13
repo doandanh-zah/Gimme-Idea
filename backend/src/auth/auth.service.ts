@@ -92,7 +92,8 @@ export class AuthService {
 
     // 4. Generate JWT token
     const jwtSecret = this.configService.get<string>("JWT_SECRET");
-    const jwtExpires = this.configService.get<string>("JWT_EXPIRES_IN") || "365d"; // 1 year
+    const jwtExpires =
+      this.configService.get<string>("JWT_EXPIRES_IN") || "365d"; // 1 year
 
     const token = jwt.sign(
       {
@@ -183,7 +184,8 @@ export class AuthService {
 
     // Generate JWT token
     const jwtSecret = this.configService.get<string>("JWT_SECRET");
-    const jwtExpires = this.configService.get<string>("JWT_EXPIRES_IN") || "365d"; // 1 year
+    const jwtExpires =
+      this.configService.get<string>("JWT_EXPIRES_IN") || "365d"; // 1 year
 
     const token = jwt.sign(
       {

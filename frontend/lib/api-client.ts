@@ -44,7 +44,7 @@ async function apiFetch<T>(
       if (typeof window !== "undefined") {
         localStorage.removeItem("auth_token");
         // Dispatch custom event to notify auth context
-        window.dispatchEvent(new CustomEvent('auth:unauthorized'));
+        window.dispatchEvent(new CustomEvent("auth:unauthorized"));
       }
       return {
         success: false,
@@ -436,7 +436,11 @@ export const apiClient = {
   // =====================================
 
   // Get all public feeds
-  getFeeds: (params?: { featured?: boolean; limit?: number; offset?: number }) => {
+  getFeeds: (params?: {
+    featured?: boolean;
+    limit?: number;
+    offset?: number;
+  }) => {
     const query = params
       ? new URLSearchParams(
           Object.entries(params)
@@ -467,7 +471,10 @@ export const apiClient = {
   getFeed: (feedIdOrSlug: string) => apiFetch<any>(`/feeds/${feedIdOrSlug}`),
 
   // Get items in a feed
-  getFeedItems: (feedIdOrSlug: string, params?: { limit?: number; offset?: number }) => {
+  getFeedItems: (
+    feedIdOrSlug: string,
+    params?: { limit?: number; offset?: number }
+  ) => {
     const query = params
       ? new URLSearchParams(
           Object.entries(params)
@@ -475,18 +482,33 @@ export const apiClient = {
             .map(([k, v]) => [k, String(v)])
         ).toString()
       : "";
-    return apiFetch<any>(`/feeds/${feedIdOrSlug}/items${query ? `?${query}` : ""}`);
+    return apiFetch<any>(
+      `/feeds/${feedIdOrSlug}/items${query ? `?${query}` : ""}`
+    );
   },
 
   // Create a new feed
-  createFeed: (data: { name: string; description?: string; coverImage?: string; visibility?: 'private' | 'unlisted' | 'public' }) =>
+  createFeed: (data: {
+    name: string;
+    description?: string;
+    coverImage?: string;
+    visibility?: "private" | "unlisted" | "public";
+  }) =>
     apiFetch<any>("/feeds", {
       method: "POST",
       body: JSON.stringify(data),
     }),
 
   // Update a feed
-  updateFeed: (feedId: string, data: { name?: string; description?: string; coverImage?: string; visibility?: 'private' | 'unlisted' | 'public' }) =>
+  updateFeed: (
+    feedId: string,
+    data: {
+      name?: string;
+      description?: string;
+      coverImage?: string;
+      visibility?: "private" | "unlisted" | "public";
+    }
+  ) =>
     apiFetch<any>(`/feeds/${feedId}`, {
       method: "PATCH",
       body: JSON.stringify(data),

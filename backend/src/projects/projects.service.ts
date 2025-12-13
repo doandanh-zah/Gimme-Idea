@@ -32,6 +32,7 @@ export class ProjectsService {
     // Full details (problem, solution, opportunity) are fetched in findOne
     let supabaseQuery = supabase.from("projects").select(`
         id,
+        slug,
         type,
         title,
         description,
@@ -49,7 +50,8 @@ export class ProjectsService {
         author:users!projects_author_id_fkey(
           username,
           wallet,
-          avatar
+          avatar,
+          slug
         )
       `);
 
@@ -162,6 +164,7 @@ export class ProjectsService {
       .select(
         `
         id,
+        slug,
         type,
         title,
         description,
@@ -181,7 +184,8 @@ export class ProjectsService {
         author:users!projects_author_id_fkey(
           username,
           wallet,
-          avatar
+          avatar,
+          slug
         )
       `
       )
@@ -248,7 +252,8 @@ export class ProjectsService {
       author:users!projects_author_id_fkey(
         username,
         wallet,
-        avatar
+        avatar,
+        slug
       )
     `;
 
@@ -326,6 +331,7 @@ export class ProjectsService {
 
     const projectResponse: Project = {
       id: project.id,
+      slug: project.slug,
       type: project.type || "project",
       title: project.title,
       description: project.description,
@@ -341,6 +347,7 @@ export class ProjectsService {
             username: project.author.username,
             wallet: project.author.wallet,
             avatar: project.author.avatar,
+            slug: project.author.slug,
           },
       bounty: project.bounty,
       imageUrl: project.image_url,
@@ -419,7 +426,8 @@ export class ProjectsService {
         author:users!projects_author_id_fkey(
           username,
           wallet,
-          avatar
+          avatar,
+          slug
         )
       `
       )
@@ -431,6 +439,7 @@ export class ProjectsService {
 
     const projectResponse: Project = {
       id: project.id,
+      slug: project.slug,
       type: project.type || "project",
       title: project.title,
       description: project.description,
@@ -446,6 +455,7 @@ export class ProjectsService {
             username: project.author.username,
             wallet: project.author.wallet,
             avatar: project.author.avatar,
+            slug: project.author.slug,
           },
       bounty: project.bounty,
       imageUrl: project.image_url,
@@ -670,7 +680,8 @@ export class ProjectsService {
         author:users!projects_author_id_fkey(
           username,
           wallet,
-          avatar
+          avatar,
+          slug
         )
       `
       )
@@ -682,6 +693,7 @@ export class ProjectsService {
 
     const projectResponse: Project = {
       id: updated.id,
+      slug: updated.slug,
       type: updated.type || "project",
       title: updated.title,
       description: updated.description,
@@ -697,6 +709,7 @@ export class ProjectsService {
             username: updated.author.username,
             wallet: updated.author.wallet,
             avatar: updated.author.avatar,
+            slug: updated.author.slug,
           },
       bounty: updated.bounty,
       imageUrl: updated.image_url,

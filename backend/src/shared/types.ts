@@ -3,6 +3,7 @@
 
 export interface Project {
   id: string;
+  slug?: string; // URL-friendly identifier
   type?: "project" | "idea";
   title: string;
   description: string;
@@ -25,6 +26,7 @@ export interface Project {
     username: string;
     wallet: string;
     avatar?: string;
+    slug?: string;
   } | null; // Nullable when isAnonymous
   bounty?: number;
   imageUrl?: string;
@@ -45,6 +47,7 @@ export interface Comment {
     username: string;
     wallet: string;
     avatar?: string;
+    slug?: string;
   } | null; // Nullable when isAnonymous
   likes: number;
   parentCommentId?: string; // For nested replies
