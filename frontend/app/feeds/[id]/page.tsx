@@ -13,6 +13,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { apiClient } from '@/lib/api-client';
 import { Feed, FeedItem, Project } from '@/lib/types';
 import { ProjectCard } from '@/components/ProjectCard';
+import { EditFeedModal } from '@/components/EditFeedModal';
 import Image from 'next/image';
 import toast from 'react-hot-toast';
 import { createUsernameSlug } from '@/lib/slug-utils';
@@ -37,6 +38,7 @@ export default function FeedDetailPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isFollowing, setIsFollowing] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
 
   // Background stars
   const [stars, setStars] = useState<{ id: number; top: string; left: string; size: number; duration: string; opacity: number }[]>([]);
@@ -311,8 +313,7 @@ export default function FeedDetailPage() {
                             <button
                               onClick={() => {
                                 setShowMenu(false);
-                                // TODO: Open edit modal
-                                toast('Edit coming soon!');
+                                setShowEditModal(true);
                               }}
                               className="w-full px-4 py-3 text-sm text-gray-300 hover:bg-white/5 flex items-center gap-2"
                             >
@@ -421,6 +422,16 @@ export default function FeedDetailPage() {
           )}
         </div>
       </div>
+
+      {/* Edit Feed Modal */}
+      {feed && (
+        <EditFeedModal
+          isOpen={showEditModal}
+          onClose={() => setShowEditModal(false)}
+          feed={feed}
+          onUpdate={(updatedFeed) => setFeed(updatedFeed)}
+        />
+      )}
     </div>
   );
 }

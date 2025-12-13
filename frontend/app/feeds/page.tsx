@@ -65,25 +65,35 @@ export default function FeedsPage() {
   const loadFeeds = async () => {
     setIsLoading(true);
     try {
-      // Load all public feeds
-      const publicRes = await apiClient.getFeeds({ limit: 50 });
+      // Load all data in parallel for better performance
+      const promises: Promise<any>[] = [
+        apiClient.getFeeds({ limit: 50 })
+      ];
+
+      // Add user-specific requests if logged in
+      if (user) {
+        promises.push(apiClient.getMyFeeds());
+        promises.push(apiClient.getFollowingFeeds());
+      }
+
+      const results = await Promise.all(promises);
+
+      // Process public feeds
+      const publicRes = results[0];
       if (publicRes.success && publicRes.data) {
         setAllPublicFeeds(publicRes.data);
-        // Top 3 for discover section
         setDiscoverFeeds(publicRes.data.slice(0, 3));
       }
 
-      // Load user's feeds if logged in
+      // Process user feeds if logged in
       if (user) {
-        const [myRes, followingRes] = await Promise.all([
-          apiClient.getMyFeeds(),
-          apiClient.getFollowingFeeds(),
-        ]);
+        const myRes = results[1];
+        const followingRes = results[2];
 
-        if (myRes.success && myRes.data) {
+        if (myRes?.success && myRes.data) {
           setMyFeeds(myRes.data);
         }
-        if (followingRes.success && followingRes.data) {
+        if (followingRes?.success && followingRes.data) {
           setFollowingFeeds(followingRes.data);
         }
       }
@@ -125,6 +135,7 @@ export default function FeedsPage() {
     const visConfig = VISIBILITY_CONFIG[feed.visibility] || VISIBILITY_CONFIG.public;
     const IconComponent = config.icon;
     const VisIcon = visConfig.icon;
+    const isOwner = user && feed.creatorId === user.id;
 
     return (
       <motion.div
@@ -209,7 +220,7 @@ export default function FeedsPage() {
             </div>
           )}
 
-          {showFollowButton && (
+          {showFollowButton && !isOwner && (
             <button
               onClick={(e) => {
                 e.stopPropagation();
@@ -310,7 +321,7 @@ export default function FeedsPage() {
           </div>
           
           {discoverFeeds.length > 0 ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
               {(showAllPublicFeeds ? allPublicFeeds : discoverFeeds).map((feed) => (
                 <FeedCard key={feed.id} feed={feed} />
               ))}
@@ -329,7 +340,7 @@ export default function FeedsPage() {
           <section className="mb-12">
             <h2 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
               <Bookmark className="w-5 h-5 text-blue-400" />
-              My Collections
+              My Feeds
             </h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
               {myFeeds.map((feed) => (

@@ -1,31 +1,42 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Loader2, Globe, Lock, Link2, Image as ImageIcon } from 'lucide-react';
+import { X, Loader2, Globe, Link2 } from 'lucide-react';
 import { apiClient } from '@/lib/api-client';
 import { Feed } from '@/lib/types';
 import toast from 'react-hot-toast';
 
-interface CreateFeedModalProps {
+interface EditFeedModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onCreated: (feed: Feed) => void;
+  feed: Feed;
+  onUpdate: (updatedFeed: Feed) => void;
 }
 
-export const CreateFeedModal: React.FC<CreateFeedModalProps> = ({
+export const EditFeedModal: React.FC<EditFeedModalProps> = ({
   isOpen,
   onClose,
-  onCreated,
+  feed,
+  onUpdate,
 }) => {
-  const [name, setName] = useState('');
-  const [description, setDescription] = useState('');
-  const [visibility, setVisibility] = useState<'public' | 'unlisted' | 'private'>('public');
+  const [name, setName] = useState(feed.name);
+  const [description, setDescription] = useState(feed.description || '');
+  const [visibility, setVisibility] = useState<'public' | 'unlisted'>(
+    feed.visibility === 'private' ? 'unlisted' : feed.visibility
+  );
   const [isLoading, setIsLoading] = useState(false);
+
+  useEffect(() => {
+    if (isOpen) {
+      setName(feed.name);
+      setDescription(feed.description || '');
+      setVisibility(feed.visibility === 'private' ? 'unlisted' : feed.visibility);
+    }
+  }, [isOpen, feed]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
     if (!name.trim()) {
       toast.error('Please enter a feed name');
       return;
@@ -33,23 +44,21 @@ export const CreateFeedModal: React.FC<CreateFeedModalProps> = ({
 
     setIsLoading(true);
     try {
-      const response = await apiClient.createFeed({
+      const response = await apiClient.updateFeed(feed.id, {
         name: name.trim(),
         description: description.trim() || undefined,
         visibility,
       });
 
       if (response.success && response.data) {
-        onCreated(response.data);
-        // Reset form
-        setName('');
-        setDescription('');
-        setVisibility('public');
+        onUpdate(response.data);
+        onClose();
+        toast.success('Feed updated successfully!');
       } else {
-        toast.error(response.error || 'Failed to create feed');
+        toast.error(response.error || 'Failed to update feed');
       }
     } catch (error) {
-      toast.error('Failed to create feed');
+      toast.error('Failed to update feed');
     } finally {
       setIsLoading(false);
     }
@@ -80,7 +89,7 @@ export const CreateFeedModal: React.FC<CreateFeedModalProps> = ({
         >
           {/* Header */}
           <div className="flex items-center justify-between p-5 border-b border-white/10">
-            <h2 className="text-xl font-bold text-white">Create New Feed</h2>
+            <h2 className="text-xl font-bold text-white">Edit Feed</h2>
             <button
               onClick={onClose}
               className="p-2 hover:bg-white/10 rounded-lg transition-colors"
@@ -174,10 +183,10 @@ export const CreateFeedModal: React.FC<CreateFeedModalProps> = ({
               {isLoading ? (
                 <>
                   <Loader2 className="w-4 h-4 animate-spin" />
-                  Creating...
+                  Saving...
                 </>
               ) : (
-                'Create Feed'
+                'Save Changes'
               )}
             </button>
           </form>
