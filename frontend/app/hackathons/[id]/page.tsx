@@ -29,6 +29,12 @@ const DEFAULT_NEW_TEAM = {
   maxMembers: 5
 };
 
+const MOCK_USER_IDEAS = [
+  { id: 'idea-1', title: 'Decentralized Uber', description: 'A peer-to-peer ride sharing protocol on Solana. Eliminating middlemen fees.', category: 'DePIN', tags: ['Mobility', 'Solana'], date: '2 days ago' },
+  { id: 'idea-2', title: 'NFT Ticketing', description: 'Eliminating scalpers using dynamic NFTs for event access with verifiable ownership.', category: 'NFT', tags: ['Events', 'Utility'], date: '1 week ago' },
+  { id: 'idea-3', title: 'DAO Governance Tool', description: 'AI-powered proposal summarizer for DAOs to increase voter participation.', category: 'DAO', tags: ['AI', 'Governance'], date: '2 weeks ago' },
+];
+
 export default function HackathonDashboard({ params }: { params: { id: string } }) {
   const { id } = params;
 
@@ -107,7 +113,8 @@ export default function HackathonDashboard({ params }: { params: { id: string } 
     description: '',
     projectUrl: '',
     videoUrl: '',
-    track: ''
+    track: '',
+    selectedIdeaId: '' // Add selection state
   });
   const [isSubmitted, setIsSubmitted] = useState(false);
 
@@ -744,23 +751,51 @@ export default function HackathonDashboard({ params }: { params: { id: string } 
                 {!isSubmitted ? (
                   <form onSubmit={handleSubmitProject} className="bg-surface border border-white/5 rounded-xl p-8 space-y-6">
                     <div className="text-center mb-8">
-                      <h2 className="text-2xl font-bold text-white font-quantico mb-2">Submit Your Project</h2>
-                      <p className="text-gray-400">Ready to showcase your work? Fill in the details below.</p>
+                      <h2 className="text-2xl font-bold text-white font-quantico mb-2">Submit Your Idea</h2>
+                      <p className="text-gray-400">Select an existing idea from your profile to enter the hackathon.</p>
                     </div>
 
-                    <div className="space-y-4">
-                      {/* Project Name */}
+                    <div className="space-y-6">
+                      {/* Select Idea Grid */}
                       <div>
-                        <label className="block text-xs font-bold text-gray-500 uppercase mb-2">Project Name</label>
-                        <input
-                          type="text"
-                          name="title"
-                          required
-                          value={submission.title}
-                          onChange={handleSubmissionChange}
-                          placeholder="e.g. Solana DeFi Aggregator"
-                          className="w-full bg-black/20 border border-white/10 rounded-lg px-4 py-3 text-white focus:border-gold/50 focus:outline-none transition-colors"
-                        />
+                         <div className="flex justify-between items-center mb-4">
+                            <label className="text-xs font-bold text-gray-500 uppercase">Select Idea</label>
+                            <Link href="/idea" className="text-xs text-gold hover:underline flex items-center gap-1">
+                               <Plus className="w-3 h-3" /> Create New Idea
+                            </Link>
+                         </div>
+                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                             {MOCK_USER_IDEAS.map(idea => {
+                                 const isSelected = submission.selectedIdeaId === idea.id;
+                                 return (
+                                     <div 
+                                         key={idea.id}
+                                         onClick={() => setSubmission(prev => ({ 
+                                              ...prev, 
+                                              selectedIdeaId: idea.id,
+                                              title: idea.title,
+                                              description: idea.description
+                                         }))}
+                                         className={`
+                                             relative p-5 rounded-xl border cursor-pointer transition-all group
+                                             ${isSelected ? 'bg-gold/5 border-gold shadow-[0_0_15px_rgba(255,215,0,0.1)]' : 'bg-black/20 border-white/10 hover:border-white/30 hover:bg-white/5'}
+                                         `}
+                                     >
+                                         <div className="flex justify-between items-start mb-2">
+                                              <div className="bg-white/10 px-2 py-0.5 rounded text-[10px] text-gray-300">{idea.category}</div>
+                                              {isSelected && <CheckCircle2 className="w-4 h-4 text-gold" />}
+                                         </div>
+                                         <h4 className={`font-bold mb-1 ${isSelected ? 'text-white' : 'text-gray-200'}`}>{idea.title}</h4>
+                                         <p className="text-xs text-gray-500 line-clamp-2">{idea.description}</p>
+                                         <div className="mt-3 flex gap-2">
+                                             {idea.tags.map(tag => (
+                                                 <span key={tag} className="text-[10px] text-gray-600">#{tag}</span>
+                                             ))}
+                                         </div>
+                                     </div>
+                                 );
+                             })}
+                         </div>
                       </div>
 
                       {/* Track Selection */}
@@ -813,53 +848,6 @@ export default function HackathonDashboard({ params }: { params: { id: string } 
                           {/* Automatically set the single track */}
                         </div>
                       )}
-
-                      {/* Description */}
-                      <div>
-                        <label className="block text-xs font-bold text-gray-500 uppercase mb-2">Short Description</label>
-                        <textarea
-                          name="description"
-                          required
-                          value={submission.description}
-                          onChange={handleSubmissionChange}
-                          rows={4}
-                          placeholder="Briefly describe your project, the problem it solves, and the solution..."
-                          className="w-full bg-black/20 border border-white/10 rounded-lg px-4 py-3 text-white focus:border-gold/50 focus:outline-none transition-colors resize-none"
-                        />
-                      </div>
-
-                      {/* URLs */}
-                      <div className="grid md:grid-cols-2 gap-4">
-                        <div>
-                          <label className="block text-xs font-bold text-gray-500 uppercase mb-2">Project URL / Repo</label>
-                          <div className="relative">
-                            <LinkIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
-                            <input
-                              type="url"
-                              name="projectUrl"
-                              required
-                              value={submission.projectUrl}
-                              onChange={handleSubmissionChange}
-                              placeholder="https://github.com/..."
-                              className="w-full bg-black/20 border border-white/10 rounded-lg pl-10 pr-4 py-3 text-white focus:border-gold/50 focus:outline-none transition-colors"
-                            />
-                          </div>
-                        </div>
-                        <div>
-                          <label className="block text-xs font-bold text-gray-500 uppercase mb-2">Demo / Video URL</label>
-                          <div className="relative">
-                            <Monitor className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
-                            <input
-                              type="url"
-                              name="videoUrl"
-                              value={submission.videoUrl}
-                              onChange={handleSubmissionChange}
-                              placeholder="https://youtube.com/..."
-                              className="w-full bg-black/20 border border-white/10 rounded-lg pl-10 pr-4 py-3 text-white focus:border-gold/50 focus:outline-none transition-colors"
-                            />
-                          </div>
-                        </div>
-                      </div>
                     </div>
 
                     <div className="pt-4 flex items-center justify-between border-t border-white/5 mt-6">
@@ -868,9 +856,14 @@ export default function HackathonDashboard({ params }: { params: { id: string } 
                       </p>
                       <button
                         type="submit"
-                        className="bg-gold text-black font-bold px-8 py-3 rounded-lg hover:bg-gold/90 transition-transform hover:scale-105 flex items-center gap-2"
+                        disabled={!submission.selectedIdeaId || !submission.track}
+                        className={`font-bold px-8 py-3 rounded-lg transition-all flex items-center gap-2
+                          ${(!submission.selectedIdeaId || !submission.track) 
+                            ? 'bg-gray-700 text-gray-500 cursor-not-allowed' 
+                            : 'bg-gold text-black hover:bg-gold/90 hover:scale-105'}
+                        `}
                       >
-                        <Zap className="w-4 h-4" /> Submit Project
+                        <Zap className="w-4 h-4" /> Submit Idea
                       </button>
                     </div>
                   </form>
