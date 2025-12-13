@@ -354,20 +354,20 @@ export default function HackathonDashboard({ params }: { params: { id: string } 
           </div>
           {/* Tab Content Area */}
           <div className="min-h-[400px]">
-            {activeTab === 'announcement' && (
-              <div className="bg-black border border-green-500/30 rounded-lg p-6 font-mono text-xs shadow-[0_0_20px_rgba(34,197,94,0.1)] min-h-[300px]">
-                <div className="flex gap-1.5 mb-4">
-                  <div className="w-3 h-3 rounded-full bg-red-500/50" />
-                  <div className="w-3 h-3 rounded-full bg-yellow-500/50" />
-                  <div className="w-3 h-3 rounded-full bg-green-500/50" />
-                </div>
-                <div className="space-y-4">
-                  <div className="border-b border-green-500/20 pb-2 flex justify-between">
-                    <div><span className="text-green-600">$</span> <span className="text-green-400">cat system_announcements.log</span></div>
-                    <div className="text-xs text-green-800">Connection: SECURE</div>
-                  </div>
-
-                  <div className="space-y-3 text-green-300/80 max-h-[200px] overflow-y-auto pr-2">                    {hackathon.announcements ? hackathon.announcements.map((log: any) => {
+                                                             {activeTab === 'announcement' && (
+                                                                <div className="bg-black border border-green-500/30 rounded-lg p-6 font-mono text-xs shadow-[0_0_20px_rgba(34,197,94,0.1)] min-h-[500px]">
+                                                                  <div className="flex gap-1.5 mb-4">
+                                                                    <div className="w-3 h-3 rounded-full bg-red-500/50" />
+                                                                    <div className="w-3 h-3 rounded-full bg-yellow-500/50" />
+                                                                    <div className="w-3 h-3 rounded-full bg-green-500/50" />
+                                                                  </div>
+                                                                  <div className="space-y-4">
+                                                                    <div className="border-b border-green-500/20 pb-2 flex justify-between">
+                                                                       <div><span className="text-green-600">$</span> <span className="text-green-400">cat system_announcements.log</span></div>
+                                                                       <div className="text-xs text-green-800">Connection: SECURE</div>
+                                                                    </div>
+                                                                    
+                                                                    <div className="space-y-3 text-green-300/80 max-h-[400px] overflow-y-auto pr-2">                    {hackathon.announcements ? hackathon.announcements.map((log: any) => {
                     // Effect Logic
                     let effectClass = '';
                     if (log.config?.effect === 'pulse') effectClass = 'animate-pulse font-bold';
