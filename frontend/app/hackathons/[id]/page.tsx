@@ -362,7 +362,7 @@ export default function HackathonDashboard({ params }: { params: { id: string } 
              {activeTab === 'awarding' && (
                 <div className="text-center py-10 text-gray-500">
                     <Trophy className="w-8 h-8 mx-auto mb-2 opacity-50" />
-                    <p>Thông tin trao thưởng sẽ được cập nhật sớm.</p>
+                    <p>Winner announced.</p>
                 </div>
              )}
           </div>
