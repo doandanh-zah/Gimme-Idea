@@ -31,7 +31,7 @@ export default function HackathonDashboard({ params }: { params: { id: string } 
   const hackathon = HACKATHONS_MOCK_DATA.find(h => h.id === id);
 
   const searchParams = useSearchParams();
-  const mockDate = searchParams.get('mockDate');
+  const mockDate = searchParams.get('mockDate') || searchParams.get('mockdate');
 
   useEffect(() => {
     if (!hackathon) return;
