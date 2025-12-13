@@ -23,15 +23,55 @@ const LucideIconMap: { [key: string]: React.ElementType } = {
 };
 
 export default function HackathonDashboard({ params }: { params: { id: string } }) {
-  const [activeTab, setActiveTab] = useState('tracks');
-  const [expandedTrack, setExpandedTrack] = useState<number | null>(null);
-  const [countdown, setCountdown] = useState({ text: 'Calculating...', label: 'Loading...' });
   const { id } = params;
 
   const hackathon = HACKATHONS_MOCK_DATA.find(h => h.id === id);
 
   const searchParams = useSearchParams();
   const mockDate = searchParams.get('mockDate') || searchParams.get('mockdate');
+  const now = mockDate ? new Date(mockDate) : new Date(); // Get current date/time (or mock)
+
+  // Timeline logic moved up
+  const dynamicTimeline = hackathon?.timeline.map((step, index) => {
+    const start = new Date(step.startDate);
+    const end = step.endDate ? new Date(step.endDate) : null;
+    const nextStart = hackathon.timeline[index + 1] ? new Date(hackathon.timeline[index + 1].startDate) : null;
+
+    let status = 'pending';
+    if (isBefore(now, start)) {
+      status = 'pending';
+    } else if (end) {
+      if (isBefore(now, end)) status = 'active';
+      else status = 'done';
+    } else {
+       if (nextStart && !isBefore(now, nextStart)) status = 'done';
+       else status = 'active';
+    }
+    return { ...step, status };
+  }) || [];
+
+  // Tab Logic: Hide locked, sort by newest unlocked first
+  const allTabs = [
+    { id: 'tracks', label: 'Tracks', stepId: null },
+    { id: 'team', label: 'Team', stepId: '1' },
+    { id: 'submission', label: 'Submission', stepId: '2' },
+    { id: 'voting', label: 'Voting', stepId: '3' },
+  ];
+
+  const visibleTabs = allTabs
+    .map(tab => {
+      const step = tab.stepId ? dynamicTimeline.find(s => s.id === tab.stepId) : null;
+      const startDate = step ? new Date(step.startDate) : new Date(0);
+      const isLocked = step ? isBefore(now, startDate) : false;
+      return { ...tab, startDate, isLocked };
+    })
+    .filter(tab => !tab.isLocked)
+    .sort((a, b) => b.startDate.getTime() - a.startDate.getTime());
+
+  // Initialize activeTab with the first visible tab (the newest unlocked one)
+  const [activeTab, setActiveTab] = useState(visibleTabs[0]?.id || 'tracks');
+  const [expandedTrack, setExpandedTrack] = useState<number | null>(null);
+  const [countdown, setCountdown] = useState({ text: 'Calculating...', label: 'Loading...' });
 
   useEffect(() => {
     if (!hackathon) return;
@@ -78,26 +118,6 @@ export default function HackathonDashboard({ params }: { params: { id: string } 
     }
   }, [hackathon, mockDate]);
 
-  const now = mockDate ? new Date(mockDate) : new Date(); // Get current date/time (or mock)
-
-  const dynamicTimeline = hackathon?.timeline.map((step, index) => {
-    const start = new Date(step.startDate);
-    const end = step.endDate ? new Date(step.endDate) : null;
-    const nextStart = hackathon.timeline[index + 1] ? new Date(hackathon.timeline[index + 1].startDate) : null;
-
-    let status = 'pending';
-    if (isBefore(now, start)) {
-      status = 'pending';
-    } else if (end) {
-      if (isBefore(now, end)) status = 'active';
-      else status = 'done';
-    } else {
-       if (nextStart && !isBefore(now, nextStart)) status = 'done';
-       else status = 'active';
-    }
-    return { ...step, status };
-  }) || [];
-
   if (!hackathon) {
     return (
       <div className="min-h-screen bg-background text-gray-300 pt-32 pb-10 px-4 font-sans text-sm flex items-center justify-center">
@@ -113,24 +133,6 @@ export default function HackathonDashboard({ params }: { params: { id: string } 
       </div>
     );
   }
-
-      // Tab Logic: Hide locked, sort by newest unlocked first
-      const allTabs = [
-        { id: 'tracks', label: 'Tracks', stepId: null },
-        { id: 'team', label: 'Team', stepId: '1' },
-        { id: 'submission', label: 'Submission', stepId: '2' },
-        { id: 'voting', label: 'Voting', stepId: '3' },
-      ];
-
-      const visibleTabs = allTabs
-        .map(tab => {
-          const step = tab.stepId ? dynamicTimeline.find(s => s.id === tab.stepId) : null;
-          const startDate = step ? new Date(step.startDate) : new Date(0);
-          const isLocked = step ? isBefore(now, startDate) : false;
-          return { ...tab, startDate, isLocked };
-        })
-        .filter(tab => !tab.isLocked)
-        .sort((a, b) => b.startDate.getTime() - a.startDate.getTime());
 
   return (
     <div className="min-h-screen bg-background text-gray-300 pt-28 pb-10 px-4 font-sans text-sm">
