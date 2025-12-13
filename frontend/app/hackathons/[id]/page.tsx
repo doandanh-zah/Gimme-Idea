@@ -68,11 +68,9 @@ export default function HackathonDashboard({ params }: { params: { id: string } 
   const allTabs = [
     { id: 'announcement', label: 'Announcements', stepId: null },
     { id: 'tracks', label: 'Tracks', stepId: null },
-    { id: 'register', label: 'Registration', stepId: '1' },
+    { id: 'register', label: 'Registration', stepId: '1', hideAfterEnd: true },
     { id: 'team', label: 'Team', stepId: '1' },
     { id: 'submission', label: 'Submission', stepId: '2' },
-    { id: 'pitching', label: 'Pitch Day', stepId: '3', preview: true },
-    { id: 'grand-final', label: 'Grand Final', stepId: '4', preview: true },
     { id: 'awarding', label: 'Winner Announcement', stepId: '4' },
   ];
 
@@ -82,6 +80,7 @@ export default function HackathonDashboard({ params }: { params: { id: string } 
       const step = stepIndex !== -1 ? dynamicTimeline[stepIndex] : null;
       
       let unlockDate = new Date(0); // Default unlocked for static tabs like Tracks
+      let isExpired = false;
 
       if (step) {
          if (tab.preview && stepIndex > 0) {
@@ -92,12 +91,17 @@ export default function HackathonDashboard({ params }: { params: { id: string } 
             // Standard Mode: Unlock when the step actually starts
             unlockDate = new Date(step.startDate);
          }
+
+         // Expire logic: Hide after phase ends if configured
+         if (tab.hideAfterEnd && step.endDate) {
+            isExpired = !isBefore(now, new Date(step.endDate));
+         }
       }
 
       const isLocked = isBefore(now, unlockDate);
-      return { ...tab, startDate: unlockDate, isLocked };
+      return { ...tab, startDate: unlockDate, isLocked, isExpired };
     })
-    .filter((tab: any) => !tab.isLocked)
+    .filter((tab: any) => !tab.isLocked && !tab.isExpired)
     .sort((a: any, b: any) => b.startDate.getTime() - a.startDate.getTime());
 
   // Initialize activeTab with the first visible tab (the newest unlocked one)
@@ -318,22 +322,6 @@ export default function HackathonDashboard({ params }: { params: { id: string } 
                                 </div>
                               </div>
                             </div>
-                          </div>
-                       )}
-          
-                       {activeTab === 'pitching' && (
-                          <div className="text-center py-10 text-gray-500">
-                              <Mic className="w-8 h-8 mx-auto mb-2 opacity-50" />
-                              <h3 className="text-xl font-bold text-white mb-2">Pitch Day</h3>
-                              <p>Get your slides ready! The top 10 teams will present to the judges.</p>
-                          </div>
-                       )}
-          
-                       {activeTab === 'grand-final' && (
-                          <div className="text-center py-10 text-gray-500">
-                              <Trophy className="w-8 h-8 mx-auto mb-2 opacity-50 text-gold" />
-                              <h3 className="text-xl font-bold text-white mb-2">Grand Final</h3>
-                              <p>The final showdown. Who will take home the grand prize?</p>
                           </div>
                        )}
           
