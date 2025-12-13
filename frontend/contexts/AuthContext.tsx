@@ -67,9 +67,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
 
         return userData;
+      } else {
+        // API call failed - clear user state
+        console.warn('Login API failed:', response.error);
+        setUser(null);
+        return null;
       }
     } catch (error) {
       console.error('Email login error:', error);
+      setUser(null);
     }
     return null;
   }, []);
@@ -104,6 +110,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [supabaseUser]);
 
   useEffect(() => {
+    // Handle auth:unauthorized event from API client
+    const handleUnauthorized = () => {
+      console.warn('Session expired - logging out');
+      setUser(null);
+      setIsNewUser(false);
+      setShowWalletPopup(false);
+      // Also sign out from Supabase to clear session
+      supabase.auth.signOut();
+    };
+
+    window.addEventListener('auth:unauthorized', handleUnauthorized);
+    
     // Handle hash fragment from OAuth redirect (when Supabase redirects to root with hash)
     const handleHashFragment = async () => {
       if (typeof window !== 'undefined' && window.location.hash) {
@@ -164,7 +182,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
     );
 
-    return () => subscription.unsubscribe();
+    return () => {
+      subscription.unsubscribe();
+      window.removeEventListener('auth:unauthorized', handleUnauthorized);
+    };
   }, [processEmailLogin]);
 
   const signInWithGoogle = async () => {

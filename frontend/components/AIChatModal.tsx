@@ -313,8 +313,9 @@ export const AIChatModal: React.FC<AIChatModalProps> = ({ isOpen, onClose }) => 
   };
 
   const handleIdeaClick = (idea: Project) => {
-    // Use idea.id directly until database has slug column
-    router.push(`/idea/${idea.id}`);
+    // Use slug if available, fallback to id
+    const slugOrId = idea.slug || idea.id;
+    router.push(`/idea/${slugOrId}`);
     onClose();
   };
 

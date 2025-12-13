@@ -39,6 +39,19 @@ async function apiFetch<T>(
 
     const data = await response.json();
 
+    // Handle 401 Unauthorized - clear token and trigger re-auth
+    if (response.status === 401) {
+      if (typeof window !== "undefined") {
+        localStorage.removeItem("auth_token");
+        // Dispatch custom event to notify auth context
+        window.dispatchEvent(new CustomEvent('auth:unauthorized'));
+      }
+      return {
+        success: false,
+        error: "Session expired. Please sign in again.",
+      };
+    }
+
     // If response contains token, save it
     if (data.data?.token) {
       localStorage.setItem("auth_token", data.data.token);

@@ -273,7 +273,21 @@ export class ProjectsService {
       error = result.error;
     }
 
-    // If not UUID or not found, try ID prefix match (for old slug format like "my-idea-abc12345")
+    // If not UUID, try slug lookup first (clean URLs)
+    if (!project && !isUUID) {
+      const result = await supabase
+        .from("projects")
+        .select(selectQuery)
+        .eq("slug", idOrSlug)
+        .single();
+
+      if (result.data) {
+        project = result.data;
+        error = null;
+      }
+    }
+
+    // Fallback: try ID prefix match (for old URLs like "my-idea-abc12345")
     if (!project) {
       const parts = idOrSlug.split("-");
       const lastPart = parts[parts.length - 1];
@@ -287,22 +301,6 @@ export class ProjectsService {
 
         project = result.data;
         error = result.error;
-      }
-    }
-
-    // Finally try slug lookup (only if slug column exists in database)
-    if (!project) {
-      try {
-        const result = await supabase
-          .from("projects")
-          .select(selectQuery)
-          .eq("slug", idOrSlug)
-          .single();
-
-        project = result.data;
-        error = result.error;
-      } catch (e) {
-        // slug column might not exist yet
       }
     }
 
