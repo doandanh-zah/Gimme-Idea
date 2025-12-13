@@ -16,6 +16,7 @@ import { MarkdownGuide } from './MarkdownGuide';
 import { AuthorLink, AuthorAvatar } from './AuthorLink';
 import { apiClient } from '../lib/api-client';
 import { sanitizeText, hasDangerousContent } from '../lib/sanitize';
+import { createUniqueSlug } from '../lib/slug-utils';
 
 // AI Bot display name
 const AI_BOT_NAME = 'Gimme Sensei';
@@ -510,11 +511,12 @@ export const IdeaDetail = () => {
   };
 
   const handleShareToX = () => {
-      // Create shareable URL with proper routing
-      const ideaUrl = `${window.location.origin}/idea/${project.id}`;
+      // Create shareable URL with slug format
+      const slug = createUniqueSlug(project.title, project.id);
+      const ideaUrl = `${window.location.origin}/idea/${slug}`;
 
-      // Create tweet text
-      const tweetText = `Check out this idea on Gimme Idea: "${project.title}"\n\n${project.description?.substring(0, 100)}${project.description?.length > 100 ? '...' : ''}\n\n`;
+      // Create engaging tweet text
+      const tweetText = `💡 Found an interesting idea on @GimmeIdea!\n\n"${project.title}"\n\nWhat do you think? 👇`;
 
       // Create Twitter intent URL
       const twitterUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(tweetText)}&url=${encodeURIComponent(ideaUrl)}`;

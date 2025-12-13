@@ -18,7 +18,7 @@ import { useFollow } from '../hooks/useFollow';
 import toast from 'react-hot-toast';
 import { Project, Feed } from '../lib/types';
 import { apiClient } from '../lib/api-client';
-import { uploadAvatar, uploadCoverImage } from '../lib/imgbb';
+import { uploadAvatar } from '../lib/imgbb';
 import { createUsernameSlug } from '../lib/slug-utils';
 
 interface UserStats {
@@ -338,7 +338,7 @@ export const Profile = () => {
         const blob = await response.blob();
         const file = new File([blob], 'cover.jpg', { type: 'image/jpeg' });
         
-        const imageUrl = await uploadCoverImage(file);
+        const imageUrl = await uploadAvatar(file);
         setEditForm({ ...editForm, coverImage: imageUrl });
         toast.success('Cover uploaded! Remember to save your profile.');
     } catch (error: any) {
