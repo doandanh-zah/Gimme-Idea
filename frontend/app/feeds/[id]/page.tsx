@@ -535,11 +535,11 @@ export default function FeedDetailPage() {
                 <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-red-500/20 flex items-center justify-center">
                   <AlertTriangle className="w-8 h-8 text-red-500" />
                 </div>
-                <h3 className="text-xl font-bold text-white mb-2">Delete Feed</h3>
+                <h3 className="text-xl font-bold text-white mb-2">Delete Feed?</h3>
                 <p className="text-gray-400">
-                  Are you sure you want to delete <span className="text-white font-medium">"{feed?.name}"</span>? 
-                  This action cannot be undone.
+                  Are you sure you want to delete <span className="text-white font-medium">"{feed?.name}"</span>?
                 </p>
+                <p className="text-red-400 text-sm mt-2">This action cannot be undone.</p>
               </div>
 
               {/* Actions */}
