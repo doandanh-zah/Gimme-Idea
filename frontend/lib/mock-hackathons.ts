@@ -7,7 +7,6 @@ export const HACKATHONS_MOCK_DATA = [
     participants: 0,
     prizePool: '17,000,000 VND',
     description: 'Build innovative solutions for the education sector leveraging the power of Solana blockchain. Focus on decentralized learning, credentialing, and community building.',
-    tags: ['Education', 'Solana', 'DeFi', 'Community'],
     countdown: '03M : 05D : 10H',
     timeline: [
       { id: '1', title: 'Registration Phase', startDate: '2026-01-15T00:00:00+07:00', endDate: '2026-02-01T17:00:00+07:00' },
