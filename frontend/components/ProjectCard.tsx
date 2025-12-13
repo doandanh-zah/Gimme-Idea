@@ -8,6 +8,7 @@ import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
 import { motion, AnimatePresence } from 'framer-motion';
 import { AuthorLink } from './AuthorLink';
+import { createUniqueSlug } from '../lib/slug-utils';
 
 interface ProjectCardProps {
   project: Project;
@@ -37,9 +38,9 @@ export const ProjectCard: React.FC<ProjectCardProps> = ({ project }) => {
   };
 
   const handleCardClick = () => {
-    // Use slug from project if available, otherwise use project ID for backward compatibility
-    const slugOrId = project.slug || project.id;
-    const route = isIdea ? `/idea/${slugOrId}` : `/projects/${slugOrId}`;
+    // Create clean URL slug from title + short ID
+    const slug = createUniqueSlug(project.title, project.id);
+    const route = isIdea ? `/idea/${slug}` : `/projects/${slug}`;
     router.push(route);
   };
 
