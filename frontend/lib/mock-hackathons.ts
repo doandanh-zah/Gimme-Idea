@@ -42,10 +42,13 @@ export const HACKATHONS_MOCK_DATA = [
     projectTicket: null,
     image_url: 'https://images.unsplash.com/photo-1596495578051-24750d42171f?q=80&w=2940&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D',
     announcements: [
-      { id: '1', date: '2026-01-15 09:00:00', message: 'System initialized. Registration phase active.', type: 'info', config: { effect: 'typewriter' } },
-      { id: '2', date: '2026-01-20 14:30:00', message: 'New mentor added: @solana_dev_core', type: 'info' },
-      { id: '3', date: '2026-02-01 00:00:00', message: 'WARNING: Registration deadline approaching.', type: 'warning', config: { effect: 'pulse', widget: { type: 'countdown', target: '2026-02-01T17:00:00+07:00' } } },
-      { id: '4', date: '2026-02-05 09:00:00', message: 'Idea Submission phase unlocked.', type: 'success', config: { effect: 'glitch' } },
+      { id: '1', date: '2026-01-15 09:00:00', message: 'System initialized. Welcome, builder!', type: 'info', config: { effect: 'typewriter' } },
+      { id: '2', date: '2026-01-16 10:00:00', message: 'New resource added: Solana Cookbook. Check the Resources tab.', type: 'info' },
+      { id: '3', date: '2026-01-20 14:30:00', message: 'Mentor @solana_dev_core joined the Discord server. Ask your questions!', type: 'info' },
+      { id: '4', date: '2026-01-25 00:00:00', message: 'WARNING: Registration closes in', type: 'warning', config: { effect: 'pulse', widget: { type: 'countdown', target: '2026-02-01T17:00:00+07:00' } } },
+      { id: '5', date: '2026-02-01 17:00:00', message: 'REGISTRATION PHASE CONCLUDED. GOOD LUCK!', type: 'success', config: { effect: 'glitch' } },
+      { id: '6', date: '2026-02-05 09:00:00', message: 'IDEA SUBMISSION PHASE ACTIVE!', type: 'success', config: { effect: 'typewriter' } },
+      { id: '7', date: '2026-02-10 12:00:00', message: 'Reminder: Submission deadline is in 2 days.', type: 'warning', config: { effect: 'pulse' } },
     ]
   },
 ];
