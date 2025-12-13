@@ -28,12 +28,11 @@ export default function HackathonDashboard({ params }: { params: { id: string } 
 
   if (!hackathon) {
     return (
-      <div className="min-h-screen bg-[#0a0a0a] text-gray-300 pt-32 pb-10 px-4 font-sans text-sm flex items-center justify-center">
-        <div className="text-center">
+      <div className="min-h-screen bg-background text-gray-300 pt-32 pb-10 px-4 font-sans text-sm flex items-center justify-center">
           <h1 className="text-4xl font-bold text-white font-quantico">404</h1>
           <p className="text-xl text-gray-400 mt-2">Hackathon Not Found</p>
           <Link href="/hackathons">
-            <span className="mt-4 inline-flex items-center text-[#FFD700] hover:underline cursor-pointer">
+            <span className="mt-4 inline-flex items-center text-gold hover:underline cursor-pointer">
               Go to Hackathons List <ChevronRight className="w-4 h-4 ml-1" />
             </span>
           </Link>
@@ -43,19 +42,19 @@ export default function HackathonDashboard({ params }: { params: { id: string } 
   }
 
   return (
-    <div className="min-h-screen bg-[#0a0a0a] text-gray-300 pt-28 pb-10 px-4 font-sans text-sm">
+    <div className="min-h-screen bg-background text-gray-300 pt-28 pb-10 px-4 font-sans text-sm">
       <div className="max-w-[1400px] mx-auto grid grid-cols-1 lg:grid-cols-12 gap-6">
         
         {/* --- LEFT COLUMN: META & TIMELINE (20%) --- */}
         <aside className="lg:col-span-3 space-y-6">
           {/* Event Info Card */}
-          <div className="bg-[#111] border border-white/5 rounded-xl p-4">
+          <div className="bg-surface border border-white/5 rounded-xl p-4">
             <h1 className="text-xl font-bold text-white font-quantico">
-              {hackathon.title.split(' ')[0]}<span className="text-[#FFD700]">{hackathon.title.split(' ')[1]}</span>
+              {hackathon.title.split(' ')[0]}<span className="text-gold">{hackathon.title.split(' ')[1]}</span>
             </h1>
             <p className="text-xs text-gray-500 mt-1">{hackathon.title.substring(hackathon.title.indexOf('Season'))}</p>
             {hackathon.countdown && (
-              <div className="mt-4 flex items-center gap-2 text-[#FFD700] bg-[#FFD700]/5 px-3 py-2 rounded-lg border border-[#FFD700]/10">
+              <div className="mt-4 flex items-center gap-2 text-gold bg-gold/5 px-3 py-2 rounded-lg border-gold/10">
                 <Clock className="w-4 h-4" />
                 <span className="font-mono font-bold">{hackathon.countdown}</span>
               </div>
@@ -64,15 +63,15 @@ export default function HackathonDashboard({ params }: { params: { id: string } 
 
           {/* Slim Vertical Timeline */}
           {hackathon.timeline && hackathon.timeline.length > 0 && (
-            <div className="bg-[#111] border border-white/5 rounded-xl p-4">
+            <div className="bg-surface border border-white/5 rounded-xl p-4">
               <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-4">Timeline</h3>
               <div className="relative border-l border-white/10 ml-2 space-y-6">
                 {hackathon.timeline.map((step) => (
                   <div key={step.id} className="relative pl-6 group cursor-default">
                     <div className={`absolute -left-[5px] top-1 w-2.5 h-2.5 rounded-full border-2 transition-all
                       ${step.status === 'done' ? 'bg-green-500 border-green-500' : 
-                        step.status === 'active' ? 'bg-[#FFD700] border-[#FFD700] shadow-[0_0_8px_#FFD700]' : 
-                        'bg-[#111] border-gray-600'}`} 
+                        step.status === 'active' ? 'bg-gold border-goldshadow-[0_0_8px_var(--color-gold)]' : 
+                        'bg-surface border-gray-600'}`} 
                     />
                     <div className={`${step.status === 'active' ? 'text-white' : 'text-gray-500'}`}>
                       <p className="font-medium text-xs md:text-sm">{step.title}</p>
@@ -86,7 +85,7 @@ export default function HackathonDashboard({ params }: { params: { id: string } 
 
           {/* Tasks */}
            {hackathon.tasks && hackathon.tasks.length > 0 && (
-            <div className="bg-[#111] border border-white/5 rounded-xl p-4">
+            <div className="bg-surface border border-white/5 rounded-xl p-4">
                <div className="flex items-center justify-between mb-4">
                   <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider">Your Tasks</h3>
                   <span className="text-[10px] bg-green-900/30 text-green-400 px-1.5 py-0.5 rounded">
@@ -116,7 +115,7 @@ export default function HackathonDashboard({ params }: { params: { id: string } 
           
           {/* Image Banner */}
           {hackathon.image_url && (
-            <div className="relative w-full aspect-[6/1] rounded-xl overflow-hidden shadow-lg border border-white/5 bg-gradient-to-br from-[#1a1a1a] to-[#0a0a0a]">
+            <div className="relative w-full aspect-[6/1] rounded-xl overflow-hidden shadow-lg border border-white/5 bg-gradient-to-br from-surfaceHighlight to-background">
               <Image 
                 src={hackathon.image_url} 
                 alt={`${hackathon.title} Banner`} 
@@ -124,28 +123,11 @@ export default function HackathonDashboard({ params }: { params: { id: string } 
                 objectFit="cover" 
                 className="opacity-80 hover:opacity-100 transition-opacity duration-300"
               />
-              <div className="absolute inset-0 bg-gradient-to-t from-[#0a0a0a]/70 via-transparent to-transparent" />
+              <div className="absolute inset-0 bg-gradient-to-t from-background/70 via-transparent to-transparent" />
             </div>
           )}
 
-          {/* Top Stats Bar */}
-          <div className="grid grid-cols-3 gap-4">
-            <div className="bg-[#111] border border-white/5 rounded-xl p-4 flex flex-col items-center justify-center">
-               <Trophy className="w-5 h-5 text-yellow-500 mb-1" />
-               <span className="text-lg font-bold text-white">{hackathon.prizePool}</span>
-               <span className="text-[10px] text-gray-500 uppercase">Prize Pool</span>
-            </div>
-            <div className="bg-[#111] border border-white/5 rounded-xl p-4 flex flex-col items-center justify-center">
-               <Users className="w-5 h-5 text-blue-500 mb-1" />
-               <span className="text-lg font-bold text-white">{hackathon.participants}</span>
-               <span className="text-[10px] text-gray-500 uppercase">Participants</span>
-            </div>
-            <div className="bg-[#111] border border-white/5 rounded-xl p-4 flex flex-col items-center justify-center">
-               <Target className="w-5 h-5 text-red-500 mb-1" />
-               <span className="text-lg font-bold text-white">{hackathon.tracks?.length || 0}</span>
-               <span className="text-[10px] text-gray-500 uppercase">Tracks</span>
-            </div>
-          </div>
+
 
           {/* Navigation Tabs */}
           <div className="flex border-b border-white/10">
@@ -154,12 +136,12 @@ export default function HackathonDashboard({ params }: { params: { id: string } 
                  key={tab}
                  onClick={() => setActiveTab(tab.toLowerCase())}
                  className={`px-6 py-3 text-sm font-medium transition-colors relative ${
-                   activeTab === tab.toLowerCase() ? 'text-[#FFD700]' : 'text-gray-500 hover:text-white'
+                   activeTab === tab.toLowerCase() ? 'text-gold' : 'text-gray-500 hover:text-white'
                  }`}
                >
                  {tab}
                  {activeTab === tab.toLowerCase() && (
-                   <motion.div layoutId="underline" className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#FFD700]" />
+                   <motion.div layoutId="underline" className="absolute bottom-0 left-0 right-0 h-0.5 bg-gold" />
                  )}
                </button>
              ))}
@@ -199,7 +181,7 @@ export default function HackathonDashboard({ params }: { params: { id: string } 
           
           {/* Compact Ticket (Stackable Design) */}
           {hackathon.projectTicket && (
-            <div className="bg-gradient-to-b from-[#1a1a1a] to-[#111] border border-white/10 rounded-xl p-0 overflow-hidden shadow-lg relative group">
+            <div className="bg-gradient-to-b from-surfaceHighlight to-surface border border-white/10 rounded-xl p-0 overflow-hidden shadow-lg relative group">
               {/* Decorative Top Line */}
               <div className="h-1 w-full bg-gradient-to-r from-purple-500 via-blue-500 to-green-500" />
               
@@ -225,7 +207,7 @@ export default function HackathonDashboard({ params }: { params: { id: string } 
 
           {/* Tracks Section (Moved from Center) */}
           {hackathon.tracks && hackathon.tracks.length > 0 && (
-             <div className="bg-[#111] border border-white/5 rounded-xl p-4 space-y-3">
+             <div className="bg-surface border border-white/5 rounded-xl p-4 space-y-3">
                 <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Tracks & Bounties</h3>
                 {hackathon.tracks.map((track, i) => {
                    const TrackIcon = LucideIconMap[track.icon as keyof typeof LucideIconMap] || Target;
@@ -241,7 +223,7 @@ export default function HackathonDashboard({ params }: { params: { id: string } 
                       </div>
                       <div className="flex items-center justify-between">
                          <span className="text-[10px] text-gray-500">Reward Pool</span>
-                         <span className="text-xs font-mono text-[#FFD700] bg-[#FFD700]/10 px-2 py-0.5 rounded border border-[#FFD700]/20">
+                         <span className="text-xs font-mono text-gold bg-gold/10 px-2 py-0.5 rounded border-gold/20">
                             {track.reward}
                          </span>
                       </div>
@@ -253,7 +235,7 @@ export default function HackathonDashboard({ params }: { params: { id: string } 
 
           {/* Resources */}
           {hackathon.resources && hackathon.resources.length > 0 && (
-            <div className="bg-[#111] border border-white/5 rounded-xl p-4 space-y-2">
+            <div className="bg-surface border border-white/5 rounded-xl p-4 space-y-2">
                <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Resources</h3>
                {hackathon.resources.map((resource, i) => {
                  const ResourceIcon = LucideIconMap[resource.icon as keyof typeof LucideIconMap] || LinkIcon;
