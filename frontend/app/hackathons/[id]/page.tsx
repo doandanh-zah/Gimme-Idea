@@ -67,6 +67,7 @@ export default function HackathonDashboard({ params }: { params: { id: string } 
   // Tab Logic: Hide locked, sort by newest unlocked first
   const allTabs = [
     { id: 'tracks', label: 'Tracks', stepId: null },
+    { id: 'register', label: 'Registration', stepId: '1' },
     { id: 'team', label: 'Team', stepId: '1' },
     { id: 'submission', label: 'Submission', stepId: '2' },
     { id: 'awarding', label: 'Winner Announcement', stepId: '3' },
@@ -337,6 +338,43 @@ export default function HackathonDashboard({ params }: { params: { id: string } 
             )}
 
 
+
+            {activeTab === 'register' && (
+              <div className="bg-surface border border-white/5 rounded-xl p-8 text-center space-y-6">
+                <div className="flex flex-col items-center gap-2">
+                   <div className="bg-green-500/20 text-green-500 p-3 rounded-full mb-2">
+                      <CheckCircle2 className="w-8 h-8" />
+                   </div>
+                   <h2 className="text-3xl font-bold text-white font-quantico">Registration is Open</h2>
+                   <p className="text-gray-400 max-w-lg mx-auto">
+                      Join thousands of builders in the DSUC Hackathon. Secure your spot now to access resources, find a team, and submit your project.
+                   </p>
+                </div>
+
+                <div className="grid md:grid-cols-3 gap-4 max-w-2xl mx-auto py-6">
+                   <div className="bg-white/5 p-4 rounded-lg">
+                      <h4 className="font-bold text-white mb-1">Create Account</h4>
+                      <p className="text-xs text-gray-500">Sign up with your wallet or email.</p>
+                   </div>
+                   <div className="bg-white/5 p-4 rounded-lg">
+                      <h4 className="font-bold text-white mb-1">Complete Profile</h4>
+                      <p className="text-xs text-gray-500">Tell us about your skills and interests.</p>
+                   </div>
+                   <div className="bg-white/5 p-4 rounded-lg">
+                      <h4 className="font-bold text-white mb-1">Join Discord</h4>
+                      <p className="text-xs text-gray-500">Connect with the community.</p>
+                   </div>
+                </div>
+
+                <button className="bg-gold text-black text-lg font-bold px-8 py-3 rounded-lg hover:bg-gold/90 transition-transform hover:scale-105">
+                   Register Now
+                </button>
+
+                <p className="text-xs text-gray-500">
+                   Registration closes on Feb 01, 2026
+                </p>
+              </div>
+            )}
 
             {activeTab === 'team' && (
               <div className="space-y-6">
