@@ -22,6 +22,13 @@ const LucideIconMap: { [key: string]: React.ElementType } = {
   Monitor, Mic, SwatchBook, Code, ShieldCheck, Smartphone, UserPlus, RefreshCw
 };
 
+const DEFAULT_NEW_TEAM = {
+  name: 'My New Team',
+  tags: ['New', 'Idea'],
+  members: [{ name: 'You', role: 'Leader', isLeader: true }],
+  maxMembers: 5
+};
+
 export default function HackathonDashboard({ params }: { params: { id: string } }) {
   const { id } = params;
 
@@ -51,14 +58,7 @@ export default function HackathonDashboard({ params }: { params: { id: string } 
   }) || [];
 
   // Tab Logic: Hide locked, sort by newest unlocked first
-  const allTabs = [
-    { id: 'announcement', label: 'Announcements', stepId: null },
-    { id: 'tracks', label: 'Tracks', stepId: null },
-    { id: 'register', label: 'Registration', stepId: '1', hideAfterEnd: true },
-    { id: 'team', label: 'Team', stepId: '1' },
-    { id: 'submission', label: 'Submission', stepId: '2' },
-    { id: 'awarding', label: 'Winner Announcement', stepId: '4' },
-  ];
+  const allTabs = hackathon?.tabs || [];
 
   const visibleTabs = allTabs
     .map((tab: any) => {
@@ -419,21 +419,19 @@ export default function HackathonDashboard({ params }: { params: { id: string } 
                                                                                                                      <div className="flex items-center gap-2 pt-2 border-t border-green-500/20 shrink-0">
                                                                                                                        <span className="text-green-500">$</span>
                                                                                                                        <div className="relative flex-1">
-                                                                                                                                                                                     <motion.input
-                                                                                                                                                                                       type="text"
-                                                                                                                                                                                       value={terminalInput}
-                                                                                                                                                                                       onChange={(e) => setTerminalInput(e.target.value)}
-                                                                                                                                                                                       onKeyDown={handleTerminalSubmit}
-                                                                                                                                                                                                                                                     className={`border outline-none font-mono w-full px-2 py-1 rounded
-                                                                                                                                                                                                                                                       ${isTerminalShaking ? 'bg-red-900/20 border-red-500 text-red-500 placeholder-red-500/50' : 'bg-transparent border-transparent text-green-500'}
-                                                                                                                                                                                                                                                     `}
-                                                                                                                                                                                                                                                     animate={isTerminalShaking ? { x: [-10, 10, -10, 10, 0], y: [-5, 5, -5, 5, 0] } : {}}
-                                                                                                                                                                                                                                                     transition={{ duration: 0.4 }}                                                                                                                                                                                       spellCheck={false}
-                                                                                                                                                                                       autoComplete="off"
-                                                                                                                                                                                     />                                                                                                                         {!terminalInput && (
-                                                                                                                           <span className="absolute left-0 top-1/2 -translate-y-1/2 w-2 h-4 bg-green-500 animate-pulse block pointer-events-none" />
-                                                                                                                         )}
-                                                                                                                       </div>
+                                                                                                                                                                                                                                                 <motion.input
+                                                                                                                                                                                                                                                   type="text"
+                                                                                                                                                                                                                                                   value={terminalInput}
+                                                                                                                                                                                                                                                   onChange={(e) => setTerminalInput(e.target.value)}
+                                                                                                                                                                                                                                                   onKeyDown={handleTerminalSubmit}
+                                                                                                                                                                                                                                                   className={`border outline-none font-mono w-full px-2 py-1 rounded
+                                                                                                                                                                                                                                                     ${isTerminalShaking ? 'bg-red-900/20 border-red-500 text-red-500 placeholder-red-500/50' : 'bg-transparent border-transparent text-green-500'}
+                                                                                                                                                                                                                                                   `}
+                                                                                                                                                                                                                                                   animate={isTerminalShaking ? { x: [-10, 10, -10, 10, 0], y: [-5, 5, -5, 5, 0] } : {}}
+                                                                                                                                                                                                                                                   transition={{ duration: 0.4 }}
+                                                                                                                                                                                                                                                   spellCheck={false}
+                                                                                                                                                                                                                                                   autoComplete="off"
+                                                                                                                                                                                                                                                 />                                                                                                                       </div>
                                                                                                                      </div>
                                                                                                                    </div>
                                                                                                                  </div>
@@ -527,10 +525,9 @@ export default function HackathonDashboard({ params }: { params: { id: string } 
                   Register Now
                 </button>
 
-                <p className="text-xs text-gray-500">
-                  Registration closes on Feb 01, 2026
-                </p>
-              </div>
+                                <p className="text-xs text-gray-500">
+                                   Registration closes on {hackathon.timeline.find(s => s.id === '1')?.endDate ? format(new Date(hackathon.timeline.find(s => s.id === '1')!.endDate!), 'MMM dd, yyyy') : 'TBA'}
+                                </p>              </div>
             )}
 
             {activeTab === 'team' && (
@@ -616,19 +613,13 @@ export default function HackathonDashboard({ params }: { params: { id: string } 
                         <h2 className="text-2xl font-bold text-white font-quantico">Find your Squad</h2>
                         <p className="text-gray-400 text-sm">Join an existing team or find talent for your idea.</p>
                       </div>
-                      <div className="flex items-center gap-3">
-                        <button
-                          onClick={() => setUserTeam({
-                            name: 'My New Team',
-                            tags: ['New', 'Idea'],
-                            members: [{ name: 'You', role: 'Leader', isLeader: true }],
-                            maxMembers: 5
-                          })}
-                          className="flex items-center gap-2 bg-gold text-black font-bold text-xs px-4 py-2 rounded hover:bg-gold/90 transition-colors"
-                        >
-                          <Plus className="w-3.5 h-3.5" /> Create Team
-                        </button>
-                        <div className="flex bg-surface border border-white/10 rounded-lg p-1">
+                                                <div className="flex items-center gap-3">
+                                                   <button 
+                                                     onClick={() => setUserTeam(DEFAULT_NEW_TEAM)}
+                                                     className="flex items-center gap-2 bg-gold text-black font-bold text-xs px-4 py-2 rounded hover:bg-gold/90 transition-colors"
+                                                   >
+                                                      <Plus className="w-3.5 h-3.5" /> Create Team
+                                                   </button>                        <div className="flex bg-surface border border-white/10 rounded-lg p-1">
                           <button
                             onClick={() => setTeamTabMode('teams')}
                             className={`px-4 py-1.5 text-xs font-medium rounded-md transition-all ${teamTabMode === 'teams' ? 'bg-white/10 text-white' : 'text-gray-500 hover:text-gray-300'}`}

@@ -38,6 +38,14 @@ export const HACKATHONS_MOCK_DATA = [
       { name: 'Solana Docs', icon: 'Code', link: 'https://docs.solana.com/' },
       { name: 'DSUC Discord', icon: 'MessageSquare', link: 'https://discord.gg/dsuc' },
     ],
+    tabs: [
+      { id: 'announcement', label: 'Announcements', stepId: null },
+      { id: 'tracks', label: 'Tracks', stepId: null },
+      { id: 'register', label: 'Registration', stepId: '1', hideAfterEnd: true },
+      { id: 'team', label: 'Team', stepId: '1' },
+      { id: 'submission', label: 'Submission', stepId: '2' },
+      { id: 'awarding', label: 'Winner Announcement', stepId: '4' },
+    ],
     projectTicket: null,
     image_url: 'https://images.unsplash.com/photo-1596495578051-24750d42171f?q=80&w=2940&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D',
     announcements: [
