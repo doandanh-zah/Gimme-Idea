@@ -6,7 +6,7 @@ import {
   ArrowLeft, Users, Bookmark, Share2, MoreHorizontal, 
   Loader2, Trash2, Edit2, Globe, Lock, ExternalLink,
   TrendingUp, Star, Sparkles, Gem, ChevronRight, Link as LinkIcon,
-  ShieldOff, Copy
+  ShieldOff, Copy, AlertTriangle
 } from 'lucide-react';
 import { useRouter, useParams } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
@@ -39,6 +39,8 @@ export default function FeedDetailPage() {
   const [isFollowing, setIsFollowing] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   // Background stars
   const [stars, setStars] = useState<{ id: number; top: string; left: string; size: number; duration: string; opacity: number }[]>([]);
@@ -146,10 +148,7 @@ export default function FeedDetailPage() {
   const handleDeleteFeed = async () => {
     if (!feed) return;
     
-    if (!confirm('Are you sure you want to delete this feed? This cannot be undone.')) {
-      return;
-    }
-
+    setIsDeleting(true);
     try {
       const response = await apiClient.deleteFeed(feed.id); // Use actual UUID, not slug
       if (response.success) {
@@ -160,6 +159,9 @@ export default function FeedDetailPage() {
       }
     } catch (error) {
       toast.error('Failed to delete feed');
+    } finally {
+      setIsDeleting(false);
+      setShowDeleteModal(false);
     }
   };
 
@@ -399,7 +401,7 @@ export default function FeedDetailPage() {
                             <button
                               onClick={() => {
                                 setShowMenu(false);
-                                handleDeleteFeed();
+                                setShowDeleteModal(true);
                               }}
                               className="w-full px-4 py-3 text-sm text-red-400 hover:bg-red-500/10 flex items-center gap-2"
                             >
@@ -510,6 +512,64 @@ export default function FeedDetailPage() {
           onUpdate={(updatedFeed) => setFeed(updatedFeed)}
         />
       )}
+
+      {/* Delete Confirmation Modal */}
+      <AnimatePresence>
+        {showDeleteModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm"
+            onClick={() => !isDeleting && setShowDeleteModal(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              onClick={(e) => e.stopPropagation()}
+              className="w-full max-w-md bg-[#1a1a2e] border border-white/10 rounded-2xl overflow-hidden shadow-2xl"
+            >
+              {/* Header */}
+              <div className="p-6 text-center">
+                <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-red-500/20 flex items-center justify-center">
+                  <AlertTriangle className="w-8 h-8 text-red-500" />
+                </div>
+                <h3 className="text-xl font-bold text-white mb-2">Delete Feed</h3>
+                <p className="text-gray-400">
+                  Are you sure you want to delete <span className="text-white font-medium">"{feed?.name}"</span>? 
+                  This action cannot be undone.
+                </p>
+              </div>
+
+              {/* Actions */}
+              <div className="flex border-t border-white/10">
+                <button
+                  onClick={() => setShowDeleteModal(false)}
+                  disabled={isDeleting}
+                  className="flex-1 px-6 py-4 text-gray-300 hover:bg-white/5 transition-colors font-medium disabled:opacity-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleDeleteFeed}
+                  disabled={isDeleting}
+                  className="flex-1 px-6 py-4 text-red-500 hover:bg-red-500/10 transition-colors font-medium border-l border-white/10 disabled:opacity-50 flex items-center justify-center gap-2"
+                >
+                  {isDeleting ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      Deleting...
+                    </>
+                  ) : (
+                    'Delete'
+                  )}
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
