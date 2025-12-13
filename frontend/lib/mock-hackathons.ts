@@ -23,10 +23,10 @@ export const HACKATHONS_MOCK_DATA = [
         { id: 4, text: 'Upload Demo Video', done: false },
     ],
     tracks: [
-        { title: 'DeFi Revolution', reward: '$5,000', icon: 'Zap', color: 'text-yellow-400' },
-        { title: 'NFT Utility', reward: '$3,000', icon: 'Disc', color: 'text-purple-400' },
-        { title: 'Gaming & Metaverse', reward: '$4,000', icon: 'Target', color: 'text-green-400' },
-        { title: 'Social Graph', reward: '$2,000', icon: 'Users', color: 'text-blue-400' },
+        { title: 'DeFi Revolution', reward: '$5,000', icon: 'Zap', color: 'text-yellow-400', image: 'https://images.unsplash.com/photo-1639762681485-074b7f938ba0?w=800&auto=format&fit=crop' },
+        { title: 'NFT Utility', reward: '$3,000', icon: 'Disc', color: 'text-purple-400', image: 'https://images.unsplash.com/photo-1620641788421-7a1c342ea42e?w=800&auto=format&fit=crop' },
+        { title: 'Gaming & Metaverse', reward: '$4,000', icon: 'Target', color: 'text-green-400', image: 'https://images.unsplash.com/photo-1614680376593-902f74cf0d41?w=800&auto=format&fit=crop' },
+        { title: 'Social Graph', reward: '$2,000', icon: 'Users', color: 'text-blue-400', image: 'https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?w=800&auto=format&fit=crop' },
     ],
     leaderboard: [
         { rank: 1, name: 'Alpha Squad', points: 980 },

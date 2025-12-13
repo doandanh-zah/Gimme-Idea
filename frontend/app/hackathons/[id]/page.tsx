@@ -21,7 +21,8 @@ const LucideIconMap: { [key: string]: React.ElementType } = {
 };
 
 export default function HackathonDashboard({ params }: { params: { id: string } }) {
-  const [activeTab, setActiveTab] = useState('activity');
+  const [activeTab, setActiveTab] = useState('tracks');
+  const [expandedTrack, setExpandedTrack] = useState<number | null>(null);
   const { id } = params;
 
   const hackathon = HACKATHONS_MOCK_DATA.find(h => h.id === id);
@@ -132,7 +133,7 @@ export default function HackathonDashboard({ params }: { params: { id: string } 
 
           {/* Navigation Tabs */}
           <div className="flex border-b border-white/10">
-             {['Activity', 'Rules', 'Discussions'].map((tab) => (
+             {['Tracks', 'Prize', 'Team'].map((tab) => (
                <button
                  key={tab}
                  onClick={() => setActiveTab(tab.toLowerCase())}
@@ -150,27 +151,109 @@ export default function HackathonDashboard({ params }: { params: { id: string } 
 
           {/* Tab Content Area */}
           <div className="min-h-[400px]">
-             {activeTab === 'activity' && (
-                <div className="text-center py-10 text-gray-500">
-                    <p>Live activity feed connecting...</p>
-                    <p className="text-xs mt-2">Check back soon for updates from participants!</p>
+             {activeTab === 'tracks' && (
+                <div className="space-y-4">
+                  {hackathon.tracks?.map((track, i) => {
+                    const TrackIcon = LucideIconMap[track.icon as keyof typeof LucideIconMap] || Target;
+                    const isExpanded = expandedTrack === i;
+                    
+                    return (
+                      <div 
+                        key={i}
+                        onClick={() => setExpandedTrack(isExpanded ? null : i)}
+                        className={`relative w-full overflow-hidden rounded-xl border border-white/5 bg-surface cursor-pointer transition-all duration-500 ease-out group ${isExpanded ? 'h-64' : 'h-32'}`}
+                      >
+                         <div className="absolute inset-0 flex">
+                            {/* Text Content (Left) */}
+                            <div className="flex-1 p-6 flex flex-col justify-center relative z-10 max-w-[65%]">
+                               <div className="flex items-center gap-3 mb-2">
+                                  <div className={`p-2 rounded-lg bg-black/40 ${track.color}`}>
+                                     <TrackIcon className="w-5 h-5" />
+                                  </div>
+                                  <h3 className="text-xl font-bold text-white font-quantico">{track.title}</h3>
+                               </div>
+                               <p className="text-gold font-mono text-lg">{track.reward}</p>
+                               
+                               {isExpanded && (
+                                 <motion.div 
+                                   initial={{ opacity: 0, y: 10 }}
+                                   animate={{ opacity: 1, y: 0 }}
+                                   className="mt-4 text-gray-400 text-sm"
+                                 >
+                                    <p>Build the best solution for {track.title} to win the grand prize. Judging criteria includes innovation, technical difficulty, and design.</p>
+                                 </motion.div>
+                               )}
+                            </div>
+
+                            {/* Image Content (Right) */}
+                            <div className="w-[45%] relative h-full -ml-12">
+                               {/* Blur/Gradient Overlay */}
+                               <div className="absolute inset-y-0 left-0 w-32 bg-gradient-to-r from-surface via-surface/90 to-transparent z-10 pointer-events-none" />
+                               
+                               {track.image ? (
+                                 <Image 
+                                   src={track.image} 
+                                   alt={track.title} 
+                                   layout="fill" 
+                                   objectFit="cover" 
+                                   className="transition-transform duration-700 group-hover:scale-105"
+                                 />
+                               ) : (
+                                 <div className={`w-full h-full bg-gradient-to-br from-gray-800 to-black`} />
+                               )}
+                            </div>
+                         </div>
+                      </div>
+                    );
+                  })}
                 </div>
              )}
-             {activeTab === 'rules' && (
-                <div className="p-4 text-gray-400 space-y-4">
-                    <h3 className="text-white font-bold">Hackathon Rules</h3>
-                    <ul className="list-disc pl-5 space-y-2 text-sm">
-                        <li>Teams must consist of 1-5 members.</li>
-                        <li>All code must be written during the hackathon period.</li>
-                        <li>Projects must use open-source licenses.</li>
-                        <li>Submission must include a video demo (max 3 mins).</li>
-                    </ul>
+             
+             {activeTab === 'prize' && (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                   <div className="bg-surface border border-white/5 rounded-xl p-8 text-center flex flex-col justify-center items-center">
+                      <Trophy className="w-16 h-16 text-gold mb-4" />
+                      <h2 className="text-4xl font-bold text-white mb-2 font-quantico">{hackathon.prizePool}</h2>
+                      <p className="text-gray-500 uppercase tracking-widest text-sm">Total Prize Pool</p>
+                   </div>
+                   <div className="space-y-4">
+                      <h3 className="text-lg font-bold text-white">Prize Breakdown</h3>
+                      {hackathon.tracks?.map((track, i) => (
+                        <div key={i} className="flex items-center justify-between p-4 bg-surfaceHighlight rounded-lg border border-white/5">
+                           <span className="text-gray-300">{track.title}</span>
+                           <span className="text-gold font-mono">{track.reward}</span>
+                        </div>
+                      ))}
+                   </div>
                 </div>
              )}
-             {activeTab === 'discussions' && (
-                <div className="text-center py-10 text-gray-500">
-                    <MessageSquare className="w-8 h-8 mx-auto mb-2 opacity-50" />
-                    <p>Community Discussion Board</p>
+
+             {activeTab === 'team' && (
+                <div className="space-y-6">
+                   <div className="flex items-center justify-between">
+                      <h3 className="text-xl font-bold text-white">Leaderboard</h3>
+                      <button className="px-4 py-2 bg-primary hover:bg-primary-dark rounded-lg text-white text-sm font-bold transition-colors">
+                         View All Teams
+                      </button>
+                   </div>
+                   
+                   <div className="space-y-2">
+                      {hackathon.leaderboard?.map((team, i) => (
+                         <div key={i} className="flex items-center justify-between p-4 bg-surface border border-white/5 rounded-xl hover:border-gold/30 transition-colors">
+                            <div className="flex items-center gap-4">
+                               <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold ${
+                                 i === 0 ? 'bg-gold text-black' : 
+                                 i === 1 ? 'bg-gray-300 text-black' : 
+                                 i === 2 ? 'bg-amber-700 text-white' : 'bg-surfaceHighlight text-gray-500'
+                               }`}>
+                                 {team.rank}
+                               </div>
+                               <span className="font-bold text-white">{team.name}</span>
+                            </div>
+                            <span className="font-mono text-gold">{team.points} pts</span>
+                         </div>
+                      ))}
+                   </div>
                 </div>
              )}
           </div>
