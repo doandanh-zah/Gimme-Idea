@@ -71,7 +71,7 @@ export default function ContactPage() {
   const resetForm = () => { setFormData({ name: '', email: '', company: '', inquiryType: 'general', subject: '', message: '' }); setIsSubmitted(false); };
 
   return (
-    <div className="min-h-screen text-gray-300 pt-20 pb-6 px-4 font-sans relative">
+    <div className="min-h-screen text-gray-300 pt-28 pb-6 px-4 font-sans relative">
       <div className="fixed inset-0 z-[-1] pointer-events-none overflow-hidden">
         <div className="bg-grid opacity-40"></div>
         <div className="absolute top-[-20%] left-[-10%] w-[600px] h-[600px] bg-[#2e1065] rounded-full blur-[120px] animate-pulse-slow opacity-40 mix-blend-screen" />
