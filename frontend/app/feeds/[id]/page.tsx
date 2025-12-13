@@ -86,19 +86,19 @@ export default function FeedDetailPage() {
   };
 
   const handleFollow = async () => {
-    if (!user) {
+    if (!user || !feed) {
       toast.error('Please login to follow feeds');
       return;
     }
 
     try {
       if (isFollowing) {
-        await apiClient.unfollowFeed(feedId);
+        await apiClient.unfollowFeed(feed.id); // Use actual UUID
         setIsFollowing(false);
         setFeed(prev => prev ? { ...prev, followersCount: prev.followersCount - 1 } : null);
         toast.success('Unfollowed feed');
       } else {
-        await apiClient.followFeed(feedId);
+        await apiClient.followFeed(feed.id); // Use actual UUID
         setIsFollowing(true);
         setFeed(prev => prev ? { ...prev, followersCount: prev.followersCount + 1 } : null);
         toast.success('Following feed!');
@@ -144,12 +144,14 @@ export default function FeedDetailPage() {
   };
 
   const handleDeleteFeed = async () => {
+    if (!feed) return;
+    
     if (!confirm('Are you sure you want to delete this feed? This cannot be undone.')) {
       return;
     }
 
     try {
-      const response = await apiClient.deleteFeed(feedId);
+      const response = await apiClient.deleteFeed(feed.id); // Use actual UUID, not slug
       if (response.success) {
         toast.success('Feed deleted');
         router.push('/feeds');
@@ -162,8 +164,9 @@ export default function FeedDetailPage() {
   };
 
   const handleRemoveItem = async (itemId: string) => {
+    if (!feed) return;
     try {
-      const response = await apiClient.removeItemFromFeed(feedId, itemId);
+      const response = await apiClient.removeItemFromFeed(feed.id, itemId); // Use actual UUID
       if (response.success) {
         setItems(prev => prev.filter(i => i.id !== itemId));
         setFeed(prev => prev ? { ...prev, itemsCount: prev.itemsCount - 1 } : null);
