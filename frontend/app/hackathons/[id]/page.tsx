@@ -66,25 +66,42 @@ export default function HackathonDashboard({ params }: { params: { id: string } 
 
   // Tab Logic: Hide locked, sort by newest unlocked first
   const allTabs = [
+    { id: 'announcement', label: 'Announcements', stepId: null },
     { id: 'tracks', label: 'Tracks', stepId: null },
     { id: 'register', label: 'Registration', stepId: '1' },
     { id: 'team', label: 'Team', stepId: '1' },
     { id: 'submission', label: 'Submission', stepId: '2' },
-    { id: 'awarding', label: 'Winner Announcement', stepId: '3' },
+    { id: 'pitching', label: 'Pitch Day', stepId: '3', preview: true },
+    { id: 'grand-final', label: 'Grand Final', stepId: '4', preview: true },
+    { id: 'awarding', label: 'Winner Announcement', stepId: '4' },
   ];
 
   const visibleTabs = allTabs
-    .map(tab => {
-      const step = tab.stepId ? dynamicTimeline.find(s => s.id === tab.stepId) : null;
-      const startDate = step ? new Date(step.startDate) : new Date(0);
-      const isLocked = step ? isBefore(now, startDate) : false;
-      return { ...tab, startDate, isLocked };
+    .map((tab: any) => {
+      const stepIndex = tab.stepId ? dynamicTimeline.findIndex((s: any) => s.id === tab.stepId) : -1;
+      const step = stepIndex !== -1 ? dynamicTimeline[stepIndex] : null;
+      
+      let unlockDate = new Date(0); // Default unlocked for static tabs like Tracks
+
+      if (step) {
+         if (tab.preview && stepIndex > 0) {
+            // Preview Mode: Unlock immediately when the PREVIOUS step ends
+            const prevStep = dynamicTimeline[stepIndex - 1];
+            unlockDate = prevStep.endDate ? new Date(prevStep.endDate) : new Date(prevStep.startDate);
+         } else {
+            // Standard Mode: Unlock when the step actually starts
+            unlockDate = new Date(step.startDate);
+         }
+      }
+
+      const isLocked = isBefore(now, unlockDate);
+      return { ...tab, startDate: unlockDate, isLocked };
     })
-    .filter(tab => !tab.isLocked)
-    .sort((a, b) => b.startDate.getTime() - a.startDate.getTime());
+    .filter((tab: any) => !tab.isLocked)
+    .sort((a: any, b: any) => b.startDate.getTime() - a.startDate.getTime());
 
   // Initialize activeTab with the first visible tab (the newest unlocked one)
-  const [activeTab, setActiveTab] = useState(visibleTabs[0]?.id || 'tracks');
+  const [activeTab, setActiveTab] = useState(visibleTabs[0]?.id || 'announcement');
   const [teamTabMode, setTeamTabMode] = useState<'teams' | 'teammates'>('teams');
   const [searchTeamQuery, setSearchTeamQuery] = useState('');
   const [userTeam, setUserTeam] = useState<any>(null); // Mock state for user's team
@@ -277,10 +294,50 @@ export default function HackathonDashboard({ params }: { params: { id: string } 
               </button>
             ))}
           </div>
-          {/* Tab Content Area */}
-          <div className="min-h-[400px]">
-            {activeTab === 'tracks' && (
-              <div className="space-y-4">
+                    {/* Tab Content Area */}
+                    <div className="min-h-[400px]">
+                       {activeTab === 'announcement' && (
+                          <div className="bg-black border border-green-500/30 rounded-lg p-6 font-mono text-sm shadow-[0_0_20px_rgba(34,197,94,0.1)]">
+                            <div className="flex gap-1.5 mb-4">
+                              <div className="w-3 h-3 rounded-full bg-red-500/50" />
+                              <div className="w-3 h-3 rounded-full bg-yellow-500/50" />
+                              <div className="w-3 h-3 rounded-full bg-green-500/50" />
+                            </div>
+                            <div className="space-y-4">
+                              <div className="border-b border-green-500/20 pb-2">
+                                 <span className="text-green-600">$</span> <span className="text-green-400">cat system_announcements.log</span>
+                              </div>
+                              
+                              <div className="space-y-2 text-green-300/80">
+                                <p>[2026-01-15 09:00:00] <span className="text-white">System initialized. Registration phase active.</span></p>
+                                <p>[2026-01-20 14:30:00] <span className="text-white">New mentor added: @solana_dev_core</span></p>
+                                <p>[2026-02-01 00:00:00] <span className="text-yellow-400">WARNING: Registration deadline approaching in 24h.</span></p>
+                                <p>[2026-02-05 09:00:00] <span className="text-white">Idea Submission phase unlocked.</span></p>
+                                <div className="flex items-center gap-1">
+                                  <span className="text-green-500">$</span> <span className="animate-pulse">_</span>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                       )}
+          
+                       {activeTab === 'pitching' && (
+                          <div className="text-center py-10 text-gray-500">
+                              <Mic className="w-8 h-8 mx-auto mb-2 opacity-50" />
+                              <h3 className="text-xl font-bold text-white mb-2">Pitch Day</h3>
+                              <p>Get your slides ready! The top 10 teams will present to the judges.</p>
+                          </div>
+                       )}
+          
+                       {activeTab === 'grand-final' && (
+                          <div className="text-center py-10 text-gray-500">
+                              <Trophy className="w-8 h-8 mx-auto mb-2 opacity-50 text-gold" />
+                              <h3 className="text-xl font-bold text-white mb-2">Grand Final</h3>
+                              <p>The final showdown. Who will take home the grand prize?</p>
+                          </div>
+                       )}
+          
+                       {activeTab === 'tracks' && (              <div className="space-y-4">
                 {hackathon.tracks?.map((track, i) => {
                   const TrackIcon = LucideIconMap[track.icon as keyof typeof LucideIconMap] || Target;
                   const isExpanded = expandedTrack === i;
