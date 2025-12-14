@@ -9,6 +9,24 @@ interface SponsorModalProps {
   onClose: () => void;
 }
 
+// =========================================================================
+// GOOGLE FORM CONFIGURATION (Replace with your actual IDs)
+// =========================================================================
+const GOOGLE_FORM_ID = "YOUR_FORM_ID_HERE"; // e.g. 1FAIpQLSe...
+const GOOGLE_FORM_ENTRY_IDS = {
+    title: "entry.111111111", 
+    description: "entry.222222222",
+    prizePool: "entry.333333333",
+    startDate: "entry.444444444",
+    endDate: "entry.555555555",
+    tags: "entry.666666666",
+    contactName: "entry.777777777",
+    contactEmail: "entry.888888888",
+    organization: "entry.999999999",
+    slug: "entry.101010101"
+};
+// =========================================================================
+
 export default function SponsorModal({ isOpen, onClose }: SponsorModalProps) {
   const [step, setStep] = useState<'form' | 'success'>('form');
   const [formData, setFormData] = useState({
@@ -27,21 +45,57 @@ export default function SponsorModal({ isOpen, onClose }: SponsorModalProps) {
     slug: '', // Auto-generated or manual
     bannerUrl: ''
   });
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // In a real app, this would submit to a backend endpoint
-    console.log('Submitting Proposal:', formData);
+    setIsSubmitting(true);
+
+    if (GOOGLE_FORM_ID === "YOUR_FORM_ID_HERE") {
+        console.warn("Google Form ID not configured. Submitting via mock success.");
+        setTimeout(() => {
+             setStep('success');
+             setIsSubmitting(false);
+        }, 1000);
+        return;
+    }
     
-    // Simulate loading/success
-    setTimeout(() => {
-      setStep('success');
-    }, 800);
+    // Construct Google Form Payload
+    const formUrl = `https://docs.google.com/forms/d/e/${GOOGLE_FORM_ID}/formResponse`;
+    const formBody = new FormData();
+    
+    // Map our state to Google Form Entry IDs
+    formBody.append(GOOGLE_FORM_ENTRY_IDS.title, formData.title);
+    formBody.append(GOOGLE_FORM_ENTRY_IDS.description, formData.description);
+    formBody.append(GOOGLE_FORM_ENTRY_IDS.prizePool, formData.prizePool);
+    formBody.append(GOOGLE_FORM_ENTRY_IDS.startDate, formData.startDate);
+    formBody.append(GOOGLE_FORM_ENTRY_IDS.endDate, formData.endDate);
+    formBody.append(GOOGLE_FORM_ENTRY_IDS.tags, formData.tags);
+    formBody.append(GOOGLE_FORM_ENTRY_IDS.contactName, formData.contactName);
+    formBody.append(GOOGLE_FORM_ENTRY_IDS.contactEmail, formData.contactEmail);
+    formBody.append(GOOGLE_FORM_ENTRY_IDS.organization, formData.organization);
+    formBody.append(GOOGLE_FORM_ENTRY_IDS.slug, formData.slug);
+
+    try {
+        await fetch(formUrl, {
+            method: 'POST',
+            mode: 'no-cors', // Important for Google Forms
+            body: formBody
+        });
+        
+        // Assume success if no network error thrown
+        setStep('success');
+    } catch (err) {
+        console.error("Submission failed", err);
+        alert("Failed to submit. Please try again or contact us via email.");
+    } finally {
+        setIsSubmitting(false);
+    }
   };
 
   const handleClose = () => {
@@ -53,6 +107,7 @@ export default function SponsorModal({ isOpen, onClose }: SponsorModalProps) {
         title: '', description: '', prizePool: '', startDate: '', endDate: '',
         tags: '', contactName: '', contactEmail: '', organization: '', slug: '', bannerUrl: ''
       });
+      setIsSubmitting(false);
     }, 300);
   };
 
@@ -247,15 +302,21 @@ export default function SponsorModal({ isOpen, onClose }: SponsorModalProps) {
                     <button 
                       type="button"
                       onClick={handleClose}
+                      disabled={isSubmitting}
                       className="px-6 py-2.5 rounded-lg text-sm font-bold text-gray-400 hover:text-white hover:bg-white/5 transition-colors"
                     >
                       Cancel
                     </button>
                     <button 
                       type="submit"
+                      disabled={isSubmitting}
                       className="px-8 py-2.5 rounded-lg text-sm font-bold text-black bg-[#FFD700] hover:bg-[#FFD700]/90 transition-all shadow-[0_0_20px_rgba(255,215,0,0.2)] flex items-center gap-2"
                     >
-                      <Send className="w-4 h-4" /> Submit Proposal
+                      {isSubmitting ? (
+                          <>Sending...</>
+                      ) : (
+                          <><Send className="w-4 h-4" /> Submit Proposal</>
+                      )}
                     </button>
                   </div>
 
