@@ -38,22 +38,30 @@ export function useHackathon(id: string) {
         apiClient.getHackathonTeams(id)
       ]);
 
-      if (!hackathonRes.success) throw new Error(hackathonRes.error || 'Failed to load hackathon');
+      // Normalize Responses (Handle direct data vs {success: true, data: ...})
+      const hackathonData = hackathonRes.success === undefined ? hackathonRes : hackathonRes.data;
+      const announcementsData = Array.isArray(announcementsRes) ? announcementsRes : (announcementsRes.data || []);
+      const teamsData = Array.isArray(teamsRes) ? teamsRes : (teamsRes.data || []);
+
+      if (!hackathonData || !hackathonData.id) {
+         throw new Error('Invalid hackathon data');
+      }
 
       let userStatusRes = { participant: null, team: null };
       
       // Fetch user status if logged in
       if (user) {
         const statusResponse = await apiClient.getHackathonMyStatus(id);
-        if (statusResponse.success && statusResponse.data) {
-           userStatusRes = statusResponse.data;
+        // MyStatus endpoint returns explicit object structure, check controller
+        if (statusResponse && (statusResponse.participant || statusResponse.team || statusResponse.success)) {
+           userStatusRes = statusResponse.data || statusResponse;
         }
       }
 
       setState({
-        hackathon: hackathonRes.data,
-        announcements: announcementsRes.data || [],
-        teams: teamsRes.data || [],
+        hackathon: hackathonData,
+        announcements: announcementsData,
+        teams: teamsData,
         userStatus: userStatusRes,
         isLoading: false,
         error: null

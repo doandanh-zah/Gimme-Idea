@@ -34,12 +34,18 @@ export default function HackathonsList() {
       try {
         setIsLoading(true);
         const res = await apiClient.getHackathons();
-        console.log("DEBUG: Hackathons Response:", res); // <--- LOG QUAN TRỌNG
+        console.log("DEBUG: Hackathons Response:", res);
 
-        if (res.success && res.data) {
+        // Check if response is an array (Direct Supabase response)
+        if (Array.isArray(res)) {
+          setHackathons(res);
+        } 
+        // Fallback: Check standard ApiResponse format
+        else if (res && res.success && Array.isArray(res.data)) {
           setHackathons(res.data);
-        } else {
-          console.error("DEBUG: Failed to load data:", res.error);
+        }
+        else {
+          console.error("DEBUG: Invalid data format", res);
         }
       } catch (error) {
         console.error("Failed to fetch hackathons", error);
