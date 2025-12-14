@@ -156,6 +156,7 @@ export default function HackathonDashboard({ params }: { params: { id: string } 
     // Submission State
     const [submissionData, setSubmissionData] = useState({ track: '', selectedIdeaId: '' });
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [isSubmitted, setIsSubmitted] = useState(false);
     const [userProjects, setUserProjects] = useState<any[]>([]);
     const [loadingProjects, setLoadingProjects] = useState(false);
 
@@ -282,6 +283,9 @@ export default function HackathonDashboard({ params }: { params: { id: string } 
                 projectId: submissionData.selectedIdeaId, 
                 track: submissionData.track 
             });
+            setIsSubmitted(true);
+        } catch (err) {
+            console.error(err);
             // Ideally show toast here
         } finally {
             setIsSubmitting(false);
