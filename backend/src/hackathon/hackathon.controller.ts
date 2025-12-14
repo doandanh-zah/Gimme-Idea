@@ -13,6 +13,17 @@ export class HackathonController {
     return this.hackathonService.findAll();
   }
 
+  @Get('check-data')
+  async checkData() {
+    // Debug endpoint to verify DB connection and data existence
+    const data = await this.hackathonService.findAll();
+    return {
+      count: data?.length || 0,
+      firstItem: data?.[0] || null,
+      message: data?.length ? "Data found" : "No data found in DB"
+    };
+  }
+
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.hackathonService.findOne(id);

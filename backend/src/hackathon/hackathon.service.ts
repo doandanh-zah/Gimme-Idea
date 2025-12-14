@@ -7,7 +7,13 @@ export class HackathonService {
   constructor(private readonly supabase: SupabaseService) {}
 
   private get db() {
-    return this.supabase.getAdminClient();
+    try {
+      return this.supabase.getAdminClient();
+    } catch (e) {
+      // Fallback to public client if admin client is not configured (e.g. missing SERVICE_KEY)
+      // This prevents server crash, though some admin-only operations might fail later if RLS blocks them.
+      return this.supabase.getClient();
+    }
   }
 
   // --- Hackathon Core ---
