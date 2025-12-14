@@ -162,9 +162,10 @@ export const ImageCropper: React.FC<ImageCropperProps> = ({
     try {
       const image = imageRef.current;
       
-      // Output dimensions - higher resolution for cover images
-      // Cover (aspect 3:1) = 1200x400, Avatar (aspect 1:1) = 500x500
-      const outputWidth = aspectRatio >= 2 ? 1200 : (aspectRatio >= 1 ? 500 : 400);
+      // Output dimensions - HIGH resolution for quality
+      // Cover (aspect 3:1) = 2400x800 for crisp display
+      // Avatar (aspect 1:1) = 800x800 for high quality
+      const outputWidth = aspectRatio >= 2 ? 2400 : (aspectRatio >= 1 ? 800 : 600);
       const outputHeight = Math.round(outputWidth / aspectRatio);
       
       // Create canvas
@@ -206,7 +207,7 @@ export const ImageCropper: React.FC<ImageCropperProps> = ({
         0, 0, outputWidth, outputHeight
       );
 
-      // Convert to blob and create URL
+      // Convert to blob and create URL - HIGH QUALITY
       const blob = await new Promise<Blob>((resolve, reject) => {
         canvas.toBlob(
           (blob) => {
@@ -214,7 +215,7 @@ export const ImageCropper: React.FC<ImageCropperProps> = ({
             else reject(new Error('Failed to create blob'));
           },
           'image/jpeg',
-          0.92
+          0.95  // High quality JPEG
         );
       });
 

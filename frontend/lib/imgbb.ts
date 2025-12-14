@@ -122,16 +122,44 @@ export async function uploadAvatar(file: File): Promise<string> {
     );
   }
 
-  // Validate file size (max 2MB)
-  const maxSize = 2 * 1024 * 1024;
+  // Validate file size (max 5MB for higher quality images)
+  const maxSize = 5 * 1024 * 1024;
   if (file.size > maxSize) {
-    throw new Error("File size must be less than 2MB.");
+    throw new Error("File size must be less than 5MB.");
   }
 
   // Generate a unique name for the avatar
   const timestamp = Date.now();
   const randomStr = Math.random().toString(36).substring(7);
   const name = `avatar_${timestamp}_${randomStr}`;
+
+  return uploadToImgBB(file, name);
+}
+
+/**
+ * Upload cover/banner image with high quality
+ * @param file - File object from input
+ * @returns URL of the uploaded cover image
+ */
+export async function uploadCoverImage(file: File): Promise<string> {
+  // Validate file type
+  const validTypes = ["image/jpeg", "image/png", "image/gif", "image/webp"];
+  if (!validTypes.includes(file.type)) {
+    throw new Error(
+      "Invalid file type. Please upload JPEG, PNG, GIF, or WebP."
+    );
+  }
+
+  // Validate file size (max 10MB for cover images - need high quality)
+  const maxSize = 10 * 1024 * 1024;
+  if (file.size > maxSize) {
+    throw new Error("File size must be less than 10MB.");
+  }
+
+  // Generate a unique name for the cover
+  const timestamp = Date.now();
+  const randomStr = Math.random().toString(36).substring(7);
+  const name = `cover_${timestamp}_${randomStr}`;
 
   return uploadToImgBB(file, name);
 }
