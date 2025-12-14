@@ -51,7 +51,7 @@ export function useHackathon(id: string) {
       
       // Fetch user status if logged in
       if (user) {
-        const statusResponse = await apiClient.getHackathonMyStatus(id);
+        const statusResponse: any = await apiClient.getHackathonMyStatus(id);
         // MyStatus endpoint returns explicit object structure, check controller
         if (statusResponse && (statusResponse.participant || statusResponse.team || statusResponse.success)) {
            userStatusRes = statusResponse.data || statusResponse;
