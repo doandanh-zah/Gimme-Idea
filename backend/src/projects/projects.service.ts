@@ -745,12 +745,12 @@ export class ProjectsService {
   }
 
   /**
-   * Delete project
+   * Delete project (author or admin can delete)
    */
   async remove(id: string, userId: string): Promise<ApiResponse<void>> {
     const supabase = this.supabaseService.getAdminClient();
 
-    // Check if user is the author
+    // Check project exists and get author info
     const { data: project } = await supabase
       .from("projects")
       .select("author_id")
@@ -761,7 +761,18 @@ export class ProjectsService {
       throw new NotFoundException("Project not found");
     }
 
-    if (project.author_id !== userId) {
+    // Check if user is admin
+    const { data: user } = await supabase
+      .from("users")
+      .select("role, wallet")
+      .eq("id", userId)
+      .single();
+
+    const isAdmin =
+      user?.role === "admin" || user?.wallet === this.AI_BOT_WALLET;
+
+    // Allow if user is author OR admin
+    if (project.author_id !== userId && !isAdmin) {
       throw new ForbiddenException("You can only delete your own projects");
     }
 
@@ -770,6 +781,13 @@ export class ProjectsService {
 
     if (error) {
       throw new Error(`Failed to delete project: ${error.message}`);
+    }
+
+    // Log if admin deleted someone else's project
+    if (isAdmin && project.author_id !== userId) {
+      this.logger.log(
+        `Admin ${userId} deleted project ${id} (owner: ${project.author_id})`
+      );
     }
 
     return {

@@ -13,6 +13,7 @@ interface AuthContextType {
   isLoading: boolean;
   isNewUser: boolean;
   showWalletPopup: boolean;
+  isAdmin: boolean;
   signInWithGoogle: () => Promise<void>;
   signOut: () => Promise<void>;
   setShowWalletPopup: (value: boolean) => void;
@@ -30,6 +31,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
   const [isNewUser, setIsNewUser] = useState(false);
   const [showWalletPopup, setShowWalletPopup] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
+
+  // Check if current user is admin
+  const checkAdminStatus = useCallback(async () => {
+    try {
+      const response = await apiClient.getAdminStatus();
+      if (response.success && response.data) {
+        setIsAdmin(response.data.isAdmin);
+      } else {
+        setIsAdmin(false);
+      }
+    } catch (error) {
+      console.error('Failed to check admin status:', error);
+      setIsAdmin(false);
+    }
+  }, []);
 
   const processEmailLogin = useCallback(async (supabaseUser: SupabaseUser, isNewLogin: boolean = false) => {
     try {
@@ -59,6 +76,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
         setUser(userData);
         setIsNewUser(response.data.isNewUser);
+        
+        // Check admin status after login
+        checkAdminStatus();
 
         // Only show wallet popup on NEW login (not session restore)
         // And only if user needs wallet connect
@@ -177,6 +197,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           setUser(null);
           setIsNewUser(false);
           setShowWalletPopup(false);
+          setIsAdmin(false);
           localStorage.removeItem('auth_token');
         }
       }
@@ -204,6 +225,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setUser(null);
     setIsNewUser(false);
     setShowWalletPopup(false);
+    setIsAdmin(false);
     localStorage.removeItem('auth_token');
   };
 
@@ -216,6 +238,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         isLoading,
         isNewUser,
         showWalletPopup,
+        isAdmin,
         signInWithGoogle,
         signOut,
         setShowWalletPopup,

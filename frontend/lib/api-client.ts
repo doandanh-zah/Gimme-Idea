@@ -544,4 +544,107 @@ export const apiClient = {
     apiFetch<any>(`/feeds/${feedId}/items/${itemId}`, {
       method: "DELETE",
     }),
+
+  // =====================================
+  // ADMIN API
+  // =====================================
+
+  // Check admin status
+  getAdminStatus: () =>
+    apiFetch<{ isAdmin: boolean; role: string }>("/admin/status"),
+
+  // Admin delete any project
+  adminDeleteProject: (projectId: string) =>
+    apiFetch<void>(`/admin/projects/${projectId}`, {
+      method: "DELETE",
+    }),
+
+  // Admin verify project
+  adminVerifyProject: (projectId: string, verified: boolean) =>
+    apiFetch<void>(`/admin/projects/${projectId}/verify`, {
+      method: "POST",
+      body: JSON.stringify({ verified }),
+    }),
+
+  // Get all hackathons (admin view)
+  getHackathons: () => apiFetch<any[]>("/admin/hackathons"),
+
+  // Create hackathon
+  createHackathon: (data: {
+    slug: string;
+    title: string;
+    description?: string;
+    startDate: string;
+    endDate: string;
+    prizePool?: string;
+    imageUrl?: string;
+    tags?: string[];
+  }) =>
+    apiFetch<any>("/admin/hackathons", {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
+
+  // Update hackathon
+  updateHackathon: (
+    hackathonId: string,
+    data: {
+      title?: string;
+      description?: string;
+      startDate?: string;
+      endDate?: string;
+      prizePool?: string;
+      imageUrl?: string;
+      tags?: string[];
+      status?: string;
+    }
+  ) =>
+    apiFetch<any>(`/admin/hackathons/${hackathonId}`, {
+      method: "PATCH",
+      body: JSON.stringify(data),
+    }),
+
+  // Delete hackathon
+  deleteHackathon: (hackathonId: string) =>
+    apiFetch<void>(`/admin/hackathons/${hackathonId}`, {
+      method: "DELETE",
+    }),
+
+  // Get hackathon submissions
+  getHackathonSubmissions: (hackathonId: string) =>
+    apiFetch<any[]>(`/admin/hackathons/${hackathonId}/submissions`),
+
+  // Score submission
+  scoreSubmission: (
+    submissionId: string,
+    data: {
+      score: number;
+      scoreBreakdown?: {
+        innovation: number;
+        execution: number;
+        impact: number;
+        presentation: number;
+      };
+      adminNotes?: string;
+      status?: "approved" | "rejected" | "winner" | "finalist";
+    }
+  ) =>
+    apiFetch<any>(`/admin/submissions/${submissionId}/score`, {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
+
+  // Update submission status
+  updateSubmissionStatus: (
+    submissionId: string,
+    status: "pending" | "approved" | "rejected" | "winner" | "finalist"
+  ) =>
+    apiFetch<void>(`/admin/submissions/${submissionId}/status`, {
+      method: "PATCH",
+      body: JSON.stringify({ status }),
+    }),
+
+  // Get admin activity log
+  getAdminActivityLog: (limit?: number) =>
+    apiFetch<any[]>(`/admin/activity${limit ? `?limit=${limit}` : ""}`),
 };

@@ -13,6 +13,7 @@ import { PaymentsModule } from "./payments/payments.module";
 import { SettingsModule } from "./settings/settings.module";
 import { AIModule } from "./ai/ai.module";
 import { FeedsModule } from "./feeds/feeds.module";
+import { AdminModule } from "./admin/admin.module";
 
 @Module({
   imports: [
@@ -32,6 +33,7 @@ import { FeedsModule } from "./feeds/feeds.module";
     SettingsModule,
     AIModule,
     FeedsModule,
+    AdminModule,
   ],
   controllers: [AppController],
   providers: [

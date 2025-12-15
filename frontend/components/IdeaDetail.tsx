@@ -14,9 +14,12 @@ import { useRealtimeComments } from '../hooks/useRealtimeComments';
 import { MarkdownContent } from './MarkdownContent';
 import { MarkdownGuide } from './MarkdownGuide';
 import { AuthorLink, AuthorAvatar } from './AuthorLink';
+import { useAuth } from '../contexts/AuthContext';
 import { apiClient } from '../lib/api-client';
 import { sanitizeText, hasDangerousContent } from '../lib/sanitize';
 import { createUniqueSlug } from '../lib/slug-utils';
+import AdminDeleteButton from './AdminDeleteButton';
+import AdminBadge, { GimmeSenseiBadge } from './AdminBadge';
 
 // AI Bot display name
 const AI_BOT_NAME = 'Gimme Sensei';
@@ -205,6 +208,10 @@ const CommentItem: React.FC<CommentItemProps> = ({ comment, projectId, isReply =
                         <span className="text-[10px] bg-amber-500/20 text-amber-400 px-1.5 py-0.5 rounded-full border border-amber-500/30 font-medium">
                             Idea Owner
                         </span>
+                    )}
+                    {/* Gimme Sensei AI Badge */}
+                    {comment.is_ai_generated && (
+                        <GimmeSenseiBadge />
                     )}
                     <span className="text-xs text-gray-600">{new Date(timestamp).toLocaleDateString()}</span>
                     {tipsAmount > 0 && (
@@ -460,6 +467,7 @@ export const IdeaDetail = () => {
     handleRealtimeUpdateComment,
     handleRealtimeDeleteComment,
   } = useAppStore();
+  const { isAdmin } = useAuth();
   const router = useRouter();
   const [commentText, setCommentText] = useState('');
   const [isAnonComment, setIsAnonComment] = useState(false);
@@ -611,6 +619,16 @@ export const IdeaDetail = () => {
                          >
                              <ThumbsUp className="w-4 h-4" /> {project.votes}
                          </button>
+                         
+                         {/* Admin Delete Button */}
+                         {isAdmin && (
+                           <AdminDeleteButton
+                             projectId={project.id}
+                             projectTitle={project.title}
+                             onDeleted={() => router.push('/idea')}
+                             variant="button"
+                           />
+                         )}
                      </div>
                 </div>
 
