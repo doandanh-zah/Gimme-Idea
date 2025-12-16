@@ -139,8 +139,8 @@ const Navbar = () => {
         animate={{ y: 0, opacity: 1 }}
         className="pointer-events-auto bg-[#0F0F0F]/90 backdrop-blur-xl border border-white/5 rounded-full px-3 sm:px-6 py-2 sm:py-3 flex items-center justify-between w-full max-w-5xl shadow-2xl shadow-purple-900/10 relative"
       >
-        {/* Logo */}
-        <button onClick={() => { setView('landing'); setSelectedProject(null); router.push('/home'); }} className="flex items-center gap-1.5 sm:gap-2 group">
+        {/* Logo - links to landing page */}
+        <button onClick={() => { setView('landing'); setSelectedProject(null); router.push('/landing'); }} className="flex items-center gap-1.5 sm:gap-2 group">
           <div className="relative w-7 h-7 sm:w-10 sm:h-10 flex items-center justify-center">
              <div className="absolute inset-0 bg-[#FFD700]/20 rounded-full blur-md opacity-50 group-hover:opacity-100 transition-opacity duration-300" />
              <Image
@@ -449,7 +449,7 @@ const Navbar = () => {
                           </button>
                         )}
                         <button
-                             onClick={() => { signOut(); setShowUserMenu(false); router.push('/home'); }}
+                             onClick={() => { signOut(); setShowUserMenu(false); router.push('/landing'); }}
                              className="w-full text-left px-3 sm:px-4 py-2 sm:py-3 text-xs sm:text-sm text-red-400 hover:bg-red-500/10 flex items-center gap-2 border-t border-white/5"
                         >
                             <LogOut className="w-4 h-4" /> Log Out

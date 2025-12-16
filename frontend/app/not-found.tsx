@@ -36,7 +36,7 @@ export default function NotFound() {
         {/* Actions */}
         <div className="flex flex-col sm:flex-row gap-4 justify-center">
           <Link 
-            href="/home"
+            href="/landing"
             className="flex items-center justify-center gap-2 px-6 py-3 bg-[#FFD700] text-black font-semibold rounded-xl hover:bg-[#FFD700]/90 transition-all"
           >
             <Home className="w-5 h-5" />

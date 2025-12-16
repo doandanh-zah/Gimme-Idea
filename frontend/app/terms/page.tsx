@@ -11,7 +11,7 @@ export default function TermsPage() {
       {/* Header */}
       <div className="border-b border-white/5 bg-[#0F0F0F]/80 backdrop-blur-xl">
         <div className="max-w-4xl mx-auto px-6 py-4 flex items-center gap-4">
-          <Link href="/home" className="p-2 hover:bg-white/10 rounded-full transition-colors">
+          <Link href="/landing" className="p-2 hover:bg-white/10 rounded-full transition-colors">
             <ArrowLeft className="w-5 h-5" />
           </Link>
           <h1 className="text-xl font-bold">Terms of Service</h1>

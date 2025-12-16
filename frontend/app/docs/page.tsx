@@ -380,7 +380,7 @@ const DocsPage = () => {
             </p>
 
             <div className="flex flex-wrap gap-4 justify-center">
-              <Link href="/home">
+              <Link href="/idea">
                 <motion.button
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
@@ -769,7 +769,7 @@ const DocsPage = () => {
           <p className="text-gray-400 mb-8 max-w-xl mx-auto">
             {t.footerDesc}
           </p>
-          <Link href="/home">
+          <Link href="/idea">
             <motion.button
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}

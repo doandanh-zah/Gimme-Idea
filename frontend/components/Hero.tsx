@@ -12,7 +12,7 @@ const Hero: React.FC = () => {
   const router = useRouter();
 
   return (
-    <section className="relative min-h-screen flex items-center pt-20 overflow-hidden px-6">
+    <section className="relative min-h-screen flex items-center pt-24 sm:pt-20 overflow-hidden px-6">
       
       {/* Dynamic Background Elements (Glows) - Darker/Deeper colors as requested */}
       <div className="absolute inset-0 bg-gradient-radial from-purple-900/5 to-transparent opacity-10 pointer-events-none" />
