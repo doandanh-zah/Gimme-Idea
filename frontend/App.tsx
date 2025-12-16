@@ -70,18 +70,18 @@ function App() {
             <JourneyMap />
 
             {/* CTA */}
-            <section className="py-16 sm:py-32 px-4 sm:px-6 text-center relative overflow-hidden">
+            <section className="py-32 px-6 text-center relative overflow-hidden">
               <div className="absolute inset-0 bg-gold/10 blur-[100px] pointer-events-none" />
-              <div className="relative z-10 max-w-3xl mx-auto space-y-5 sm:space-y-8">
-                <h2 className="text-3xl sm:text-5xl md:text-6xl font-display font-bold tracking-tight">
+              <div className="relative z-10 max-w-3xl mx-auto space-y-8">
+                <h2 className="text-5xl md:text-6xl font-display font-bold tracking-tight">
                   Ready to validate your <br /><span className="text-gold glow-text-gold">Moonshot?</span>
                 </h2>
-                <p className="text-base sm:text-xl text-gray-400 px-2">Where ideas meet builders. Share, discover, and grow together.</p>
-                <div className="flex flex-col sm:flex-row justify-center gap-3 sm:gap-4">
+                <p className="text-xl text-gray-400">Where ideas meet builders. Share, discover, and grow together.</p>
+                <div className="flex flex-col sm:flex-row justify-center gap-4">
 
                   <button 
                     onClick={() => openSubmitModal('idea')}
-                    className="px-6 sm:px-8 py-3 sm:py-4 bg-transparent border border-white/20 text-white rounded-full font-bold hover:bg-white/10 transition-colors text-sm sm:text-base"
+                    className="px-8 py-4 bg-transparent border border-white/20 text-white rounded-full font-bold hover:bg-white/10 transition-colors"
                   >
                     Submit Idea
                   </button>
@@ -132,13 +132,13 @@ function App() {
       
       {renderContent()}
 
-      <footer className="border-t border-white/10 py-6 sm:py-8 px-4 sm:px-6 bg-black/90 backdrop-blur-xl">
-        <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-3 sm:gap-4">
-          <div className="text-xl sm:text-2xl font-display font-bold">Gimme<span className="text-gold">Idea</span></div>
-          <div className="text-gray-500 text-[10px] sm:text-sm font-mono text-center">
+      <footer className="border-t border-white/10 py-8 px-6 bg-black/90 backdrop-blur-xl">
+        <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-4">
+          <div className="text-2xl font-display font-bold">Gimme<span className="text-gold">Idea</span></div>
+          <div className="text-gray-500 text-sm font-mono">
             &copy; 2025 Gimme Idea Protocol. Product of DUT Superteam University Club
           </div>
-          <div className="flex gap-3 sm:gap-4 text-gray-400 text-xs sm:text-sm">
+          <div className="flex gap-4 text-gray-400 text-sm">
             <a href="/terms" className="hover:text-white transition-colors">Terms</a>
             <span className="text-gray-600">•</span>
             <a href="/privacy" className="hover:text-white transition-colors">Privacy</a>

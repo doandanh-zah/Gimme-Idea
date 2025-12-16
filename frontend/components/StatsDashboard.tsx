@@ -107,22 +107,22 @@ const StatsDashboard: React.FC = () => {
   }
 
   return (
-    <div className="w-full grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 p-4 sm:p-6">
+    <div className="w-full grid grid-cols-1 lg:grid-cols-3 gap-6 p-6">
       
       {/* Main Activity Chart */}
-      <div className="glass-panel rounded-xl sm:rounded-2xl p-4 sm:p-6 lg:col-span-2 relative overflow-hidden group">
+      <div className="glass-panel rounded-2xl p-6 lg:col-span-2 relative overflow-hidden group">
         <div className="absolute inset-0 bg-gradient-to-br from-purple-900/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 sm:mb-6 gap-2">
+        <div className="flex justify-between items-center mb-6">
           <div>
-            <h3 className="text-base sm:text-xl font-display font-bold text-white">Idea & Feedback Velocity</h3>
-            <p className="text-[10px] sm:text-xs text-gray-500 mt-0.5 sm:mt-1">{totalIdeas} ideas • {totalFeedback} feedback</p>
+            <h3 className="text-xl font-display font-bold text-white">Idea & Feedback Velocity</h3>
+            <p className="text-xs text-gray-500 mt-1">{totalIdeas} ideas • {totalFeedback} feedback</p>
           </div>
-          <div className="flex gap-3 sm:gap-4 text-[10px] sm:text-xs">
-            <span className="flex items-center gap-1"><span className="w-1.5 sm:w-2 h-1.5 sm:h-2 rounded-full bg-gold"></span> Ideas</span>
-            <span className="flex items-center gap-1"><span className="w-1.5 sm:w-2 h-1.5 sm:h-2 rounded-full bg-purple-500"></span> Feedback</span>
+          <div className="flex gap-4 text-xs">
+            <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-gold"></span> Ideas</span>
+            <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-purple-500"></span> Feedback</span>
           </div>
         </div>
-        <div className="h-48 sm:h-64 w-full">
+        <div className="h-64 w-full">
           <ResponsiveContainer width="100%" height="100%">
             <AreaChart data={activityData}>
               <defs>
@@ -137,7 +137,7 @@ const StatsDashboard: React.FC = () => {
               </defs>
               <CartesianGrid strokeDasharray="3 3" stroke="#333" vertical={false} />
               <XAxis dataKey="name" stroke="#666" tick={{fontSize: 10}} axisLine={false} tickLine={false} />
-              <YAxis stroke="#666" tick={{fontSize: 10}} axisLine={false} tickLine={false} hide className="hidden sm:block" />
+              <YAxis stroke="#666" tick={{fontSize: 10}} axisLine={false} tickLine={false} />
               <Tooltip 
                 contentStyle={{ backgroundColor: '#000', border: '1px solid #333', borderRadius: '8px', fontSize: '12px' }}
                 itemStyle={{ color: '#fff' }}
@@ -150,9 +150,9 @@ const StatsDashboard: React.FC = () => {
       </div>
 
       {/* Category Distribution */}
-      <div className="glass-panel rounded-xl sm:rounded-2xl p-4 sm:p-6 relative">
-        <h3 className="text-base sm:text-xl font-display font-bold text-white mb-4 sm:mb-6">Active Sectors</h3>
-        <div className="h-48 sm:h-64 w-full">
+      <div className="glass-panel rounded-2xl p-6 relative">
+        <h3 className="text-xl font-display font-bold text-white mb-6">Active Sectors</h3>
+        <div className="h-64 w-full">
           {categoryData.length > 0 ? (
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={categoryData} layout="vertical">
@@ -178,8 +178,8 @@ const StatsDashboard: React.FC = () => {
           )}
         </div>
         {dominantCategory && (
-          <div className="mt-3 sm:mt-4 p-3 sm:p-4 bg-white/5 rounded-lg sm:rounded-xl border border-white/5">
-            <div className="flex justify-between text-xs sm:text-sm">
+          <div className="mt-4 p-4 bg-white/5 rounded-xl border border-white/5">
+            <div className="flex justify-between text-sm">
               <span className="text-gray-400">Dominance</span>
               <span className="text-gold font-mono">{dominantCategory.name} ({dominancePercent}%)</span>
             </div>

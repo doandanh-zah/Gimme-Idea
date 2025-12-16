@@ -12,55 +12,55 @@ const Hero: React.FC = () => {
   const router = useRouter();
 
   return (
-    <section className="relative min-h-screen flex items-center justify-center pt-16 sm:pt-20 overflow-hidden px-4 sm:px-6">
+    <section className="relative min-h-screen flex items-center justify-center pt-20 overflow-hidden px-6">
       
       {/* Dynamic Background Elements (Glows) - Darker/Deeper colors as requested */}
       <div className="absolute inset-0 bg-gradient-radial from-purple-900/5 to-transparent opacity-10 pointer-events-none" />
       <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none">
         {/* Deep Purple Orb */}
-        <div className="absolute top-[-20%] left-[-10%] w-[300px] sm:w-[600px] h-[300px] sm:h-[600px] bg-[#2e1065] rounded-full blur-[80px] sm:blur-[120px] animate-pulse-slow opacity-40 mix-blend-screen" />
+        <div className="absolute top-[-20%] left-[-10%] w-[400px] sm:w-[600px] h-[400px] sm:h-[600px] bg-[#2e1065] rounded-full blur-[100px] sm:blur-[120px] animate-pulse-slow opacity-40 mix-blend-screen" />
         
         {/* Dark Gold/Bronze Orb */}
-        <div className="absolute bottom-[-20%] right-[-10%] w-[300px] sm:w-[600px] h-[300px] sm:h-[600px] bg-[#422006] rounded-full blur-[80px] sm:blur-[120px] animate-pulse-slow opacity-40 mix-blend-screen" style={{animationDelay: '2s'}} />
+        <div className="absolute bottom-[-20%] right-[-10%] w-[400px] sm:w-[600px] h-[400px] sm:h-[600px] bg-[#422006] rounded-full blur-[100px] sm:blur-[120px] animate-pulse-slow opacity-40 mix-blend-screen" style={{animationDelay: '2s'}} />
       </div>
 
       {/* Content Container */}
-      <div className="max-w-7xl mx-auto relative z-10 grid lg:grid-cols-2 gap-8 lg:gap-12 items-center">
+      <div className="max-w-7xl mx-auto relative z-10 grid lg:grid-cols-2 gap-12 items-center">
         
         {/* Left Column: Text */}
-        <div className="text-center lg:text-left space-y-5 sm:space-y-8">
+        <div className="text-center lg:text-left space-y-8">
           <motion.div
              initial={{ opacity: 0, x: -50 }}
              animate={{ opacity: 1, x: 0 }}
              transition={{ duration: 0.8 }}
           >
-            <div className="inline-flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1 sm:py-1.5 rounded-full bg-white/5 border border-white/10 mb-4 sm:mb-6 backdrop-blur-sm">
-              <span className="w-1.5 sm:w-2 h-1.5 sm:h-2 rounded-full bg-green-500 animate-pulse"></span>
-              <span className="text-[10px] sm:text-xs font-mono text-green-400 uppercase tracking-wide">Solana Mainnet Compatible</span>
+            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/5 border border-white/10 mb-6 backdrop-blur-sm">
+              <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
+              <span className="text-xs font-mono text-green-400 uppercase tracking-wide">Solana Mainnet Compatible</span>
             </div>
             
-            <h1 className="text-3xl sm:text-5xl lg:text-7xl font-display font-bold leading-tight mb-4 sm:mb-6">
+            <h1 className="text-4xl sm:text-5xl lg:text-7xl font-display font-bold leading-tight mb-6">
               Ship faster with <br />
               <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#9945FF] to-[#ffd700]">Real Feedback.</span>
             </h1>
             
-            <p className="text-sm sm:text-lg text-gray-400 max-w-xl mx-auto lg:mx-0 leading-relaxed">
+            <p className="text-base sm:text-lg text-gray-400 max-w-xl mx-auto lg:mx-0 leading-relaxed">
               Turn your ideas into reality. Share concepts, get honest feedback from real builders, and discover what the community truly wants.
             </p>
 
-            <div className="flex flex-col sm:flex-row justify-center lg:justify-start gap-3 sm:gap-4 mt-6 sm:mt-8">
+            <div className="flex flex-col sm:flex-row justify-center lg:justify-start gap-4 mt-8">
               <button
                 onClick={() => openSubmitModal('idea')}
-                className="px-6 sm:px-8 py-3 sm:py-4 bg-white text-black font-bold rounded-full hover:bg-gold transition-all duration-300 transform hover:scale-105 flex items-center justify-center gap-2 text-sm sm:text-base"
+                className="px-8 py-4 bg-white text-black font-bold rounded-full hover:bg-gold transition-all duration-300 transform hover:scale-105 flex items-center justify-center gap-2"
               >
-                <Plus className="w-4 sm:w-5 h-4 sm:h-5" />
+                <Plus className="w-5 h-5" />
                 Share Your Idea
               </button>
               <button
                 onClick={() => router.push('/idea')}
-                className="px-6 sm:px-8 py-3 sm:py-4 bg-transparent border border-white/20 text-white font-bold rounded-full hover:border-white hover:bg-white/5 transition-all duration-300 flex items-center justify-center gap-2 text-sm sm:text-base"
+                className="px-8 py-4 bg-transparent border border-white/20 text-white font-bold rounded-full hover:border-white hover:bg-white/5 transition-all duration-300 flex items-center justify-center gap-2"
               >
-                <LayoutGrid className="w-4 sm:w-5 h-4 sm:h-5" />
+                <LayoutGrid className="w-5 h-5" />
                 Explore Ideas
               </button>
             </div>
