@@ -46,25 +46,20 @@ interface IdeaPost {
   isFollowing?: boolean;
 }
 
-// Expandable text component
-function ExpandableText({ text }: { text: string }) {
-  const [isExpanded, setIsExpanded] = useState(false);
-  const shouldTruncate = text && text.length > 200;
-
+// Truncated text component - shows first 80 chars with "...see more"
+function TruncatedText({ text, label, labelColor }: { text: string; label: string; labelColor: string }) {
   if (!text) return null;
+  
+  const maxLength = 80;
+  const truncated = text.length > maxLength ? text.substring(0, maxLength) + '...' : text;
+  const needsTruncate = text.length > maxLength;
 
   return (
-    <div>
-      <p className={`text-gray-300 whitespace-pre-wrap ${!isExpanded && shouldTruncate ? 'line-clamp-3' : ''}`}>
-        {text}
-      </p>
-      {shouldTruncate && (
-        <button
-          onClick={() => setIsExpanded(!isExpanded)}
-          className="text-purple-400 hover:text-purple-300 text-sm mt-1 font-medium"
-        >
-          {isExpanded ? 'Show less' : 'See more'}
-        </button>
+    <div className="mb-2">
+      <span className={`text-xs font-semibold ${labelColor}`}>{label}: </span>
+      <span className="text-sm text-gray-300">{truncated}</span>
+      {needsTruncate && (
+        <span className="text-purple-400 text-sm ml-1 cursor-pointer hover:text-purple-300">see more</span>
       )}
     </div>
   );
@@ -112,7 +107,7 @@ function PostCard({ post, onVote }: { post: IdeaPost; onVote: (id: string) => vo
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      className="bg-[#111] border border-white/5 rounded-2xl overflow-hidden hover:border-white/10 transition-colors"
+      className="bg-gradient-to-br from-white/[0.08] to-white/[0.02] border border-white/10 rounded-2xl overflow-hidden hover:border-white/20 transition-all group"
     >
       {/* Header */}
       <div className="p-4 flex items-center justify-between">
@@ -170,40 +165,23 @@ function PostCard({ post, onVote }: { post: IdeaPost; onVote: (id: string) => vo
       <div className="px-4 pb-3">
         {/* Title */}
         <Link href={`/idea/${post.id}`}>
-          <h2 className="text-xl font-bold text-white mb-3 hover:text-purple-400 transition-colors">
+          <h2 className="text-lg font-bold text-white mb-3 hover:text-purple-400 transition-colors line-clamp-2">
             {post.title}
           </h2>
         </Link>
 
-        {/* Problem */}
-        {post.problem && (
-          <div className="mb-3">
-            <div className="flex items-center gap-2 text-sm text-amber-400 mb-1">
-              <span className="font-semibold">💡 Problem</span>
-            </div>
-            <ExpandableText text={post.problem} />
-          </div>
-        )}
-
-        {/* Solution */}
-        {post.solution && (
-          <div className="mb-3">
-            <div className="flex items-center gap-2 text-sm text-green-400 mb-1">
-              <span className="font-semibold">✅ Solution</span>
-            </div>
-            <ExpandableText text={post.solution} />
-          </div>
-        )}
-
-        {/* Opportunity */}
-        {post.opportunity && (
-          <div className="mb-3">
-            <div className="flex items-center gap-2 text-sm text-blue-400 mb-1">
-              <span className="font-semibold">🚀 Opportunity</span>
-            </div>
-            <ExpandableText text={post.opportunity} />
-          </div>
-        )}
+        {/* Problem, Solution, Opportunity - Truncated */}
+        <Link href={`/idea/${post.id}`} className="block">
+          {post.problem && (
+            <TruncatedText text={post.problem} label="💡 Problem" labelColor="text-amber-400" />
+          )}
+          {post.solution && (
+            <TruncatedText text={post.solution} label="✅ Solution" labelColor="text-green-400" />
+          )}
+          {post.opportunity && (
+            <TruncatedText text={post.opportunity} label="🚀 Opportunity" labelColor="text-blue-400" />
+          )}
+        </Link>
 
         {/* Tags */}
         {post.tags && post.tags.length > 0 && (
@@ -289,6 +267,21 @@ export default function HomeFeed() {
   const [posts, setPosts] = useState<IdeaPost[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
+  // Background stars
+  const [stars, setStars] = useState<{ id: number; top: string; left: string; size: number; duration: string; opacity: number }[]>([]);
+
+  useEffect(() => {
+    const newStars = Array.from({ length: 50 }).map((_, i) => ({
+      id: i,
+      top: `${Math.random() * 100}%`,
+      left: `${Math.random() * 100}%`,
+      size: Math.random() * 2 + 1,
+      duration: `${Math.random() * 3 + 2}s`,
+      opacity: Math.random()
+    }));
+    setStars(newStars);
+  }, []);
+
   // Fetch posts
   const fetchPosts = useCallback(async () => {
     setIsLoading(true);
@@ -350,34 +343,55 @@ export default function HomeFeed() {
   };
 
   return (
-    <div className="min-h-screen bg-[#0a0a0a]">
-      {/* Header */}
-      <div className="sticky top-16 z-30 bg-[#0a0a0a]/80 backdrop-blur-xl border-b border-white/5">
-        <div className="max-w-2xl mx-auto px-4 py-3">
-          <div className="flex items-center justify-between">
-            <h1 className="text-xl font-bold text-white flex items-center gap-2">
-              <Sparkles className="w-5 h-5 text-gold" />
-              Feed
-            </h1>
-            <button
-              onClick={() => openSubmitModal('idea')}
-              className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white font-medium rounded-full hover:opacity-90 transition-opacity"
-            >
-              <Plus className="w-4 h-4" />
-              <span className="hidden sm:inline">Post Idea</span>
-            </button>
-          </div>
+    <div className="min-h-screen pb-20 relative">
+      {/* Background */}
+      <div className="fixed inset-0 z-[-1] pointer-events-none overflow-hidden">
+        <div className="bg-grid opacity-40"></div>
+        <div className="absolute top-[-20%] left-[-10%] w-[600px] h-[600px] bg-[#2e1065] rounded-full blur-[120px] animate-pulse-slow opacity-40 mix-blend-screen" />
+        <div className="absolute bottom-[-20%] right-[-10%] w-[600px] h-[600px] bg-[#422006] rounded-full blur-[120px] animate-pulse-slow opacity-40 mix-blend-screen" style={{animationDelay: '2s'}} />
+        <div className="stars-container">
+          {stars.map((star) => (
+            <div
+              key={star.id}
+              className="star"
+              style={{
+                top: star.top,
+                left: star.left,
+                width: `${star.size}px`,
+                height: `${star.size}px`,
+                '--duration': star.duration,
+                '--opacity': star.opacity
+              } as React.CSSProperties}
+            />
+          ))}
+          <div className="shooting-star" style={{ top: '20%', left: '80%' }} />
+          <div className="shooting-star" style={{ top: '60%', left: '10%', animationDelay: '2s' }} />
+          <div className="shooting-star" style={{ top: '40%', left: '50%', animationDelay: '4s' }} />
         </div>
       </div>
 
-      {/* Main Content */}
-      <div className="max-w-2xl mx-auto px-4 py-6">
+      <div className="pt-24 sm:pt-32 px-4 sm:px-6 max-w-2xl mx-auto">
+        {/* Header */}
+        <div className="flex items-center justify-between mb-6">
+          <h1 className="text-2xl sm:text-3xl font-bold text-white flex items-center gap-3">
+            <Sparkles className="w-7 h-7 text-[#FFD700]" />
+            <span>Idea Feed</span>
+          </h1>
+          <button
+            onClick={() => openSubmitModal('idea')}
+            className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-[#FFD700] to-[#FDB931] text-black font-bold rounded-full hover:shadow-lg hover:shadow-[#FFD700]/20 transition-all"
+          >
+            <Plus className="w-4 h-4" />
+            <span className="hidden sm:inline">Post Idea</span>
+          </button>
+        </div>
+
         {/* Create Post Prompt */}
         {user && (
           <motion.div
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
-            className="bg-[#111] border border-white/5 rounded-2xl p-4 mb-6"
+            className="bg-gradient-to-br from-white/[0.08] to-white/[0.02] border border-white/10 rounded-2xl p-4 mb-6"
           >
             <div className="flex items-center gap-3">
               {user.avatar ? (
