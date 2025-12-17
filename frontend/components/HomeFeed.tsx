@@ -21,7 +21,7 @@ const getOrbitItems = (isMobile: boolean) => {
       color: '#FFD700',
       glowColor: 'rgba(255, 215, 0, 0.5)',
       size: baseSize,
-      orbitRadius: isMobile ? 85 : 140,
+      orbitRadius: isMobile ? 90 : 160,
       orbitSpeed: 35,
       startAngle: 0,
       route: '/idea',
@@ -36,7 +36,7 @@ const getOrbitItems = (isMobile: boolean) => {
       color: '#14F195',
       glowColor: 'rgba(20, 241, 149, 0.5)',
       size: baseSize - sizeDecrement,
-      orbitRadius: isMobile ? 130 : 210,
+      orbitRadius: isMobile ? 150 : 250,
       orbitSpeed: 45,
       startAngle: 60,
       route: '/feeds',
@@ -51,7 +51,7 @@ const getOrbitItems = (isMobile: boolean) => {
       color: '#FF6B6B',
       glowColor: 'rgba(255, 107, 107, 0.5)',
       size: baseSize - sizeDecrement * 2,
-      orbitRadius: isMobile ? 175 : 280,
+      orbitRadius: isMobile ? 210 : 340,
       orbitSpeed: 55,
       startAngle: 120,
       route: '/hackathons',
@@ -66,7 +66,7 @@ const getOrbitItems = (isMobile: boolean) => {
       gradient: 'linear-gradient(135deg, #3366ff 0%, #00ccff 60%, #99ff66 100%)',
       glowColor: 'rgba(51, 102, 255, 0.6)',
       size: baseSize - sizeDecrement * 3,
-      orbitRadius: isMobile ? 220 : 350,
+      orbitRadius: isMobile ? 270 : 430,
       orbitSpeed: 70,
       startAngle: 180,
       route: 'https://dsuc.fun',
@@ -81,7 +81,7 @@ const getOrbitItems = (isMobile: boolean) => {
       gradient: 'linear-gradient(135deg, #EF4444 0%, #FACC15 100%)',
       glowColor: 'rgba(239, 68, 68, 0.5)',
       size: baseSize - sizeDecrement * 4,
-      orbitRadius: isMobile ? 265 : 420,
+      orbitRadius: isMobile ? 330 : 520,
       orbitSpeed: 90,
       startAngle: 240,
       route: 'https://vn.superteam.fun',
@@ -96,7 +96,7 @@ const getOrbitItems = (isMobile: boolean) => {
       gradient: 'linear-gradient(135deg, #9945FF 0%, #14F195 50%, #00D1FF 100%)',
       glowColor: 'rgba(153, 69, 255, 0.5)',
       size: baseSize - sizeDecrement * 5,
-      orbitRadius: isMobile ? 310 : 490,
+      orbitRadius: isMobile ? 390 : 610,
       orbitSpeed: 110,
       startAngle: 300,
       route: 'https://solana.com',
@@ -238,24 +238,6 @@ export default function HomeFeed() {
         </div>
 
         <div className="pt-24 md:pt-28 px-4 sm:px-6 max-w-[1600px] mx-auto">
-          <motion.div 
-            initial={{ opacity: 0, y: 20 }} 
-            animate={{ opacity: 1, y: 0 }} 
-            transition={{ duration: 0.6 }}
-            className="text-center mb-6 md:mb-8"
-          >
-            <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold mb-3 tracking-tight">
-              Welcome to{' '}
-              <span className="font-quantico">
-                <span className="text-white">Gimme</span>
-                <span className="text-[#FFD700]">Idea</span>
-              </span>
-            </h1>
-            <p className="text-gray-400 text-sm md:text-base max-w-lg mx-auto">
-              Explore our innovation universe. Hover any planet to discover.
-            </p>
-          </motion.div>
-
           <div className="relative w-full h-[700px] lg:h-[800px] xl:h-[850px] 2xl:h-[900px] flex items-center justify-center">
             {ORBIT_ITEMS.map(item => (
               <div 
@@ -471,25 +453,6 @@ export default function HomeFeed() {
       </div>
 
       <div className="pt-20 px-4 pb-24">
-        {/* Header */}
-        <motion.div 
-          initial={{ opacity: 0, y: 20 }} 
-          animate={{ opacity: 1, y: 0 }} 
-          transition={{ duration: 0.5 }}
-          className="text-center mb-6"
-        >
-          <h1 className="text-xl font-bold mb-1 tracking-tight">
-            Welcome to{' '}
-            <span className="font-quantico">
-              <span className="text-white">Gimme</span>
-              <span className="text-[#FFD700]">Idea</span>
-            </span>
-          </h1>
-          <p className="text-gray-400 text-xs">
-            Tap any planet to explore
-          </p>
-        </motion.div>
-
         {/* Vertical Solar System */}
         <div className="relative w-full min-h-[1200px] flex flex-col items-center">
           {/* Vertical orbit line */}
