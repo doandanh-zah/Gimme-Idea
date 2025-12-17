@@ -651,7 +651,7 @@ export default function HackathonDashboard({ params }: { params: { id: string } 
                                             <div>
                                                <label className="block text-xs font-bold text-gray-500 uppercase mb-2">Track</label>
                                                <select className="w-full bg-black/20 border border-white/10 rounded-lg px-4 py-3 text-white focus:border-gold/50 outline-none appearance-none">
-                                                  {hackathon.tracks?.map(t => <option key={t.id}>{t.title}</option>)}
+                                                  {hackathon.tracks?.map((t, index) => <option key={index}>{t.title}</option>)}
                                                </select>
                                             </div>
                                             <div>
