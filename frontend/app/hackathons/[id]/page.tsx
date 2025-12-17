@@ -8,7 +8,7 @@ import {
   AlertCircle, MoreHorizontal, Github, Disc, Link as LinkIcon,
   Monitor, Mic, SwatchBook, Code, ShieldCheck, Smartphone, UserPlus, 
   RefreshCw, Lock, Search, Plus, Settings, LogOut, UserMinus,
-  LayoutDashboard, Rocket, BookOpen, Menu, Sparkles
+  LayoutDashboard, Rocket, BookOpen, Menu as MenuIcon, X, Sparkles
 } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -46,6 +46,7 @@ export default function HackathonDashboard({ params }: { params: { id: string } 
 
   // Layout State
   const [activeSection, setActiveSection] = useState('overview');
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   // Background Stars
   const [stars, setStars] = useState<{ id: number; top: string; left: string; size: number; duration: string; opacity: number }[]>([]);
@@ -98,7 +99,7 @@ export default function HackathonDashboard({ params }: { params: { id: string } 
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [projectSubTab, setProjectSubTab] = useState<'dashboard' | 'submit'>('dashboard');
 
-  // Terminal State (Restored Original Logic)
+  // Terminal State (Original Logic)
   const [terminalInput, setTerminalInput] = useState('');
   const [terminalHistory, setTerminalHistory] = useState<{ type: 'command' | 'error', content: string }[]>([]);
   const [isTerminalShaking, setIsTerminalShaking] = useState(false);
@@ -221,7 +222,7 @@ export default function HackathonDashboard({ params }: { params: { id: string } 
 
   const SidebarItem = ({ id, label, icon: Icon }: { id: string, label: string, icon: any }) => (
     <button
-      onClick={() => setActiveSection(id)}
+      onClick={() => { setActiveSection(id); setIsMobileMenuOpen(false); }}
       className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-all duration-200
         ${activeSection === id 
           ? 'bg-gold/10 text-gold border border-gold/20' 
@@ -234,7 +235,7 @@ export default function HackathonDashboard({ params }: { params: { id: string } 
   );
 
   return (
-    <div className="min-h-screen text-gray-300 font-sans text-sm relative selection:bg-gold/30">
+    <div className="h-screen w-screen text-gray-300 font-sans text-sm relative selection:bg-gold/30 overflow-hidden flex flex-col">
       
       {/* --- BACKGROUND LAYERS --- */}
       <div className="fixed inset-0 z-[-1] pointer-events-none overflow-hidden bg-[#0a0a0a]">
@@ -251,11 +252,25 @@ export default function HackathonDashboard({ params }: { params: { id: string } 
         </div>
       </div>
 
-      <div className="flex pt-20 h-screen overflow-hidden">
+      {/* --- MOBILE HEADER & TOGGLE --- */}
+      <div className="md:hidden flex items-center justify-between p-4 bg-surface/80 backdrop-blur border-b border-white/10 z-50 pt-20">
+         <div className="flex items-center gap-2 text-white font-quantico font-bold text-lg">
+            <div className="w-8 h-8 bg-gradient-to-br from-gold to-yellow-600 rounded flex items-center justify-center text-black text-xs">H</div>
+            HackHub
+         </div>
+         <button onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)} className="p-2 text-white">
+            {isMobileMenuOpen ? <X /> : <MenuIcon />}
+         </button>
+      </div>
+
+      <div className="flex-1 flex overflow-hidden relative pt-20 md:pt-24">
         
-        {/* --- LEFT SIDEBAR (Fixed) --- */}
-        <aside className="w-64 bg-surface/50 border-r border-white/5 flex flex-col shrink-0 backdrop-blur-sm z-20">
-          <div className="p-6">
+        {/* --- LEFT SIDEBAR (Desktop Fixed / Mobile Drawer) --- */}
+        <aside className={`
+            fixed inset-y-0 left-0 z-40 w-64 bg-surface/95 backdrop-blur-md border-r border-white/5 flex flex-col transform transition-transform duration-300 md:translate-x-0 md:relative md:bg-transparent md:backdrop-blur-none
+            ${isMobileMenuOpen ? 'translate-x-0 pt-20' : '-translate-x-full md:pt-0'}
+        `}>
+          <div className="p-6 hidden md:block">
              <div className="flex items-center gap-2 text-white font-quantico font-bold text-lg mb-1">
                 <div className="w-8 h-8 bg-gradient-to-br from-gold to-yellow-600 rounded flex items-center justify-center text-black text-xs">
                    H
@@ -265,7 +280,7 @@ export default function HackathonDashboard({ params }: { params: { id: string } 
              <p className="text-[10px] text-gray-500 uppercase tracking-widest pl-10">Workspace</p>
           </div>
 
-          <nav className="flex-1 px-4 space-y-2 overflow-y-auto">
+          <nav className="flex-1 px-4 space-y-2 overflow-y-auto pt-4 md:pt-0">
             <div className="text-[10px] text-gray-500 font-bold uppercase tracking-wider px-2 mb-2 mt-2">Menu</div>
             <SidebarItem id="overview" label="Overview" icon={LayoutDashboard} />
             <SidebarItem id="tracks" label="Tracks & Prizes" icon={Target} />
@@ -294,14 +309,14 @@ export default function HackathonDashboard({ params }: { params: { id: string } 
         </aside>
 
 
-        {/* --- MAIN CONTENT AREA (Fluid) --- */}
-        <main className="flex-1 overflow-y-auto relative scrollbar-thin scrollbar-thumb-white/10 scrollbar-track-transparent">
+        {/* --- MAIN CONTENT AREA (Fluid & Compact) --- */}
+        <main className="flex-1 overflow-hidden flex flex-col relative w-full">
           
-          <div className="max-w-6xl mx-auto p-8 pb-20 space-y-8">
+          <div className="h-full flex flex-col p-4 md:p-6 lg:p-8 space-y-4 md:space-y-6 overflow-y-auto md:overflow-hidden">
             
-            {/* --- PAGE HEADER --- */}
-            <header className="flex flex-col md:flex-row md:items-end justify-between gap-6 border-b border-white/5 pb-8">
-              <div className="space-y-4 flex-1">
+            {/* --- COMPACT PAGE HEADER --- */}
+            <header className="flex flex-col md:flex-row md:items-end justify-between gap-4 shrink-0">
+              <div className="space-y-1 md:space-y-2 flex-1 min-w-0">
                  <div className="flex items-center gap-3">
                     <span className={`px-2 py-0.5 rounded text-[10px] uppercase font-bold border ${hackathon.status === 'active' ? 'bg-green-500/10 text-green-500 border-green-500/20' : 'bg-blue-500/10 text-blue-500 border-blue-500/20'}`}>
                        {hackathon.status === 'active' ? 'Live Event' : 'Upcoming'}
@@ -311,28 +326,25 @@ export default function HackathonDashboard({ params }: { params: { id: string } 
                        {eventStartDate && format(new Date(eventStartDate), 'MMM dd')} - {eventEndDate && format(new Date(eventEndDate), 'MMM dd, yyyy')}
                     </span>
                  </div>
-                 <h1 className="text-4xl md:text-5xl font-bold text-white font-quantico leading-tight">
+                 <h1 className="text-2xl md:text-3xl lg:text-4xl font-bold text-white font-quantico leading-tight truncate">
                     {hackathon.title}
                  </h1>
-                 <p className="text-gray-400 max-w-2xl text-sm leading-relaxed">
-                   Build the future of decentralized technology. Join thousands of developers to compete for the grand prize.
-                 </p>
               </div>
 
-              <div className="flex items-center gap-4 bg-surface border border-white/5 p-4 rounded-xl min-w-[280px]">
-                 <div className="p-3 bg-gold/10 rounded-lg text-gold">
-                    <Clock className="w-6 h-6" />
+              <div className="flex items-center gap-3 bg-surface border border-white/5 p-3 rounded-xl min-w-[200px] shrink-0">
+                 <div className="p-2 bg-gold/10 rounded-lg text-gold">
+                    <Clock className="w-5 h-5" />
                  </div>
                  <div>
                     <p className="text-[10px] text-gray-500 uppercase tracking-wider mb-0.5">{countdown.label}</p>
-                    <p className="text-xl font-mono font-bold text-white tracking-wide">{countdown.text}</p>
+                    <p className="text-lg font-mono font-bold text-white tracking-wide leading-none">{countdown.text}</p>
                  </div>
               </div>
             </header>
 
 
-            {/* --- DYNAMIC CONTENT VIEW --- */}
-            <div className="min-h-[500px]">
+            {/* --- DYNAMIC CONTENT VIEW (Flex 1 to fill space) --- */}
+            <div className="flex-1 min-h-0">
                <AnimatePresence mode="wait">
                   <motion.div
                     key={activeSection}
@@ -340,58 +352,56 @@ export default function HackathonDashboard({ params }: { params: { id: string } 
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -10 }}
                     transition={{ duration: 0.2 }}
+                    className="h-full"
                   >
                     
-                    {/* === VIEW: OVERVIEW === */}
+                    {/* === VIEW: OVERVIEW (Compact Grid) === */}
                     {activeSection === 'overview' && (
-                       <div className="space-y-8">
+                       <div className="flex flex-col h-full gap-4 md:gap-6">
                           
-                          {/* Horizontal Timeline */}
-                          <div className="bg-surface border border-white/5 rounded-xl p-8 overflow-x-auto">
-                             <div className="flex justify-between items-center relative min-w-[600px]">
+                          {/* Slim Horizontal Timeline */}
+                          <div className="bg-surface border border-white/5 rounded-xl p-4 md:p-6 overflow-x-auto shrink-0">
+                             <div className="flex justify-between items-center relative min-w-[500px]">
                                 {/* Connecting Line */}
                                 <div className="absolute top-1/2 left-0 w-full h-0.5 bg-white/10 -z-0 -translate-y-1/2" />
                                 
                                 {dynamicTimeline.map((step, idx) => (
-                                   <div key={step.id} className="relative z-10 flex flex-col items-center gap-3">
-                                      <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center transition-all duration-500
-                                         ${step.status === 'active' ? 'bg-gold border-gold scale-125 shadow-[0_0_15px_var(--color-gold)]' : 
+                                   <div key={step.id} className="relative z-10 flex flex-col items-center gap-2 group">
+                                      <div className={`w-3 h-3 rounded-full border-2 flex items-center justify-center transition-all duration-500
+                                         ${step.status === 'active' ? 'bg-gold border-gold scale-150 shadow-[0_0_10px_var(--color-gold)]' : 
                                            step.status === 'done' ? 'bg-gold border-gold' : 'bg-surface border-gray-600'}
                                       `}>
-                                         {step.status === 'done' && <CheckCircle2 className="w-3 h-3 text-black" />}
                                       </div>
-                                      <div className="text-center">
-                                         <p className={`text-xs font-bold ${step.status === 'active' ? 'text-white' : 'text-gray-500'}`}>{step.title}</p>
-                                         <p className="text-[10px] text-gray-600 font-mono mt-1">{format(new Date(step.startDate), 'MMM dd')}</p>
+                                      <div className="text-center bg-background/50 backdrop-blur-sm px-2 rounded">
+                                         <p className={`text-[10px] md:text-xs font-bold ${step.status === 'active' ? 'text-white' : 'text-gray-500'}`}>{step.title}</p>
+                                         <p className="text-[9px] text-gray-600 font-mono">{format(new Date(step.startDate), 'MMM dd')}</p>
                                       </div>
                                    </div>
                                 ))}
                              </div>
                           </div>
 
-                          <div className="grid lg:grid-cols-3 gap-6">
-                             {/* Terminal / Announcements (Span 2) - Gold Themed */}
-                             <div className="lg:col-span-2 bg-black border border-gold/30 rounded-lg p-6 font-mono text-xs shadow-[0_0_20px_rgba(255,215,0,0.1)] h-[500px] flex flex-col">
-                                <div className="flex gap-1.5 mb-4">
-                                   <div className="w-3 h-3 rounded-full bg-red-500/50" />
-                                   <div className="w-3 h-3 rounded-full bg-yellow-500/50" />
-                                   <div className="w-3 h-3 rounded-full bg-gold/50" /> {/* Changed from green */}
+                          <div className="flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-12 gap-4 md:gap-6">
+                             {/* Terminal (Span 8) - Fill Height */}
+                             <div className="lg:col-span-8 flex flex-col bg-black border border-gold/30 rounded-xl p-4 md:p-6 font-mono text-xs shadow-[0_0_20px_rgba(255,215,0,0.1)] overflow-hidden min-h-[300px]">
+                                <div className="flex gap-1.5 mb-2 shrink-0">
+                                   <div className="w-2.5 h-2.5 rounded-full bg-red-500/50" />
+                                   <div className="w-2.5 h-2.5 rounded-full bg-yellow-500/50" />
+                                   <div className="w-2.5 h-2.5 rounded-full bg-gold/50" />
                                 </div>
-                                <div className="flex-1 flex flex-col space-y-4 overflow-hidden">
-                                   <div className="border-b border-gold/20 pb-2 flex justify-between shrink-0"> {/* Changed from green */}
-                                      <div><span className="text-gold">$</span> <span className="text-gold">cat system_announcements.log</span></div> {/* Changed from green */}
-                                      <div className="text-xs text-gold/80">Connection: SECURE</div> {/* Changed from green */}
+                                <div className="flex-1 flex flex-col space-y-2 overflow-hidden min-h-0">
+                                   <div className="border-b border-gold/20 pb-2 flex justify-between shrink-0">
+                                      <div><span className="text-gold">$</span> <span className="text-gold">cat system_announcements.log</span></div>
+                                      <div className="text-[10px] text-gold/80">SECURE_CONNECTION</div>
                                    </div>
                                    
-                                   <div className="flex-1 overflow-y-auto space-y-3 text-gold/80 pr-2"> {/* Changed from green */}
+                                   <div className="flex-1 overflow-y-auto space-y-2 text-gold/80 pr-2 scrollbar-thin scrollbar-thumb-gold/20">
                                       {hackathon.announcements?.map((log: any) => {
-                                         // Effect Logic
                                          let effectClass = '';
                                          if (log.config?.effect === 'pulse') effectClass = 'animate-pulse font-bold';
-                                         if (log.config?.effect === 'typewriter') effectClass = 'border-r-2 border-gold pr-1 animate-pulse'; // Changed from green
+                                         if (log.config?.effect === 'typewriter') effectClass = 'border-r-2 border-gold pr-1 animate-pulse';
                                          if (log.config?.effect === 'glitch') effectClass = 'text-shadow-glitch';
                                 
-                                         // Widget Logic
                                          let widgetContent = null;
                                          if (log.config?.widget?.type === 'countdown') {
                                             const target = new Date(log.config.widget.target);
@@ -408,9 +418,9 @@ export default function HackathonDashboard({ params }: { params: { id: string } 
                                 
                                          return (
                                            <div key={log.id} className="group">
-                                               <span className="opacity-50 text-xs mr-2">[{format(new Date(log.date), 'MM-dd HH:mm')}]</span>
+                                               <span className="opacity-50 text-[10px] mr-2">[{format(new Date(log.date), 'HH:mm')}]</span>
                                                <span className={`
-                                                   ${log.type === 'warning' ? 'text-yellow-400' : log.type === 'success' ? 'text-gold' : 'text-gray-300'} {/* Changed from green */}
+                                                   ${log.type === 'warning' ? 'text-yellow-400' : log.type === 'success' ? 'text-gold' : 'text-gray-300'}
                                                    ${effectClass}
                                                `}
                                                style={log.config?.effect === 'glitch' ? { textShadow: '2px 0 red, -2px 0 blue' } : {}}
@@ -430,8 +440,8 @@ export default function HackathonDashboard({ params }: { params: { id: string } 
                                    </div>
            
                                    {/* Input Line */}
-                                   <div className="flex items-center gap-2 pt-2 border-t border-gold/20 shrink-0"> {/* Changed from green */}
-                                      <span className="text-gold">$</span> {/* Changed from green */}
+                                   <div className="flex items-center gap-2 pt-2 border-t border-gold/20 shrink-0">
+                                      <span className="text-gold">$</span>
                                       <div className="relative flex-1">
                                          <motion.input
                                            type="text"
@@ -439,7 +449,7 @@ export default function HackathonDashboard({ params }: { params: { id: string } 
                                            onChange={(e) => setTerminalInput(e.target.value)}
                                            onKeyDown={handleTerminalSubmit}
                                            className={`border outline-none font-mono w-full px-2 py-1 rounded
-                                             ${isTerminalShaking ? 'bg-red-900/20 border-red-500 text-red-500 placeholder-red-500/50' : 'bg-transparent border-transparent text-gold'} {/* Changed from green */}
+                                             ${isTerminalShaking ? 'bg-red-900/20 border-red-500 text-red-500 placeholder-red-500/50' : 'bg-transparent border-transparent text-gold'}
                                            `}
                                            animate={isTerminalShaking ? { x: [-10, 10, -10, 10, 0], y: [-5, 5, -5, 5, 0] } : {}}
                                            transition={{ duration: 0.4 }}
@@ -452,30 +462,35 @@ export default function HackathonDashboard({ params }: { params: { id: string } 
                                 </div>
                              </div>
 
-                             {/* Quick Stats (Span 1) */}
-                             <div className="space-y-4">
-                                <div className="bg-gradient-to-br from-surface to-surfaceHighlight border border-white/5 rounded-xl p-6">
-                                   <h3 className="text-gray-400 text-xs uppercase tracking-wider mb-4">Total Prizes</h3>
-                                   <div className="text-4xl font-bold text-gold font-quantico">$150,000</div>
-                                   <p className="text-xs text-gray-500 mt-2">Paid in USDC & Sponsor Tokens</p>
+                             {/* Quick Stats (Span 4) */}
+                             <div className="lg:col-span-4 flex flex-col gap-4">
+                                <div className="bg-gradient-to-br from-surface to-surfaceHighlight border border-white/5 rounded-xl p-4 md:p-6">
+                                   <h3 className="text-gray-400 text-xs uppercase tracking-wider mb-2">Total Prizes</h3>
+                                   <div className="text-2xl md:text-3xl font-bold text-gold font-quantico truncate">$150,000</div>
+                                   <p className="text-[10px] text-gray-500 mt-1">Paid in USDC & Sponsor Tokens</p>
                                 </div>
                                 
-                                <div className="bg-surface border border-white/5 rounded-xl p-6">
+                                <div className="bg-surface border border-white/5 rounded-xl p-4 md:p-6 flex-1 flex flex-col justify-center">
                                    <h3 className="text-gray-400 text-xs uppercase tracking-wider mb-4">Participation</h3>
-                                   <div className="flex items-center justify-between mb-2">
-                                      <span className="text-white font-bold text-lg">1,240</span>
-                                      <span className="text-xs text-gray-500">Builders</span>
-                                   </div>
-                                   <div className="w-full h-1.5 bg-white/5 rounded-full overflow-hidden">
-                                      <div className="h-full bg-blue-500 w-[65%]" />
-                                   </div>
-                                   
-                                   <div className="flex items-center justify-between mt-4 mb-2">
-                                      <span className="text-white font-bold text-lg">342</span>
-                                      <span className="text-xs text-gray-500">Projects</span>
-                                   </div>
-                                   <div className="w-full h-1.5 bg-white/5 rounded-full overflow-hidden">
-                                      <div className="h-full bg-purple-500 w-[40%]" />
+                                   <div className="space-y-4">
+                                      <div>
+                                         <div className="flex items-center justify-between mb-1">
+                                            <span className="text-white font-bold">1,240</span>
+                                            <span className="text-[10px] text-gray-500">Builders</span>
+                                         </div>
+                                         <div className="w-full h-1 bg-white/5 rounded-full overflow-hidden">
+                                            <div className="h-full bg-blue-500 w-[65%]" />
+                                         </div>
+                                      </div>
+                                      <div>
+                                         <div className="flex items-center justify-between mb-1">
+                                            <span className="text-white font-bold">342</span>
+                                            <span className="text-[10px] text-gray-500">Projects</span>
+                                         </div>
+                                         <div className="w-full h-1 bg-white/5 rounded-full overflow-hidden">
+                                            <div className="h-full bg-purple-500 w-[40%]" />
+                                         </div>
+                                      </div>
                                    </div>
                                 </div>
                              </div>
@@ -484,25 +499,25 @@ export default function HackathonDashboard({ params }: { params: { id: string } 
                     )}
 
 
-                    {/* === VIEW: TRACKS & PRIZES === */}
+                    {/* === VIEW: TRACKS & PRIZES (Scrollable on Overflow) === */}
                     {activeSection === 'tracks' && (
-                       <div className="grid lg:grid-cols-3 gap-8">
+                       <div className="grid lg:grid-cols-3 gap-6 h-full overflow-y-auto pr-2 pb-20 md:pb-0">
                           {/* Left: Tracks (2/3) */}
-                          <div className="lg:col-span-2 space-y-6">
-                             <h2 className="text-xl font-bold text-white font-quantico flex items-center gap-2">
-                                <Target className="w-5 h-5 text-gold" /> Tracks
+                          <div className="lg:col-span-2 space-y-4">
+                             <h2 className="text-lg font-bold text-white font-quantico flex items-center gap-2 sticky top-0 bg-[#0a0a0a] z-10 py-2">
+                                <Target className="w-4 h-4 text-gold" /> Tracks
                              </h2>
                              <div className="grid md:grid-cols-2 gap-4">
                                 {hackathon.tracks?.map((track, i) => {
                                    const TrackIcon = LucideIconMap[track.icon as keyof typeof LucideIconMap] || Target;
                                    return (
-                                      <div key={i} className="group bg-surface border border-white/5 p-6 rounded-xl hover:border-gold/30 transition-all cursor-default">
-                                         <div className={`w-10 h-10 rounded-lg bg-black/40 ${track.color} flex items-center justify-center mb-4 group-hover:scale-110 transition-transform`}>
-                                            <TrackIcon className="w-5 h-5" />
+                                      <div key={i} className="group bg-surface border border-white/5 p-4 rounded-xl hover:border-gold/30 transition-all cursor-default">
+                                         <div className={`w-8 h-8 rounded-lg bg-black/40 ${track.color} flex items-center justify-center mb-2 group-hover:scale-110 transition-transform`}>
+                                            <TrackIcon className="w-4 h-4" />
                                          </div>
-                                         <h3 className="text-lg font-bold text-white mb-2">{track.title}</h3>
-                                         <p className="text-sm text-gray-400 leading-relaxed">
-                                            Build innovative solutions focusing on {track.title}. Judges look for utility and seamless UX.
+                                         <h3 className="font-bold text-white mb-1">{track.title}</h3>
+                                         <p className="text-xs text-gray-400 leading-relaxed line-clamp-3">
+                                            Build innovative solutions focusing on {track.title}.
                                          </p>
                                       </div>
                                    )
@@ -511,24 +526,24 @@ export default function HackathonDashboard({ params }: { params: { id: string } 
                           </div>
 
                           {/* Right: Prizes (1/3) */}
-                          <div className="space-y-6">
-                             <h2 className="text-xl font-bold text-white font-quantico flex items-center gap-2">
-                                <Trophy className="w-5 h-5 text-gold" /> Prizes
+                          <div className="space-y-4">
+                             <h2 className="text-lg font-bold text-white font-quantico flex items-center gap-2 sticky top-0 bg-[#0a0a0a] z-10 py-2">
+                                <Trophy className="w-4 h-4 text-gold" /> Prizes
                              </h2>
                              <div className="bg-surface border border-white/5 rounded-xl overflow-hidden">
                                 {hackathon.prizes?.map((prize, i) => (
-                                   <div key={i} className="flex items-center justify-between p-4 border-b border-white/5 last:border-0 hover:bg-white/5 transition-colors">
-                                      <div className="flex items-center gap-4">
-                                         <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm
+                                   <div key={i} className="flex items-center justify-between p-3 border-b border-white/5 last:border-0 hover:bg-white/5 transition-colors">
+                                      <div className="flex items-center gap-3">
+                                         <div className={`w-6 h-6 rounded-full flex items-center justify-center font-bold text-xs
                                             ${i === 0 ? 'bg-gold text-black shadow-[0_0_10px_var(--color-gold)]' : 
                                               i === 1 ? 'bg-gray-300 text-black' : 
                                               i === 2 ? 'bg-amber-700 text-white' : 'bg-white/5 text-gray-500'}
                                          `}>
                                             {i < 3 ? i + 1 : '-'}
                                          </div>
-                                         <span className={i < 3 ? 'text-white font-medium' : 'text-gray-400'}>{prize.rank}</span>
+                                         <span className={`text-xs ${i < 3 ? 'text-white font-medium' : 'text-gray-400'}`}>{prize.rank}</span>
                                       </div>
-                                      <span className="text-gold font-mono font-bold">{prize.reward}</span>
+                                      <span className="text-gold font-mono font-bold text-xs">{prize.reward}</span>
                                    </div>
                                 ))}
                              </div>
@@ -537,101 +552,103 @@ export default function HackathonDashboard({ params }: { params: { id: string } 
                     )}
 
 
-                    {/* === VIEW: PARTICIPANTS (FIND SQUAD) === */}
+                    {/* === VIEW: PARTICIPANTS (Scrollable) === */}
                     {activeSection === 'participants' && (
-                       <div className="space-y-6">
+                       <div className="flex flex-col h-full gap-4 pb-20 md:pb-0">
                           {/* Search & Filter Bar */}
-                          <div className="flex flex-col md:flex-row justify-between gap-4">
+                          <div className="flex flex-col md:flex-row justify-between gap-3 shrink-0">
                              <div className="relative flex-1 max-w-lg">
                                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
                                 <input 
                                    type="text" 
-                                   placeholder="Search teams, ideas, or hackers..."
+                                   placeholder="Search..."
                                    value={searchTeamQuery}
                                    onChange={e => setSearchTeamQuery(e.target.value)}
-                                   className="w-full bg-surface border border-white/10 rounded-xl pl-10 pr-4 py-3 text-sm text-white focus:outline-none focus:border-gold/50 transition-colors"
+                                   className="w-full bg-surface border border-white/10 rounded-xl pl-10 pr-4 py-2.5 text-sm text-white focus:outline-none focus:border-gold/50 transition-colors"
                                 />
                              </div>
-                             <div className="flex bg-surface border border-white/10 rounded-lg p-1 shrink-0">
+                             <div className="flex bg-surface border border-white/10 rounded-lg p-1 shrink-0 self-start md:self-auto">
                                 <button
                                   onClick={() => setTeamTabMode('teams')}
-                                  className={`px-4 py-2 text-xs font-bold rounded-md transition-all ${teamTabMode === 'teams' ? 'bg-white/10 text-white' : 'text-gray-500 hover:text-gray-300'}`}
+                                  className={`px-3 py-1.5 text-[10px] md:text-xs font-bold rounded-md transition-all ${teamTabMode === 'teams' ? 'bg-white/10 text-white' : 'text-gray-500 hover:text-gray-300'}`}
                                 >
-                                  Looking for Members
+                                  Find Teams
                                 </button>
                                 <button
                                   onClick={() => setTeamTabMode('teammates')}
-                                  className={`px-4 py-2 text-xs font-bold rounded-md transition-all ${teamTabMode === 'teammates' ? 'bg-white/10 text-white' : 'text-gray-500 hover:text-gray-300'}`}
+                                  className={`px-3 py-1.5 text-[10px] md:text-xs font-bold rounded-md transition-all ${teamTabMode === 'teammates' ? 'bg-white/10 text-white' : 'text-gray-500 hover:text-gray-300'}`}
                                 >
-                                  Looking for Team
+                                  Find Talent
                                 </button>
                              </div>
                           </div>
 
                           {/* Grid Content */}
-                          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-                             {teamTabMode === 'teams' ? (
-                                (hackathon.teams || []).filter((t: any) => t.name.toLowerCase().includes(searchTeamQuery.toLowerCase())).map((team: any) => (
-                                   <div key={team.id} className="bg-surface border border-white/5 rounded-xl p-6 hover:border-gold/30 transition-all group flex flex-col h-full">
-                                      <div className="flex justify-between items-start mb-4">
-                                         <h3 className="text-lg font-bold text-white group-hover:text-gold transition-colors">{team.name}</h3>
-                                         <span className="text-xs bg-white/5 px-2 py-1 rounded text-gray-400">{team.members}/{team.maxMembers}</span>
+                          <div className="flex-1 overflow-y-auto min-h-0 pr-2">
+                             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                {teamTabMode === 'teams' ? (
+                                   (hackathon.teams || []).filter((t: any) => t.name.toLowerCase().includes(searchTeamQuery.toLowerCase())).map((team: any) => (
+                                      <div key={team.id} className="bg-surface border border-white/5 rounded-xl p-4 hover:border-gold/30 transition-all group flex flex-col h-full">
+                                         <div className="flex justify-between items-start mb-2">
+                                            <h3 className="text-sm font-bold text-white group-hover:text-gold transition-colors truncate">{team.name}</h3>
+                                            <span className="text-[10px] bg-white/5 px-1.5 py-0.5 rounded text-gray-400 shrink-0">{team.members}/{team.maxMembers}</span>
+                                         </div>
+                                         <div className="flex flex-wrap gap-1 mb-4 flex-1 content-start">
+                                            {team.tags.map((tag: string) => <span key={tag} className="text-[9px] bg-black/40 text-gray-400 px-1.5 py-0.5 rounded border border-white/5">{tag}</span>)}
+                                         </div>
+                                         <button className="w-full py-2 bg-white/5 hover:bg-gold hover:text-black text-gray-300 font-bold text-xs rounded-lg transition-colors mt-auto">
+                                            Request to Join
+                                         </button>
                                       </div>
-                                      <div className="flex flex-wrap gap-2 mb-6 flex-1 content-start">
-                                         {team.tags.map((tag: string) => <span key={tag} className="text-[10px] bg-black/40 text-gray-400 px-2 py-1 rounded border border-white/5">{tag}</span>)}
+                                   ))
+                                ) : (
+                                   (hackathon.participants || []).filter((u: any) => u.name.toLowerCase().includes(searchTeamQuery.toLowerCase())).map((user: any) => (
+                                      <div key={user.id} className="bg-surface border border-white/5 rounded-xl p-4 hover:border-blue-500/30 transition-all flex items-center gap-3">
+                                         <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-purple-500 to-blue-500 flex items-center justify-center text-white font-bold text-sm">
+                                            {user.name.charAt(0)}
+                                         </div>
+                                         <div className="min-w-0 flex-1">
+                                            <h4 className="text-white font-bold text-sm truncate">{user.name}</h4>
+                                            <p className="text-[10px] text-gray-500 truncate">{user.role}</p>
+                                         </div>
+                                         <button className="p-2 bg-white/5 rounded-full hover:text-white text-gray-500 transition-colors shrink-0">
+                                            <MessageSquare className="w-3.5 h-3.5" />
+                                         </button>
                                       </div>
-                                      <button className="w-full py-2 bg-white/5 hover:bg-gold hover:text-black text-gray-300 font-bold text-xs rounded-lg transition-colors mt-auto">
-                                         Request to Join
-                                      </button>
-                                   </div>
-                                ))
-                             ) : (
-                                (hackathon.participants || []).filter((u: any) => u.name.toLowerCase().includes(searchTeamQuery.toLowerCase())).map((user: any) => (
-                                   <div key={user.id} className="bg-surface border border-white/5 rounded-xl p-5 hover:border-blue-500/30 transition-all flex items-center gap-4">
-                                      <div className="w-12 h-12 rounded-full bg-gradient-to-tr from-purple-500 to-blue-500 flex items-center justify-center text-white font-bold text-lg">
-                                         {user.name.charAt(0)}
-                                      </div>
-                                      <div>
-                                         <h4 className="text-white font-bold">{user.name}</h4>
-                                         <p className="text-xs text-gray-500">{user.role}</p>
-                                      </div>
-                                      <button className="ml-auto p-2 bg-white/5 rounded-full hover:text-white text-gray-500 transition-colors">
-                                         <MessageSquare className="w-4 h-4" />
-                                      </button>
-                                   </div>
-                                ))
-                             )}
+                                   ))
+                                )}
+                             </div>
                           </div>
                        </div>
                     )}
 
 
-                    {/* === VIEW: MY PROJECT (TEAM + SUBMISSION) === */}
+                    {/* === VIEW: MY PROJECT (Scrollable) === */}
                     {activeSection === 'project' && (
-                       <div className="space-y-8">
+                       <div className="h-full overflow-y-auto pb-20 md:pb-0 pr-2">
                           
                           {/* State: No Team */}
                           {!userTeam && (
-                             <div className="text-center py-16 bg-surface border border-white/5 rounded-xl">
-                                <div className="w-20 h-20 bg-gold/10 text-gold rounded-full flex items-center justify-center mx-auto mb-6">
-                                   <Rocket className="w-10 h-10" />
+                             <div className="h-full flex flex-col items-center justify-center text-center p-8 bg-surface border border-white/5 rounded-xl">
+                                <div className="w-16 h-16 bg-gold/10 text-gold rounded-full flex items-center justify-center mb-4">
+                                   <Rocket className="w-8 h-8" />
                                 </div>
-                                <h2 className="text-3xl font-bold text-white font-quantico mb-3">Start Building</h2>
-                                <p className="text-gray-400 max-w-md mx-auto mb-8">
-                                   You haven't joined a team yet. Create your own team to submit a project, or join an existing squad.
+                                <h2 className="text-2xl font-bold text-white font-quantico mb-2">Start Building</h2>
+                                <p className="text-gray-400 max-w-sm mx-auto mb-6 text-sm">
+                                   Create your own team to submit a project, or join an existing squad.
                                 </p>
-                                <div className="flex justify-center gap-4">
+                                <div className="flex justify-center gap-3">
                                    <button 
                                       onClick={() => setUserTeam(DEFAULT_NEW_TEAM)}
-                                      className="bg-gold text-black font-bold px-6 py-3 rounded-lg hover:bg-gold/90 transition-transform hover:scale-105"
+                                      className="bg-gold text-black font-bold px-5 py-2.5 rounded-lg hover:bg-gold/90 transition-transform hover:scale-105 text-xs"
                                    >
-                                      Create a Team
+                                      Create Team
                                    </button>
                                    <button 
                                       onClick={() => setActiveSection('participants')}
-                                      className="bg-white/5 text-white font-bold px-6 py-3 rounded-lg hover:bg-white/10 transition-colors"
+                                      className="bg-white/5 text-white font-bold px-5 py-2.5 rounded-lg hover:bg-white/10 transition-colors text-xs"
                                    >
-                                      Find a Team
+                                      Find Team
                                    </button>
                                 </div>
                              </div>
@@ -639,68 +656,67 @@ export default function HackathonDashboard({ params }: { params: { id: string } 
 
                           {/* State: Has Team */}
                           {userTeam && (
-                             <>
+                             <div className="space-y-6">
                                 {/* Project/Team Header */}
-                                <div className="bg-surface border border-white/5 rounded-xl p-6 flex justify-between items-center">
-                                   <div className="flex items-center gap-4">
-                                      <div className="w-16 h-16 bg-gradient-to-br from-purple-600 to-blue-600 rounded-xl flex items-center justify-center text-2xl font-bold text-white shadow-lg">
+                                <div className="bg-surface border border-white/5 rounded-xl p-4 md:p-6 flex justify-between items-center">
+                                   <div className="flex items-center gap-3">
+                                      <div className="w-12 h-12 bg-gradient-to-br from-purple-600 to-blue-600 rounded-xl flex items-center justify-center text-xl font-bold text-white shadow-lg shrink-0">
                                          {userTeam.name.charAt(0)}
                                       </div>
-                                      <div>
-                                         <h2 className="text-2xl font-bold text-white">{userTeam.name}</h2>
-                                         <div className="flex gap-2 mt-1">
-                                            <span className="text-xs text-gold bg-gold/10 px-2 py-0.5 rounded border border-gold/20">Ready to Ship</span> {/* Changed from green */}
-                                            {userTeam.tags.map((t: string) => <span key={t} className="text-xs text-gray-500 bg-white/5 px-2 py-0.5 rounded">{t}</span>)}
+                                      <div className="min-w-0">
+                                         <h2 className="text-lg md:text-xl font-bold text-white truncate">{userTeam.name}</h2>
+                                         <div className="flex flex-wrap gap-1 mt-1">
+                                            <span className="text-[10px] text-gold bg-gold/10 px-1.5 py-0.5 rounded border border-gold/20 shrink-0">Ready</span>
+                                            {userTeam.tags.map((t: string) => <span key={t} className="text-[10px] text-gray-500 bg-white/5 px-1.5 py-0.5 rounded shrink-0">{t}</span>)}
                                          </div>
                                       </div>
                                    </div>
-                                   <div className="flex gap-2">
+                                   <div className="flex gap-1 shrink-0">
                                       <button className="p-2 text-gray-400 hover:text-white hover:bg-white/5 rounded-lg transition-colors">
-                                         <Settings className="w-5 h-5" />
+                                         <Settings className="w-4 h-4" />
                                       </button>
                                       <button onClick={() => setUserTeam(null)} className="p-2 text-red-500 hover:bg-red-500/10 rounded-lg transition-colors">
-                                         <LogOut className="w-5 h-5" />
+                                         <LogOut className="w-4 h-4" />
                                       </button>
                                    </div>
                                 </div>
 
-                                {/* Sub-Tabs for Project */}
+                                {/* Sub-Tabs */}
                                 <div className="flex border-b border-white/10">
                                    <button 
                                       onClick={() => setProjectSubTab('dashboard')}
-                                      className={`px-6 py-3 text-sm font-bold border-b-2 transition-colors ${projectSubTab === 'dashboard' ? 'border-gold text-gold' : 'border-transparent text-gray-500 hover:text-white'}`}
+                                      className={`px-4 py-2 text-sm font-bold border-b-2 transition-colors ${projectSubTab === 'dashboard' ? 'border-gold text-gold' : 'border-transparent text-gray-500 hover:text-white'}`}
                                    >
-                                      Team Dashboard
+                                      Dashboard
                                    </button>
                                    <button 
                                       onClick={() => setProjectSubTab('submit')}
-                                      className={`px-6 py-3 text-sm font-bold border-b-2 transition-colors ${projectSubTab === 'submit' ? 'border-gold text-gold' : 'border-transparent text-gray-500 hover:text-white'}`}
+                                      className={`px-4 py-2 text-sm font-bold border-b-2 transition-colors ${projectSubTab === 'submit' ? 'border-gold text-gold' : 'border-transparent text-gray-500 hover:text-white'}`}
                                    >
                                       Submission
                                    </button>
                                 </div>
 
-                                {/* Dashboard Sub-Content */}
+                                {/* Dashboard Content */}
                                 {projectSubTab === 'dashboard' && (
-                                   <div className="grid md:grid-cols-2 gap-6">
-                                      {/* Members Card */}
-                                      <div className="bg-surface border border-white/5 rounded-xl p-6">
-                                         <div className="flex justify-between items-center mb-6">
-                                            <h3 className="font-bold text-white flex items-center gap-2">
-                                               <Users className="w-4 h-4 text-gold" /> Members
+                                   <div className="grid md:grid-cols-2 gap-4">
+                                      <div className="bg-surface border border-white/5 rounded-xl p-4">
+                                         <div className="flex justify-between items-center mb-4">
+                                            <h3 className="font-bold text-white text-sm flex items-center gap-2">
+                                               <Users className="w-3.5 h-3.5 text-gold" /> Members
                                             </h3>
                                             <button className="text-[10px] bg-white/5 hover:bg-white/10 text-white px-2 py-1 rounded flex items-center gap-1">
                                                <Plus className="w-3 h-3" /> Invite
                                             </button>
                                          </div>
-                                         <div className="space-y-3">
+                                         <div className="space-y-2">
                                             {userTeam.members.map((m: any, i: number) => (
-                                               <div key={i} className="flex items-center justify-between p-3 bg-black/20 rounded-lg">
-                                                  <div className="flex items-center gap-3">
-                                                     <div className="w-8 h-8 rounded-full bg-gray-700 flex items-center justify-center text-xs font-bold text-white">{m.name.charAt(0)}</div>
+                                               <div key={i} className="flex items-center justify-between p-2 bg-black/20 rounded-lg">
+                                                  <div className="flex items-center gap-2">
+                                                     <div className="w-6 h-6 rounded-full bg-gray-700 flex items-center justify-center text-[10px] font-bold text-white">{m.name.charAt(0)}</div>
                                                      <div>
-                                                        <p className="text-sm font-bold text-white">{m.name}</p>
-                                                        <p className="text-[10px] text-gray-500">{m.role}</p>
+                                                        <p className="text-xs font-bold text-white">{m.name}</p>
+                                                        <p className="text-[9px] text-gray-500">{m.role}</p>
                                                      </div>
                                                   </div>
                                                   {m.isLeader && <Trophy className="w-3 h-3 text-gold" />}
@@ -709,70 +725,70 @@ export default function HackathonDashboard({ params }: { params: { id: string } 
                                          </div>
                                       </div>
                                       
-                                      {/* Tasks / Chat Placeholder */}
-                                      <div className="bg-surface border border-white/5 rounded-xl p-6 flex flex-col items-center justify-center text-center">
-                                         <MessageSquare className="w-8 h-8 text-gray-600 mb-2" />
-                                         <h4 className="text-gray-400 font-bold">Team Chat</h4>
-                                         <p className="text-xs text-gray-600 mt-1">Connect Discord to enable team chat.</p>
-                                         <button className="mt-4 text-xs bg-indigo-500/20 text-indigo-400 border border-indigo-500/50 px-3 py-1.5 rounded hover:bg-indigo-500/30 transition-colors">
-                                            Connect Discord
+                                      <div className="bg-surface border border-white/5 rounded-xl p-4 flex flex-col items-center justify-center text-center min-h-[150px]">
+                                         <MessageSquare className="w-6 h-6 text-gray-600 mb-2" />
+                                         <h4 className="text-gray-400 font-bold text-sm">Team Chat</h4>
+                                         <p className="text-[10px] text-gray-600 mt-1">Connect Discord to enable chat.</p>
+                                         <button className="mt-3 text-[10px] bg-indigo-500/20 text-indigo-400 border border-indigo-500/50 px-3 py-1 rounded hover:bg-indigo-500/30 transition-colors">
+                                            Connect
                                          </button>
                                       </div>
                                    </div>
                                 )}
 
-                                {/* Submission Sub-Content */}
+                                {/* Submission Form */}
                                 {projectSubTab === 'submit' && (
                                    <div className="max-w-2xl mx-auto">
                                       {!isSubmitted ? (
-                                         <form onSubmit={handleSubmitProject} className="bg-surface border border-white/5 rounded-xl p-8 space-y-6">
+                                         <form onSubmit={handleSubmitProject} className="bg-surface border border-white/5 rounded-xl p-6 space-y-4">
                                             <div>
-                                               <label className="block text-xs font-bold text-gray-500 uppercase mb-2">Project Name</label>
-                                               <input type="text" className="w-full bg-black/20 border border-white/10 rounded-lg px-4 py-3 text-white focus:border-gold/50 outline-none" placeholder="Enter project name..." defaultValue={userTeam.name} />
+                                               <label className="block text-[10px] font-bold text-gray-500 uppercase mb-1">Project Name</label>
+                                               <input type="text" className="w-full bg-black/20 border border-white/10 rounded-lg px-3 py-2 text-white text-sm focus:border-gold/50 outline-none" defaultValue={userTeam.name} />
                                             </div>
                                             <div>
-                                               <label className="block text-xs font-bold text-gray-500 uppercase mb-2">Track</label>
-                                               <select className="w-full bg-black/20 border border-white/10 rounded-lg px-4 py-3 text-white focus:border-gold/50 outline-none appearance-none">
+                                               <label className="block text-[10px] font-bold text-gray-500 uppercase mb-1">Track</label>
+                                               <select className="w-full bg-black/20 border border-white/10 rounded-lg px-3 py-2 text-white text-sm focus:border-gold/50 outline-none appearance-none">
                                                   {hackathon.tracks?.map((t, index) => <option key={index}>{t.title}</option>)}
                                                </select>
                                             </div>
-                                            <div>
-                                               <label className="block text-xs font-bold text-gray-500 uppercase mb-2">Demo Video URL</label>
-                                               <input type="text" className="w-full bg-black/20 border border-white/10 rounded-lg px-4 py-3 text-white focus:border-gold/50 outline-none" placeholder="https://youtube.com/..." />
+                                            <div className="grid grid-cols-2 gap-4">
+                                               <div>
+                                                  <label className="block text-[10px] font-bold text-gray-500 uppercase mb-1">Demo Video</label>
+                                                  <input type="text" className="w-full bg-black/20 border border-white/10 rounded-lg px-3 py-2 text-white text-sm focus:border-gold/50 outline-none" placeholder="YouTube URL" />
+                                               </div>
+                                               <div>
+                                                  <label className="block text-[10px] font-bold text-gray-500 uppercase mb-1">Github</label>
+                                                  <input type="text" className="w-full bg-black/20 border border-white/10 rounded-lg px-3 py-2 text-white text-sm focus:border-gold/50 outline-none" placeholder="Repo URL" />
+                                               </div>
                                             </div>
-                                            <div>
-                                               <label className="block text-xs font-bold text-gray-500 uppercase mb-2">Github Repo</label>
-                                               <input type="text" className="w-full bg-black/20 border border-white/10 rounded-lg px-4 py-3 text-white focus:border-gold/50 outline-none" placeholder="https://github.com/..." />
-                                            </div>
-                                            <button type="submit" className="w-full bg-gold text-black font-bold py-4 rounded-lg hover:bg-gold/90 transition-colors mt-4">
+                                            <button type="submit" className="w-full bg-gold text-black font-bold py-3 rounded-lg hover:bg-gold/90 transition-colors mt-2 text-sm">
                                                Submit Project
                                             </button>
                                          </form>
                                       ) : (
-                                         <div className="text-center py-10 bg-gold/10 border border-gold/30 rounded-xl"> {/* Changed from green */}
-                                            <CheckCircle2 className="w-12 h-12 text-gold mx-auto mb-4" /> {/* Changed from green */}
-                                            <h3 className="text-2xl font-bold text-white font-quantico">Submitted!</h3>
-                                            <p className="text-gray-400 mt-2">Your project is now under review by the judges.</p>
-                                            <button onClick={() => setIsSubmitted(false)} className="text-sm text-gray-500 hover:text-white underline mt-6">Edit Submission</button>
+                                         <div className="text-center py-10 bg-gold/10 border border-gold/30 rounded-xl">
+                                            <CheckCircle2 className="w-10 h-10 text-gold mx-auto mb-3" />
+                                            <h3 className="text-xl font-bold text-white font-quantico">Submitted!</h3>
+                                            <button onClick={() => setIsSubmitted(false)} className="text-xs text-gray-500 hover:text-white underline mt-4">Edit Submission</button>
                                          </div>
                                       )}
                                    </div>
                                 )}
-                             </>
+                             </div>
                           )}
                        </div>
                     )}
 
-                    {/* === VIEW: RESOURCES === */}
+                    {/* === VIEW: RESOURCES (Scrollable) === */}
                     {activeSection === 'resources' && (
-                       <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+                       <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4 h-full overflow-y-auto pb-20 md:pb-0">
                           {hackathon.resources?.map((res, i) => {
                               const ResIcon = LucideIconMap[res.icon as keyof typeof LucideIconMap] || LinkIcon;
                               return (
-                                 <a key={i} href={res.link} target="_blank" rel="noopener noreferrer" className="bg-surface border border-white/5 p-6 rounded-xl hover:bg-white/5 transition-colors group">
-                                    <ResIcon className="w-8 h-8 text-gray-500 group-hover:text-gold mb-4 transition-colors" />
-                                    <h3 className="font-bold text-white mb-1">{res.name}</h3>
-                                    <p className="text-xs text-gray-500">External Link <ChevronRight className="w-3 h-3 inline ml-1" /></p>
+                                 <a key={i} href={res.link} target="_blank" rel="noopener noreferrer" className="bg-surface border border-white/5 p-4 rounded-xl hover:bg-white/5 transition-colors group flex flex-col h-auto max-h-32">
+                                    <ResIcon className="w-6 h-6 text-gray-500 group-hover:text-gold mb-3 transition-colors" />
+                                    <h3 className="font-bold text-white mb-1 text-sm">{res.name}</h3>
+                                    <p className="text-[10px] text-gray-500">External Link <ChevronRight className="w-3 h-3 inline ml-1" /></p>
                                  </a>
                               )
                           })}
