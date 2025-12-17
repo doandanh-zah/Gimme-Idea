@@ -1,131 +1,102 @@
 'use client';
 
-import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Lightbulb, Rss, Rocket, ExternalLink } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { motion } from 'framer-motion';
+import { Lightbulb, Rss, Rocket, ExternalLink, ArrowRight } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 
-// All orbiting items configuration (from inside to outside)
-const getOrbitItems = (isMobile: boolean) => {
-  const baseSize = isMobile ? 48 : 70;
-  const sizeDecrement = isMobile ? 2 : 2;
-  
-  return [
-    {
-      id: 'ideas',
-      name: 'Ideas',
-      description: 'Discover and share innovative concepts. The heart of our innovation ecosystem.',
-      icon: Lightbulb,
-      type: 'feature' as const,
-      color: '#FFD700',
-      glowColor: 'rgba(255, 215, 0, 0.5)',
-      size: baseSize,
-      orbitRadius: isMobile ? 90 : 160,
-      orbitSpeed: 35,
-      startAngle: 0,
-      route: '/idea',
-      external: false,
-    },
-    {
-      id: 'feeds',
-      name: 'Feeds',
-      description: 'Curated collections of ideas. Follow topics that interest you.',
-      icon: Rss,
-      type: 'feature' as const,
-      color: '#14F195',
-      glowColor: 'rgba(20, 241, 149, 0.5)',
-      size: baseSize - sizeDecrement,
-      orbitRadius: isMobile ? 150 : 250,
-      orbitSpeed: 45,
-      startAngle: 60,
-      route: '/feeds',
-      external: false,
-    },
-    {
-      id: 'hackathons',
-      name: 'Hackathons',
-      description: 'Build together, compete together. Join exciting blockchain hackathons.',
-      icon: Rocket,
-      type: 'feature' as const,
-      color: '#FF6B6B',
-      glowColor: 'rgba(255, 107, 107, 0.5)',
-      size: baseSize - sizeDecrement * 2,
-      orbitRadius: isMobile ? 210 : 340,
-      orbitSpeed: 55,
-      startAngle: 120,
-      route: '/hackathons',
-      external: false,
-    },
-    {
-      id: 'dsuc',
-      name: 'DSUC',
-      description: 'DUT Superteam University Club - The first Solana blockchain club of Danang University',
-      logo: '/dsuc.png',
-      type: 'partner' as const,
-      gradient: 'linear-gradient(135deg, #3366ff 0%, #00ccff 60%, #99ff66 100%)',
-      glowColor: 'rgba(51, 102, 255, 0.6)',
-      size: baseSize - sizeDecrement * 3,
-      orbitRadius: isMobile ? 270 : 430,
-      orbitSpeed: 70,
-      startAngle: 180,
-      route: 'https://dsuc.fun',
-      external: true,
-    },
-    {
-      id: 'superteamvn',
-      name: 'Superteam VN',
-      description: 'Talent Layer of Solana in Vietnam. Empowering builders across the nation.',
-      logo: '/superteamvn.png',
-      type: 'partner' as const,
-      gradient: 'linear-gradient(135deg, #EF4444 0%, #FACC15 100%)',
-      glowColor: 'rgba(239, 68, 68, 0.5)',
-      size: baseSize - sizeDecrement * 4,
-      orbitRadius: isMobile ? 330 : 520,
-      orbitSpeed: 90,
-      startAngle: 240,
-      route: 'https://vn.superteam.fun',
-      external: true,
-    },
-    {
-      id: 'solana',
-      name: 'Solana',
-      description: 'A decentralized blockchain built for scale. Fast, secure, and energy-efficient.',
-      logo: '/SOLANA.png',
-      type: 'partner' as const,
-      gradient: 'linear-gradient(135deg, #9945FF 0%, #14F195 50%, #00D1FF 100%)',
-      glowColor: 'rgba(153, 69, 255, 0.5)',
-      size: baseSize - sizeDecrement * 5,
-      orbitRadius: isMobile ? 390 : 610,
-      orbitSpeed: 110,
-      startAngle: 300,
-      route: 'https://solana.com',
-      external: true,
-    },
-  ];
-};
+// Constellation items configuration
+const FEATURES = [
+  {
+    id: 'ideas',
+    name: 'Ideas',
+    description: 'Discover and share innovative concepts. The heart of our innovation ecosystem.',
+    icon: Lightbulb,
+    color: '#FFD700',
+    route: '/idea',
+    external: false,
+  },
+  {
+    id: 'feeds',
+    name: 'Feeds',
+    description: 'Curated collections of ideas. Follow topics that interest you.',
+    icon: Rss,
+    color: '#14F195',
+    route: '/feeds',
+    external: false,
+  },
+  {
+    id: 'hackathons',
+    name: 'Hackathons',
+    description: 'Build together, compete together. Join exciting blockchain hackathons.',
+    icon: Rocket,
+    color: '#FF6B6B',
+    route: '/hackathons',
+    external: false,
+  },
+];
 
-const GlitchText = ({ children, className = '' }: { children: React.ReactNode; className?: string }) => (
-  <span className={`relative inline-block ${className}`}>
-    <span className="relative z-10">{children}</span>
-    <span className="absolute top-0 left-0 text-[#14F195] opacity-60 animate-glitch-1 z-0" aria-hidden="true">{children}</span>
-    <span className="absolute top-0 left-0 text-[#FF6B6B] opacity-60 animate-glitch-2 z-0" aria-hidden="true">{children}</span>
-  </span>
-);
+const PARTNERS = [
+  {
+    id: 'dsuc',
+    name: 'DSUC',
+    description: 'DUT Superteam University Club - The first Solana blockchain club of Danang University',
+    logo: '/dsuc.png',
+    gradient: 'linear-gradient(135deg, #3366ff 0%, #00ccff 60%, #99ff66 100%)',
+    route: 'https://dsuc.fun',
+    external: true,
+  },
+  {
+    id: 'superteamvn',
+    name: 'Superteam VN',
+    description: 'Talent Layer of Solana in Vietnam. Empowering builders across the nation.',
+    logo: '/superteamvn.png',
+    gradient: 'linear-gradient(135deg, #EF4444 0%, #FACC15 100%)',
+    route: 'https://vn.superteam.fun',
+    external: true,
+  },
+  {
+    id: 'solana',
+    name: 'Solana',
+    description: 'A decentralized blockchain built for scale. Fast, secure, and energy-efficient.',
+    logo: '/SOLANA.png',
+    gradient: 'linear-gradient(135deg, #9945FF 0%, #14F195 50%, #00D1FF 100%)',
+    route: 'https://solana.com',
+    external: true,
+  },
+];
+
+// Star positions for constellation effect (static)
+const CONSTELLATION_STARS = [
+  { x: 15, y: 20, size: 2 },
+  { x: 25, y: 35, size: 1.5 },
+  { x: 40, y: 15, size: 2.5 },
+  { x: 55, y: 28, size: 1.5 },
+  { x: 70, y: 18, size: 2 },
+  { x: 85, y: 32, size: 1.5 },
+  { x: 20, y: 55, size: 2 },
+  { x: 35, y: 70, size: 1.5 },
+  { x: 50, y: 60, size: 2.5 },
+  { x: 65, y: 75, size: 1.5 },
+  { x: 80, y: 65, size: 2 },
+  { x: 10, y: 80, size: 1.5 },
+  { x: 90, y: 85, size: 2 },
+  { x: 45, y: 85, size: 1.5 },
+  { x: 75, y: 45, size: 2 },
+];
+
+// Constellation lines (connect stars)
+const CONSTELLATION_LINES = [
+  [0, 1], [1, 2], [2, 3], [3, 4], [4, 5],
+  [1, 6], [6, 7], [7, 8], [8, 9], [9, 10],
+  [6, 11], [8, 13], [10, 12], [3, 14], [14, 10],
+];
 
 export default function HomeFeed() {
   const router = useRouter();
   const [hoveredItem, setHoveredItem] = useState<string | null>(null);
-  const [orbitAngles, setOrbitAngles] = useState<{ [key: string]: number }>({});
   const [isMobile, setIsMobile] = useState(false);
-  const [stars, setStars] = useState<{ id: number; top: string; left: string; size: number; duration: string; opacity: number; shape: string }[]>([]);
-  const animationRef = useRef<number>(0);
-  const lastTimeRef = useRef<number>(0);
-  const isPausedRef = useRef(false);
-
-  const ORBIT_ITEMS = getOrbitItems(isMobile);
-  const centerSize = isMobile ? 75 : 100;
-  const ellipseRatio = 0.4; // Consistent ellipse ratio
 
   useEffect(() => {
     const checkMobile = () => setIsMobile(window.innerWidth < 768);
@@ -133,63 +104,6 @@ export default function HomeFeed() {
     window.addEventListener('resize', checkMobile);
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
-
-  // Generate subtle stars like other pages
-  useEffect(() => {
-    const newStars = Array.from({ length: 50 }).map((_, i) => ({
-      id: i,
-      top: `${Math.random() * 100}%`,
-      left: `${Math.random() * 100}%`,
-      size: Math.random() * 2 + 1, // Small stars (1-3px)
-      duration: `${Math.random() * 3 + 2}s`,
-      opacity: Math.random() * 0.5 + 0.2,
-      shape: 'circle'
-    }));
-    setStars(newStars);
-  }, []);
-
-  useEffect(() => {
-    const initialAngles: { [key: string]: number } = {};
-    ORBIT_ITEMS.forEach(item => {
-      initialAngles[item.id] = item.startAngle;
-    });
-    setOrbitAngles(initialAngles);
-  }, [isMobile]);
-
-  useEffect(() => {
-    const animate = (time: number) => {
-      if (!lastTimeRef.current) lastTimeRef.current = time;
-      const delta = (time - lastTimeRef.current) / 1000;
-      lastTimeRef.current = time;
-      
-      if (!isPausedRef.current) {
-        setOrbitAngles(prev => {
-          const newAngles: { [key: string]: number } = {};
-          ORBIT_ITEMS.forEach(item => {
-            const currentAngle = prev[item.id] ?? item.startAngle;
-            newAngles[item.id] = (currentAngle + (360 / item.orbitSpeed) * delta) % 360;
-          });
-          return newAngles;
-        });
-      }
-      animationRef.current = requestAnimationFrame(animate);
-    };
-    animationRef.current = requestAnimationFrame(animate);
-    return () => cancelAnimationFrame(animationRef.current);
-  }, [isMobile]);
-
-  const handleHover = useCallback((itemId: string | null) => {
-    setHoveredItem(itemId);
-    isPausedRef.current = itemId !== null;
-  }, []);
-
-  const getItemPosition = useCallback((item: ReturnType<typeof getOrbitItems>[0]) => {
-    const angle = (orbitAngles[item.id] ?? item.startAngle) * (Math.PI / 180);
-    return { 
-      x: Math.cos(angle) * item.orbitRadius, 
-      y: Math.sin(angle) * item.orbitRadius * ellipseRatio 
-    };
-  }, [orbitAngles, ellipseRatio]);
 
   const handleClick = (route: string, external?: boolean) => {
     if (external) {
@@ -199,381 +113,221 @@ export default function HomeFeed() {
     }
   };
 
-  // Desktop view
-  if (!isMobile) {
-    return (
-      <div className="min-h-screen relative overflow-hidden">
-        {/* Background - Same as Dashboard/Idea page */}
-        <div className="fixed inset-0 z-[-1] pointer-events-none overflow-hidden">
-          <div className="bg-grid opacity-40"></div>
-          
-          {/* Deep Purple Orb - Top Left */}
-          <div className="absolute top-[-20%] left-[-10%] w-[700px] h-[700px] bg-[#2e1065] rounded-full blur-[150px] animate-pulse-slow opacity-50 mix-blend-screen" />
+  return (
+    <div className="min-h-screen relative overflow-hidden">
+      {/* Background */}
+      <div className="fixed inset-0 z-[-1] pointer-events-none overflow-hidden">
+        <div className="bg-grid opacity-30"></div>
         
-          {/* Dark Gold/Bronze Orb - Bottom Right */}
-          <div className="absolute bottom-[-20%] right-[-10%] w-[700px] h-[700px] bg-[#422006] rounded-full blur-[150px] animate-pulse-slow opacity-50 mix-blend-screen" style={{animationDelay: '2s'}} />
+        {/* Gradient orbs - simplified */}
+        <div className="absolute top-[-20%] left-[-10%] w-[600px] h-[600px] bg-[#2e1065] rounded-full blur-[120px] opacity-40" />
+        <div className="absolute bottom-[-20%] right-[-10%] w-[600px] h-[600px] bg-[#422006] rounded-full blur-[120px] opacity-40" />
+        
+        {/* Constellation background - static SVG */}
+        <svg className="absolute inset-0 w-full h-full opacity-20">
+          {/* Constellation lines */}
+          {CONSTELLATION_LINES.map(([from, to], i) => (
+            <line
+              key={`line-${i}`}
+              x1={`${CONSTELLATION_STARS[from].x}%`}
+              y1={`${CONSTELLATION_STARS[from].y}%`}
+              x2={`${CONSTELLATION_STARS[to].x}%`}
+              y2={`${CONSTELLATION_STARS[to].y}%`}
+              stroke="white"
+              strokeWidth="0.5"
+              strokeOpacity="0.3"
+            />
+          ))}
+          {/* Constellation stars */}
+          {CONSTELLATION_STARS.map((star, i) => (
+            <circle
+              key={`star-${i}`}
+              cx={`${star.x}%`}
+              cy={`${star.y}%`}
+              r={star.size}
+              fill="white"
+              fillOpacity="0.6"
+            />
+          ))}
+        </svg>
+      </div>
+
+      <div className={`${isMobile ? 'pt-20 px-4 pb-24' : 'pt-24 md:pt-28 px-4 sm:px-6'} max-w-6xl mx-auto`}>
+        {/* Hero Section */}
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }} 
+          animate={{ opacity: 1, y: 0 }} 
+          transition={{ duration: 0.5 }}
+          className="text-center mb-12 md:mb-16"
+        >
+          {/* Logo */}
+          <motion.div 
+            className="inline-flex items-center justify-center mb-6 cursor-pointer"
+            whileHover={{ scale: 1.05 }}
+            onClick={() => handleClick('/idea')}
+          >
+            <div className="relative">
+              <div className="absolute inset-0 bg-[#FFD700]/20 rounded-full blur-2xl scale-150" />
+              <Image 
+                src="/logo-gmi.png" 
+                alt="Gimme Idea" 
+                width={isMobile ? 80 : 100}
+                height={isMobile ? 80 : 100}
+                className="relative object-contain drop-shadow-[0_0_30px_rgba(255,215,0,0.4)]"
+              />
+            </div>
+          </motion.div>
           
-          {/* Additional cyan orb for depth */}
-          <div className="absolute top-[30%] right-[-15%] w-[500px] h-[500px] bg-[#14F195]/20 rounded-full blur-[120px] opacity-30" />
+          <h1 className={`${isMobile ? 'text-2xl' : 'text-4xl md:text-5xl'} font-bold mb-4 tracking-tight`}>
+            <span className="font-quantico">
+              <span className="text-white">Gimme</span>
+              <span className="text-[#FFD700]">Idea</span>
+            </span>
+          </h1>
+          <p className={`text-gray-400 ${isMobile ? 'text-sm' : 'text-base md:text-lg'} max-w-xl mx-auto`}>
+            Where innovative ideas meet the Solana ecosystem
+          </p>
+        </motion.div>
 
-          <div className="stars-container">
-            {stars.map((star) => (
-              <div
-                key={star.id}
-                className="star star-circle"
-                style={{
-                  top: star.top,
-                  left: star.left,
-                  width: `${star.size}px`,
-                  height: `${star.size}px`,
-                  '--duration': star.duration,
-                  '--opacity': star.opacity
-                } as React.CSSProperties}
-              />
-            ))}
-            <div className="shooting-star" style={{ top: '10%', left: '90%' }} />
-            <div className="shooting-star" style={{ top: '40%', left: '5%', animationDelay: '3s' }} />
-            <div className="shooting-star" style={{ top: '70%', left: '75%', animationDelay: '7s' }} />
-          </div>
-        </div>
-
-        <div className="pt-24 md:pt-28 px-4 sm:px-6 max-w-[1600px] mx-auto">
-          <div className="relative w-full h-[700px] lg:h-[800px] xl:h-[850px] 2xl:h-[900px] flex items-center justify-center">
-            {ORBIT_ITEMS.map(item => (
-              <div 
-                key={`orbit-${item.id}`} 
-                className="absolute left-1/2 top-1/2 rounded-full border border-white/[0.06] pointer-events-none"
-                style={{ 
-                  width: item.orbitRadius * 2, 
-                  height: item.orbitRadius * 2 * ellipseRatio,
-                  transform: 'translate(-50%, -50%)'
-                }} 
-              />
-            ))}
-
-            <motion.div
-              className="absolute cursor-pointer select-none z-50"
-              style={{ left: '50%', top: '50%', x: -centerSize / 2, y: -centerSize / 2 }}
-              onMouseEnter={() => handleHover('gimme-idea')}
-              onMouseLeave={() => handleHover(null)}
-              onClick={() => handleClick('/idea')}
-              animate={{ scale: hoveredItem === 'gimme-idea' ? 1.15 : 1 }}
-              transition={{ type: 'spring', stiffness: 400, damping: 25 }}
-            >
-              <div 
-                className="absolute rounded-full blur-2xl transition-all duration-500"
-                style={{ 
-                  inset: -centerSize * 0.3,
-                  background: 'radial-gradient(circle, rgba(255,215,0,0.3) 0%, transparent 70%)',
-                  opacity: hoveredItem === 'gimme-idea' ? 0.8 : 0.4,
-                }} 
-              />
-              <div 
-                className="relative flex items-center justify-center"
-                style={{ width: centerSize, height: centerSize }}
+        {/* Features Grid */}
+        <motion.div 
+          initial={{ opacity: 0, y: 30 }} 
+          animate={{ opacity: 1, y: 0 }} 
+          transition={{ duration: 0.5, delay: 0.2 }}
+          className={`grid ${isMobile ? 'grid-cols-1 gap-4' : 'grid-cols-3 gap-6'} mb-12 md:mb-16`}
+        >
+          {FEATURES.map((feature, index) => {
+            const Icon = feature.icon;
+            const isHovered = hoveredItem === feature.id;
+            
+            return (
+              <motion.div
+                key={feature.id}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.3 + index * 0.1 }}
+                className="group relative cursor-pointer"
+                onMouseEnter={() => setHoveredItem(feature.id)}
+                onMouseLeave={() => setHoveredItem(null)}
+                onClick={() => handleClick(feature.route, feature.external)}
               >
-                <Image 
-                  src="/logo-gmi.png" 
-                  alt="Gimme Idea" 
-                  width={centerSize} 
-                  height={centerSize}
-                  className="object-contain drop-shadow-[0_0_20px_rgba(255,215,0,0.5)]"
-                />
-              </div>
-              <motion.div 
-                animate={{ opacity: hoveredItem === 'gimme-idea' ? 1 : 0.7 }}
-                className="absolute left-1/2 -translate-x-1/2 text-center whitespace-nowrap pointer-events-none"
-                style={{ top: centerSize + 8 }}
-              >
-                <p className="font-quantico font-bold text-white text-sm">
-                  Gimme<span className="text-[#FFD700]">Idea</span>
-                </p>
+                <div 
+                  className="relative p-6 rounded-2xl border border-white/10 bg-white/[0.02] backdrop-blur-sm transition-all duration-300 h-full"
+                  style={{
+                    borderColor: isHovered ? `${feature.color}40` : 'rgba(255,255,255,0.1)',
+                    boxShadow: isHovered ? `0 0 40px ${feature.color}20` : 'none',
+                  }}
+                >
+                  {/* Glow effect */}
+                  <div 
+                    className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+                    style={{ background: `radial-gradient(circle at 50% 0%, ${feature.color}10, transparent 70%)` }}
+                  />
+                  
+                  <div className="relative z-10">
+                    <div 
+                      className="w-12 h-12 rounded-xl flex items-center justify-center mb-4 transition-transform duration-300 group-hover:scale-110"
+                      style={{ backgroundColor: `${feature.color}15` }}
+                    >
+                      <Icon className="w-6 h-6" style={{ color: feature.color }} />
+                    </div>
+                    
+                    <h3 className="text-lg font-bold text-white mb-2">{feature.name}</h3>
+                    <p className="text-sm text-gray-400 leading-relaxed mb-4">{feature.description}</p>
+                    
+                    <div 
+                      className="flex items-center gap-2 text-sm font-medium transition-all duration-300"
+                      style={{ color: feature.color }}
+                    >
+                      <span>Explore</span>
+                      <ArrowRight className="w-4 h-4 transition-transform duration-300 group-hover:translate-x-1" />
+                    </div>
+                  </div>
+                </div>
               </motion.div>
-            </motion.div>
+            );
+          })}
+        </motion.div>
 
-            {ORBIT_ITEMS.map(item => {
-              const pos = getItemPosition(item);
-              const isHovered = hoveredItem === item.id;
-              const Icon = 'icon' in item ? item.icon : null;
-
+        {/* Partners Section */}
+        <motion.div 
+          initial={{ opacity: 0, y: 30 }} 
+          animate={{ opacity: 1, y: 0 }} 
+          transition={{ duration: 0.5, delay: 0.4 }}
+        >
+          <h2 className={`${isMobile ? 'text-lg' : 'text-xl'} font-semibold text-white/80 mb-6 text-center`}>
+            Powered by Our Partners
+          </h2>
+          
+          <div className={`grid ${isMobile ? 'grid-cols-1 gap-4' : 'grid-cols-3 gap-6'}`}>
+            {PARTNERS.map((partner, index) => {
+              const isHovered = hoveredItem === partner.id;
+              
               return (
                 <motion.div
-                  key={item.id}
-                  className="absolute cursor-pointer select-none"
-                  style={{
-                    left: '50%',
-                    top: '50%',
-                    x: pos.x - item.size / 2,
-                    y: pos.y - item.size / 2,
-                    zIndex: isHovered ? 100 : 20,
-                  }}
-                  onMouseEnter={() => handleHover(item.id)}
-                  onMouseLeave={() => handleHover(null)}
-                  onClick={() => handleClick(item.route, item.external)}
-                  animate={{ scale: isHovered ? 1.35 : 1 }}
-                  transition={{ type: 'spring', stiffness: 400, damping: 25 }}
+                  key={partner.id}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.5 + index * 0.1 }}
+                  className="group relative cursor-pointer"
+                  onMouseEnter={() => setHoveredItem(partner.id)}
+                  onMouseLeave={() => setHoveredItem(null)}
+                  onClick={() => handleClick(partner.route, partner.external)}
                 >
                   <div 
-                    className="absolute rounded-full blur-xl transition-all duration-300"
-                    style={{ 
-                      inset: -item.size * 0.4,
-                      background: item.glowColor,
-                      opacity: isHovered ? 0.8 : 0.4,
-                    }} 
-                  />
-
-                  <div 
-                    className="relative rounded-full flex items-center justify-center overflow-hidden transition-all duration-300"
+                    className="relative p-5 rounded-xl border border-white/10 bg-white/[0.02] backdrop-blur-sm transition-all duration-300"
                     style={{
-                      width: item.size, 
-                      height: item.size,
-                      background: item.type === 'feature' 
-                        ? `radial-gradient(circle at 30% 25%, white, ${item.color} 60%)`
-                        : item.gradient,
-                      boxShadow: `0 0 ${isHovered ? 40 : 15}px ${item.glowColor}`,
+                      borderColor: isHovered ? 'rgba(255,255,255,0.2)' : 'rgba(255,255,255,0.1)',
                     }}
                   >
-                    {item.type === 'feature' && Icon ? (
-                      <Icon 
-                        style={{ 
-                          width: item.size * 0.45, 
-                          height: item.size * 0.45, 
-                          color: '#1a1a2e',
-                        }} 
-                      />
-                    ) : (
-                      <Image 
-                        src={(item as any).logo} 
-                        alt={item.name} 
-                        width={item.size * 0.6} 
-                        height={item.size * 0.6}
-                        className="object-contain"
-                      />
-                    )}
-                  </div>
-
-                  <AnimatePresence>
-                    {isHovered && (
-                      <motion.div 
-                        initial={{ opacity: 0, scale: 0.9, y: 10 }}
-                        animate={{ opacity: 1, scale: 1, y: 0 }}
-                        exit={{ opacity: 0, scale: 0.9, y: 10 }}
-                        transition={{ duration: 0.2 }}
-                        className="absolute left-1/2 -translate-x-1/2 bottom-full mb-4 w-56 md:w-64 p-4 rounded-2xl z-50 overflow-hidden"
-                        style={{ 
-                          background: 'rgba(5, 3, 15, 0.95)',
-                          border: `1px solid ${item.type === 'feature' ? item.color : 'rgba(255,255,255,0.15)'}40`,
-                          boxShadow: `0 0 30px ${item.glowColor}, inset 0 0 30px rgba(0,0,0,0.5)`,
-                        }}
+                    <div className="flex items-center gap-4">
+                      {/* Logo */}
+                      <div 
+                        className="w-12 h-12 rounded-lg flex items-center justify-center overflow-hidden flex-shrink-0 transition-transform duration-300 group-hover:scale-110"
+                        style={{ background: partner.gradient }}
                       >
-                        <div className="absolute inset-0 pointer-events-none overflow-hidden">
-                          <div className="absolute inset-0 bg-gradient-to-b from-transparent via-white/[0.02] to-transparent animate-scan" />
+                        <Image 
+                          src={partner.logo} 
+                          alt={partner.name} 
+                          width={28}
+                          height={28}
+                          className="object-contain"
+                        />
+                      </div>
+                      
+                      {/* Info */}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-1">
+                          <h3 className="font-bold text-white text-sm truncate">{partner.name}</h3>
+                          <ExternalLink className="w-3 h-3 text-gray-500 flex-shrink-0" />
                         </div>
-
-                        <div className="relative z-10">
-                          <div className="flex items-center gap-2 mb-2">
-                            {item.type === 'feature' && Icon ? (
-                              <div 
-                                className="w-8 h-8 rounded-lg flex items-center justify-center"
-                                style={{ backgroundColor: `${item.color}20` }}
-                              >
-                                <Icon className="w-4 h-4" style={{ color: item.color }} />
-                              </div>
-                            ) : (
-                              <div 
-                                className="w-8 h-8 rounded-lg flex items-center justify-center overflow-hidden"
-                                style={{ background: item.gradient }}
-                              >
-                                <Image 
-                                  src={(item as any).logo} 
-                                  alt={item.name} 
-                                  width={20} 
-                                  height={20}
-                                  className="object-contain"
-                                />
-                              </div>
-                            )}
-                            <GlitchText className="font-bold text-white text-sm">{item.name}</GlitchText>
-                          </div>
-                          <p className="text-xs text-gray-400 leading-relaxed mb-3">{item.description}</p>
-                          <div 
-                            className="pt-2 border-t border-white/10 flex items-center justify-center gap-1.5 text-xs font-medium"
-                            style={{ color: item.type === 'feature' ? item.color : '#fff' }}
-                          >
-                            <GlitchText>{item.external ? 'Visit Website' : 'Explore'}</GlitchText>
-                            <ExternalLink className="w-3 h-3" />
-                          </div>
-                        </div>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
+                        <p className="text-xs text-gray-500 line-clamp-2">{partner.description}</p>
+                      </div>
+                    </div>
+                  </div>
                 </motion.div>
               );
             })}
           </div>
-        </div>
-      </div>
-    );
-  }
+        </motion.div>
 
-  // Mobile view - Vertical Solar System
-  return (
-    <div className="min-h-screen relative overflow-hidden">
-      {/* Background - Same as Dashboard */}
-      <div className="fixed inset-0 z-[-1] pointer-events-none overflow-hidden">
-        <div className="bg-grid opacity-30"></div>
-        
-        {/* Deep Purple Orb */}
-        <div className="absolute top-[-15%] left-[-20%] w-[400px] h-[400px] bg-[#2e1065] rounded-full blur-[100px] animate-pulse-slow opacity-50 mix-blend-screen" />
-      
-        {/* Dark Gold Orb */}
-        <div className="absolute bottom-[-15%] right-[-20%] w-[400px] h-[400px] bg-[#422006] rounded-full blur-[100px] animate-pulse-slow opacity-50 mix-blend-screen" style={{animationDelay: '2s'}} />
-        
-        {/* Cyan orb */}
-        <div className="absolute top-[40%] right-[-25%] w-[300px] h-[300px] bg-[#14F195]/20 rounded-full blur-[80px] opacity-30" />
-
-        <div className="stars-container">
-          {stars.map((star) => (
-            <div
-              key={star.id}
-              className="star star-circle"
-              style={{
-                top: star.top,
-                left: star.left,
-                width: `${star.size}px`,
-                height: `${star.size}px`,
-                '--duration': star.duration,
-                '--opacity': star.opacity
-              } as React.CSSProperties}
-            />
-          ))}
-          <div className="shooting-star" style={{ top: '15%', left: '85%' }} />
-          <div className="shooting-star" style={{ top: '55%', left: '10%', animationDelay: '4s' }} />
-        </div>
-      </div>
-
-      <div className="pt-20 px-4 pb-24">
-        {/* Vertical Solar System */}
-        <div className="relative w-full min-h-[1200px] flex flex-col items-center">
-          {/* Vertical orbit line */}
-          <div className="absolute left-1/2 top-0 bottom-0 w-px bg-gradient-to-b from-transparent via-white/10 to-transparent" />
-          
-          {/* Center - Gimme Idea */}
-          <motion.div
-            initial={{ scale: 0, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            transition={{ duration: 0.5 }}
-            className="relative z-10 mb-8"
+        {/* Bottom CTA */}
+        <motion.div 
+          initial={{ opacity: 0 }} 
+          animate={{ opacity: 1 }} 
+          transition={{ duration: 0.5, delay: 0.7 }}
+          className="text-center mt-12 md:mt-16 pb-8"
+        >
+          <motion.button
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
             onClick={() => handleClick('/idea')}
+            className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-gradient-to-r from-[#FFD700] to-[#FFA500] text-black font-semibold text-sm transition-all duration-300 hover:shadow-[0_0_30px_rgba(255,215,0,0.4)]"
           >
-            <div 
-              className="absolute rounded-full blur-2xl"
-              style={{ 
-                inset: -20,
-                background: 'radial-gradient(circle, rgba(255,215,0,0.4) 0%, transparent 70%)',
-              }} 
-            />
-            <div className="relative w-20 h-20 flex items-center justify-center cursor-pointer">
-              <Image 
-                src="/logo-gmi.png" 
-                alt="Gimme Idea" 
-                width={80} 
-                height={80}
-                className="object-contain drop-shadow-[0_0_20px_rgba(255,215,0,0.6)]"
-              />
-            </div>
-            <p className="text-center mt-2 font-quantico font-bold text-white text-sm">
-              Gimme<span className="text-[#FFD700]">Idea</span>
-            </p>
-          </motion.div>
-
-          {/* Orbiting items - alternating left/right */}
-          {ORBIT_ITEMS.map((item, index) => {
-            const isLeft = index % 2 === 0;
-            const Icon = 'icon' in item ? item.icon : null;
-            const isActive = hoveredItem === item.id;
-            
-            return (
-              <motion.div
-                key={item.id}
-                initial={{ opacity: 0, x: isLeft ? -50 : 50 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: 0.3 + index * 0.15, duration: 0.5 }}
-                className={`relative flex items-center gap-4 mb-10 ${isLeft ? 'self-start ml-4' : 'self-end mr-4 flex-row-reverse'}`}
-                onClick={() => handleClick(item.route, item.external)}
-                onTouchStart={() => setHoveredItem(item.id)}
-                onTouchEnd={() => setTimeout(() => setHoveredItem(null), 2000)}
-              >
-                {/* Connecting line to center */}
-                <div 
-                  className={`absolute top-1/2 h-px bg-gradient-to-r ${isLeft ? 'right-full mr-2 from-transparent to-white/20' : 'left-full ml-2 from-white/20 to-transparent'}`}
-                  style={{ width: isLeft ? 'calc(50vw - 80px)' : 'calc(50vw - 80px)' }}
-                />
-                
-                {/* Planet */}
-                <motion.div 
-                  className="relative cursor-pointer"
-                  animate={{ scale: isActive ? 1.2 : 1 }}
-                  transition={{ type: 'spring', stiffness: 400, damping: 25 }}
-                >
-                  <div 
-                    className="absolute rounded-full blur-xl transition-all duration-300"
-                    style={{ 
-                      inset: -item.size * 0.3,
-                      background: item.glowColor,
-                      opacity: isActive ? 0.8 : 0.5,
-                    }} 
-                  />
-                  <div 
-                    className="relative rounded-full flex items-center justify-center overflow-hidden"
-                    style={{
-                      width: item.size, 
-                      height: item.size,
-                      background: item.type === 'feature' 
-                        ? `radial-gradient(circle at 30% 25%, white, ${item.color} 60%)`
-                        : item.gradient,
-                      boxShadow: `0 0 ${isActive ? 30 : 15}px ${item.glowColor}`,
-                    }}
-                  >
-                    {item.type === 'feature' && Icon ? (
-                      <Icon 
-                        style={{ 
-                          width: item.size * 0.45, 
-                          height: item.size * 0.45, 
-                          color: '#1a1a2e',
-                        }} 
-                      />
-                    ) : (
-                      <Image 
-                        src={(item as any).logo} 
-                        alt={item.name} 
-                        width={item.size * 0.55} 
-                        height={item.size * 0.55}
-                        className="object-contain"
-                      />
-                    )}
-                  </div>
-                </motion.div>
-
-                {/* Info card */}
-                <motion.div 
-                  className={`glass-panel rounded-xl p-3 max-w-[200px] ${isLeft ? '' : 'text-right'}`}
-                  animate={{ 
-                    scale: isActive ? 1.05 : 1,
-                    borderColor: isActive ? (item.type === 'feature' ? item.color : 'rgba(255,255,255,0.3)') : 'rgba(255,255,255,0.1)'
-                  }}
-                  style={{ borderWidth: 1 }}
-                >
-                  <div className={`flex items-center gap-2 mb-1 ${isLeft ? '' : 'flex-row-reverse'}`}>
-                    <span className="font-bold text-white text-sm">{item.name}</span>
-                    {item.external && <ExternalLink className="w-3 h-3 text-gray-400" />}
-                  </div>
-                  <p className="text-[10px] text-gray-400 leading-relaxed line-clamp-2">{item.description}</p>
-                </motion.div>
-              </motion.div>
-            );
-          })}
-        </div>
+            Start Exploring
+            <ArrowRight className="w-4 h-4" />
+          </motion.button>
+        </motion.div>
       </div>
     </div>
   );
