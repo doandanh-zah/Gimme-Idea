@@ -103,6 +103,11 @@ export default function HackathonDashboard({ params }: { params: { id: string } 
   const [terminalHistory, setTerminalHistory] = useState<{ type: 'command' | 'error', content: string }[]>([]);
   const terminalEndRef = useRef<HTMLDivElement>(null);
 
+  // Derive start/end dates from timeline to avoid type errors
+  const eventStartDate = hackathon?.timeline?.[0]?.startDate;
+  const lastTimelineItem = hackathon?.timeline?.[(hackathon?.timeline?.length || 0) - 1];
+  const eventEndDate = lastTimelineItem?.endDate || lastTimelineItem?.startDate;
+
   // Auto-set single track
   useEffect(() => {
     if (hackathon?.tracks && hackathon.tracks.length === 1) {
@@ -260,7 +265,7 @@ export default function HackathonDashboard({ params }: { params: { id: string } 
                     </span>
                     <span className="text-gray-500 text-xs flex items-center gap-1">
                        <Calendar className="w-3 h-3" /> 
-                       {format(new Date(hackathon.startDate), 'MMM dd')} - {format(new Date(hackathon.endDate), 'MMM dd, yyyy')}
+                       {eventStartDate && format(new Date(eventStartDate), 'MMM dd')} - {eventEndDate && format(new Date(eventEndDate), 'MMM dd, yyyy')}
                     </span>
                  </div>
                  <h1 className="text-4xl md:text-5xl font-bold text-white font-quantico leading-tight">
