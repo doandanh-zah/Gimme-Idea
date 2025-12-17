@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Heart, Send, Twitter, Copy, Check, ExternalLink, Sparkles, Coffee, Zap, Wallet } from 'lucide-react';
 import toast from 'react-hot-toast';
@@ -10,6 +10,7 @@ import { useWallet, useConnection } from '@solana/wallet-adapter-react';
 import { PublicKey, Transaction, SystemProgram, LAMPORTS_PER_SOL } from '@solana/web3.js';
 import { useAuth } from '../contexts/AuthContext';
 import { WalletRequiredModal } from './WalletRequiredModal';
+import ConstellationBackground from './ConstellationBackground';
 
 export const Donate = () => {
     const { openConnectReminder } = useAppStore();
@@ -24,19 +25,6 @@ export const Donate = () => {
     const [showWalletModal, setShowWalletModal] = useState(false);
     const [walletModalMode, setWalletModalMode] = useState<'reconnect' | 'connect'>('connect');
     const [contributorName, setContributorName] = useState('');
-    const [stars, setStars] = useState<{ id: number; top: string; left: string; size: number; duration: string; opacity: number }[]>([]);
-
-    useEffect(() => {
-        const newStars = Array.from({ length: 50 }).map((_, i) => ({
-            id: i,
-            top: `${Math.random() * 100}%`,
-            left: `${Math.random() * 100}%`,
-            size: Math.random() * 2 + 1,
-            duration: `${Math.random() * 3 + 2}s`,
-            opacity: Math.random() * 0.5 + 0.3
-        }));
-        setStars(newStars);
-    }, []);
 
     const walletAddress = "FzcnaZMYcoAYpLgr7Wym2b8hrKYk3VXsRxWSLuvZKLJm";
 
@@ -130,31 +118,8 @@ export const Donate = () => {
 
     return (
         <div className="min-h-screen pt-20 sm:pt-24 pb-12 px-4 sm:px-6 relative overflow-hidden flex items-center">
-            {/* Background with Stars */}
-            <div className="fixed inset-0 z-[-1] pointer-events-none">
-                <div className="bg-grid opacity-40"></div>
-                <div className="stars">
-                    {stars.map((star) => (
-                        <div
-                            key={star.id}
-                            className="star"
-                            style={{
-                                top: star.top,
-                                left: star.left,
-                                width: `${star.size}px`,
-                                height: `${star.size}px`,
-                                '--duration': star.duration,
-                                '--opacity': star.opacity
-                            } as React.CSSProperties}
-                        />
-                    ))}
-                    <div className="shooting-star" style={{ top: '20%', left: '80%' }} />
-                    <div className="shooting-star" style={{ top: '60%', left: '10%', animationDelay: '2s' }} />
-                </div>
-                {/* Glows */}
-                <div className="absolute top-[-20%] left-[-10%] w-[600px] h-[600px] bg-[#1e40af] rounded-full blur-[150px] opacity-20" />
-                <div className="absolute bottom-[-20%] right-[-10%] w-[500px] h-[500px] bg-[#7c3aed] rounded-full blur-[150px] opacity-20" />
-            </div>
+            {/* Constellation Background */}
+            <ConstellationBackground opacity={0.25} />
 
             <div className="max-w-6xl mx-auto w-full">
                 {/* Header */}

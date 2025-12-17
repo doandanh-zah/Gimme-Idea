@@ -5,6 +5,7 @@ import { motion } from 'framer-motion';
 import { Lightbulb, Rss, Rocket, ExternalLink, ArrowRight } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
+import ConstellationBackground from './ConstellationBackground';
 
 // Constellation items configuration
 const FEATURES = [
@@ -67,32 +68,6 @@ const PARTNERS = [
   },
 ];
 
-// Star positions for constellation effect (static)
-const CONSTELLATION_STARS = [
-  { x: 15, y: 20, size: 2 },
-  { x: 25, y: 35, size: 1.5 },
-  { x: 40, y: 15, size: 2.5 },
-  { x: 55, y: 28, size: 1.5 },
-  { x: 70, y: 18, size: 2 },
-  { x: 85, y: 32, size: 1.5 },
-  { x: 20, y: 55, size: 2 },
-  { x: 35, y: 70, size: 1.5 },
-  { x: 50, y: 60, size: 2.5 },
-  { x: 65, y: 75, size: 1.5 },
-  { x: 80, y: 65, size: 2 },
-  { x: 10, y: 80, size: 1.5 },
-  { x: 90, y: 85, size: 2 },
-  { x: 45, y: 85, size: 1.5 },
-  { x: 75, y: 45, size: 2 },
-];
-
-// Constellation lines (connect stars)
-const CONSTELLATION_LINES = [
-  [0, 1], [1, 2], [2, 3], [3, 4], [4, 5],
-  [1, 6], [6, 7], [7, 8], [8, 9], [9, 10],
-  [6, 11], [8, 13], [10, 12], [3, 14], [14, 10],
-];
-
 export default function HomeFeed() {
   const router = useRouter();
   const [hoveredItem, setHoveredItem] = useState<string | null>(null);
@@ -115,42 +90,8 @@ export default function HomeFeed() {
 
   return (
     <div className="min-h-screen relative overflow-hidden">
-      {/* Background */}
-      <div className="fixed inset-0 z-[-1] pointer-events-none overflow-hidden">
-        <div className="bg-grid opacity-30"></div>
-        
-        {/* Gradient orbs - simplified */}
-        <div className="absolute top-[-20%] left-[-10%] w-[600px] h-[600px] bg-[#2e1065] rounded-full blur-[120px] opacity-40" />
-        <div className="absolute bottom-[-20%] right-[-10%] w-[600px] h-[600px] bg-[#422006] rounded-full blur-[120px] opacity-40" />
-        
-        {/* Constellation background - static SVG */}
-        <svg className="absolute inset-0 w-full h-full opacity-20">
-          {/* Constellation lines */}
-          {CONSTELLATION_LINES.map(([from, to], i) => (
-            <line
-              key={`line-${i}`}
-              x1={`${CONSTELLATION_STARS[from].x}%`}
-              y1={`${CONSTELLATION_STARS[from].y}%`}
-              x2={`${CONSTELLATION_STARS[to].x}%`}
-              y2={`${CONSTELLATION_STARS[to].y}%`}
-              stroke="white"
-              strokeWidth="0.5"
-              strokeOpacity="0.3"
-            />
-          ))}
-          {/* Constellation stars */}
-          {CONSTELLATION_STARS.map((star, i) => (
-            <circle
-              key={`star-${i}`}
-              cx={`${star.x}%`}
-              cy={`${star.y}%`}
-              r={star.size}
-              fill="white"
-              fillOpacity="0.6"
-            />
-          ))}
-        </svg>
-      </div>
+      {/* Constellation Background */}
+      <ConstellationBackground opacity={0.3} />
 
       <div className={`${isMobile ? 'pt-20 px-4 pb-24' : 'pt-24 md:pt-28 px-4 sm:px-6'} max-w-6xl mx-auto`}>
         {/* Hero Section */}

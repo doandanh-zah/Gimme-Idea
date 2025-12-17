@@ -11,6 +11,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useRealtimeProjects } from '../hooks/useRealtimeProjects';
 import { ComingSoonModal } from './ComingSoonModal';
 import { AIChatModal } from './AIChatModal';
+import ConstellationBackground from './ConstellationBackground';
 
 interface DashboardProps {
     mode: 'project' | 'idea';
@@ -33,20 +34,6 @@ export default function Dashboard({ mode }: DashboardProps) {
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
   const [showComingSoon, setShowComingSoon] = useState(false);
   const [showAIChat, setShowAIChat] = useState(false);
-  const [stars, setStars] = useState<{ id: number; top: string; left: string; size: number; duration: string; opacity: number }[]>([]);
-
-  // Generate stars on mount
-  useEffect(() => {
-    const newStars = Array.from({ length: 50 }).map((_, i) => ({
-      id: i,
-      top: `${Math.random() * 100}%`,
-      left: `${Math.random() * 100}%`,
-      size: Math.random() * 2 + 1,
-      duration: `${Math.random() * 3 + 2}s`,
-      opacity: Math.random()
-    }));
-    setStars(newStars);
-  }, []);
 
   // Show coming soon modal for projects mode
   useEffect(() => {
@@ -127,35 +114,8 @@ export default function Dashboard({ mode }: DashboardProps) {
       animate={{ opacity: 1 }}
       className="min-h-screen pb-20 relative"
     >
-      {/* Background with Stars & Grid (same as landing page) */}
-      <div className="fixed inset-0 z-[-1] pointer-events-none overflow-hidden">
-          <div className="bg-grid opacity-40"></div>
-          
-          {/* Deep Purple Orb - Top Left */}
-          <div className="absolute top-[-20%] left-[-10%] w-[600px] h-[600px] bg-[#2e1065] rounded-full blur-[120px] animate-pulse-slow opacity-40 mix-blend-screen" />
-        
-          {/* Dark Gold/Bronze Orb - Bottom Right */}
-          <div className="absolute bottom-[-20%] right-[-10%] w-[600px] h-[600px] bg-[#422006] rounded-full blur-[120px] animate-pulse-slow opacity-40 mix-blend-screen" style={{animationDelay: '2s'}} />
-
-          <div className="stars-container">
-            {stars.map((star) => (
-              <div
-                key={star.id}
-                className="star"
-                style={{
-                  top: star.top,
-                  left: star.left,
-                  width: `${star.size}px`,
-                  height: `${star.size}px`,
-                  '--duration': star.duration,
-                  '--opacity': star.opacity
-                } as React.CSSProperties}
-              />
-            ))}
-            <div className="shooting-star" style={{ top: '20%', left: '80%' }} />
-            <div className="shooting-star" style={{ top: '60%', left: '10%', animationDelay: '2s' }} />
-          </div>
-      </div>
+      {/* Constellation Background */}
+      <ConstellationBackground opacity={0.25} />
 
       <div className="pt-24 sm:pt-32 px-4 sm:px-6 max-w-7xl mx-auto">
         

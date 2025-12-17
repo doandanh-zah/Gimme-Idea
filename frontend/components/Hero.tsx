@@ -6,6 +6,7 @@ import { motion } from 'framer-motion';
 import { Terminal, Code, Cpu, LayoutGrid, Plus } from 'lucide-react';
 import { useAppStore } from '../lib/store';
 import { useRouter } from 'next/navigation';
+import ConstellationBackground from './ConstellationBackground';
 
 const Hero: React.FC = () => {
   const { openSubmitModal } = useAppStore();
@@ -14,15 +15,8 @@ const Hero: React.FC = () => {
   return (
     <section className="relative min-h-screen flex items-center pt-24 sm:pt-20 overflow-hidden px-6">
       
-      {/* Dynamic Background Elements (Glows) - Darker/Deeper colors as requested */}
-      <div className="absolute inset-0 bg-gradient-radial from-purple-900/5 to-transparent opacity-10 pointer-events-none" />
-      <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none">
-        {/* Deep Purple Orb */}
-        <div className="absolute top-[-20%] left-[-10%] w-[400px] sm:w-[600px] h-[400px] sm:h-[600px] bg-[#2e1065] rounded-full blur-[100px] sm:blur-[120px] animate-pulse-slow opacity-40 mix-blend-screen" />
-        
-        {/* Dark Gold/Bronze Orb */}
-        <div className="absolute bottom-[-20%] right-[-10%] w-[400px] sm:w-[600px] h-[400px] sm:h-[600px] bg-[#422006] rounded-full blur-[100px] sm:blur-[120px] animate-pulse-slow opacity-40 mix-blend-screen" style={{animationDelay: '2s'}} />
-      </div>
+      {/* Constellation Background */}
+      <ConstellationBackground opacity={0.2} showGradientOrbs={true} />
 
       {/* Content Container */}
       <div className="max-w-7xl mx-auto relative z-10 grid lg:grid-cols-2 gap-12 items-center w-full">

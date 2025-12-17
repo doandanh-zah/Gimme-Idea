@@ -1,60 +1,20 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Calendar, Users, Trophy, ArrowRight, Zap } from 'lucide-react';
 import Link from 'next/link';
 import SponsorModal from '@/components/SponsorModal';
-import { HACKATHONS_MOCK_DATA } from '@/lib/mock-hackathons'; // Import mock data
+import ConstellationBackground from '@/components/ConstellationBackground';
+import { HACKATHONS_MOCK_DATA } from '@/lib/mock-hackathons';
 
 export default function HackathonsList() {
   const [isSponsorModalOpen, setIsSponsorModalOpen] = useState(false);
-  const [stars, setStars] = useState<{ id: number; top: string; left: string; size: number; duration: string; opacity: number }[]>([]);
-
-  // Generate stars on mount
-  useEffect(() => {
-    const newStars = Array.from({ length: 50 }).map((_, i) => ({
-      id: i,
-      top: `${Math.random() * 100}%`,
-      left: `${Math.random() * 100}%`,
-      size: Math.random() * 2 + 1,
-      duration: `${Math.random() * 3 + 2}s`,
-      opacity: Math.random()
-    }));
-    setStars(newStars);
-  }, []);
 
   return (
     <div className="min-h-screen text-gray-300 pt-28 pb-10 px-4 font-sans text-sm relative">
-      {/* Background with Stars & Grid */}
-      <div className="fixed inset-0 z-[-1] pointer-events-none overflow-hidden">
-        <div className="bg-grid opacity-40"></div>
-        
-        {/* Deep Purple Orb - Top Left */}
-        <div className="absolute top-[-20%] left-[-10%] w-[600px] h-[600px] bg-[#2e1065] rounded-full blur-[120px] animate-pulse-slow opacity-40 mix-blend-screen" />
-      
-        {/* Dark Gold/Bronze Orb - Bottom Right */}
-        <div className="absolute bottom-[-20%] right-[-10%] w-[600px] h-[600px] bg-[#422006] rounded-full blur-[120px] animate-pulse-slow opacity-40 mix-blend-screen" style={{animationDelay: '2s'}} />
-
-        <div className="stars-container">
-          {stars.map((star) => (
-            <div
-              key={star.id}
-              className="star"
-              style={{
-                top: star.top,
-                left: star.left,
-                width: `${star.size}px`,
-                height: `${star.size}px`,
-                '--duration': star.duration,
-                '--opacity': star.opacity
-              } as React.CSSProperties}
-            />
-          ))}
-          <div className="shooting-star" style={{ top: '20%', left: '80%' }} />
-          <div className="shooting-star" style={{ top: '60%', left: '10%', animationDelay: '2s' }} />
-        </div>
-      </div>
+      {/* Constellation Background */}
+      <ConstellationBackground opacity={0.25} />
 
       <div className="max-w-[1000px] mx-auto space-y-8">
         

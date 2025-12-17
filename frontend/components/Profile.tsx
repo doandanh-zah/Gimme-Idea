@@ -20,6 +20,7 @@ import { Project, Feed } from '../lib/types';
 import { apiClient } from '../lib/api-client';
 import { uploadAvatar, uploadCoverImage } from '../lib/imgbb';
 import { createUsernameSlug } from '../lib/slug-utils';
+import ConstellationBackground from './ConstellationBackground';
 
 interface UserStats {
   reputation: number;
@@ -56,9 +57,6 @@ export const Profile = () => {
   const [isUploadingCover, setIsUploadingCover] = useState(false);
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
   
-  // Stars background state
-  const [stars, setStars] = useState<{ id: number; top: string; left: string; size: number; duration: string; opacity: number }[]>([]);
-  
   // Follow system state
   const [showFollowModal, setShowFollowModal] = useState(false);
   const [followModalTab, setFollowModalTab] = useState<'followers' | 'following'>('followers');
@@ -68,19 +66,6 @@ export const Profile = () => {
   // Feeds state
   const [userFeeds, setUserFeeds] = useState<Feed[]>([]);
   const [isLoadingFeeds, setIsLoadingFeeds] = useState(false);
-  
-  // Generate stars on mount
-  useEffect(() => {
-    const newStars = Array.from({ length: 50 }).map((_, i) => ({
-      id: i,
-      top: `${Math.random() * 100}%`,
-      left: `${Math.random() * 100}%`,
-      size: Math.random() * 2 + 1,
-      duration: `${Math.random() * 3 + 2}s`,
-      opacity: Math.random()
-    }));
-    setStars(newStars);
-  }, []);
 
   // Determine if this is the "My Profile" page (not viewing someone else)
   const isMyProfilePage = pathname === '/profile';
@@ -410,35 +395,8 @@ export const Profile = () => {
         animate={{ opacity: 1 }}
         className="min-h-screen pt-20 sm:pt-24 pb-20 px-4 sm:px-6"
     >
-        {/* Background with Stars & Grid (same as other pages) */}
-        <div className="fixed inset-0 z-[-1] pointer-events-none overflow-hidden">
-            <div className="bg-grid opacity-40"></div>
-            
-            {/* Deep Purple Orb - Top Left */}
-            <div className="absolute top-[-20%] left-[-10%] w-[600px] h-[600px] bg-[#2e1065] rounded-full blur-[120px] animate-pulse-slow opacity-40 mix-blend-screen" />
-          
-            {/* Dark Gold/Bronze Orb - Bottom Right */}
-            <div className="absolute bottom-[-20%] right-[-10%] w-[600px] h-[600px] bg-[#422006] rounded-full blur-[120px] animate-pulse-slow opacity-40 mix-blend-screen" style={{animationDelay: '2s'}} />
-
-            <div className="stars-container">
-              {stars.map((star) => (
-                <div
-                  key={star.id}
-                  className="star"
-                  style={{
-                    top: star.top,
-                    left: star.left,
-                    width: `${star.size}px`,
-                    height: `${star.size}px`,
-                    '--duration': star.duration,
-                    '--opacity': star.opacity
-                  } as CSSProperties}
-                />
-              ))}
-              <div className="shooting-star" style={{ top: '20%', left: '80%' }} />
-              <div className="shooting-star" style={{ top: '60%', left: '10%', animationDelay: '2s' }} />
-            </div>
-        </div>
+        {/* Constellation Background */}
+        <ConstellationBackground opacity={0.25} />
 
         <div className="max-w-5xl mx-auto">
             {/* Back Button */}
