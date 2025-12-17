@@ -18,10 +18,10 @@ import toast from 'react-hot-toast';
 import Image from 'next/image';
 import { BookmarkModal } from './BookmarkModal';
 
-// Truncated text component
+// Truncated text component - only truncate when really long
 const TruncatedText = ({ 
   text, 
-  maxLength = 120, 
+  maxLength = 500, 
   className = '',
   onSeeMore
 }: { 
@@ -270,7 +270,7 @@ export default function HomeFeed() {
     router.push(`/idea/${slug}`);
   };
 
-  // Idea Post Card - Social style
+  // Idea Post Card - Social style (full content like Facebook/Twitter)
   const IdeaPostCard = ({ idea }: { idea: Project }) => {
     const isVoted = votedIds.has(idea.id);
     
@@ -278,11 +278,11 @@ export default function HomeFeed() {
       <motion.article
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="bg-gradient-to-br from-white/[0.06] to-white/[0.02] border border-white/10 rounded-2xl overflow-hidden hover:border-[#FFD700]/30 transition-all duration-300 group"
+        className="bg-gradient-to-br from-white/[0.07] to-white/[0.03] border border-white/10 rounded-2xl overflow-hidden hover:border-[#FFD700]/30 transition-all duration-300 group"
       >
         {/* Author Header */}
-        <div className="p-4 sm:p-5 pb-3">
-          <div className="flex items-start gap-3">
+        <div className="p-5 sm:p-6 pb-4">
+          <div className="flex items-start gap-4">
             <div 
               className="cursor-pointer flex-shrink-0"
               onClick={(e) => {
@@ -296,13 +296,13 @@ export default function HomeFeed() {
                 <Image
                   src={idea.author.avatar}
                   alt={idea.author.username}
-                  width={44}
-                  height={44}
+                  width={48}
+                  height={48}
                   className="rounded-full border-2 border-[#FFD700]/20 hover:border-[#FFD700]/50 transition-colors"
                 />
               ) : (
-                <div className="w-11 h-11 rounded-full bg-gradient-to-br from-[#FFD700]/30 to-[#FFD700]/10 flex items-center justify-center border-2 border-[#FFD700]/20">
-                  <Lightbulb className="w-5 h-5 text-[#FFD700]" />
+                <div className="w-12 h-12 rounded-full bg-gradient-to-br from-[#FFD700]/30 to-[#FFD700]/10 flex items-center justify-center border-2 border-[#FFD700]/20">
+                  <Lightbulb className="w-6 h-6 text-[#FFD700]" />
                 </div>
               )}
             </div>
@@ -310,7 +310,7 @@ export default function HomeFeed() {
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 flex-wrap">
                 <span 
-                  className="font-semibold text-white text-sm sm:text-base hover:text-[#FFD700] cursor-pointer transition-colors"
+                  className="font-bold text-white text-base hover:text-[#FFD700] cursor-pointer transition-colors"
                   onClick={(e) => {
                     e.stopPropagation();
                     if (idea.author && !idea.isAnonymous) {
@@ -320,10 +320,10 @@ export default function HomeFeed() {
                 >
                   {idea.isAnonymous ? 'Anonymous' : idea.author?.username || 'Unknown'}
                 </span>
-                <span className="text-gray-500 text-sm">shared an idea</span>
+                <span className="text-gray-500">shared an idea</span>
               </div>
-              <div className="flex items-center gap-2 text-xs text-gray-500 mt-0.5">
-                <Clock className="w-3 h-3" />
+              <div className="flex items-center gap-2 text-sm text-gray-500 mt-1">
+                <Clock className="w-3.5 h-3.5" />
                 <span>{formatDistanceToNow(new Date(idea.createdAt), { addSuffix: true })}</span>
                 {idea.category && (
                   <>
@@ -338,26 +338,26 @@ export default function HomeFeed() {
 
         {/* Content - Clickable */}
         <div 
-          className="px-4 sm:px-5 pb-4 cursor-pointer"
+          className="px-5 sm:px-6 pb-5 cursor-pointer"
           onClick={() => handleCardClick(idea)}
         >
           {/* Title */}
-          <h2 className="text-lg sm:text-xl font-bold text-white mb-3 group-hover:text-[#FFD700] transition-colors">
+          <h2 className="text-xl sm:text-2xl font-bold text-white mb-4 group-hover:text-[#FFD700] transition-colors leading-tight">
             {idea.title}
           </h2>
 
-          {/* Problem / Solution / Opportunity */}
+          {/* Problem / Solution / Opportunity - Full content */}
           {(idea.problem || idea.solution || idea.opportunity) ? (
-            <div className="space-y-2.5">
+            <div className="space-y-4">
               {idea.problem && (
-                <div className="bg-red-500/5 border border-red-500/10 rounded-xl p-3">
-                  <div className="flex items-center gap-2 mb-1.5">
-                    <span className="text-[10px] font-bold text-red-400 uppercase tracking-wider">🎯 Problem</span>
+                <div className="bg-red-500/5 border border-red-500/10 rounded-xl p-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="text-xs font-bold text-red-400 uppercase tracking-wider">🎯 Problem</span>
                   </div>
-                  <p className="text-sm text-gray-300 leading-relaxed">
+                  <p className="text-base text-gray-200 leading-relaxed whitespace-pre-wrap">
                     <TruncatedText 
                       text={idea.problem} 
-                      maxLength={100}
+                      maxLength={600}
                       onSeeMore={() => handleCardClick(idea)}
                     />
                   </p>
@@ -365,14 +365,14 @@ export default function HomeFeed() {
               )}
 
               {idea.solution && (
-                <div className="bg-emerald-500/5 border border-emerald-500/10 rounded-xl p-3">
-                  <div className="flex items-center gap-2 mb-1.5">
-                    <span className="text-[10px] font-bold text-emerald-400 uppercase tracking-wider">💡 Solution</span>
+                <div className="bg-emerald-500/5 border border-emerald-500/10 rounded-xl p-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="text-xs font-bold text-emerald-400 uppercase tracking-wider">💡 Solution</span>
                   </div>
-                  <p className="text-sm text-gray-300 leading-relaxed">
+                  <p className="text-base text-gray-200 leading-relaxed whitespace-pre-wrap">
                     <TruncatedText 
                       text={idea.solution} 
-                      maxLength={100}
+                      maxLength={600}
                       onSeeMore={() => handleCardClick(idea)}
                     />
                   </p>
@@ -380,14 +380,14 @@ export default function HomeFeed() {
               )}
 
               {idea.opportunity && (
-                <div className="bg-purple-500/5 border border-purple-500/10 rounded-xl p-3">
-                  <div className="flex items-center gap-2 mb-1.5">
-                    <span className="text-[10px] font-bold text-purple-400 uppercase tracking-wider">🚀 Opportunity</span>
+                <div className="bg-purple-500/5 border border-purple-500/10 rounded-xl p-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="text-xs font-bold text-purple-400 uppercase tracking-wider">🚀 Opportunity</span>
                   </div>
-                  <p className="text-sm text-gray-300 leading-relaxed">
+                  <p className="text-base text-gray-200 leading-relaxed whitespace-pre-wrap">
                     <TruncatedText 
                       text={idea.opportunity} 
-                      maxLength={100}
+                      maxLength={600}
                       onSeeMore={() => handleCardClick(idea)}
                     />
                   </p>
@@ -395,10 +395,10 @@ export default function HomeFeed() {
               )}
             </div>
           ) : idea.description ? (
-            <p className="text-sm text-gray-300 leading-relaxed">
+            <p className="text-base text-gray-200 leading-relaxed whitespace-pre-wrap">
               <TruncatedText 
                 text={idea.description} 
-                maxLength={180}
+                maxLength={800}
                 onSeeMore={() => handleCardClick(idea)}
               />
             </p>
@@ -406,60 +406,55 @@ export default function HomeFeed() {
 
           {/* Tags */}
           {idea.tags && idea.tags.length > 0 && (
-            <div className="flex flex-wrap gap-2 mt-3">
-              {idea.tags.slice(0, 4).map((tag, idx) => (
+            <div className="flex flex-wrap gap-2 mt-4">
+              {idea.tags.map((tag, idx) => (
                 <span 
                   key={idx}
-                  className="px-2 py-0.5 text-xs rounded-md bg-white/5 text-gray-400"
+                  className="px-3 py-1 text-sm rounded-lg bg-white/5 text-gray-400 hover:bg-white/10 transition-colors"
                 >
                   #{tag}
                 </span>
               ))}
-              {idea.tags.length > 4 && (
-                <span className="px-2 py-0.5 text-xs text-gray-500">
-                  +{idea.tags.length - 4}
-                </span>
-              )}
             </div>
           )}
         </div>
 
         {/* Engagement Stats */}
-        <div className="px-4 sm:px-5 py-2 border-t border-white/5 flex items-center gap-4 text-xs text-gray-500">
-          <span className="flex items-center gap-1">
-            <ThumbsUp className="w-3.5 h-3.5" />
-            {idea.votes} supports
+        <div className="px-5 sm:px-6 py-3 border-t border-white/5 flex items-center gap-6 text-sm text-gray-400">
+          <span className="flex items-center gap-1.5">
+            <ThumbsUp className="w-4 h-4" />
+            <span className="font-medium">{idea.votes}</span> supports
           </span>
-          <span className="flex items-center gap-1">
-            <MessageSquare className="w-3.5 h-3.5" />
-            {idea.feedbackCount || 0} comments
+          <span className="flex items-center gap-1.5">
+            <MessageSquare className="w-4 h-4" />
+            <span className="font-medium">{idea.feedbackCount || 0}</span> comments
           </span>
         </div>
 
         {/* Actions Footer */}
-        <div className="px-2 sm:px-3 py-2 border-t border-white/5 flex items-center justify-between">
-          <div className="flex items-center">
+        <div className="px-3 sm:px-4 py-3 border-t border-white/5 flex items-center justify-between">
+          <div className="flex items-center gap-1">
             {/* Vote Button */}
             <motion.button
               onClick={(e) => handleVote(e, idea)}
               whileTap={{ scale: 0.95 }}
-              className={`flex items-center gap-2 px-4 py-2 rounded-xl transition-all ${
+              className={`flex items-center gap-2 px-5 py-2.5 rounded-xl transition-all ${
                 isVoted 
                   ? 'bg-[#FFD700]/20 text-[#FFD700]' 
                   : 'text-gray-400 hover:text-[#FFD700] hover:bg-[#FFD700]/10'
               }`}
             >
-              <ThumbsUp className={`w-4 h-4 ${isVoted ? 'fill-current' : ''}`} />
-              <span className="text-sm font-medium">Support</span>
+              <ThumbsUp className={`w-5 h-5 ${isVoted ? 'fill-current' : ''}`} />
+              <span className="font-medium">Support</span>
             </motion.button>
 
             {/* Comment Button */}
             <button
               onClick={() => handleCardClick(idea)}
-              className="flex items-center gap-2 px-4 py-2 text-gray-400 hover:text-blue-400 hover:bg-blue-400/10 rounded-xl transition-all"
+              className="flex items-center gap-2 px-5 py-2.5 text-gray-400 hover:text-blue-400 hover:bg-blue-400/10 rounded-xl transition-all"
             >
-              <MessageSquare className="w-4 h-4" />
-              <span className="text-sm font-medium hidden sm:inline">Comment</span>
+              <MessageSquare className="w-5 h-5" />
+              <span className="font-medium hidden sm:inline">Comment</span>
             </button>
 
             {/* Share */}
@@ -469,10 +464,10 @@ export default function HomeFeed() {
           {/* Bookmark */}
           <button
             onClick={(e) => handleBookmark(e, idea)}
-            className="flex items-center gap-2 px-4 py-2 text-gray-400 hover:text-[#FFD700] hover:bg-[#FFD700]/10 rounded-xl transition-all"
+            className="flex items-center gap-2 px-5 py-2.5 text-gray-400 hover:text-[#FFD700] hover:bg-[#FFD700]/10 rounded-xl transition-all"
           >
-            <Bookmark className="w-4 h-4" />
-            <span className="text-sm font-medium hidden sm:inline">Save</span>
+            <Bookmark className="w-5 h-5" />
+            <span className="font-medium hidden sm:inline">Save</span>
           </button>
         </div>
       </motion.article>
@@ -533,7 +528,7 @@ export default function HomeFeed() {
         </div>
       </div>
 
-      <div className="pt-24 sm:pt-32 px-4 sm:px-6 max-w-4xl mx-auto">
+      <div className="pt-24 sm:pt-32 px-4 sm:px-6 max-w-3xl mx-auto">
         {/* Header */}
         <div className="mb-6">
           <h1 className="text-2xl sm:text-3xl font-display font-bold tracking-tight flex items-center gap-3">
