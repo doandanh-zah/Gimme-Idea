@@ -472,34 +472,51 @@ export default function HackathonDashboard({ params }: { params: { id: string } 
                                 </div>
                              </div>
 
-                             {/* Right Column: Trending Ideas & Activity (Span 5) */}
+                             {/* Right Column: Tasks & Activity (Span 5) */}
                              <div className="lg:col-span-5 flex flex-col gap-4 min-h-0 overflow-y-auto md:overflow-hidden">
                                 
-                                {/* Featured Ideas */}
+                                {/* Your Tasks (Dynamic based on phase) */}
                                 <div className="flex-1 bg-surface border border-white/5 rounded-xl p-4 flex flex-col min-h-0">
-                                   <h3 className="text-gray-400 text-xs uppercase tracking-wider mb-3 flex items-center gap-2">
-                                      <Sparkles className="w-3 h-3 text-gold" /> Trending Ideas
-                                   </h3>
-                                   <div className="space-y-3 overflow-y-auto pr-1 scrollbar-thin scrollbar-thumb-white/10">
-                                      {MOCK_USER_IDEAS.map((idea, i) => (
-                                         <div key={i} className="group bg-white/5 border border-white/5 p-3 rounded-lg hover:border-gold/30 hover:bg-white/10 transition-all cursor-pointer">
-                                            <div className="flex justify-between items-start mb-1">
-                                               <span className="text-[10px] bg-purple-500/20 text-purple-300 px-1.5 py-0.5 rounded">{idea.category}</span>
-                                               <span className="text-[10px] text-gray-500">{idea.date}</span>
+                                   {(() => {
+                                      const activeStep = dynamicTimeline.find(step => step.status === 'active');
+                                      const currentTasks = hackathon?.tasks?.filter(t => t.phaseId === activeStep?.id) || [];
+                                      
+                                      return (
+                                         <>
+                                            <div className="flex justify-between items-center mb-3">
+                                               <h3 className="text-gray-400 text-xs uppercase tracking-wider flex items-center gap-2">
+                                                  <CheckCircle2 className="w-3 h-3 text-gold" /> Your Tasks
+                                               </h3>
+                                               {activeStep && <span className="text-[10px] text-gold bg-gold/10 px-2 py-0.5 rounded border border-gold/20">{activeStep.title}</span>}
                                             </div>
-                                            <h4 className="font-bold text-white text-sm mb-1 group-hover:text-gold transition-colors">{idea.title}</h4>
-                                            <p className="text-[10px] text-gray-400 line-clamp-2">{idea.description}</p>
-                                            <div className="mt-2 flex items-center gap-2">
-                                               <div className="w-4 h-4 rounded-full bg-gradient-to-br from-blue-500 to-green-500 text-[8px] flex items-center justify-center text-white font-bold">{idea.author.charAt(0)}</div>
-                                               <span className="text-[10px] text-gray-500">by {idea.author}</span>
-                                            </div>
-                                         </div>
-                                      ))}
-                                   </div>
+                                            
+                                            {currentTasks.length > 0 ? (
+                                               <div className="space-y-2 overflow-y-auto pr-1 scrollbar-thin scrollbar-thumb-white/10">
+                                                  {currentTasks.map((task) => (
+                                                     <div key={task.id} className="flex items-start gap-3 p-3 bg-white/5 border border-white/5 rounded-lg group hover:border-gold/30 transition-colors">
+                                                        <button className={`mt-0.5 w-4 h-4 rounded border flex items-center justify-center transition-colors
+                                                           ${task.done ? 'bg-green-500 border-green-500 text-black' : 'border-gray-600 hover:border-gray-400'}`}>
+                                                           {task.done && <CheckCircle2 className="w-3 h-3" />}
+                                                        </button>
+                                                        <span className={`text-xs ${task.done ? 'text-gray-500 line-through' : 'text-gray-200'}`}>
+                                                           {task.text}
+                                                        </span>
+                                                     </div>
+                                                  ))}
+                                               </div>
+                                            ) : (
+                                               <div className="flex-1 flex flex-col items-center justify-center text-center text-gray-500">
+                                                  <CheckCircle2 className="w-8 h-8 mb-2 opacity-20" />
+                                                  <p className="text-xs">All tasks completed for this phase!</p>
+                                               </div>
+                                            )}
+                                         </>
+                                      );
+                                   })()}
                                 </div>
 
                                 {/* Live Activity */}
-                                <div className="bg-surface border border-white/5 rounded-xl p-4 h-1/3 flex flex-col">
+                                <div className="bg-surface border border-white/5 rounded-xl p-4 h-1/3 flex flex-col shrink-0">
                                    <h3 className="text-gray-400 text-xs uppercase tracking-wider mb-3 flex items-center gap-2">
                                       <Activity className="w-3 h-3 text-green-400" /> Live Activity
                                    </h3>
