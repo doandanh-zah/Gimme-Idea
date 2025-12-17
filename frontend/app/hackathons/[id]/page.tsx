@@ -31,6 +31,12 @@ const DEFAULT_NEW_TEAM = {
   maxMembers: 5
 };
 
+const MOCK_USER_IDEAS = [
+    { id: 'idea-1', title: 'Decentralized Uber', description: 'A peer-to-peer ride sharing protocol on Solana. Eliminating middlemen fees.', category: 'DePIN', tags: ['Mobility', 'Solana'], date: '2 days ago' },
+    { id: 'idea-2', title: 'NFT Ticketing', description: 'Eliminating scalpers using dynamic NFTs for event access with verifiable ownership.', category: 'NFT', tags: ['Events', 'Utility'], date: '1 week ago' },
+    { id: 'idea-3', title: 'DAO Governance Tool', description: 'AI-powered proposal summarizer for DAOs to increase voter participation.', category: 'DAO', tags: ['AI', 'Governance'], date: '2 weeks ago' },
+];
+
 // Moved SidebarItem definition outside the component
 const SidebarItem = ({ id, label, icon: Icon, activeSection, setActiveSection, setIsMobileMenuOpen }: 
   { id: string, label: string, icon: any, activeSection: string, setActiveSection: (id: string) => void, setIsMobileMenuOpen: (isOpen: boolean) => void }) => (
@@ -471,7 +477,7 @@ export default function HackathonDashboard({ params }: { params: { id: string } 
                             case 'details':
                                 return (
                                    <div className="grid lg:grid-cols-3 gap-6 h-full overflow-y-auto pr-2 pb-20 md:pb-0">
-                                      <div className="lg:col-span-2 space-y-6">
+                                      <div className="lg:col-span-1 space-y-6">
                                          {/* About Section */}
                                          <div className="bg-surface border border-white/5 rounded-xl p-6">
                                             <h2 className="text-xl font-bold text-white mb-4 font-quantico flex items-center gap-2">
@@ -515,7 +521,7 @@ export default function HackathonDashboard({ params }: { params: { id: string } 
                                          </div>
                                       </div>
 
-                                      <div className="space-y-6">
+                                      <div className="lg:col-span-2 space-y-6">
                                          {/* Prizes */}
                                          <div className="bg-surface border border-white/5 rounded-xl p-6">
                                             <h2 className="text-lg font-bold text-white mb-4 flex items-center gap-2 font-quantico">
@@ -571,32 +577,259 @@ export default function HackathonDashboard({ params }: { params: { id: string } 
                             case 'participants':
                                 return (
                                    <div className="flex flex-col h-full gap-4 pb-20 md:pb-0">
-                                      <div className="relative max-w-lg">
-                                         <input type="text" placeholder="Search..." className="w-full bg-surface border border-white/10 rounded-xl pl-4 pr-4 py-2.5 text-sm text-white focus:border-gold/50 outline-none" />
+                                      <div className="flex flex-col md:flex-row justify-between items-end gap-4">
+                                          <div className="relative max-w-lg flex-1 w-full">
+                                             <input 
+                                                type="text" 
+                                                placeholder={teamTabMode === 'teams' ? "Search by team name or tags..." : "Search by name or skills..."}
+                                                value={searchTeamQuery}
+                                                onChange={(e) => setSearchTeamQuery(e.target.value)}
+                                                className="w-full bg-surface border border-white/10 rounded-xl pl-4 pr-4 py-2.5 text-sm text-white focus:border-gold/50 outline-none" 
+                                             />
+                                          </div>
+                                          <div className="flex bg-surface border border-white/10 rounded-lg p-1 shrink-0">
+                                              <button
+                                                onClick={() => setTeamTabMode('teams')}
+                                                className={`px-4 py-1.5 text-xs font-medium rounded-md transition-all ${teamTabMode === 'teams' ? 'bg-white/10 text-white' : 'text-gray-500 hover:text-gray-300'}`}
+                                              >
+                                                Find Teams
+                                              </button>
+                                              <button
+                                                onClick={() => setTeamTabMode('teammates')}
+                                                className={`px-4 py-1.5 text-xs font-medium rounded-md transition-all ${teamTabMode === 'teammates' ? 'bg-white/10 text-white' : 'text-gray-500 hover:text-gray-300'}`}
+                                              >
+                                                Find Teammates
+                                              </button>
+                                          </div>
                                       </div>
+                                      
                                       <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4 overflow-y-auto pr-2">
-                                         {(hackathon.teams || []).map((team: any) => (
-                                            <div key={team.id} className="bg-surface border border-white/5 rounded-xl p-4 hover:border-gold/30 transition-all">
-                                               <div className="flex justify-between items-start mb-2">
-                                                  <h3 className="text-sm font-bold text-white">{team.name}</h3>
-                                                  <span className="text-[10px] bg-white/5 px-1.5 py-0.5 rounded text-gray-400">{team.members}/{team.maxMembers}</span>
-                                               </div>
-                                               <div className="flex flex-wrap gap-1">
-                                                  {team.tags.map((tag: string) => <span key={tag} className="text-[9px] bg-black/40 text-gray-400 px-1.5 py-0.5 rounded border border-white/5">{tag}</span>)}
-                                               </div>
-                                            </div>
-                                         ))}
+                                         {teamTabMode === 'teams' ? (
+                                             (hackathon.teams || []).filter((t: any) => t.name.toLowerCase().includes(searchTeamQuery.toLowerCase()) || t.tags.some((tag: any) => tag.toLowerCase().includes(searchTeamQuery.toLowerCase())))
+                                             .map((team: any) => (
+                                                <div key={team.id} className="bg-surface border border-white/5 rounded-xl p-4 hover:border-gold/30 transition-all flex flex-col justify-between h-full">
+                                                   <div>
+                                                       <div className="flex justify-between items-start mb-2">
+                                                          <h3 className="text-sm font-bold text-white">{team.name}</h3>
+                                                          <span className="text-[10px] bg-white/5 px-1.5 py-0.5 rounded text-gray-400">{team.members}/{team.maxMembers}</span>
+                                                       </div>
+                                                       <div className="flex flex-wrap gap-1 mb-3">
+                                                          {team.tags.map((tag: string) => <span key={tag} className="text-[9px] bg-black/40 text-gray-400 px-1.5 py-0.5 rounded border border-white/5">{tag}</span>)}
+                                                       </div>
+                                                       {team.lookingFor && team.lookingFor.length > 0 && (
+                                                          <div className="mb-3">
+                                                              <p className="text-[10px] text-gray-500 mb-1">Looking for:</p>
+                                                              <div className="flex flex-wrap gap-1">
+                                                                  {team.lookingFor.map((role: string) => (
+                                                                      <span key={role} className="text-[9px] text-gold bg-gold/5 border border-gold/10 px-1.5 py-0.5 rounded">{role}</span>
+                                                                  ))}
+                                                              </div>
+                                                          </div>
+                                                       )}
+                                                   </div>
+                                                   <button className="w-full mt-2 bg-white/5 hover:bg-gold hover:text-black text-gray-300 text-xs font-bold py-2 rounded transition-colors border border-white/5 hover:border-gold">
+                                                      Request to Join
+                                                   </button>
+                                                </div>
+                                             ))
+                                         ) : (
+                                             (hackathon.participants || []).filter((u: any) => u.name.toLowerCase().includes(searchTeamQuery.toLowerCase()) || u.skills.some((s: any) => s.toLowerCase().includes(searchTeamQuery.toLowerCase())))
+                                             .map((user: any) => (
+                                                <div key={user.id} className="bg-surface border border-white/5 rounded-xl p-4 hover:border-blue-400/30 transition-all flex flex-col justify-between h-full">
+                                                   <div className="flex items-start gap-3">
+                                                      <div className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-500 to-blue-500 flex items-center justify-center text-white font-bold text-sm shrink-0">
+                                                         {user.name.charAt(0)}
+                                                      </div>
+                                                      <div>
+                                                         <h3 className="text-sm font-bold text-white">{user.name}</h3>
+                                                         <p className="text-[10px] text-gray-400 mb-1">{user.role}</p>
+                                                         <div className="flex flex-wrap gap-1">
+                                                            {user.skills.map((skill: any) => <span key={skill} className="text-[9px] border border-white/10 px-1.5 py-0.5 rounded text-gray-500">{skill}</span>)}
+                                                         </div>
+                                                      </div>
+                                                   </div>
+                                                   <button className="w-full mt-4 bg-white/5 hover:bg-blue-500 hover:text-white text-gray-300 text-xs font-bold py-2 rounded transition-colors border border-white/5 hover:border-blue-500">
+                                                      Send Message
+                                                   </button>
+                                                </div>
+                                             ))
+                                         )}
                                       </div>
                                    </div>
                                 );
                             
                             case 'project':
                                 return (
-                                   <div className="h-full flex flex-col items-center justify-center text-center p-8 bg-surface border border-white/5 rounded-xl">
-                                      <Rocket className="w-8 h-8 text-gold mb-4" />
-                                      <h2 className="text-xl font-bold text-white mb-2">Start Building</h2>
-                                      <p className="text-gray-400 text-sm mb-4">Create or join a team to submit your project.</p>
-                                      <button onClick={() => setUserTeam(DEFAULT_NEW_TEAM)} className="bg-gold text-black font-bold px-5 py-2 rounded-lg text-xs hover:bg-gold/90">Create Team</button>
+                                   <div className="h-full overflow-y-auto pr-2 pb-20 md:pb-0">
+                                      {!userTeam ? (
+                                         <div className="h-full flex flex-col items-center justify-center text-center p-8 bg-surface border border-white/5 rounded-xl">
+                                            <Rocket className="w-12 h-12 text-gold mb-6" />
+                                            <h2 className="text-2xl font-bold text-white mb-3 font-quantico">Start Building</h2>
+                                            <p className="text-gray-400 text-sm mb-6 max-w-md">
+                                               Ready to ship? Create a team to collaborate with others, or start solo. 
+                                               You'll need a team to submit your project.
+                                            </p>
+                                            <button onClick={() => setUserTeam(DEFAULT_NEW_TEAM)} className="bg-gold text-black font-bold px-8 py-3 rounded-lg hover:bg-gold/90 transition-transform hover:scale-105 flex items-center gap-2">
+                                               <Plus className="w-4 h-4" /> Create Team
+                                            </button>
+                                         </div>
+                                      ) : (
+                                         <div className="space-y-6">
+                                            {/* Team Header */}
+                                            <div className="bg-surface border border-white/5 rounded-xl p-6 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                                               <div>
+                                                  <div className="flex items-center gap-3 mb-1">
+                                                     <h2 className="text-2xl font-bold text-white font-quantico">{userTeam.name}</h2>
+                                                     <span className="bg-gold/20 text-gold text-[10px] px-2 py-0.5 rounded border border-gold/20 uppercase font-bold">Leader</span>
+                                                  </div>
+                                                  <p className="text-gray-400 text-xs">Team ID: #8823 • Created just now</p>
+                                               </div>
+                                               <div className="flex gap-2">
+                                                  <button className="p-2 rounded hover:bg-white/10 text-gray-400 hover:text-white transition-colors" title="Settings">
+                                                     <Settings className="w-4 h-4" />
+                                                  </button>
+                                                  <button onClick={() => setUserTeam(null)} className="p-2 rounded hover:bg-red-500/10 text-red-500 transition-colors" title="Leave Team">
+                                                     <LogOut className="w-4 h-4" />
+                                                  </button>
+                                               </div>
+                                            </div>
+
+                                            <div className="grid md:grid-cols-2 gap-6">
+                                               {/* Members */}
+                                               <div className="bg-surface border border-white/5 rounded-xl p-6">
+                                                  <h3 className="text-sm font-bold text-white mb-4 flex items-center gap-2 uppercase tracking-wider">
+                                                     <Users className="w-4 h-4 text-gold" /> Team Members
+                                                  </h3>
+                                                  <div className="space-y-3">
+                                                     {userTeam.members.map((member: any, i: number) => (
+                                                        <div key={i} className="flex items-center justify-between p-3 bg-white/5 rounded-lg border border-white/5">
+                                                           <div className="flex items-center gap-3">
+                                                              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-purple-500 to-blue-500 flex items-center justify-center text-xs font-bold text-white">
+                                                                 {member.name.charAt(0)}
+                                                              </div>
+                                                              <div>
+                                                                 <p className="text-sm font-bold text-white leading-none mb-1">{member.name}</p>
+                                                                 <p className="text-[10px] text-gray-400">{member.role}</p>
+                                                              </div>
+                                                           </div>
+                                                           {member.isLeader && <Trophy className="w-3 h-3 text-gold" />}
+                                                        </div>
+                                                     ))}
+                                                     <button className="w-full py-3 border border-dashed border-white/10 rounded-lg flex items-center justify-center text-gray-500 text-xs gap-2 hover:border-gold/30 hover:text-gold transition-all">
+                                                        <Plus className="w-3 h-3" /> Invite Member
+                                                     </button>
+                                                  </div>
+                                               </div>
+
+                                               {/* Chat Placeholder */}
+                                               <div className="bg-surface border border-white/5 rounded-xl p-6 flex flex-col">
+                                                  <h3 className="text-sm font-bold text-white mb-4 flex items-center gap-2 uppercase tracking-wider">
+                                                     <MessageSquare className="w-4 h-4 text-blue-400" /> Team Chat
+                                                  </h3>
+                                                  <div className="flex-1 bg-black/20 rounded-lg flex items-center justify-center text-gray-600 text-xs italic border border-white/5 min-h-[150px]">
+                                                     Chat feature coming soon...
+                                                  </div>
+                                               </div>
+                                            </div>
+
+                                            {/* Submission Section */}
+                                            <div className="bg-surface border border-white/5 rounded-xl p-6 md:p-8">
+                                               {!isSubmitted ? (
+                                                  <form onSubmit={handleSubmitProject} className="space-y-6">
+                                                     <div className="flex items-center gap-2 mb-6 border-b border-white/10 pb-4">
+                                                        <Rocket className="w-5 h-5 text-gold" />
+                                                        <h2 className="text-xl font-bold text-white font-quantico">Project Submission</h2>
+                                                     </div>
+
+                                                     {/* 1. Select Idea */}
+                                                     <div className="space-y-3">
+                                                        <div className="flex justify-between items-center">
+                                                           <label className="text-xs font-bold text-gray-500 uppercase">Select Project Idea</label>
+                                                           <Link href="/idea" className="text-xs text-gold hover:underline flex items-center gap-1">
+                                                              <Plus className="w-3 h-3" /> New Idea
+                                                           </Link>
+                                                        </div>
+                                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                                            {MOCK_USER_IDEAS.map(idea => {
+                                                                const isSelected = submission.selectedIdeaId === idea.id;
+                                                                return (
+                                                                    <div 
+                                                                        key={idea.id}
+                                                                        onClick={() => setSubmission(prev => ({ ...prev, selectedIdeaId: idea.id, title: idea.title, description: idea.description }))}
+                                                                        className={`relative p-4 rounded-xl border cursor-pointer transition-all ${isSelected ? 'bg-gold/10 border-gold' : 'bg-black/20 border-white/5 hover:border-white/20'}`}
+                                                                    >
+                                                                        <div className="flex justify-between items-start mb-2">
+                                                                             <span className="bg-white/10 px-1.5 py-0.5 rounded text-[9px] text-gray-300">{idea.category}</span>
+                                                                             {isSelected && <CheckCircle2 className="w-4 h-4 text-gold" />}
+                                                                        </div>
+                                                                        <h4 className={`font-bold text-sm mb-1 ${isSelected ? 'text-white' : 'text-gray-300'}`}>{idea.title}</h4>
+                                                                        <p className="text-xs text-gray-500 line-clamp-1">{idea.description}</p>
+                                                                    </div>
+                                                                );
+                                                            })}
+                                                        </div>
+                                                     </div>
+
+                                                     {/* 2. Select Track */}
+                                                     <div className="space-y-3">
+                                                        <label className="text-xs font-bold text-gray-500 uppercase">Select Track</label>
+                                                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                                                           {hackathon.tracks?.map((track, i) => {
+                                                              const isSelected = submission.track === track.title;
+                                                              return (
+                                                                 <div
+                                                                   key={i}
+                                                                   onClick={() => setSubmission(prev => ({ ...prev, track: track.title }))}
+                                                                   className={`relative cursor-pointer rounded-xl p-3 border transition-all text-center flex flex-col items-center gap-2 ${isSelected ? 'bg-gold/10 border-gold' : 'bg-black/20 border-white/5 hover:border-white/20'}`}
+                                                                 >
+                                                                   <div className={`w-2 h-2 rounded-full ${track.color ? track.color.replace('text-', 'bg-') : 'bg-gold'}`} />
+                                                                   <span className={`text-xs font-bold ${isSelected ? 'text-white' : 'text-gray-400'}`}>{track.title}</span>
+                                                                   {isSelected && <div className="absolute top-2 right-2"><CheckCircle2 className="w-3 h-3 text-gold" /></div>}
+                                                                 </div>
+                                                              );
+                                                           })}
+                                                        </div>
+                                                     </div>
+
+                                                     <div className="pt-4 border-t border-white/10 flex justify-end">
+                                                        <button
+                                                          type="submit"
+                                                          disabled={!submission.selectedIdeaId || !submission.track}
+                                                          className={`font-bold px-6 py-2.5 rounded-lg transition-all flex items-center gap-2 text-sm ${(!submission.selectedIdeaId || !submission.track) ? 'bg-gray-800 text-gray-500 cursor-not-allowed' : 'bg-gold text-black hover:bg-gold/90'}`}
+                                                        >
+                                                          <Zap className="w-4 h-4" /> Submit Project
+                                                        </button>
+                                                     </div>
+                                                  </form>
+                                               ) : (
+                                                  <div className="text-center py-10 animate-in fade-in zoom-in duration-300">
+                                                     <div className="w-16 h-16 bg-green-500/20 text-green-500 rounded-full flex items-center justify-center mx-auto mb-4">
+                                                        <CheckCircle2 className="w-8 h-8" />
+                                                     </div>
+                                                     <h2 className="text-2xl font-bold text-white font-quantico mb-2">Submission Received!</h2>
+                                                     <p className="text-gray-400 text-sm mb-6">Your project has been successfully submitted for review.</p>
+                                                     <div className="inline-flex flex-col items-start bg-white/5 border border-white/5 rounded-lg p-4 min-w-[200px]">
+                                                        <div className="flex justify-between w-full text-xs mb-2">
+                                                           <span className="text-gray-500">Project:</span>
+                                                           <span className="text-white font-bold">{submission.title}</span>
+                                                        </div>
+                                                        <div className="flex justify-between w-full text-xs mb-2">
+                                                           <span className="text-gray-500">Track:</span>
+                                                           <span className="text-gold">{submission.track}</span>
+                                                        </div>
+                                                        <div className="flex justify-between w-full text-xs">
+                                                           <span className="text-gray-500">Status:</span>
+                                                           <span className="text-green-400">Under Review</span>
+                                                        </div>
+                                                     </div>
+                                                     <div className="mt-6">
+                                                        <button onClick={() => setIsSubmitted(false)} className="text-xs text-gray-500 hover:text-white underline">Edit Submission</button>
+                                                     </div>
+                                                  </div>
+                                               )}
+                                            </div>
+                                         </div>
+                                      )}
                                    </div>
                                 );
                             
