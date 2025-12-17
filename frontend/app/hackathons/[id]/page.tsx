@@ -250,13 +250,11 @@ export default function HackathonDashboard({ params }: { params: { id: string } 
          </button>
       </div>
 
-      <div className="flex-1 overflow-hidden relative pt-20 md:pt-24">
-        <div className="h-full max-w-[1600px] mx-auto p-2 md:p-6 grid grid-cols-1 lg:grid-cols-12 gap-6">
-        
-        {/* Sidebar (Left - 3 Cols) */}
+      <div className="flex-1 flex overflow-hidden relative pt-20 md:pt-24">
+        {/* Sidebar */}
         <aside className={`
-            fixed inset-y-0 left-0 z-50 w-64 bg-surface/95 backdrop-blur-xl border-r border-white/5 flex flex-col transform transition-transform duration-300 lg:translate-x-0 lg:relative lg:bg-transparent lg:backdrop-blur-none lg:z-0 lg:col-span-3 lg:w-auto lg:border-r-0 rounded-xl overflow-hidden lg:border border-white/5
-            ${isMobileMenuOpen ? 'translate-x-0 pt-20' : '-translate-x-full lg:pt-0'}
+            fixed inset-y-0 left-0 z-40 w-56 bg-surface/95 backdrop-blur-md border-r border-white/5 flex flex-col transform transition-transform duration-300 md:translate-x-0 md:relative md:bg-transparent md:backdrop-blur-none
+            ${isMobileMenuOpen ? 'translate-x-0 pt-20' : '-translate-x-full md:pt-0'}
         `}>
           <div className="p-4 hidden md:block">
              <div className="flex items-center gap-2 text-white font-quantico font-bold text-lg mb-1">
@@ -289,8 +287,8 @@ export default function HackathonDashboard({ params }: { params: { id: string } 
           </div>
         </aside>
 
-        {/* Main Content (Center - 5 Cols) */}
-        <main className="lg:col-span-5 h-full flex flex-col relative w-full overflow-hidden rounded-xl border border-white/5 bg-surface/50">
+        {/* Main Content */}
+        <main className="flex-1 overflow-hidden flex flex-col relative w-full">
           
           
           <div className="h-full flex flex-col p-2 md:p-4 space-y-2 md:space-y-4 overflow-y-auto md:overflow-hidden">
@@ -347,71 +345,34 @@ export default function HackathonDashboard({ params }: { params: { id: string } 
                                              </p>
                                          </div>
 
-                                         {/* Terminal (Green Hacker Theme) */}
-                                         <div className="bg-black border border-green-500/30 rounded-lg p-6 font-mono text-xs shadow-[0_0_20px_rgba(34,197,94,0.1)] h-[500px] flex flex-col">
-                                            <div className="flex gap-1.5 mb-4">
-                                               <div className="w-3 h-3 rounded-full bg-red-500/50" />
-                                               <div className="w-3 h-3 rounded-full bg-yellow-500/50" />
-                                               <div className="w-3 h-3 rounded-full bg-green-500/50" />
+                                         {/* Terminal (Gold Theme) */}
+                                         <div className="flex-1 flex flex-col bg-black border border-gold/30 rounded-xl p-4 md:p-6 font-mono text-xs shadow-[0_0_20px_rgba(255,215,0,0.1)] overflow-hidden min-h-[300px]">
+                                            <div className="flex gap-1.5 mb-2 shrink-0">
+                                               <div className="w-2.5 h-2.5 rounded-full bg-red-500/50" />
+                                               <div className="w-2.5 h-2.5 rounded-full bg-yellow-500/50" />
+                                               <div className="w-2.5 h-2.5 rounded-full bg-gold/50" />
                                             </div>
-                                            <div className="flex-1 flex flex-col space-y-4 overflow-hidden">
-                                               <div className="border-b border-green-500/20 pb-2 flex justify-between shrink-0">
-                                                  <div><span className="text-green-600">$</span> <span className="text-green-400">cat system_announcements.log</span></div>
-                                                  <div className="text-xs text-green-800">Connection: SECURE</div>
+                                            <div className="flex-1 flex flex-col space-y-2 overflow-hidden min-h-0">
+                                               <div className="border-b border-gold/20 pb-2 flex justify-between shrink-0">
+                                                  <div><span className="text-gold">$</span> <span className="text-gold">cat system_announcements.log</span></div>
+                                                  <div className="text-[10px] text-gold/80">SECURE_CONNECTION</div>
                                                </div>
-                                               
-                                               <div className="flex-1 overflow-y-auto space-y-3 text-green-300/80 pr-2">
-                                                  {hackathon.announcements ? hackathon.announcements.map((log: any) => {
-                                                     // Effect Logic
-                                                     let effectClass = '';
-                                                     if (log.config?.effect === 'pulse') effectClass = 'animate-pulse font-bold';
-                                                     if (log.config?.effect === 'typewriter') effectClass = 'border-r-2 border-green-500 pr-1 animate-pulse'; 
-                                                     if (log.config?.effect === 'glitch') effectClass = 'text-shadow-glitch'; 
-                             
-                                                     // Widget Logic (Countdown)
-                                                     let widgetContent = null;
-                                                     if (log.config?.widget?.type === 'countdown') {
-                                                        const target = new Date(log.config.widget.target);
-                                                        const diff = target.getTime() - now.getTime();
-                                                        if (diff > 0) {
-                                                           const hrs = Math.floor(diff / (1000 * 60 * 60));
-                                                           const mins = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-                                                           const secs = Math.floor((diff % (1000 * 60)) / 1000);
-                                                           widgetContent = <span className="ml-2 text-red-500 font-bold bg-red-900/20 px-1 rounded">{String(hrs).padStart(2, '0')}:{String(mins).padStart(2, '0')}:{String(secs).padStart(2, '0')}</span>;
-                                                        } else {
-                                                           widgetContent = <span className="ml-2 text-gray-500">[EXPIRED]</span>;
-                                                        }
-                                                     }
-                             
-                                                     return (
-                                                       <div key={log.id} className="group">
-                                                           <span className="opacity-50 text-xs mr-2">[{format(new Date(log.date), 'MM-dd HH:mm')}]</span>
-                                                           <span className={`
-                                                               ${log.type === 'warning' ? 'text-yellow-400' : log.type === 'success' ? 'text-green-400' : 'text-gray-300'}
-                                                               ${effectClass}
-                                                           `}
-                                                           style={log.config?.effect === 'glitch' ? { textShadow: '2px 0 red, -2px 0 blue' } : {}}
-                                                           >
-                                                             {log.message}
-                                                           </span>
-                                                           {widgetContent}
-                                                       </div>
-                                                     );
-                                                  }) : (
-                                                     <p className="text-gray-500 italic">No announcements found.</p>
-                                                  )}
-                                                  { /* Session History */ }
+                                               <div className="flex-1 overflow-y-auto space-y-2 text-gold/80 pr-2 scrollbar-thin scrollbar-thumb-gold/20">
+                                                  {hackathon.announcements?.map((log: any) => (
+                                                     <div key={log.id} className="group">
+                                                        <span className="opacity-50 text-[10px] mr-2">[{format(new Date(log.date), 'HH:mm')}]</span>
+                                                        <span className="text-gold">{log.message}</span>
+                                                     </div>
+                                                  ))}
                                                   {terminalHistory.map((item, idx) => (
-                                                     <div key={idx} className={`${item.type === 'error' ? 'text-red-500 font-bold' : 'text-gray-400'}`}>
-                                                       {item.type === 'command' ? `$ ${item.content}` : item.content}
+                                                     <div key={idx} className={item.type === 'error' ? 'text-red-500' : 'text-gold'}>
+                                                        {item.type === 'command' ? `$ ${item.content}` : item.content}
                                                      </div>
                                                   ))}
                                                   <div ref={terminalEndRef} />
                                                </div>
-                     
-                                               { /* Input Line */ }
-                                               <div className="flex items-center gap-2 pt-2 border-t border-green-500/20 shrink-0">
-                                                  <span className="text-green-500">$</span>
+                                               <div className="flex items-center gap-2 pt-2 border-t border-gold/20 shrink-0">
+                                                  <span className="text-gold">$</span>
                                                   <div className="relative flex-1">
                                                      <motion.input
                                                        type="text"
@@ -419,7 +380,7 @@ export default function HackathonDashboard({ params }: { params: { id: string } 
                                                        onChange={(e) => setTerminalInput(e.target.value)}
                                                        onKeyDown={handleTerminalSubmit}
                                                        className={`border outline-none font-mono w-full px-2 py-1 rounded
-                                                         ${isTerminalShaking ? 'bg-red-900/20 border-red-500 text-red-500 placeholder-red-500/50' : 'bg-transparent border-transparent text-green-500'}
+                                                         ${isTerminalShaking ? 'bg-red-900/20 border-red-500 text-red-500 placeholder-red-500/50' : 'bg-transparent border-transparent text-gold'}
                                                        `}
                                                        animate={isTerminalShaking ? { x: [-10, 10, -10, 10, 0], y: [-5, 5, -5, 5, 0] } : {}}
                                                        transition={{ duration: 0.4 }}
@@ -515,96 +476,100 @@ export default function HackathonDashboard({ params }: { params: { id: string } 
 
                             case 'details':
                                 return (
-                                   <div className="space-y-6 h-full overflow-y-auto pr-2 pb-20 md:pb-0">
-                                      {/* About Section */}
-                                      <div className="bg-surface border border-white/5 rounded-xl p-6">
-                                         <h2 className="text-xl font-bold text-white mb-4 font-quantico flex items-center gap-2">
-                                             <FileText className="w-5 h-5 text-gold" />
-                                             About the Event
-                                         </h2>
-                                         <div className="prose prose-invert prose-sm max-w-none text-gray-300">
-                                             <p className="leading-relaxed mb-4">{hackathon.description}</p>
-                                             <p className="leading-relaxed">
-                                                 This hackathon invites developers, designers, and innovators to push the boundaries of what is possible. 
-                                                 Whether you are a seasoned pro or a first-time hacker, this is your chance to build something impactful, 
-                                                 connect with a global community, and win amazing prizes.
-                                             </p>
-                                             <h3 className="text-white font-bold mt-6 mb-2">Rules & Requirements</h3>
-                                             <ul className="list-disc pl-5 space-y-1 text-gray-400">
-                                                 <li>All code must be written during the hackathon period.</li>
-                                                 <li>Teams can have up to {hackathon.teams?.[0]?.maxMembers || 5} members.</li>
-                                                 <li>External libraries and frameworks are allowed.</li>
-                                                 <li>Projects must include a working demo and a video submission.</li>
+                                   <div className="grid lg:grid-cols-3 gap-6 h-full overflow-y-auto pr-2 pb-20 md:pb-0">
+                                      <div className="lg:col-span-1 space-y-6">
+                                         {/* About Section */}
+                                         <div className="bg-surface border border-white/5 rounded-xl p-6">
+                                            <h2 className="text-xl font-bold text-white mb-4 font-quantico flex items-center gap-2">
+                                                <FileText className="w-5 h-5 text-gold" />
+                                                About the Event
+                                            </h2>
+                                            <div className="prose prose-invert prose-sm max-w-none text-gray-300">
+                                                <p className="leading-relaxed mb-4">{hackathon.description}</p>
+                                                <p className="leading-relaxed">
+                                                    This hackathon invites developers, designers, and innovators to push the boundaries of what is possible. 
+                                                    Whether you are a seasoned pro or a first-time hacker, this is your chance to build something impactful, 
+                                                    connect with a global community, and win amazing prizes.
+                                                </p>
+                                                <h3 className="text-white font-bold mt-6 mb-2">Rules & Requirements</h3>
+                                                <ul className="list-disc pl-5 space-y-1 text-gray-400">
+                                                    <li>All code must be written during the hackathon period.</li>
+                                                    <li>Teams can have up to {hackathon.teams?.[0]?.maxMembers || 5} members.</li>
+                                                    <li>External libraries and frameworks are allowed.</li>
+                                                    <li>Projects must include a working demo and a video submission.</li>
+                                                </ul>
+                                            </div>
+                                         </div>
+
+                                         {/* Focus Areas (Simplified Tracks) */}
+                                         <div className="bg-surface border border-white/5 rounded-xl p-6">
+                                            <h2 className="text-xl font-bold text-white mb-4 font-quantico flex items-center gap-2">
+                                                <Target className="w-5 h-5 text-gold" />
+                                                Focus Areas
+                                            </h2>
+                                            <div className="grid sm:grid-cols-2 gap-4">
+                                                {hackathon.tracks?.map((track, i) => (
+                                                    <div key={i} className="flex items-start gap-3 p-3 rounded-lg bg-white/5 border border-white/5">
+                                                        <div className={`mt-1 w-2 h-2 rounded-full shrink-0 ${track.color ? track.color.replace('text-', 'bg-') : 'bg-gold'}`} />
+                                                        <div>
+                                                            <strong className="text-gray-200 block text-sm">{track.title}</strong>
+                                                            <p className="text-xs text-gray-500 mt-1">Innovative solutions for {track.title.toLowerCase()}.</p>
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                         </div>
+                                      </div>
+
+                                      <div className="lg:col-span-2 space-y-6">
+                                         {/* Prizes */}
+                                         <div className="bg-surface border border-white/5 rounded-xl p-6">
+                                            <h2 className="text-lg font-bold text-white mb-4 flex items-center gap-2 font-quantico">
+                                                <Trophy className="w-5 h-5 text-gold" />
+                                                Prizes
+                                            </h2>
+                                            <div className="space-y-3">
+                                                {hackathon.prizes?.map((prize, i) => (
+                                                   <div key={i} className={`flex items-center justify-between p-4 rounded-lg border transition-colors ${i === 0 ? 'bg-gold/10 border-gold/30' : 'bg-black/20 border-white/5'}`}>
+                                                      <div className="flex items-center gap-3">
+                                                          {i === 0 && <span className="text-xl">👑</span>}
+                                                          <span className={`font-medium text-sm ${i === 0 ? 'text-gold' : 'text-white'}`}>{prize.rank}</span>
+                                                      </div>
+                                                      <span className="text-gold font-mono font-bold text-sm">{prize.reward}</span>
+                                                   </div>
+                                                ))}
+                                            </div>
+                                            <div className="mt-6 pt-6 border-t border-white/5 text-center">
+                                                <p className="text-xs text-gray-500 uppercase tracking-widest mb-1">Total Prize Pool</p>
+                                                <p className="text-2xl font-bold text-white font-mono text-glow-gold">{hackathon.prizePool}</p>
+                                            </div>
+                                         </div>
+
+                                         {/* Judging Criteria (Placeholder) */}
+                                         <div className="bg-surface border border-white/5 rounded-xl p-6">
+                                             <h2 className="text-lg font-bold text-white mb-4 flex items-center gap-2 font-quantico">
+                                                 <ShieldCheck className="w-5 h-5 text-gold" />
+                                                 Judging Criteria
+                                             </h2>
+                                             <ul className="space-y-3 text-sm text-gray-400">
+                                                 <li className="flex justify-between">
+                                                     <span>Innovation</span>
+                                                     <span className="text-white font-bold">25%</span>
+                                                 </li>
+                                                 <li className="flex justify-between">
+                                                     <span>Technical Complexity</span>
+                                                     <span className="text-white font-bold">25%</span>
+                                                 </li>
+                                                 <li className="flex justify-between">
+                                                     <span>Design & UX</span>
+                                                     <span className="text-white font-bold">25%</span>
+                                                 </li>
+                                                 <li className="flex justify-between">
+                                                     <span>Viability</span>
+                                                     <span className="text-white font-bold">25%</span>
+                                                 </li>
                                              </ul>
                                          </div>
-                                      </div>
-
-                                      {/* Focus Areas (Simplified Tracks) */}
-                                      <div className="bg-surface border border-white/5 rounded-xl p-6">
-                                         <h2 className="text-xl font-bold text-white mb-4 font-quantico flex items-center gap-2">
-                                             <Target className="w-5 h-5 text-gold" />
-                                             Focus Areas
-                                         </h2>
-                                         <div className="grid sm:grid-cols-2 gap-4">
-                                             {hackathon.tracks?.map((track, i) => (
-                                                 <div key={i} className="flex items-start gap-3 p-3 rounded-lg bg-white/5 border border-white/5">
-                                                     <div className={`mt-1 w-2 h-2 rounded-full shrink-0 ${track.color ? track.color.replace('text-', 'bg-') : 'bg-gold'}`} />
-                                                     <div>
-                                                         <strong className="text-gray-200 block text-sm">{track.title}</strong>
-                                                         <p className="text-xs text-gray-500 mt-1">Innovative solutions for {track.title.toLowerCase()}.</p>
-                                                     </div>
-                                                 </div>
-                                             ))}
-                                         </div>
-                                      </div>
-
-                                      {/* Prizes */}
-                                      <div className="bg-surface border border-white/5 rounded-xl p-6">
-                                         <h2 className="text-lg font-bold text-white mb-4 flex items-center gap-2 font-quantico">
-                                             <Trophy className="w-5 h-5 text-gold" />
-                                             Prizes
-                                         </h2>
-                                         <div className="space-y-3">
-                                             {hackathon.prizes?.map((prize, i) => (
-                                                <div key={i} className={`flex items-center justify-between p-4 rounded-lg border transition-colors ${i === 0 ? 'bg-gold/10 border-gold/30' : 'bg-black/20 border-white/5'}`}>
-                                                   <div className="flex items-center gap-3">
-                                                       {i === 0 && <span className="text-xl">👑</span>}
-                                                       <span className={`font-medium text-sm ${i === 0 ? 'text-gold' : 'text-white'}`}>{prize.rank}</span>
-                                                   </div>
-                                                   <span className="text-gold font-mono font-bold text-sm">{prize.reward}</span>
-                                                </div>
-                                             ))}
-                                         </div>
-                                         <div className="mt-6 pt-6 border-t border-white/5 text-center">
-                                             <p className="text-xs text-gray-500 uppercase tracking-widest mb-1">Total Prize Pool</p>
-                                             <p className="text-2xl font-bold text-white font-mono text-glow-gold">{hackathon.prizePool}</p>
-                                         </div>
-                                      </div>
-
-                                      {/* Judging Criteria (Placeholder) */}
-                                      <div className="bg-surface border border-white/5 rounded-xl p-6">
-                                          <h2 className="text-lg font-bold text-white mb-4 flex items-center gap-2 font-quantico">
-                                              <ShieldCheck className="w-5 h-5 text-gold" />
-                                              Judging Criteria
-                                          </h2>
-                                          <ul className="space-y-3 text-sm text-gray-400">
-                                              <li className="flex justify-between">
-                                                  <span>Innovation</span>
-                                                  <span className="text-white font-bold">25%</span>
-                                              </li>
-                                              <li className="flex justify-between">
-                                                  <span>Technical Complexity</span>
-                                                  <span className="text-white font-bold">25%</span>
-                                              </li>
-                                              <li className="flex justify-between">
-                                                  <span>Design & UX</span>
-                                                  <span className="text-white font-bold">25%</span>
-                                              </li>
-                                              <li className="flex justify-between">
-                                                  <span>Viability</span>
-                                                  <span className="text-white font-bold">25%</span>
-                                              </li>
-                                          </ul>
                                       </div>
                                    </div>
                                 );
@@ -891,76 +856,6 @@ export default function HackathonDashboard({ params }: { params: { id: string } 
 
           </div>
         </main>
-
-        {/* Right Dashboard (Right - 4 Cols) */}
-        <aside className="lg:col-span-4 h-full hidden lg:flex flex-col gap-6 overflow-y-auto pr-1 pb-4">
-            
-            {/* 1. Ticket / Profile Card */}
-            <div className="bg-gradient-to-b from-surfaceHighlight to-surface border border-white/10 rounded-xl overflow-hidden shadow-lg relative group shrink-0">
-              <div className="h-1 w-full bg-gradient-to-r from-purple-500 via-blue-500 to-green-500" />
-              <div className="p-5">
-                <div className="flex items-center gap-4 mb-4">
-                  <div className="w-12 h-12 rounded-lg bg-white/10 flex items-center justify-center p-2">
-                    <div className="w-full h-full bg-gradient-to-tr from-gold to-yellow-600 rounded-md" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <h4 className="text-white font-bold truncate text-lg">{userTeam ? userTeam.name : "No Team"}</h4>
-                    <p className="text-xs text-gray-500 uppercase tracking-wider">Hacker Profile</p>
-                  </div>
-                  <div className="w-2.5 h-2.5 rounded-full bg-green-500 animate-pulse shadow-[0_0_10px_#22c55e]" />
-                </div>
-                <div className="flex items-center justify-between text-xs text-gray-400 border-t border-white/5 pt-3">
-                  <span className="flex items-center gap-1"><Users className="w-3 h-3" /> {userTeam ? userTeam.members.length : 1} Member(s)</span>
-                  <span className="bg-white/5 px-2 py-0.5 rounded text-[10px] text-white">READY</span>
-                </div>
-              </div>
-            </div>
-
-            {/* 2. Prizes List */}
-             {hackathon.prizes && hackathon.prizes.length > 0 && (
-            <div className="bg-surface border border-white/5 rounded-xl p-5 space-y-4 shrink-0">
-              <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider flex items-center gap-2">
-                  <Trophy className="w-4 h-4 text-gold" /> Rewards
-              </h3>
-              <div className="space-y-2">
-                {hackathon.prizes.map((prize, i) => (
-                  <div key={i} className="flex items-center justify-between p-3 bg-white/5 rounded-lg border border-white/5 transition-colors hover:bg-white/10 group">
-                    <div className="flex items-center gap-3">
-                      <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold transition-transform group-hover:scale-110 ${i === 0 ? 'bg-gold text-black shadow-[0_0_10px_gold]' : i === 1 ? 'bg-gray-300 text-black' : i === 2 ? 'bg-amber-700 text-white' : 'bg-surfaceHighlight text-gray-500 border border-white/10'}`}>
-                        {i < 3 ? i + 1 : '-'}
-                      </div>
-                      <span className={`text-sm font-medium ${i < 3 ? 'text-white' : 'text-gray-400'}`}>{prize.rank}</span>
-                    </div>
-                    <span className="text-gold font-mono text-sm font-bold">{prize.reward}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-            )}
-
-            {/* 3. Resources List */}
-             {hackathon.resources && hackathon.resources.length > 0 && (
-            <div className="bg-surface border border-white/5 rounded-xl p-5 space-y-3 shrink-0">
-              <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider flex items-center gap-2">
-                  <BookOpen className="w-4 h-4 text-blue-400" /> Resources
-              </h3>
-              {hackathon.resources.map((resource, i) => {
-                const ResourceIcon = LucideIconMap[resource.icon as keyof typeof LucideIconMap] || LinkIcon;
-                return (
-                  <a href={resource.link} target="_blank" rel="noopener noreferrer" key={i} className="w-full text-left flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-white/5 text-sm text-gray-300 hover:text-white transition-all border border-transparent hover:border-white/10 group">
-                    <div className="p-1.5 rounded bg-white/5 group-hover:bg-white/10 text-gray-400 group-hover:text-blue-400 transition-colors">
-                        <ResourceIcon className="w-4 h-4" />
-                    </div>
-                    {resource.name}
-                  </a>
-                )
-              })}
-            </div>
-            )}
-
-        </aside>
-
-        </div>
       </div>
     </div>
   );
