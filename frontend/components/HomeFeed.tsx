@@ -8,8 +8,8 @@ import Image from 'next/image';
 
 // All orbiting items configuration (from inside to outside)
 const getOrbitItems = (isMobile: boolean) => {
-  const baseSize = isMobile ? 38 : 55;
-  const sizeDecrement = isMobile ? 3 : 5;
+  const baseSize = isMobile ? 42 : 65;
+  const sizeDecrement = isMobile ? 2 : 3;
   
   return [
     {
@@ -21,7 +21,7 @@ const getOrbitItems = (isMobile: boolean) => {
       color: '#FFD700',
       glowColor: 'rgba(255, 215, 0, 0.5)',
       size: baseSize,
-      orbitRadius: isMobile ? 70 : 130,
+      orbitRadius: isMobile ? 90 : 160,
       orbitSpeed: 35,
       startAngle: 0,
       route: '/idea',
@@ -36,7 +36,7 @@ const getOrbitItems = (isMobile: boolean) => {
       color: '#14F195',
       glowColor: 'rgba(20, 241, 149, 0.5)',
       size: baseSize - sizeDecrement,
-      orbitRadius: isMobile ? 105 : 190,
+      orbitRadius: isMobile ? 140 : 240,
       orbitSpeed: 45,
       startAngle: 60,
       route: '/feeds',
@@ -51,7 +51,7 @@ const getOrbitItems = (isMobile: boolean) => {
       color: '#FF6B6B',
       glowColor: 'rgba(255, 107, 107, 0.5)',
       size: baseSize - sizeDecrement * 2,
-      orbitRadius: isMobile ? 140 : 250,
+      orbitRadius: isMobile ? 190 : 320,
       orbitSpeed: 55,
       startAngle: 120,
       route: '/hackathons',
@@ -63,10 +63,10 @@ const getOrbitItems = (isMobile: boolean) => {
       description: 'DUT Superteam University Club - The first Solana blockchain club of Danang University',
       logo: '/dsuc.png',
       type: 'partner' as const,
-      gradient: 'linear-gradient(135deg, #0000cc 0%, #feff01 100%)',
-      glowColor: 'rgba(0, 0, 204, 0.5)',
+      gradient: 'linear-gradient(135deg, #3366ff 0%, #00ccff 60%, #99ff66 100%)',
+      glowColor: 'rgba(51, 102, 255, 0.6)',
       size: baseSize - sizeDecrement * 3,
-      orbitRadius: isMobile ? 175 : 310,
+      orbitRadius: isMobile ? 240 : 400,
       orbitSpeed: 70,
       startAngle: 180,
       route: 'https://dsuc.fun',
@@ -81,7 +81,7 @@ const getOrbitItems = (isMobile: boolean) => {
       gradient: 'linear-gradient(135deg, #EF4444 0%, #FACC15 100%)',
       glowColor: 'rgba(239, 68, 68, 0.5)',
       size: baseSize - sizeDecrement * 4,
-      orbitRadius: isMobile ? 210 : 370,
+      orbitRadius: isMobile ? 290 : 480,
       orbitSpeed: 90,
       startAngle: 240,
       route: 'https://vn.superteam.fun',
@@ -96,7 +96,7 @@ const getOrbitItems = (isMobile: boolean) => {
       gradient: 'linear-gradient(135deg, #9945FF 0%, #14F195 50%, #00D1FF 100%)',
       glowColor: 'rgba(153, 69, 255, 0.5)',
       size: baseSize - sizeDecrement * 5,
-      orbitRadius: isMobile ? 245 : 430,
+      orbitRadius: isMobile ? 340 : 560,
       orbitSpeed: 110,
       startAngle: 300,
       route: 'https://solana.com',
@@ -118,13 +118,13 @@ export default function HomeFeed() {
   const [hoveredItem, setHoveredItem] = useState<string | null>(null);
   const [orbitAngles, setOrbitAngles] = useState<{ [key: string]: number }>({});
   const [isMobile, setIsMobile] = useState(false);
-  const [stars, setStars] = useState<{ id: number; top: string; left: string; size: number; duration: string; opacity: number }[]>([]);
+  const [stars, setStars] = useState<{ id: number; top: string; left: string; size: number; duration: string; opacity: number; shape: string }[]>([]);
   const animationRef = useRef<number>(0);
   const lastTimeRef = useRef<number>(0);
   const isPausedRef = useRef(false);
 
   const ORBIT_ITEMS = getOrbitItems(isMobile);
-  const centerSize = isMobile ? 60 : 90;
+  const centerSize = isMobile ? 70 : 110;
 
   useEffect(() => {
     const checkMobile = () => setIsMobile(window.innerWidth < 768);
@@ -133,14 +133,17 @@ export default function HomeFeed() {
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
 
+  // Generate diverse stars like real universe
   useEffect(() => {
-    const newStars = Array.from({ length: 80 }).map((_, i) => ({
+    const shapes = ['circle', 'diamond', 'cross', 'sparkle'];
+    const newStars = Array.from({ length: 150 }).map((_, i) => ({
       id: i,
       top: `${Math.random() * 100}%`,
       left: `${Math.random() * 100}%`,
-      size: Math.random() * 2 + 0.5,
-      duration: `${Math.random() * 3 + 2}s`,
-      opacity: Math.random() * 0.6 + 0.2
+      size: Math.random() * 4 + 1, // Bigger stars (1-5px)
+      duration: `${Math.random() * 4 + 2}s`,
+      opacity: Math.random() * 0.8 + 0.2,
+      shape: shapes[Math.floor(Math.random() * shapes.length)]
     }));
     setStars(newStars);
   }, []);
@@ -201,16 +204,24 @@ export default function HomeFeed() {
   if (!isMobile) {
     return (
       <div className="min-h-screen relative overflow-hidden">
-        <div className="fixed inset-0 z-[-1]">
-          <div className="absolute inset-0 bg-gradient-to-b from-[#05010d] via-[#0a0015] to-[#020105]" />
-          <div className="absolute top-[-20%] left-[-10%] w-[600px] h-[600px] bg-[#9945FF]/15 rounded-full blur-[150px] opacity-40" />
-          <div className="absolute bottom-[-20%] right-[-10%] w-[500px] h-[500px] bg-[#14F195]/10 rounded-full blur-[150px] opacity-30" />
+        {/* Background - Same as Dashboard/Idea page */}
+        <div className="fixed inset-0 z-[-1] pointer-events-none overflow-hidden">
+          <div className="bg-grid opacity-40"></div>
           
+          {/* Deep Purple Orb - Top Left */}
+          <div className="absolute top-[-20%] left-[-10%] w-[700px] h-[700px] bg-[#2e1065] rounded-full blur-[150px] animate-pulse-slow opacity-50 mix-blend-screen" />
+        
+          {/* Dark Gold/Bronze Orb - Bottom Right */}
+          <div className="absolute bottom-[-20%] right-[-10%] w-[700px] h-[700px] bg-[#422006] rounded-full blur-[150px] animate-pulse-slow opacity-50 mix-blend-screen" style={{animationDelay: '2s'}} />
+          
+          {/* Additional cyan orb for depth */}
+          <div className="absolute top-[30%] right-[-15%] w-[500px] h-[500px] bg-[#14F195]/20 rounded-full blur-[120px] opacity-30" />
+
           <div className="stars-container">
             {stars.map((star) => (
               <div
                 key={star.id}
-                className="star"
+                className={`star star-${star.shape}`}
                 style={{
                   top: star.top,
                   left: star.left,
@@ -221,19 +232,21 @@ export default function HomeFeed() {
                 } as React.CSSProperties}
               />
             ))}
-            <div className="shooting-star" style={{ top: '15%', left: '85%' }} />
-            <div className="shooting-star" style={{ top: '55%', left: '5%', animationDelay: '2.5s' }} />
-            <div className="shooting-star" style={{ top: '35%', left: '60%', animationDelay: '5s' }} />
-            <div className="shooting-star" style={{ top: '75%', left: '30%', animationDelay: '8s' }} />
+            <div className="shooting-star" style={{ top: '10%', left: '90%' }} />
+            <div className="shooting-star" style={{ top: '40%', left: '5%', animationDelay: '2s' }} />
+            <div className="shooting-star" style={{ top: '25%', left: '70%', animationDelay: '4s' }} />
+            <div className="shooting-star" style={{ top: '70%', left: '20%', animationDelay: '6s' }} />
+            <div className="shooting-star" style={{ top: '55%', left: '85%', animationDelay: '8s' }} />
+            <div className="shooting-star" style={{ top: '85%', left: '45%', animationDelay: '10s' }} />
           </div>
         </div>
 
-        <div className="pt-28 md:pt-32 px-4 sm:px-6 max-w-7xl mx-auto">
+        <div className="pt-24 md:pt-28 px-4 sm:px-6 max-w-[1600px] mx-auto">
           <motion.div 
             initial={{ opacity: 0, y: 20 }} 
             animate={{ opacity: 1, y: 0 }} 
             transition={{ duration: 0.6 }}
-            className="text-center mb-8 md:mb-12"
+            className="text-center mb-6 md:mb-8"
           >
             <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold mb-3 tracking-tight">
               Welcome to{' '}
@@ -243,18 +256,18 @@ export default function HomeFeed() {
               </span>
             </h1>
             <p className="text-gray-400 text-sm md:text-base max-w-lg mx-auto">
-              Explore our innovation universe. Tap any planet to discover.
+              Explore our innovation universe. Hover any planet to discover.
             </p>
           </motion.div>
 
-          <div className="relative w-full h-[600px] lg:h-[700px] xl:h-[750px] flex items-center justify-center">
+          <div className="relative w-full h-[700px] lg:h-[800px] xl:h-[850px] 2xl:h-[900px] flex items-center justify-center">
             {ORBIT_ITEMS.map(item => (
               <div 
                 key={`orbit-${item.id}`} 
-                className="absolute left-1/2 top-1/2 rounded-full border border-white/[0.04] pointer-events-none"
+                className="absolute left-1/2 top-1/2 rounded-full border border-white/[0.06] pointer-events-none"
                 style={{ 
                   width: item.orbitRadius * 2, 
-                  height: item.orbitRadius,
+                  height: item.orbitRadius * 0.5,
                   transform: 'translate(-50%, -50%)'
                 }} 
               />
@@ -425,19 +438,27 @@ export default function HomeFeed() {
     );
   }
 
-  // Mobile view
+  // Mobile view - Vertical Solar System
   return (
-    <div className="min-h-screen relative overflow-hidden pb-20">
-      <div className="fixed inset-0 z-[-1]">
-        <div className="absolute inset-0 bg-gradient-to-b from-[#05010d] via-[#0a0015] to-[#020105]" />
-        <div className="absolute top-[-20%] left-[-10%] w-[400px] h-[400px] bg-[#9945FF]/15 rounded-full blur-[120px] opacity-40" />
-        <div className="absolute bottom-[-20%] right-[-10%] w-[350px] h-[350px] bg-[#14F195]/10 rounded-full blur-[120px] opacity-30" />
+    <div className="min-h-screen relative overflow-hidden">
+      {/* Background - Same as Dashboard */}
+      <div className="fixed inset-0 z-[-1] pointer-events-none overflow-hidden">
+        <div className="bg-grid opacity-30"></div>
         
+        {/* Deep Purple Orb */}
+        <div className="absolute top-[-15%] left-[-20%] w-[400px] h-[400px] bg-[#2e1065] rounded-full blur-[100px] animate-pulse-slow opacity-50 mix-blend-screen" />
+      
+        {/* Dark Gold Orb */}
+        <div className="absolute bottom-[-15%] right-[-20%] w-[400px] h-[400px] bg-[#422006] rounded-full blur-[100px] animate-pulse-slow opacity-50 mix-blend-screen" style={{animationDelay: '2s'}} />
+        
+        {/* Cyan orb */}
+        <div className="absolute top-[40%] right-[-25%] w-[300px] h-[300px] bg-[#14F195]/20 rounded-full blur-[80px] opacity-30" />
+
         <div className="stars-container">
           {stars.map((star) => (
             <div
               key={star.id}
-              className="star"
+              className={`star star-${star.shape}`}
               style={{
                 top: star.top,
                 left: star.left,
@@ -448,124 +469,153 @@ export default function HomeFeed() {
               } as React.CSSProperties}
             />
           ))}
-          <div className="shooting-star" style={{ top: '20%', left: '80%' }} />
-          <div className="shooting-star" style={{ top: '50%', left: '10%', animationDelay: '3s' }} />
+          <div className="shooting-star" style={{ top: '15%', left: '85%' }} />
+          <div className="shooting-star" style={{ top: '45%', left: '5%', animationDelay: '2.5s' }} />
+          <div className="shooting-star" style={{ top: '75%', left: '70%', animationDelay: '5s' }} />
         </div>
       </div>
 
-      <div className="pt-24 px-4">
+      <div className="pt-20 px-4 pb-24">
+        {/* Header */}
         <motion.div 
           initial={{ opacity: 0, y: 20 }} 
           animate={{ opacity: 1, y: 0 }} 
           transition={{ duration: 0.5 }}
-          className="text-center mb-8"
+          className="text-center mb-6"
         >
-          <motion.div 
-            className="mx-auto mb-4 relative w-20 h-20"
-            initial={{ scale: 0.8, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            transition={{ delay: 0.2, duration: 0.5 }}
-          >
-            <div className="absolute inset-0 bg-[#FFD700]/20 blur-2xl rounded-full" />
-            <Image 
-              src="/logo-gmi.png" 
-              alt="Gimme Idea" 
-              width={80} 
-              height={80}
-              className="relative z-10 drop-shadow-[0_0_15px_rgba(255,215,0,0.5)]"
-            />
-          </motion.div>
-          
-          <h1 className="text-2xl font-bold mb-2 tracking-tight">
+          <h1 className="text-xl font-bold mb-1 tracking-tight">
             Welcome to{' '}
             <span className="font-quantico">
               <span className="text-white">Gimme</span>
               <span className="text-[#FFD700]">Idea</span>
             </span>
           </h1>
-          <p className="text-gray-400 text-sm max-w-xs mx-auto">
-            Explore our innovation universe
+          <p className="text-gray-400 text-xs">
+            Tap any planet to explore
           </p>
         </motion.div>
 
-        <motion.div 
-          initial={{ opacity: 0 }} 
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.3 }}
-          className="mb-8"
-        >
-          <h2 className="text-xs uppercase tracking-wider text-gray-500 mb-3 px-1">Features</h2>
-          <div className="space-y-3">
-            {ORBIT_ITEMS.filter(item => item.type === 'feature').map((item, index) => {
-              const Icon = 'icon' in item ? item.icon : null;
-              return (
-                <motion.div
-                  key={item.id}
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: 0.4 + index * 0.1 }}
-                  onClick={() => handleClick(item.route, item.external)}
-                  className="glass-panel rounded-2xl p-4 flex items-center gap-4 cursor-pointer active:scale-[0.98] transition-transform"
-                  style={{ borderColor: `${item.color}20` }}
-                >
-                  <div 
-                    className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0"
-                    style={{ 
-                      background: `radial-gradient(circle at 30% 25%, white, ${item.color} 70%)`,
-                      boxShadow: `0 0 20px ${item.glowColor}`
-                    }}
-                  >
-                    {Icon && <Icon className="w-6 h-6 text-[#1a1a2e]" />}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <h3 className="font-bold text-white text-sm mb-0.5">{item.name}</h3>
-                    <p className="text-xs text-gray-400 line-clamp-2">{item.description}</p>
-                  </div>
-                  <ExternalLink className="w-4 h-4 text-gray-500 flex-shrink-0" />
-                </motion.div>
-              );
-            })}
-          </div>
-        </motion.div>
+        {/* Vertical Solar System */}
+        <div className="relative w-full min-h-[1200px] flex flex-col items-center">
+          {/* Vertical orbit line */}
+          <div className="absolute left-1/2 top-0 bottom-0 w-px bg-gradient-to-b from-transparent via-white/10 to-transparent" />
+          
+          {/* Center - Gimme Idea */}
+          <motion.div
+            initial={{ scale: 0, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            transition={{ duration: 0.5 }}
+            className="relative z-10 mb-8"
+            onClick={() => handleClick('/idea')}
+          >
+            <div 
+              className="absolute rounded-full blur-2xl"
+              style={{ 
+                inset: -20,
+                background: 'radial-gradient(circle, rgba(255,215,0,0.4) 0%, transparent 70%)',
+              }} 
+            />
+            <div className="relative w-20 h-20 flex items-center justify-center cursor-pointer">
+              <Image 
+                src="/logo-gmi.png" 
+                alt="Gimme Idea" 
+                width={80} 
+                height={80}
+                className="object-contain drop-shadow-[0_0_20px_rgba(255,215,0,0.6)]"
+              />
+            </div>
+            <p className="text-center mt-2 font-quantico font-bold text-white text-sm">
+              Gimme<span className="text-[#FFD700]">Idea</span>
+            </p>
+          </motion.div>
 
-        <motion.div 
-          initial={{ opacity: 0 }} 
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.6 }}
-        >
-          <h2 className="text-xs uppercase tracking-wider text-gray-500 mb-3 px-1">Ecosystem</h2>
-          <div className="grid grid-cols-3 gap-3">
-            {ORBIT_ITEMS.filter(item => item.type === 'partner').map((item, index) => (
+          {/* Orbiting items - alternating left/right */}
+          {ORBIT_ITEMS.map((item, index) => {
+            const isLeft = index % 2 === 0;
+            const Icon = 'icon' in item ? item.icon : null;
+            const isActive = hoveredItem === item.id;
+            
+            return (
               <motion.div
                 key={item.id}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.7 + index * 0.1 }}
+                initial={{ opacity: 0, x: isLeft ? -50 : 50 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.3 + index * 0.15, duration: 0.5 }}
+                className={`relative flex items-center gap-4 mb-10 ${isLeft ? 'self-start ml-4' : 'self-end mr-4 flex-row-reverse'}`}
                 onClick={() => handleClick(item.route, item.external)}
-                className="glass-panel rounded-2xl p-3 flex flex-col items-center cursor-pointer active:scale-[0.95] transition-transform"
+                onTouchStart={() => setHoveredItem(item.id)}
+                onTouchEnd={() => setTimeout(() => setHoveredItem(null), 2000)}
               >
+                {/* Connecting line to center */}
                 <div 
-                  className="w-14 h-14 rounded-xl flex items-center justify-center mb-2 overflow-hidden"
-                  style={{ 
-                    background: item.gradient,
-                    boxShadow: `0 0 15px ${item.glowColor}`
-                  }}
+                  className={`absolute top-1/2 h-px bg-gradient-to-r ${isLeft ? 'right-full mr-2 from-transparent to-white/20' : 'left-full ml-2 from-white/20 to-transparent'}`}
+                  style={{ width: isLeft ? 'calc(50vw - 80px)' : 'calc(50vw - 80px)' }}
+                />
+                
+                {/* Planet */}
+                <motion.div 
+                  className="relative cursor-pointer"
+                  animate={{ scale: isActive ? 1.2 : 1 }}
+                  transition={{ type: 'spring', stiffness: 400, damping: 25 }}
                 >
-                  <Image 
-                    src={(item as any).logo} 
-                    alt={item.name} 
-                    width={32} 
-                    height={32}
-                    className="object-contain"
+                  <div 
+                    className="absolute rounded-full blur-xl transition-all duration-300"
+                    style={{ 
+                      inset: -item.size * 0.3,
+                      background: item.glowColor,
+                      opacity: isActive ? 0.8 : 0.5,
+                    }} 
                   />
-                </div>
-                <span className="text-xs font-medium text-white text-center">{item.name}</span>
-              </motion.div>
-            ))}
-          </div>
-        </motion.div>
+                  <div 
+                    className="relative rounded-full flex items-center justify-center overflow-hidden"
+                    style={{
+                      width: item.size, 
+                      height: item.size,
+                      background: item.type === 'feature' 
+                        ? `radial-gradient(circle at 30% 25%, white, ${item.color} 60%)`
+                        : item.gradient,
+                      boxShadow: `0 0 ${isActive ? 30 : 15}px ${item.glowColor}`,
+                    }}
+                  >
+                    {item.type === 'feature' && Icon ? (
+                      <Icon 
+                        style={{ 
+                          width: item.size * 0.45, 
+                          height: item.size * 0.45, 
+                          color: '#1a1a2e',
+                        }} 
+                      />
+                    ) : (
+                      <Image 
+                        src={(item as any).logo} 
+                        alt={item.name} 
+                        width={item.size * 0.55} 
+                        height={item.size * 0.55}
+                        className="object-contain"
+                      />
+                    )}
+                  </div>
+                </motion.div>
 
-        <div className="h-20" />
+                {/* Info card */}
+                <motion.div 
+                  className={`glass-panel rounded-xl p-3 max-w-[200px] ${isLeft ? '' : 'text-right'}`}
+                  animate={{ 
+                    scale: isActive ? 1.05 : 1,
+                    borderColor: isActive ? (item.type === 'feature' ? item.color : 'rgba(255,255,255,0.3)') : 'rgba(255,255,255,0.1)'
+                  }}
+                  style={{ borderWidth: 1 }}
+                >
+                  <div className={`flex items-center gap-2 mb-1 ${isLeft ? '' : 'flex-row-reverse'}`}>
+                    <span className="font-bold text-white text-sm">{item.name}</span>
+                    {item.external && <ExternalLink className="w-3 h-3 text-gray-400" />}
+                  </div>
+                  <p className="text-[10px] text-gray-400 leading-relaxed line-clamp-2">{item.description}</p>
+                </motion.div>
+              </motion.div>
+            );
+          })}
+        </div>
       </div>
     </div>
   );

@@ -139,6 +139,33 @@ body {
   box-shadow: 0 0 4px rgba(255, 255, 255, 1);
 }
 
+/* Different star shapes */
+.star-circle {
+  border-radius: 50%;
+}
+
+.star-diamond {
+  border-radius: 2px;
+  transform: rotate(45deg);
+}
+
+.star-cross {
+  border-radius: 50%;
+  box-shadow: 
+    0 0 4px rgba(255, 255, 255, 1),
+    0 -3px 2px rgba(255, 255, 255, 0.5),
+    0 3px 2px rgba(255, 255, 255, 0.5),
+    -3px 0 2px rgba(255, 255, 255, 0.5),
+    3px 0 2px rgba(255, 255, 255, 0.5);
+}
+
+.star-sparkle {
+  border-radius: 50%;
+  box-shadow: 
+    0 0 6px rgba(255, 255, 255, 1),
+    0 0 12px rgba(255, 215, 0, 0.3);
+}
+
 @keyframes twinkle {
   0%, 100% { opacity: var(--opacity, 0.5); transform: scale(1); }
   50% { opacity: 1; transform: scale(1.5); }
