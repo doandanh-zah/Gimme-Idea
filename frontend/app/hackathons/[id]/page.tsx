@@ -303,7 +303,7 @@ export default function HackathonDashboard({ params }: { params: { id: string } 
       </div>
 
       {/* Mobile Header */}
-      <div className="md:hidden flex items-center justify-between p-4 bg-surface/80 backdrop-blur border-b border-white/10 z-50 pt-20">
+      <div className="md:hidden fixed top-0 left-0 right-0 flex items-center justify-between p-4 bg-surface/95 backdrop-blur border-b border-white/10 z-50 h-16">
          <div className="flex items-center gap-2 text-white font-quantico font-bold text-lg">
             <div className="w-8 h-8 bg-gradient-to-br from-gold to-yellow-600 rounded flex items-center justify-center text-black text-xs">H</div>
             HackHub
@@ -313,11 +313,19 @@ export default function HackathonDashboard({ params }: { params: { id: string } 
          </button>
       </div>
 
-      <div className="flex-1 flex overflow-hidden relative pt-16 md:pt-20">
+      {/* Mobile Menu Backdrop */}
+      {isMobileMenuOpen && (
+        <div 
+            className="fixed inset-0 z-40 bg-black/80 backdrop-blur-sm md:hidden"
+            onClick={() => setIsMobileMenuOpen(false)}
+        />
+      )}
+
+      <div className="flex-1 flex overflow-hidden relative pt-16 md:pt-0">
         {/* Sidebar */}
         <aside className={`
-            fixed inset-y-0 left-0 z-40 w-56 bg-surface/95 backdrop-blur-md border-r border-white/5 flex flex-col transform transition-transform duration-300 md:translate-x-0 md:relative md:bg-transparent md:backdrop-blur-none
-            ${isMobileMenuOpen ? 'translate-x-0 pt-20' : '-translate-x-full md:pt-0'}
+            fixed inset-y-0 left-0 z-50 w-64 bg-[#0a0a0a] border-r border-white/10 flex flex-col transform transition-transform duration-300 md:translate-x-0 md:relative md:bg-transparent md:border-white/5 md:z-auto md:w-56
+            ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'}
         `}>
           <div className="p-4 hidden md:block">
              <div className="flex items-center gap-2 text-white font-quantico font-bold text-lg mb-1">
@@ -378,9 +386,9 @@ export default function HackathonDashboard({ params }: { params: { id: string } 
                                       
                                       {/* LEFT COLUMN: Title, Description, Terminal (Span 8) */}
                                       <div className="lg:col-span-8 flex flex-col gap-4 h-full min-h-0">
-                                         {/* ... existing image and title code ... */}
+                                         {/* 1x6 Image Banner */}
                                          {hackathon.image_url && (
-                                            <div className="relative w-full aspect-[6/1] rounded-b-xl overflow-hidden shadow-2xl border-x border-b border-white/10 shrink-0 hidden md:block">
+                                            <div className="relative w-full aspect-[2/1] md:aspect-[4/1] lg:aspect-[6/1] rounded-b-xl overflow-hidden shadow-2xl border-x border-b border-white/10 shrink-0">
                                               <Image
                                                 src={hackathon.image_url}
                                                 alt={`${hackathon.title} Banner`}
@@ -714,45 +722,46 @@ export default function HackathonDashboard({ params }: { params: { id: string } 
                                             <div className="space-y-6">
                                                <div className="bg-surface border border-white/5 rounded-xl p-6">
                                                   <button onClick={() => setSubmissionStep('select')} className="text-xs text-gray-500 hover:text-white mb-4 flex items-center gap-1"><ArrowLeft className="w-3 h-3" /> Back</button>
-                                                  <h2 className="text-xl font-bold text-white mb-2 font-quantico">Submission Details</h2>
-                                                  <p className="text-gray-400 text-sm">Provide the necessary links for judges to review your work.</p>
+                                                  <h2 className="text-xl font-bold text-white mb-2 font-quantico">Idea Submission Details</h2>
+                                                  <p className="text-gray-400 text-sm">Provide additional materials to help judges understand your vision.</p>
                                                </div>
                                                
                                                <div className="bg-surface border border-white/5 rounded-xl p-6 space-y-4">
                                                   <div>
-                                                     <label className="block text-xs font-bold text-gray-400 uppercase mb-1.5">Github Repository <span className="text-red-400">*</span></label>
-                                                     <div className="relative">
-                                                        <Github className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
-                                                        <input 
-                                                           type="text" 
-                                                           value={submissionForm.repoUrl} 
-                                                           onChange={e => setSubmissionForm({...submissionForm, repoUrl: e.target.value})}
-                                                           placeholder="https://github.com/username/project"
-                                                           className="w-full bg-black/20 border border-white/10 rounded-lg pl-10 pr-4 py-2.5 text-white text-sm focus:border-gold/50 outline-none transition-colors"
-                                                        />
-                                                     </div>
-                                                  </div>
-
-                                                  <div>
-                                                     <label className="block text-xs font-bold text-gray-400 uppercase mb-1.5">Demo Video <span className="text-red-400">*</span></label>
+                                                     <label className="block text-xs font-bold text-gray-400 uppercase mb-1.5">Pitch Video Link <span className="text-red-400">*</span></label>
                                                      <div className="relative">
                                                         <Youtube className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
                                                         <input 
                                                            type="text" 
                                                            value={submissionForm.videoUrl} 
                                                            onChange={e => setSubmissionForm({...submissionForm, videoUrl: e.target.value})}
-                                                           placeholder="https://youtube.com/watch?v=..."
+                                                           placeholder="https://youtube.com/watch?v=... or Loom link"
+                                                           className="w-full bg-black/20 border border-white/10 rounded-lg pl-10 pr-4 py-2.5 text-white text-sm focus:border-gold/50 outline-none transition-colors"
+                                                        />
+                                                     </div>
+                                                     <p className="text-[10px] text-gray-500 mt-1.5">A short (max 3 min) video explaining the problem and your proposed solution.</p>
+                                                  </div>
+
+                                                  <div>
+                                                     <label className="block text-xs font-bold text-gray-400 uppercase mb-1.5">Pitch Deck / Doc Link (Optional)</label>
+                                                     <div className="relative">
+                                                        <FileText className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
+                                                        <input 
+                                                           type="text" 
+                                                           value={submissionForm.repoUrl} // Reusing repoUrl state for deckUrl to avoid complex state changes
+                                                           onChange={e => setSubmissionForm({...submissionForm, repoUrl: e.target.value})}
+                                                           placeholder="https://docs.google.com/presentation/..."
                                                            className="w-full bg-black/20 border border-white/10 rounded-lg pl-10 pr-4 py-2.5 text-white text-sm focus:border-gold/50 outline-none transition-colors"
                                                         />
                                                      </div>
                                                   </div>
 
                                                   <div>
-                                                     <label className="block text-xs font-bold text-gray-400 uppercase mb-1.5">Additional Notes</label>
+                                                     <label className="block text-xs font-bold text-gray-400 uppercase mb-1.5">Judging Notes</label>
                                                      <textarea 
                                                         value={submissionForm.notes} 
                                                         onChange={e => setSubmissionForm({...submissionForm, notes: e.target.value})}
-                                                        placeholder="Any instructions for testing, demo accounts, etc."
+                                                        placeholder="Anything else the judges should know about your idea?"
                                                         className="w-full bg-black/20 border border-white/10 rounded-lg px-4 py-3 text-white text-sm focus:border-gold/50 outline-none transition-colors min-h-[100px]"
                                                      />
                                                   </div>
@@ -760,11 +769,11 @@ export default function HackathonDashboard({ params }: { params: { id: string } 
 
                                                <div className="flex justify-end pt-4">
                                                   <button 
-                                                     disabled={!submissionForm.repoUrl || !submissionForm.videoUrl}
+                                                     disabled={!submissionForm.videoUrl}
                                                      onClick={() => setSubmissionStep('completed')}
-                                                     className={`px-8 py-3 rounded-lg font-bold text-sm transition-colors flex items-center gap-2 ${(!submissionForm.repoUrl || !submissionForm.videoUrl) ? 'bg-gray-800 text-gray-500 cursor-not-allowed' : 'bg-gold text-black hover:bg-gold/90'}`}
+                                                     className={`px-8 py-3 rounded-lg font-bold text-sm transition-colors flex items-center gap-2 ${(!submissionForm.videoUrl) ? 'bg-gray-800 text-gray-500 cursor-not-allowed' : 'bg-gold text-black hover:bg-gold/90'}`}
                                                   >
-                                                     <Send className="w-4 h-4" /> Submit Project
+                                                     <Send className="w-4 h-4" /> Submit Idea
                                                   </button>
                                                </div>
                                             </div>
@@ -806,17 +815,17 @@ export default function HackathonDashboard({ params }: { params: { id: string } 
                                                   </div>
                                                   <span>Select an Idea</span>
                                                </div>
-                                               <div className={`flex items-center gap-3 text-sm ${submissionForm.repoUrl ? 'text-green-400' : 'text-gray-500'}`}>
-                                                  <div className={`w-4 h-4 rounded-full border flex items-center justify-center ${submissionForm.repoUrl ? 'border-green-400 bg-green-400/20' : 'border-gray-600'}`}>
-                                                     {submissionForm.repoUrl && <CheckCircle2 className="w-3 h-3" />}
-                                                  </div>
-                                                  <span>Public Github Repo</span>
-                                               </div>
                                                <div className={`flex items-center gap-3 text-sm ${submissionForm.videoUrl ? 'text-green-400' : 'text-gray-500'}`}>
                                                   <div className={`w-4 h-4 rounded-full border flex items-center justify-center ${submissionForm.videoUrl ? 'border-green-400 bg-green-400/20' : 'border-gray-600'}`}>
                                                      {submissionForm.videoUrl && <CheckCircle2 className="w-3 h-3" />}
                                                   </div>
-                                                  <span>Demo Video (YouTube)</span>
+                                                  <span>Pitch Video Link</span>
+                                               </div>
+                                               <div className={`flex items-center gap-3 text-sm ${submissionForm.repoUrl ? 'text-green-400' : 'text-gray-500'}`}>
+                                                  <div className={`w-4 h-4 rounded-full border flex items-center justify-center ${submissionForm.repoUrl ? 'border-green-400 bg-green-400/20' : 'border-gray-600'}`}>
+                                                     {submissionForm.repoUrl && <CheckCircle2 className="w-3 h-3" />}
+                                                  </div>
+                                                  <span>Pitch Deck (Optional)</span>
                                                </div>
                                             </div>
                                          </div>
@@ -824,20 +833,20 @@ export default function HackathonDashboard({ params }: { params: { id: string } 
                                          {/* Rules Widget */}
                                          <div className="bg-surface border border-white/5 rounded-xl p-5">
                                             <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-4 flex items-center gap-2">
-                                               <AlertCircle className="w-4 h-4" /> Important Rules
+                                               <AlertCircle className="w-4 h-4" /> Submission Rules
                                             </h3>
                                             <ul className="space-y-2 text-xs text-gray-400">
                                                <li className="flex gap-2">
                                                   <span className="text-gold">•</span>
-                                                  Repository must be public for judging.
+                                                  Video must explain both problem & solution.
                                                </li>
                                                <li className="flex gap-2">
                                                   <span className="text-gold">•</span>
-                                                  Video should not exceed 3 minutes.
+                                                  Max video length: 3 minutes.
                                                </li>
                                                <li className="flex gap-2">
                                                   <span className="text-gold">•</span>
-                                                  All team members must be registered.
+                                                  Make sure external links are accessible.
                                                </li>
                                             </ul>
                                          </div>
