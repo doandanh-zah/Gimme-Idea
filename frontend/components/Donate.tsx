@@ -206,7 +206,7 @@ export const Donate = () => {
                                             You sent <span className="text-white font-bold">{amount} SOL</span>
                                         </p>
                                         <a
-                                            href={`https://solscan.io/tx/${txHash}?cluster=devnet`}
+                                            href={`https://solscan.io/tx/${txHash}`}
                                             target="_blank"
                                             rel="noopener noreferrer"
                                             className="inline-flex items-center gap-2 text-blue-400 hover:text-blue-300 text-sm"

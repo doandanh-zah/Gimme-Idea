@@ -276,7 +276,7 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
                                 </div>
                                 <div className="w-full h-px bg-white/10 my-3" />
                                 <a 
-                                    href={`https://solscan.io/tx/${txHash}?cluster=devnet`}
+                                    href={`https://solscan.io/tx/${txHash}`}
                                     target="_blank"
                                     rel="noopener noreferrer"
                                     className="flex justify-center items-center gap-2 text-[10px] sm:text-xs font-mono text-green-400 hover:text-green-300 hover:underline transition-colors"

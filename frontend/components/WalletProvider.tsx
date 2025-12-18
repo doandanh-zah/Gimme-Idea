@@ -14,10 +14,10 @@ import { clusterApiUrl } from '@solana/web3.js';
 import '@solana/wallet-adapter-react-ui/styles.css';
 
 export function WalletProvider({ children }: { children: React.ReactNode }) {
-  // Use mainnet for production, devnet for development
-  const network = process.env.NEXT_PUBLIC_SOLANA_NETWORK === 'mainnet-beta' 
-    ? WalletAdapterNetwork.Mainnet 
-    : WalletAdapterNetwork.Devnet;
+  // Use mainnet by default, devnet only if explicitly set
+  const network = process.env.NEXT_PUBLIC_SOLANA_NETWORK === 'devnet' 
+    ? WalletAdapterNetwork.Devnet 
+    : WalletAdapterNetwork.Mainnet;
   
   // Use custom RPC if provided, otherwise use default cluster URL
   const endpoint = useMemo(() => 

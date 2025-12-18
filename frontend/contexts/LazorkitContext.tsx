@@ -4,12 +4,12 @@ import React, { createContext, useContext, useCallback, useState, useEffect } fr
 import { LazorkitProvider as LazorkitSDKProvider, useWallet as useLazorkitWallet } from '@lazorkit/wallet';
 import { PublicKey } from '@solana/web3.js';
 
-// LazorKit Configuration
+// LazorKit Configuration - Default to mainnet
 const LAZORKIT_CONFIG = {
-  rpcUrl: process.env.NEXT_PUBLIC_SOLANA_RPC_URL || 'https://api.devnet.solana.com',
+  rpcUrl: process.env.NEXT_PUBLIC_SOLANA_RPC_URL || 'https://api.mainnet-beta.solana.com',
   portalUrl: 'https://portal.lazor.sh',
   paymasterConfig: {
-    paymasterUrl: process.env.NEXT_PUBLIC_LAZORKIT_PAYMASTER_URL || 'https://kora.devnet.lazorkit.com/',
+    paymasterUrl: process.env.NEXT_PUBLIC_LAZORKIT_PAYMASTER_URL || 'https://kora.lazorkit.com/',
   },
 };
 

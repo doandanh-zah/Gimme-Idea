@@ -2,17 +2,17 @@
 seeds = false
 skip-lint = false
 
-[programs.devnet]
-gimme_idea = "GiMxxx..."  # Replace with your program ID after deployment
-
 [programs.mainnet]
 gimme_idea = "GiMxxx..."  # Replace with your program ID after deployment
+
+[programs.devnet]
+gimme_idea = "GiMxxx..."  # Replace with your program ID for devnet
 
 [registry]
 url = "https://api.apr.dev"
 
 [provider]
-cluster = "Devnet"
+cluster = "Mainnet"
 wallet = "~/.config/solana/id.json"
 
 [scripts]
