@@ -58,6 +58,31 @@ export class HackathonsService {
     constructor(private supabaseService: SupabaseService) { }
 
     /**
+     * Helper: Resolve hackathon ID from slug or UUID
+     */
+    private async resolveHackathonId(idOrSlug: string): Promise<string> {
+        // Check if it's a valid UUID format
+        const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+        if (uuidRegex.test(idOrSlug)) {
+            return idOrSlug;
+        }
+
+        // It's a slug, look up the UUID
+        const supabase = this.supabaseService.getAdminClient();
+        const { data, error } = await supabase
+            .from("hackathons")
+            .select("id")
+            .eq("slug", idOrSlug)
+            .single();
+
+        if (error || !data) {
+            throw new NotFoundException(`Hackathon not found: ${idOrSlug}`);
+        }
+
+        return data.id;
+    }
+
+    /**
      * Get all submissions for a hackathon
      */
     async getSubmissions(
@@ -95,7 +120,9 @@ export class HackathonsService {
 
         // Apply filters
         if (query.hackathonId) {
-            supabaseQuery = supabaseQuery.eq("hackathon_id", query.hackathonId);
+            // Resolve hackathon ID from slug if needed
+            const hackathonId = await this.resolveHackathonId(query.hackathonId);
+            supabaseQuery = supabaseQuery.eq("hackathon_id", hackathonId);
         }
 
         if (query.userId) {
@@ -340,11 +367,15 @@ export class HackathonsService {
     ): Promise<ApiResponse<HackathonSubmission>> {
         const supabase = this.supabaseService.getAdminClient();
 
+        // Resolve hackathon ID from slug if needed
+        const hackathonId = await this.resolveHackathonId(dto.hackathonId);
+        this.logger.log(`Creating submission for hackathon: ${hackathonId}`);
+
         // Check if submission already exists
         const { data: existing } = await supabase
             .from("hackathon_submissions")
             .select("id")
-            .eq("hackathon_id", dto.hackathonId)
+            .eq("hackathon_id", hackathonId)
             .eq("project_id", dto.projectId)
             .single();
 
@@ -369,13 +400,13 @@ export class HackathonsService {
         const { data, error } = await supabase
             .from("hackathon_submissions")
             .insert({
-                hackathon_id: dto.hackathonId,
+                hackathon_id: hackathonId, // Use resolved UUID
                 project_id: dto.projectId,
                 user_id: userId,
                 pitch_video_url: dto.pitchVideoUrl,
                 pitch_deck_url: dto.pitchDeckUrl,
                 notes: dto.notes,
-                status: dto.pitchVideoUrl ? "submitted" : "draft",
+                status: "submitted",
             })
             .select()
             .single();

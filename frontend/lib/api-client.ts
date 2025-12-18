@@ -44,7 +44,16 @@ async function apiFetch<T>(
 
     const data = await response.json();
 
-    console.log(`[API] ${endpoint} response:`, response.status, data.success);
+    console.log(`[API] ${endpoint} response:`, response.status, data.success, data);
+
+    // Handle 400 Bad Request - validation errors
+    if (response.status === 400) {
+      console.error("[API] 400 Bad Request:", data);
+      return {
+        success: false,
+        error: data.message || data.error || "Bad Request",
+      };
+    }
 
     // Handle 401 Unauthorized - clear token and trigger re-auth
     if (response.status === 401) {

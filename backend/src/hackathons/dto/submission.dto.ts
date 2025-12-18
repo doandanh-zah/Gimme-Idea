@@ -17,8 +17,8 @@ export enum SubmissionStatus {
 }
 
 export class CreateSubmissionDto {
-    @IsUUID()
-    hackathonId: string;
+    @IsString()
+    hackathonId: string; // Can be UUID or slug
 
     @IsUUID()
     projectId: string;
@@ -58,8 +58,8 @@ export class UpdateSubmissionDto {
 
 export class QuerySubmissionsDto {
     @IsOptional()
-    @IsUUID()
-    hackathonId?: string;
+    @IsString()
+    hackathonId?: string; // Can be UUID or slug
 
     @IsOptional()
     @IsUUID()
