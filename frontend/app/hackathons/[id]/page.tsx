@@ -638,219 +638,204 @@ export default function HackathonDashboard({ params }: { params: { id: string } 
                             
                             case 'project':
                                 return (
-                                   <div className="h-full overflow-y-auto pr-2 pb-20 md:pb-0">
-                                      {!userTeam ? (
-                                         <div className="h-full flex flex-col justify-center max-w-4xl mx-auto w-full">
-                                            {/* Pending Invitations */}
-                                            {pendingInvitations.length > 0 && (
-                                                <div className="bg-surface border border-gold/30 rounded-xl p-6 mb-6 relative overflow-hidden animate-in fade-in slide-in-from-top-5">
-                                                    <div className="absolute top-0 left-0 w-1 h-full bg-gold" />
-                                                    <h3 className="text-lg font-bold text-white mb-4 font-quantico flex items-center gap-2">
-                                                        <MessageSquare className="w-5 h-5 text-gold" /> Pending Invitations
-                                                    </h3>
-                                                    <div className="space-y-3">
-                                                        {pendingInvitations.map((invite) => (
-                                                            <div key={invite.id} className="flex flex-col sm:flex-row items-center justify-between bg-white/5 p-4 rounded-lg border border-white/10 gap-4">
-                                                                <div className="flex items-center gap-3">
-                                                                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-gold/20 to-yellow-600/20 border border-gold/30 flex items-center justify-center">
-                                                                        <Users className="w-5 h-5 text-gold" />
-                                                                    </div>
-                                                                    <div>
-                                                                        <p className="text-sm text-gray-300">
-                                                                            <span className="text-white font-bold">{invite.inviterName}</span> invited you to join <span className="text-gold font-bold">{invite.teamName}</span>
-                                                                        </p>
-                                                                        <p className="text-[10px] text-gray-500">Just now</p>
-                                                                    </div>
-                                                                </div>
-                                                                <div className="flex gap-2 w-full sm:w-auto">
-                                                                    <button 
-                                                                        onClick={() => handleAcceptInvitation(invite.id)}
-                                                                        className="flex-1 sm:flex-none px-4 py-2 bg-gold text-black text-xs font-bold rounded hover:bg-gold/90 transition-colors"
-                                                                    >
-                                                                        Accept
-                                                                    </button>
-                                                                    <button 
-                                                                        onClick={() => handleRejectInvitation(invite.id)}
-                                                                        className="flex-1 sm:flex-none px-4 py-2 bg-white/10 text-gray-300 text-xs font-bold rounded hover:bg-white/20 transition-colors"
-                                                                    >
-                                                                        Reject
-                                                                    </button>
-                                                                </div>
-                                                            </div>
-                                                        ))}
-                                                    </div>
-                                                </div>
-                                            )}
-
-                                            <div className="flex flex-col items-center justify-center text-center p-8 bg-surface border border-white/5 rounded-xl">
-                                                <Rocket className="w-12 h-12 text-gold mb-6" />
-                                                <h2 className="text-2xl font-bold text-white mb-3 font-quantico">Start Building</h2>
-                                                <p className="text-gray-400 text-sm mb-6 max-w-md">
-                                                   Ready to ship? Create a team to collaborate with others, or start solo. 
-                                                   You'll need a team to submit your project.
-                                                </p>
-                                                <button onClick={() => setUserTeam(DEFAULT_NEW_TEAM)} className="bg-gold text-black font-bold px-8 py-3 rounded-lg hover:bg-gold/90 transition-transform hover:scale-105 flex items-center gap-2">
-                                                   <Plus className="w-4 h-4" /> Create Team
-                                                </button>
-                                            </div>
-                                         </div>
-                                      ) : (
-                                         <div className="space-y-6">
-                                            {/* Team Header */}
-                                            <div className="bg-surface border border-white/5 rounded-xl p-6 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                                               <div>
-                                                  <div className="flex items-center gap-3 mb-1">
-                                                     <h2 className="text-2xl font-bold text-white font-quantico">{userTeam.name}</h2>
-                                                     <span className="bg-gold/20 text-gold text-[10px] px-2 py-0.5 rounded border border-gold/20 uppercase font-bold">Leader</span>
-                                                  </div>
-                                                  <p className="text-gray-400 text-xs">Team ID: #8823 • Created just now</p>
-                                               </div>
-                                               <div className="flex gap-2">
-                                                  <button className="p-2 rounded hover:bg-white/10 text-gray-400 hover:text-white transition-colors" title="Settings">
-                                                     <Settings className="w-4 h-4" />
-                                                  </button>
-                                                  <button onClick={() => setUserTeam(null)} className="p-2 rounded hover:bg-red-500/10 text-red-500 transition-colors" title="Leave Team">
-                                                     <LogOut className="w-4 h-4" />
-                                                  </button>
-                                               </div>
-                                            </div>
-
-                                            <div className="grid md:grid-cols-2 gap-6">
-                                               {/* Members */}
-                                               <div className="bg-surface border border-white/5 rounded-xl p-6">
-                                                  <h3 className="text-sm font-bold text-white mb-4 flex items-center gap-2 uppercase tracking-wider">
-                                                     <Users className="w-4 h-4 text-gold" /> Team Members
-                                                  </h3>
-                                                  <div className="space-y-3">
-                                                     {userTeam.members.map((member: any, i: number) => (
-                                                        <div key={i} className="flex items-center justify-between p-3 bg-white/5 rounded-lg border border-white/5">
-                                                           <div className="flex items-center gap-3">
-                                                              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-purple-500 to-blue-500 flex items-center justify-center text-xs font-bold text-white">
-                                                                 {member.name.charAt(0)}
-                                                              </div>
-                                                              <div>
-                                                                 <p className="text-sm font-bold text-white leading-none mb-1">{member.name}</p>
-                                                                 <p className="text-[10px] text-gray-400">{member.role}</p>
-                                                              </div>
-                                                           </div>
-                                                           {member.isLeader && <Trophy className="w-3 h-3 text-gold" />}
-                                                        </div>
-                                                     ))}
-                                                     <button onClick={() => setIsInviteModalOpen(true)} className="w-full py-3 border border-dashed border-white/10 rounded-lg flex items-center justify-center text-gray-500 text-xs gap-2 hover:border-gold/30 hover:text-gold transition-all">
-                                                        <Plus className="w-3 h-3" /> Invite Member
-                                                     </button>
-                                                  </div>
-                                               </div>
-
-                                               {/* Chat Placeholder */}
-                                               <div className="bg-surface border border-white/5 rounded-xl p-6 flex flex-col">
-                                                  <h3 className="text-sm font-bold text-white mb-4 flex items-center gap-2 uppercase tracking-wider">
-                                                     <MessageSquare className="w-4 h-4 text-blue-400" /> Team Chat
-                                                  </h3>
-                                                  <div className="flex-1 bg-black/20 rounded-lg flex items-center justify-center text-gray-600 text-xs italic border border-white/5 min-h-[150px]">
-                                                     Chat feature coming soon...
-                                                  </div>
-                                               </div>
-                                            </div>
-
-                                            {/* Submission Section */}
-                                            <div className="bg-surface border border-white/5 rounded-xl p-6 md:p-8">
-                                               {!isSubmitted ? (
-                                                  <form onSubmit={handleSubmitProject} className="space-y-6">
-                                                     <div className="flex items-center gap-2 mb-6 border-b border-white/10 pb-4">
-                                                        <Rocket className="w-5 h-5 text-gold" />
-                                                        <h2 className="text-xl font-bold text-white font-quantico">Project Submission</h2>
-                                                     </div>
-
-                                                     {/* 1. Select Idea */}
-                                                     <div className="space-y-3">
-                                                        <div className="flex justify-between items-center">
-                                                           <label className="text-xs font-bold text-gray-500 uppercase">Select Project Idea</label>
-                                                           <Link href="/idea" className="text-xs text-gold hover:underline flex items-center gap-1">
-                                                              <Plus className="w-3 h-3" /> New Idea
-                                                           </Link>
-                                                        </div>
-                                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                                            {MOCK_USER_IDEAS.map(idea => {
-                                                                const isSelected = submission.selectedIdeaId === idea.id;
-                                                                return (
-                                                                    <div 
-                                                                        key={idea.id}
-                                                                        onClick={() => setSubmission(prev => ({ ...prev, selectedIdeaId: idea.id, title: idea.title, description: idea.description }))}
-                                                                        className={`relative p-4 rounded-xl border cursor-pointer transition-all ${isSelected ? 'bg-gold/10 border-gold' : 'bg-black/20 border-white/5 hover:border-white/20'}`}
-                                                                    >
-                                                                        <div className="flex justify-between items-start mb-2">
-                                                                             <span className="bg-white/10 px-1.5 py-0.5 rounded text-[9px] text-gray-300">{idea.category}</span>
-                                                                             {isSelected && <CheckCircle2 className="w-4 h-4 text-gold" />}
+                                   <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 h-full">
+                                      {/* LEFT COLUMN: Team Management (Span 8) */}
+                                      <div className="lg:col-span-8 flex flex-col gap-6 h-full overflow-y-auto pr-2 pb-20 md:pb-0">
+                                          {!userTeam ? (
+                                             <div className="h-full flex flex-col justify-center max-w-4xl mx-auto w-full">
+                                                {/* Pending Invitations */}
+                                                {pendingInvitations.length > 0 && (
+                                                    <div className="bg-surface border border-gold/30 rounded-xl p-6 mb-6 relative overflow-hidden animate-in fade-in slide-in-from-top-5">
+                                                        <div className="absolute top-0 left-0 w-1 h-full bg-gold" />
+                                                        <h3 className="text-lg font-bold text-white mb-4 font-quantico flex items-center gap-2">
+                                                            <MessageSquare className="w-5 h-5 text-gold" /> Pending Invitations
+                                                        </h3>
+                                                        <div className="space-y-3">
+                                                            {pendingInvitations.map((invite) => (
+                                                                <div key={invite.id} className="flex flex-col sm:flex-row items-center justify-between bg-white/5 p-4 rounded-lg border border-white/10 gap-4">
+                                                                    <div className="flex items-center gap-3">
+                                                                        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-gold/20 to-yellow-600/20 border border-gold/30 flex items-center justify-center">
+                                                                            <Users className="w-5 h-5 text-gold" />
                                                                         </div>
-                                                                        <h4 className={`font-bold text-sm mb-1 ${isSelected ? 'text-white' : 'text-gray-300'}`}>{idea.title}</h4>
-                                                                        <p className="text-xs text-gray-500 line-clamp-1">{idea.description}</p>
+                                                                        <div>
+                                                                            <p className="text-sm text-gray-300">
+                                                                                <span className="text-white font-bold">{invite.inviterName}</span> invited you to join <span className="text-gold font-bold">{invite.teamName}</span>
+                                                                            </p>
+                                                                            <p className="text-[10px] text-gray-500">Just now</p>
+                                                                        </div>
                                                                     </div>
-                                                                );
-                                                            })}
+                                                                    <div className="flex gap-2 w-full sm:w-auto">
+                                                                        <button 
+                                                                            onClick={() => handleAcceptInvitation(invite.id)}
+                                                                            className="flex-1 sm:flex-none px-4 py-2 bg-gold text-black text-xs font-bold rounded hover:bg-gold/90 transition-colors"
+                                                                        >
+                                                                            Accept
+                                                                        </button>
+                                                                        <button 
+                                                                            onClick={() => handleRejectInvitation(invite.id)}
+                                                                            className="flex-1 sm:flex-none px-4 py-2 bg-white/10 text-gray-300 text-xs font-bold rounded hover:bg-white/20 transition-colors"
+                                                                        >
+                                                                            Reject
+                                                                        </button>
+                                                                    </div>
+                                                                </div>
+                                                            ))}
                                                         </div>
-                                                     </div>
+                                                    </div>
+                                                )}
 
-                                                     {/* 2. Select Track */}
-                                                     <div className="space-y-3">
-                                                        <label className="text-xs font-bold text-gray-500 uppercase">Select Track</label>
-                                                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                                                           {hackathon.tracks?.map((track, i) => {
-                                                              const isSelected = submission.track === track.title;
-                                                              return (
-                                                                 <div
-                                                                   key={i}
-                                                                   onClick={() => setSubmission(prev => ({ ...prev, track: track.title }))}
-                                                                   className={`relative cursor-pointer rounded-xl p-3 border transition-all text-center flex flex-col items-center gap-2 ${isSelected ? 'bg-gold/10 border-gold' : 'bg-black/20 border-white/5 hover:border-white/20'}`}
-                                                                 >
-                                                                   <div className={`w-2 h-2 rounded-full ${track.color ? track.color.replace('text-', 'bg-') : 'bg-gold'}`} />
-                                                                   <span className={`text-xs font-bold ${isSelected ? 'text-white' : 'text-gray-400'}`}>{track.title}</span>
-                                                                   {isSelected && <div className="absolute top-2 right-2"><CheckCircle2 className="w-3 h-3 text-gold" /></div>}
-                                                                 </div>
-                                                              );
-                                                           })}
-                                                        </div>
-                                                     </div>
+                                                <div className="flex flex-col items-center justify-center text-center p-8 bg-surface border border-white/5 rounded-xl">
+                                                    <Rocket className="w-12 h-12 text-gold mb-6" />
+                                                    <h2 className="text-2xl font-bold text-white mb-3 font-quantico">Start Building</h2>
+                                                    <p className="text-gray-400 text-sm mb-6 max-w-md">
+                                                       Ready to ship? Create a team to collaborate with others, or start solo. 
+                                                       You'll need a team to submit your project.
+                                                    </p>
+                                                    <button onClick={() => setUserTeam(DEFAULT_NEW_TEAM)} className="bg-gold text-black font-bold px-8 py-3 rounded-lg hover:bg-gold/90 transition-transform hover:scale-105 flex items-center gap-2">
+                                                       <Plus className="w-4 h-4" /> Create Team
+                                                    </button>
+                                                </div>
+                                             </div>
+                                          ) : (
+                                             <div className="space-y-6">
+                                                {/* Team Header */}
+                                                <div className="bg-surface border border-white/5 rounded-xl p-6 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                                                   <div>
+                                                      <div className="flex items-center gap-3 mb-1">
+                                                         <h2 className="text-2xl font-bold text-white font-quantico">{userTeam.name}</h2>
+                                                         <span className="bg-gold/20 text-gold text-[10px] px-2 py-0.5 rounded border border-gold/20 uppercase font-bold">Leader</span>
+                                                      </div>
+                                                      <p className="text-gray-400 text-xs">Team ID: #8823 • Created just now</p>
+                                                   </div>
+                                                   <div className="flex gap-2">
+                                                      <button className="p-2 rounded hover:bg-white/10 text-gray-400 hover:text-white transition-colors" title="Settings">
+                                                         <Settings className="w-4 h-4" />
+                                                      </button>
+                                                      <button onClick={() => setUserTeam(null)} className="p-2 rounded hover:bg-red-500/10 text-red-500 transition-colors" title="Leave Team">
+                                                         <LogOut className="w-4 h-4" />
+                                                      </button>
+                                                   </div>
+                                                </div>
 
-                                                     <div className="pt-4 border-t border-white/10 flex justify-end">
-                                                        <button
-                                                          type="submit"
-                                                          disabled={!submission.selectedIdeaId || !submission.track}
-                                                          className={`font-bold px-6 py-2.5 rounded-lg transition-all flex items-center gap-2 text-sm ${(!submission.selectedIdeaId || !submission.track) ? 'bg-gray-800 text-gray-500 cursor-not-allowed' : 'bg-gold text-black hover:bg-gold/90'}`}
-                                                        >
-                                                          <Zap className="w-4 h-4" /> Submit Project
-                                                        </button>
-                                                     </div>
-                                                  </form>
-                                               ) : (
-                                                  <div className="text-center py-10 animate-in fade-in zoom-in duration-300">
-                                                     <div className="w-16 h-16 bg-green-500/20 text-green-500 rounded-full flex items-center justify-center mx-auto mb-4">
-                                                        <CheckCircle2 className="w-8 h-8" />
-                                                     </div>
-                                                     <h2 className="text-2xl font-bold text-white font-quantico mb-2">Submission Received!</h2>
-                                                     <p className="text-gray-400 text-sm mb-6">Your project has been successfully submitted for review.</p>
-                                                     <div className="inline-flex flex-col items-start bg-white/5 border border-white/5 rounded-lg p-4 min-w-[200px]">
-                                                        <div className="flex justify-between w-full text-xs mb-2">
-                                                           <span className="text-gray-500">Project:</span>
-                                                           <span className="text-white font-bold">{submission.title}</span>
-                                                        </div>
-                                                        <div className="flex justify-between w-full text-xs mb-2">
-                                                           <span className="text-gray-500">Track:</span>
-                                                           <span className="text-gold">{submission.track}</span>
-                                                        </div>
-                                                        <div className="flex justify-between w-full text-xs">
-                                                           <span className="text-gray-500">Status:</span>
-                                                           <span className="text-green-400">Under Review</span>
-                                                        </div>
-                                                     </div>
-                                                     <div className="mt-6">
-                                                        <button onClick={() => setIsSubmitted(false)} className="text-xs text-gray-500 hover:text-white underline">Edit Submission</button>
-                                                     </div>
-                                                  </div>
-                                               )}
+                                                <div className="grid md:grid-cols-2 gap-6">
+                                                   {/* Members */}
+                                                   <div className="bg-surface border border-white/5 rounded-xl p-6">
+                                                      <h3 className="text-sm font-bold text-white mb-4 flex items-center gap-2 uppercase tracking-wider">
+                                                         <Users className="w-4 h-4 text-gold" /> Team Members
+                                                      </h3>
+                                                      <div className="space-y-3">
+                                                         {userTeam.members.map((member: any, i: number) => (
+                                                            <div key={i} className="flex items-center justify-between p-3 bg-white/5 rounded-lg border border-white/5">
+                                                               <div className="flex items-center gap-3">
+                                                                  <div className="w-8 h-8 rounded-full bg-gradient-to-br from-purple-500 to-blue-500 flex items-center justify-center text-xs font-bold text-white">
+                                                                     {member.name.charAt(0)}
+                                                                  </div>
+                                                                  <div>
+                                                                     <p className="text-sm font-bold text-white leading-none mb-1">{member.name}</p>
+                                                                     <p className="text-[10px] text-gray-400">{member.role}</p>
+                                                                  </div>
+                                                               </div>
+                                                               {member.isLeader && <Trophy className="w-3 h-3 text-gold" />}
+                                                            </div>
+                                                         ))}
+                                                         <button onClick={() => setIsInviteModalOpen(true)} className="w-full py-3 border border-dashed border-white/10 rounded-lg flex items-center justify-center text-gray-500 text-xs gap-2 hover:border-gold/30 hover:text-gold transition-all">
+                                                            <Plus className="w-3 h-3" /> Invite Member
+                                                         </button>
+                                                      </div>
+                                                   </div>
+
+                                                   {/* Chat Placeholder */}
+                                                   <div className="bg-surface border border-white/5 rounded-xl p-6 flex flex-col">
+                                                      <h3 className="text-sm font-bold text-white mb-4 flex items-center gap-2 uppercase tracking-wider">
+                                                         <MessageSquare className="w-4 h-4 text-blue-400" /> Team Chat
+                                                      </h3>
+                                                      <div className="flex-1 bg-black/20 rounded-lg flex items-center justify-center text-gray-600 text-xs italic border border-white/5 min-h-[150px]">
+                                                         Chat feature coming soon...
+                                                      </div>
+                                                   </div>
+                                                </div>
+                                             </div>
+                                          )}
+                                      </div>
+                                      
+                                      {/* RIGHT COLUMN: Sidebar Widgets (Span 4) */}
+                                      <div className="lg:col-span-4 flex flex-col gap-6 h-full overflow-y-auto pr-2 pb-20 md:pb-0">
+                                         
+                                         {/* 1. Countdown Card */}
+                                         <div className="bg-surface border border-white/5 rounded-xl p-4 shrink-0">
+                                            <div className="space-y-1">
+                                               <p className="text-[10px] text-gray-500 uppercase tracking-wider">{countdown.label}</p>
+                                               <div className="flex items-center gap-2 text-gold bg-gold/5 px-3 py-2 rounded-lg border border-gold/10 justify-center">
+                                                  <Clock className="w-4 h-4" />
+                                                  <span className="font-mono font-bold text-xs md:text-sm">{countdown.text}</span>
+                                               </div>
                                             </div>
                                          </div>
-                                      )}
+
+                                         {/* 2. Vertical Timeline (Legacy Style) */}
+                                         {hackathon.timeline && hackathon.timeline.length > 0 && (
+                                            <div className="bg-surface border border-white/5 rounded-xl p-4 shrink-0">
+                                               <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-4">Timeline</h3>
+                                               <div className="relative border-l border-white/10 ml-2 space-y-6">
+                                                  {dynamicTimeline.map((step, index) => (
+                                                     <div key={step.id} className="relative pl-6 group cursor-default">
+                                                        <div className="absolute -left-[5px] top-1 w-2.5 h-2.5 flex items-center justify-center">
+                                                           {step.status === 'active' && (
+                                                              <div className="absolute w-[250%] h-[250%] bg-gold rounded-full animate-ping opacity-50" />
+                                                           )}
+                                                           <div className={`relative w-full h-full rounded-full border-2 transition-all z-10
+                                                              ${step.status === 'done' ? 'bg-green-500 border-green-500' :
+                                                                step.status === 'active' ? 'bg-gold border-gold scale-125' :
+                                                                'bg-surface border-gray-600'}`}
+                                                           />
+                                                        </div>
+                                                        <div className={`${step.status === 'active' ? 'text-white' : 'text-gray-500'}`}>
+                                                           <p className="font-medium text-xs">{step.title}</p>
+                                                           <p className="text-[10px] font-mono opacity-70">
+                                                              {format(new Date(step.startDate), 'MMM dd')}
+                                                           </p>
+                                                        </div>
+                                                     </div>
+                                                  ))}
+                                               </div>
+                                            </div>
+                                         )}
+
+                                         {/* 3. Tasks (Legacy Logic) */}
+                                         <div className="bg-surface border border-white/5 rounded-xl p-4 flex-1">
+                                            {(() => {
+                                               const activeStep = dynamicTimeline.find(step => step.status === 'active');
+                                               const currentTasks = hackathon.tasks?.filter(t => t.phaseId === activeStep?.id) || [];
+                                               
+                                               return (
+                                                  <>
+                                                     <div className="flex justify-between items-center mb-4">
+                                                        <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider">Your Tasks</h3>
+                                                        <span className="text-[10px] bg-green-900/30 text-green-400 px-1.5 py-0.5 rounded">
+                                                           {currentTasks.filter(t => t.done).length}/{currentTasks.length}
+                                                        </span>
+                                                     </div>
+                                                     <div className="space-y-3">
+                                                        {currentTasks.length > 0 ? currentTasks.map((task) => (
+                                                           <div key={task.id} className="flex items-start gap-3 group">
+                                                              <button className={`mt-0.5 w-4 h-4 rounded border flex items-center justify-center transition-colors
+                                                                 ${task.done ? 'bg-green-500 border-green-500 text-black' : 'border-gray-600 hover:border-gray-400'}`}>
+                                                                 {task.done && <CheckCircle2 className="w-3 h-3" />}
+                                                              </button>
+                                                              <span className={`text-xs ${task.done ? 'text-gray-500 line-through' : 'text-gray-300'}`}>
+                                                                 {task.text}
+                                                              </span>
+                                                           </div>
+                                                        )) : (
+                                                           <p className="text-xs text-gray-500 italic">No tasks for this phase.</p>
+                                                        )}
+                                                     </div>
+                                                  </>
+                                               );
+                                            })()}
+                                         </div>
+
+                                      </div>
                                    </div>
                                 );
                             
