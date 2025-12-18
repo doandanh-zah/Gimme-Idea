@@ -53,100 +53,113 @@ export const ProjectCard: React.FC<ProjectCardProps> = ({ project }) => {
       whileHover={{ y: -6, scale: 1.01 }}
       whileTap={{ scale: 0.98 }}
       transition={{ type: "spring", stiffness: 400, damping: 25 }}
-      animate={isHovered ? {
+      animate={{
         boxShadow: [
-          '0 0 0px transparent, 0 0 0px transparent',
-          '0 0 20px rgba(255, 215, 0, 0.3), 0 0 40px rgba(153, 69, 255, 0.2)',
-          '0 0 15px rgba(153, 69, 255, 0.3), 0 0 30px rgba(255, 215, 0, 0.2)',
-          '0 0 25px rgba(255, 215, 0, 0.25), 0 0 35px rgba(153, 69, 255, 0.15)'
+          '0 0 15px rgba(255, 215, 0, 0.15), 0 0 30px rgba(153, 69, 255, 0.1)',
+          '0 0 25px rgba(255, 215, 0, 0.3), 0 0 45px rgba(153, 69, 255, 0.2)',
+          '0 0 15px rgba(255, 215, 0, 0.15), 0 0 30px rgba(153, 69, 255, 0.1)',
         ]
-      } : {
-        boxShadow: '0 0 0px transparent, 0 0 0px transparent'
       }}
       className="relative rounded-2xl overflow-hidden cursor-pointer flex flex-col h-full group"
     >
-      {/* GLITCH EFFECT BORDERS */}
+      {/* Animated scanline - Always running */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none rounded-2xl z-10">
+        <div className="absolute inset-0 bg-[repeating-linear-gradient(0deg,transparent,transparent_2px,rgba(255,215,0,0.02)_2px,rgba(255,215,0,0.02)_4px)]" />
+        <motion.div 
+          className="absolute left-0 right-0 h-16 bg-gradient-to-b from-[#FFD700]/10 to-transparent"
+          animate={{ top: ['-64px', '100%'] }}
+          transition={{ duration: 3, repeat: Infinity, ease: 'linear' }}
+        />
+      </div>
+      
+      {/* GLITCH EFFECT BORDERS - Always running */}
       {/* Top border - Yellow glitch */}
       <motion.div
         className="absolute top-0 left-0 right-0 h-[2px] z-30 pointer-events-none"
         style={{ background: 'linear-gradient(90deg, transparent, #FFD700, transparent)' }}
-        animate={isHovered ? {
-          x: [-100, 0, 50, 0, -30, 0],
-          opacity: [0, 1, 0.8, 1, 0.6, 1],
-          scaleX: [0.3, 1, 1.2, 1, 0.8, 1]
-        } : { x: 0, opacity: 0, scaleX: 1 }}
-        transition={{ duration: 0.5, ease: "easeOut" }}
+        animate={{
+          x: [-10, 10, -10],
+          opacity: [0.5, 1, 0.5],
+        }}
+        transition={{ duration: 0.5, repeat: Infinity }}
       />
       
       {/* Bottom border - Purple glitch */}
       <motion.div
         className="absolute bottom-0 left-0 right-0 h-[2px] z-30 pointer-events-none"
         style={{ background: 'linear-gradient(90deg, transparent, #9945FF, transparent)' }}
-        animate={isHovered ? {
-          x: [100, 0, -50, 0, 30, 0],
-          opacity: [0, 1, 0.8, 1, 0.6, 1],
-          scaleX: [0.3, 1, 1.2, 1, 0.8, 1]
-        } : { x: 0, opacity: 0, scaleX: 1 }}
-        transition={{ duration: 0.5, ease: "easeOut", delay: 0.05 }}
+        animate={{
+          x: [10, -10, 10],
+          opacity: [0.5, 1, 0.5],
+        }}
+        transition={{ duration: 0.5, repeat: Infinity, delay: 0.1 }}
       />
       
       {/* Left border - Yellow/Purple gradient glitch */}
       <motion.div
         className="absolute top-0 bottom-0 left-0 w-[2px] z-30 pointer-events-none"
         style={{ background: 'linear-gradient(180deg, #FFD700, transparent, #9945FF)' }}
-        animate={isHovered ? {
-          y: [-50, 0, 30, 0, -20, 0],
-          opacity: [0, 1, 0.7, 1, 0.5, 1],
-          scaleY: [0.5, 1, 1.1, 1, 0.9, 1]
-        } : { y: 0, opacity: 0, scaleY: 1 }}
-        transition={{ duration: 0.5, ease: "easeOut", delay: 0.1 }}
+        animate={{
+          opacity: [0.3, 0.8, 0.3],
+        }}
+        transition={{ duration: 0.8, repeat: Infinity }}
       />
       
       {/* Right border - Purple/Yellow gradient glitch */}
       <motion.div
         className="absolute top-0 bottom-0 right-0 w-[2px] z-30 pointer-events-none"
         style={{ background: 'linear-gradient(180deg, #9945FF, transparent, #FFD700)' }}
-        animate={isHovered ? {
-          y: [50, 0, -30, 0, 20, 0],
-          opacity: [0, 1, 0.7, 1, 0.5, 1],
-          scaleY: [0.5, 1, 1.1, 1, 0.9, 1]
-        } : { y: 0, opacity: 0, scaleY: 1 }}
-        transition={{ duration: 0.5, ease: "easeOut", delay: 0.15 }}
+        animate={{
+          opacity: [0.3, 0.8, 0.3],
+        }}
+        transition={{ duration: 0.8, repeat: Infinity, delay: 0.15 }}
       />
       
-      {/* Glitch overlay layers */}
+      {/* Glitch overlay layers - Always running */}
       <motion.div
         className="absolute inset-0 z-20 pointer-events-none rounded-2xl overflow-hidden"
-        animate={isHovered ? {
-          opacity: [0, 0.3, 0, 0.2, 0],
-        } : { opacity: 0 }}
-        transition={{ duration: 0.4, ease: "easeOut" }}
+        animate={{
+          opacity: [0, 0.15, 0.05, 0.2, 0.08],
+          x: [-3, 3, -2, 2, 0],
+        }}
+        transition={{ duration: 0.3, repeat: Infinity }}
       >
-        <div className="absolute inset-0 bg-gradient-to-r from-[#FFD700]/20 via-transparent to-[#9945FF]/20" />
+        <div className="absolute inset-0 bg-gradient-to-r from-[#FFD700]/15 via-transparent to-[#9945FF]/15" />
       </motion.div>
       
-      {/* Yellow glitch slice */}
       <motion.div
-        className="absolute left-0 right-0 h-[4px] z-20 pointer-events-none overflow-hidden"
-        style={{ top: '30%', background: '#FFD700' }}
-        animate={isHovered ? {
-          x: [-200, 200, -100, 0],
-          opacity: [0, 0.6, 0.3, 0],
-          scaleX: [0.1, 2, 0.5, 0]
-        } : { x: 0, opacity: 0, scaleX: 0 }}
-        transition={{ duration: 0.35, ease: "easeOut" }}
+        className="absolute inset-0 z-20 pointer-events-none rounded-2xl overflow-hidden"
+        animate={{
+          opacity: [0, 0.12, 0.04, 0.18, 0.06],
+          x: [3, -3, 2, -2, 0],
+        }}
+        transition={{ duration: 0.3, repeat: Infinity, delay: 0.08 }}
+      >
+        <div className="absolute inset-0 bg-gradient-to-l from-[#FFD700]/15 via-transparent to-[#9945FF]/15" />
+      </motion.div>
+      
+      {/* Random glitch slices - Always running */}
+      <motion.div
+        className="absolute left-0 right-0 h-[3px] z-20 pointer-events-none overflow-hidden bg-[#FFD700]/30"
+        style={{ top: '30%' }}
+        animate={{
+          opacity: [0, 0.7, 0, 0.5, 0],
+          x: [-100, 100, -50, 0],
+          scaleX: [0, 1.5, 0.5, 0],
+        }}
+        transition={{ duration: 0.4, repeat: Infinity, repeatDelay: 1.5 }}
       />
       
       {/* Purple glitch slice */}
       <motion.div
-        className="absolute left-0 right-0 h-[4px] z-20 pointer-events-none overflow-hidden"
-        style={{ top: '70%', background: '#9945FF' }}
-        animate={isHovered ? {
-          x: [200, -200, 100, 0],
-          opacity: [0, 0.6, 0.3, 0],
-          scaleX: [0.1, 2, 0.5, 0]
-        } : { x: 0, opacity: 0, scaleX: 0 }}
-        transition={{ duration: 0.35, ease: "easeOut", delay: 0.08 }}
+        className="absolute left-0 right-0 h-[3px] z-20 pointer-events-none overflow-hidden bg-[#9945FF]/30"
+        style={{ top: '70%' }}
+        animate={{
+          opacity: [0, 0.7, 0, 0.5, 0],
+          x: [100, -100, 50, 0],
+          scaleX: [0, 1.5, 0.5, 0],
+        }}
+        transition={{ duration: 0.4, repeat: Infinity, repeatDelay: 1.8, delay: 0.3 }}
       />
       
       {/* Card background - more transparent */}
@@ -234,21 +247,20 @@ export const ProjectCard: React.FC<ProjectCardProps> = ({ project }) => {
       )}
 
       <div className={`relative z-10 p-5 flex flex-col flex-grow ${isIdea ? 'pt-2' : ''}`}>
-        {/* Title with Glitch Effect */}
+        {/* Title with Glitch Effect - Always running */}
         <motion.h3 
-          className={`text-lg font-bold mb-2 line-clamp-2 text-white transition-colors duration-500 ${
-            isIdea ? 'group-hover:text-[#FFD700]' : 'group-hover:text-[#9945FF]'
+          className={`text-lg font-bold mb-2 line-clamp-2 transition-colors duration-500 ${
+            isIdea ? 'text-[#FFD700]' : 'text-white group-hover:text-[#9945FF]'
           }`}
-          animate={isHovered ? {
+          animate={{
             textShadow: [
-              '0 0 0px transparent',
-              '-2px 0 #FFD700, 2px 0 #9945FF',
-              '1px 0 #9945FF, -1px 0 #FFD700',
-              '-1px 0 #FFD700, 1px 0 #9945FF',
-              '0 0 0px transparent'
+              '0 0 8px rgba(255, 215, 0, 0.6)',
+              '-2px 0 rgba(153, 69, 255, 0.8), 2px 0 rgba(255, 215, 0, 0.8)',
+              '2px 0 rgba(153, 69, 255, 0.8), -2px 0 rgba(255, 215, 0, 0.8)',
+              '0 0 8px rgba(255, 215, 0, 0.6)'
             ]
-          } : { textShadow: '0 0 0px transparent' }}
-          transition={{ duration: 0.4, ease: "easeOut" }}
+          }}
+          transition={{ duration: 0.25, repeat: Infinity }}
         >
           {project.title}
         </motion.h3>
