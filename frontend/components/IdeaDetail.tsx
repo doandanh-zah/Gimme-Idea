@@ -4,7 +4,7 @@
 import React, { useState } from 'react';
 import { useAppStore } from '../lib/store';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, ThumbsUp, ThumbsDown, MessageCircle, Send, EyeOff, User, DollarSign, Share2, Pencil, Trash2, X, Check, Loader2, Bookmark } from 'lucide-react';
+import { ArrowLeft, ThumbsUp, ThumbsDown, MessageCircle, Send, EyeOff, User, DollarSign, Share2, Pencil, Trash2, X, Check, Loader2, Bookmark, ChevronDown } from 'lucide-react';
 import { BookmarkModal } from './BookmarkModal';
 import { motion, AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';
@@ -23,6 +23,313 @@ import AdminBadge, { GimmeSenseiBadge } from './AdminBadge';
 
 // AI Bot display name
 const AI_BOT_NAME = 'Gimme Sensei';
+
+// Reusable Comment/Reply Form Component
+interface CommentFormProps {
+    user: any;
+    text: string;
+    setText: (text: string) => void;
+    isAnon: boolean;
+    setIsAnon: (value: boolean) => void;
+    isSubmitting: boolean;
+    onSubmit: (e: React.FormEvent) => void;
+    placeholder?: string;
+    submitLabel?: string;
+    showMarkdownGuide?: boolean;
+}
+
+const CommentFormBox: React.FC<CommentFormProps> = ({
+    user,
+    text,
+    setText,
+    isAnon,
+    setIsAnon,
+    isSubmitting,
+    onSubmit,
+    placeholder = "Share your thoughts...",
+    submitLabel = "Post",
+    showMarkdownGuide = true,
+}) => {
+    const [showAnonDropdown, setShowAnonDropdown] = useState(false);
+
+    return (
+        <form onSubmit={onSubmit} className="flex gap-3">
+            {/* Avatar with dropdown */}
+            <div className="flex-shrink-0 relative">
+                <div className="relative">
+                    {isAnon ? (
+                        <div className="w-10 h-10 rounded-full bg-gray-700 flex items-center justify-center border-2 border-gray-600">
+                            <EyeOff className="w-5 h-5 text-gray-400" />
+                        </div>
+                    ) : (
+                        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#9945FF] to-[#14F195] flex items-center justify-center overflow-hidden border-2 border-[#FFD700]/30">
+                            {user?.avatar ? (
+                                <img src={user.avatar} alt="" className="w-full h-full object-cover" />
+                            ) : (
+                                <User className="w-5 h-5 text-white" />
+                            )}
+                        </div>
+                    )}
+                    {/* Dropdown arrow button */}
+                    <button
+                        type="button"
+                        onClick={() => setShowAnonDropdown(!showAnonDropdown)}
+                        className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-5 h-5 rounded-full bg-[#1a1a2e] border border-white/20 flex items-center justify-center hover:bg-[#252540] hover:border-white/30 transition-all"
+                    >
+                        <ChevronDown className="w-3 h-3 text-gray-400" />
+                    </button>
+                </div>
+                
+                {/* Dropdown menu */}
+                <AnimatePresence>
+                    {showAnonDropdown && (
+                        <motion.div
+                            initial={{ opacity: 0, y: -5, scale: 0.95 }}
+                            animate={{ opacity: 1, y: 0, scale: 1 }}
+                            exit={{ opacity: 0, y: -5, scale: 0.95 }}
+                            transition={{ duration: 0.15 }}
+                            className="absolute top-14 left-0 z-50 bg-[#1a1a2e] border border-white/10 rounded-lg shadow-xl overflow-hidden min-w-[160px]"
+                        >
+                            <button
+                                type="button"
+                                onClick={() => { setIsAnon(false); setShowAnonDropdown(false); }}
+                                className={`w-full px-3 py-2.5 text-left text-sm flex items-center gap-2.5 hover:bg-white/5 transition-colors ${!isAnon ? 'bg-white/5 text-[#FFD700]' : 'text-gray-300'}`}
+                            >
+                                <div className="w-6 h-6 rounded-full bg-gradient-to-br from-[#9945FF] to-[#14F195] flex items-center justify-center overflow-hidden flex-shrink-0">
+                                    {user?.avatar ? (
+                                        <img src={user.avatar} alt="" className="w-full h-full object-cover" />
+                                    ) : (
+                                        <User className="w-3 h-3 text-white" />
+                                    )}
+                                </div>
+                                <span className="truncate">{user?.username || 'Your name'}</span>
+                                {!isAnon && <Check className="w-3.5 h-3.5 ml-auto text-[#FFD700]" />}
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => { setIsAnon(true); setShowAnonDropdown(false); }}
+                                className={`w-full px-3 py-2.5 text-left text-sm flex items-center gap-2.5 hover:bg-white/5 transition-colors ${isAnon ? 'bg-white/5 text-[#FFD700]' : 'text-gray-300'}`}
+                            >
+                                <div className="w-6 h-6 rounded-full bg-gray-700 flex items-center justify-center flex-shrink-0">
+                                    <EyeOff className="w-3 h-3 text-gray-400" />
+                                </div>
+                                <span>Anonymous</span>
+                                {isAnon && <Check className="w-3.5 h-3.5 ml-auto text-[#FFD700]" />}
+                            </button>
+                        </motion.div>
+                    )}
+                </AnimatePresence>
+            </div>
+
+            {/* Input area */}
+            <div className="flex-grow">
+                <div className="relative">
+                    <textarea 
+                        value={text}
+                        onChange={e => setText(e.target.value)}
+                        className="w-full bg-[#12131a] border border-white/10 rounded-2xl px-4 py-3 outline-none text-white text-sm min-h-[80px] focus:border-[#FFD700]/40 transition-all resize-none placeholder:text-gray-600"
+                        placeholder={placeholder}
+                        disabled={isSubmitting}
+                    />
+                </div>
+                
+                {/* Bottom bar */}
+                <div className="flex items-center justify-between mt-2">
+                    <div className="flex items-center gap-2 text-gray-500">
+                        {showMarkdownGuide && <MarkdownGuide />}
+                        {isAnon && (
+                            <span className="text-xs text-gray-500 flex items-center gap-1">
+                                <EyeOff className="w-3 h-3" /> Posting anonymously
+                            </span>
+                        )}
+                    </div>
+                    <button
+                        type="submit"
+                        disabled={isSubmitting || !text.trim()}
+                        className="bg-[#FFD700] text-black px-4 py-2 rounded-full font-semibold text-sm flex items-center gap-1.5 hover:bg-[#FFD700]/90 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                        {isSubmitting ? (
+                            <>
+                                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                Posting...
+                            </>
+                        ) : (
+                            <>
+                                <Send className="w-3.5 h-3.5" />
+                                {submitLabel}
+                            </>
+                        )}
+                    </button>
+                </div>
+            </div>
+        </form>
+    );
+};
+
+// Reply Form Component
+interface ReplyFormProps {
+    user: any;
+    replyText: string;
+    setReplyText: (text: string) => void;
+    isAnonReply: boolean;
+    setIsAnonReply: (value: boolean) => void;
+    isSubmittingReply: boolean;
+    handleReplySubmit: (e: React.FormEvent) => void;
+    onCancel: () => void;
+    replyingTo: string;
+    isReplyingToAI?: boolean;
+}
+
+const ReplyForm: React.FC<ReplyFormProps> = ({
+    user,
+    replyText,
+    setReplyText,
+    isAnonReply,
+    setIsAnonReply,
+    isSubmittingReply,
+    handleReplySubmit,
+    onCancel,
+    replyingTo,
+    isReplyingToAI,
+}) => {
+    const [showAnonDropdown, setShowAnonDropdown] = useState(false);
+
+    return (
+        <form onSubmit={handleReplySubmit} className="mt-4 flex gap-3">
+            {/* Avatar with dropdown */}
+            <div className="flex-shrink-0 relative">
+                <div className="relative">
+                    {isAnonReply ? (
+                        <div className="w-8 h-8 rounded-full bg-gray-700 flex items-center justify-center border-2 border-gray-600">
+                            <EyeOff className="w-4 h-4 text-gray-400" />
+                        </div>
+                    ) : (
+                        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#9945FF] to-[#14F195] flex items-center justify-center overflow-hidden border-2 border-[#FFD700]/30">
+                            {user?.avatar ? (
+                                <img src={user.avatar} alt="" className="w-full h-full object-cover" />
+                            ) : (
+                                <User className="w-4 h-4 text-white" />
+                            )}
+                        </div>
+                    )}
+                    {/* Dropdown arrow button */}
+                    <button
+                        type="button"
+                        onClick={() => setShowAnonDropdown(!showAnonDropdown)}
+                        className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-4 h-4 rounded-full bg-[#1a1a2e] border border-white/20 flex items-center justify-center hover:bg-[#252540] hover:border-white/30 transition-all"
+                    >
+                        <ChevronDown className="w-2.5 h-2.5 text-gray-400" />
+                    </button>
+                </div>
+                
+                {/* Dropdown menu */}
+                <AnimatePresence>
+                    {showAnonDropdown && (
+                        <motion.div
+                            initial={{ opacity: 0, y: -5, scale: 0.95 }}
+                            animate={{ opacity: 1, y: 0, scale: 1 }}
+                            exit={{ opacity: 0, y: -5, scale: 0.95 }}
+                            transition={{ duration: 0.15 }}
+                            className="absolute top-11 left-0 z-50 bg-[#1a1a2e] border border-white/10 rounded-lg shadow-xl overflow-hidden min-w-[140px]"
+                        >
+                            <button
+                                type="button"
+                                onClick={() => { setIsAnonReply(false); setShowAnonDropdown(false); }}
+                                className={`w-full px-3 py-2 text-left text-xs flex items-center gap-2 hover:bg-white/5 transition-colors ${!isAnonReply ? 'bg-white/5 text-[#FFD700]' : 'text-gray-300'}`}
+                            >
+                                <div className="w-5 h-5 rounded-full bg-gradient-to-br from-[#9945FF] to-[#14F195] flex items-center justify-center overflow-hidden flex-shrink-0">
+                                    {user?.avatar ? (
+                                        <img src={user.avatar} alt="" className="w-full h-full object-cover" />
+                                    ) : (
+                                        <User className="w-2.5 h-2.5 text-white" />
+                                    )}
+                                </div>
+                                <span className="truncate">{user?.username || 'You'}</span>
+                                {!isAnonReply && <Check className="w-3 h-3 ml-auto text-[#FFD700]" />}
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => { setIsAnonReply(true); setShowAnonDropdown(false); }}
+                                className={`w-full px-3 py-2 text-left text-xs flex items-center gap-2 hover:bg-white/5 transition-colors ${isAnonReply ? 'bg-white/5 text-[#FFD700]' : 'text-gray-300'}`}
+                            >
+                                <div className="w-5 h-5 rounded-full bg-gray-700 flex items-center justify-center flex-shrink-0">
+                                    <EyeOff className="w-2.5 h-2.5 text-gray-400" />
+                                </div>
+                                <span>Anonymous</span>
+                                {isAnonReply && <Check className="w-3 h-3 ml-auto text-[#FFD700]" />}
+                            </button>
+                        </motion.div>
+                    )}
+                </AnimatePresence>
+            </div>
+
+            {/* Input area */}
+            <div className="flex-grow">
+                {/* Reply tag */}
+                <div className="flex items-center gap-2 text-xs mb-2">
+                    <span className="text-gray-500">Replying to</span>
+                    <span className={`font-semibold ${isReplyingToAI ? 'text-purple-400' : 'text-[#FFD700]'}`}>
+                        @{replyingTo}
+                    </span>
+                    <button 
+                        type="button" 
+                        onClick={onCancel}
+                        className="ml-auto p-1 text-gray-500 hover:text-white hover:bg-white/10 rounded-full transition-all"
+                        title="Cancel reply"
+                    >
+                        <X className="w-3 h-3" />
+                    </button>
+                </div>
+                
+                <textarea 
+                    value={replyText}
+                    onChange={(e) => setReplyText(e.target.value)}
+                    className="w-full bg-[#12131a] border border-white/10 rounded-xl px-3 py-2.5 text-white text-sm focus:border-[#FFD700]/40 outline-none resize-none transition-all placeholder:text-gray-600"
+                    placeholder="Write a thoughtful reply..."
+                    rows={2}
+                    disabled={isSubmittingReply}
+                />
+                
+                <div className="flex items-center justify-between mt-2">
+                    <div className="flex items-center gap-2">
+                        {isAnonReply && (
+                            <span className="text-[10px] text-gray-500 flex items-center gap-1">
+                                <EyeOff className="w-2.5 h-2.5" /> Anonymous
+                            </span>
+                        )}
+                    </div>
+                    <div className="flex gap-2">
+                        <button 
+                            type="button"
+                            onClick={onCancel}
+                            className="text-xs text-gray-400 hover:text-white px-3 py-1.5 rounded-full transition-colors"
+                            disabled={isSubmittingReply}
+                        >
+                            Cancel
+                        </button>
+                        <button 
+                            type="submit" 
+                            className="text-xs bg-[#FFD700] text-black px-4 py-1.5 rounded-full font-semibold hover:bg-[#FFD700]/90 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1.5"
+                            disabled={isSubmittingReply || !replyText.trim()}
+                        >
+                            {isSubmittingReply ? (
+                                <>
+                                    <Loader2 className="w-3 h-3 animate-spin" />
+                                    Posting...
+                                </>
+                            ) : (
+                                <>
+                                    <Send className="w-3 h-3" />
+                                    Reply
+                                </>
+                            )}
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </form>
+    );
+};
 
 interface IdeaContext {
     title: string;
@@ -347,75 +654,18 @@ const CommentItem: React.FC<CommentItemProps> = ({ comment, projectId, isReply =
                 </div>
 
                 {isReplyFormOpen && (
-                    <form onSubmit={handleReplySubmit} className="mt-4 relative">
-                        {/* Reply indicator line */}
-                        <div className="absolute -left-4 top-0 bottom-0 w-0.5 bg-gradient-to-b from-purple-500 to-transparent rounded-full" />
-                        
-                        <div className="bg-gradient-to-br from-white/[0.03] to-transparent border border-white/10 rounded-xl p-4">
-                            {/* Reply tag - show who you're replying to */}
-                            <div className="flex items-center gap-2 text-xs mb-3">
-                                <span className="text-gray-500">Replying to</span>
-                                <span className={`font-semibold ${comment.is_ai_generated ? 'text-purple-400' : 'text-[#FFD700]'}`}>
-                                    @{comment.is_ai_generated ? AI_BOT_NAME : (comment.isAnonymous ? 'Anonymous' : comment.author?.username || 'Anonymous')}
-                                </span>
-                                <button 
-                                    type="button" 
-                                    onClick={() => { setActiveReplyId(null); setReplyText(''); }}
-                                    className="ml-auto p-1 text-gray-500 hover:text-white hover:bg-white/10 rounded-full transition-all"
-                                    title="Cancel reply"
-                                >
-                                    <X className="w-3.5 h-3.5" />
-                                </button>
-                            </div>
-                            
-                            <textarea 
-                                value={replyText}
-                                onChange={(e) => setReplyText(e.target.value)}
-                                className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white text-sm focus:border-[#FFD700]/50 focus:bg-white/[0.03] outline-none resize-none transition-all placeholder:text-gray-600"
-                                placeholder="Write a thoughtful reply..."
-                                rows={3}
-                                disabled={isSubmittingReply}
-                            />
-                            
-                            <div className="flex justify-between items-center mt-3">
-                                <label className="flex items-center gap-2 text-xs text-gray-500 cursor-pointer hover:text-gray-300 transition-colors select-none">
-                                    <div className={`w-4 h-4 flex-shrink-0 border rounded flex items-center justify-center transition-all ${isAnonReply ? 'bg-[#FFD700] border-[#FFD700]' : 'border-gray-600 hover:border-gray-500'}`}>
-                                        {isAnonReply && <Check className="w-2.5 h-2.5 text-black" />}
-                                    </div>
-                                    <input type="checkbox" checked={isAnonReply} onChange={e => setIsAnonReply(e.target.checked)} className="hidden" disabled={isSubmittingReply} />
-                                    Reply anonymously
-                                </label>
-                                
-                                <div className="flex gap-2">
-                                    <button 
-                                        type="button"
-                                        onClick={() => { setActiveReplyId(null); setReplyText(''); }}
-                                        className="text-xs text-gray-400 hover:text-white px-3 py-1.5 rounded-lg transition-colors"
-                                        disabled={isSubmittingReply}
-                                    >
-                                        Cancel
-                                    </button>
-                                    <button 
-                                        type="submit" 
-                                        className="text-xs bg-[#FFD700] text-black px-4 py-1.5 rounded-lg font-semibold hover:bg-[#FFD700]/90 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1.5"
-                                        disabled={isSubmittingReply || !replyText.trim()}
-                                    >
-                                        {isSubmittingReply ? (
-                                            <>
-                                                <Loader2 className="w-3 h-3 animate-spin" />
-                                                Posting...
-                                            </>
-                                        ) : (
-                                            <>
-                                                <Send className="w-3 h-3" />
-                                                Reply
-                                            </>
-                                        )}
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    </form>
+                    <ReplyForm
+                        user={user}
+                        replyText={replyText}
+                        setReplyText={setReplyText}
+                        isAnonReply={isAnonReply}
+                        setIsAnonReply={setIsAnonReply}
+                        isSubmittingReply={isSubmittingReply}
+                        handleReplySubmit={handleReplySubmit}
+                        onCancel={() => { setActiveReplyId(null); setReplyText(''); }}
+                        replyingTo={comment.is_ai_generated ? AI_BOT_NAME : (comment.isAnonymous ? 'Anonymous' : comment.author?.username || 'Anonymous')}
+                        isReplyingToAI={comment.is_ai_generated}
+                    />
                 )}
 
                 {/* AI Thinking Indicator */}
@@ -693,51 +943,25 @@ export const IdeaDetail = () => {
             <div className="border-t border-white/10 pt-12">
                 <h3 className="text-2xl font-bold mb-8">Discussion ({project.comments?.length || 0})</h3>
                 
-                <div className="bg-gradient-to-br from-white/[0.04] to-transparent border border-white/10 rounded-2xl p-5 sm:p-6 mb-10">
+                <div className="mb-10">
                     {!user ? (
-                         <div className="text-center py-6">
+                         <div className="text-center py-6 bg-white/[0.02] border border-white/10 rounded-2xl">
                              <p className="text-gray-400 mb-3">Sign in to join the discussion</p>
                              <button onClick={() => openConnectReminder()} className="text-[#FFD700] font-semibold hover:underline">Sign in</button>
                          </div>
                     ) : (
-                        <form onSubmit={handleComment}>
-                            <textarea 
-                                value={commentText}
-                                onChange={e => setCommentText(e.target.value)}
-                                className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 outline-none text-white min-h-[120px] mb-4 focus:border-[#FFD700]/50 focus:bg-white/[0.03] transition-all resize-none placeholder:text-gray-600"
-                                placeholder="Share your thoughts, questions, or feedback..."
-                                disabled={isSubmitting}
-                            />
-                            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                                <div className="flex items-center gap-4">
-                                    <label className="flex items-center gap-2 text-sm text-gray-500 cursor-pointer select-none whitespace-nowrap hover:text-gray-300 transition-colors">
-                                        <div className={`w-5 h-5 flex-shrink-0 border rounded flex items-center justify-center transition-all ${isAnonComment ? 'bg-[#FFD700] border-[#FFD700]' : 'border-gray-600 hover:border-gray-500'}`}>
-                                            {isAnonComment && <EyeOff className="w-3 h-3 text-black" />}
-                                        </div>
-                                        <input type="checkbox" checked={isAnonComment} onChange={e => setIsAnonComment(e.target.checked)} className="hidden" disabled={isSubmitting} />
-                                        Post anonymously
-                                    </label>
-                                    <MarkdownGuide />
-                                </div>
-                                <button
-                                    type="submit"
-                                    disabled={isSubmitting || !commentText.trim()}
-                                    className="bg-[#FFD700] text-black px-6 py-2.5 rounded-xl font-bold flex items-center gap-2 hover:bg-[#FFD700]/90 transition-all disabled:opacity-50 disabled:cursor-not-allowed min-w-[120px] justify-center"
-                                >
-                                    {isSubmitting ? (
-                                        <>
-                                            <Loader2 className="w-4 h-4 animate-spin" />
-                                            Posting...
-                                        </>
-                                    ) : (
-                                        <>
-                                            <Send className="w-4 h-4" />
-                                            Post
-                                        </>
-                                    )}
-                                </button>
-                            </div>
-                        </form>
+                        <CommentFormBox
+                            user={user}
+                            text={commentText}
+                            setText={setCommentText}
+                            isAnon={isAnonComment}
+                            setIsAnon={setIsAnonComment}
+                            isSubmitting={isSubmitting}
+                            onSubmit={handleComment}
+                            placeholder="Share your thoughts, questions, or feedback..."
+                            submitLabel="Post"
+                            showMarkdownGuide={true}
+                        />
                     )}
                 </div>
 

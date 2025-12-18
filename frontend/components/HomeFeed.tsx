@@ -47,6 +47,7 @@ const PARTNERS = [
     gradient: 'linear-gradient(135deg, #3366ff 0%, #00ccff 60%, #99ff66 100%)',
     route: 'https://dsuc.fun',
     external: true,
+    hasFullLogo: true, // Logo has its own background
   },
   {
     id: 'superteamvn',
@@ -57,6 +58,7 @@ const PARTNERS = [
     gradient: 'linear-gradient(135deg, #EF4444 0%, #FACC15 100%)',
     route: 'https://vn.superteam.fun',
     external: true,
+    hasFullLogo: true, // Logo has its own background
   },
   {
     id: 'solana',
@@ -67,6 +69,7 @@ const PARTNERS = [
     gradient: 'linear-gradient(135deg, #9945FF 0%, #14F195 50%, #00D1FF 100%)',
     route: 'https://solana.com',
     external: true,
+    hasFullLogo: false,
   },
 ];
 
@@ -223,15 +226,15 @@ export default function HomeFeed() {
                   >
                     {/* Logo */}
                     <div 
-                      className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg flex items-center justify-center overflow-hidden transition-all duration-300 group-hover:scale-110 flex-shrink-0"
-                      style={{ background: partner.gradient }}
+                      className={`w-10 h-10 sm:w-12 sm:h-12 rounded-lg flex items-center justify-center overflow-hidden transition-all duration-300 group-hover:scale-110 flex-shrink-0 ${partner.hasFullLogo ? '' : ''}`}
+                      style={{ background: partner.hasFullLogo ? 'transparent' : partner.gradient }}
                     >
                       <Image 
                         src={partner.logo} 
                         alt={partner.name} 
-                        width={28}
-                        height={28}
-                        className="object-contain"
+                        width={partner.hasFullLogo ? 48 : 28}
+                        height={partner.hasFullLogo ? 48 : 28}
+                        className={partner.hasFullLogo ? "w-full h-full object-cover rounded-lg" : "object-contain"}
                       />
                     </div>
                     
@@ -296,8 +299,8 @@ export default function HomeFeed() {
                             {/* Header with logo */}
                             <div className="flex items-center gap-3 mb-4">
                               <motion.div 
-                                className="w-12 h-12 rounded-lg flex items-center justify-center overflow-hidden flex-shrink-0 ring-2 ring-[#FFD700]/30"
-                                style={{ background: partner.gradient }}
+                                className={`w-12 h-12 rounded-lg flex items-center justify-center overflow-hidden flex-shrink-0 ring-2 ring-[#FFD700]/30`}
+                                style={{ background: partner.hasFullLogo ? 'transparent' : partner.gradient }}
                                 animate={{
                                   boxShadow: [
                                     '0 0 10px rgba(255, 215, 0, 0.3)',
@@ -310,9 +313,9 @@ export default function HomeFeed() {
                                 <Image 
                                   src={partner.logo} 
                                   alt={partner.name} 
-                                  width={28}
-                                  height={28}
-                                  className="object-contain"
+                                  width={partner.hasFullLogo ? 48 : 28}
+                                  height={partner.hasFullLogo ? 48 : 28}
+                                  className={partner.hasFullLogo ? "w-full h-full object-cover rounded-lg" : "object-contain"}
                                 />
                               </motion.div>
                               <div className="flex-1 min-w-0">
