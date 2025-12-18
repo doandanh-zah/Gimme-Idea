@@ -64,7 +64,7 @@ const CommentFormBox: React.FC<CommentFormProps> = ({
                     ) : (
                         <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#9945FF] to-[#14F195] flex items-center justify-center overflow-hidden border-2 border-[#FFD700]/30">
                             {user?.avatar ? (
-                                <img src={user.avatar} alt="" className="w-full h-full object-cover" draggable={false} />
+                                <img src={user.avatar} alt="" className="w-full h-full object-cover" />
                             ) : (
                                 <User className="w-5 h-5 text-white" />
                             )}
@@ -97,7 +97,7 @@ const CommentFormBox: React.FC<CommentFormProps> = ({
                             >
                                 <div className="w-6 h-6 rounded-full bg-gradient-to-br from-[#9945FF] to-[#14F195] flex items-center justify-center overflow-hidden flex-shrink-0">
                                     {user?.avatar ? (
-                                        <img src={user.avatar} alt="" className="w-full h-full object-cover" draggable={false} />
+                                        <img src={user.avatar} alt="" className="w-full h-full object-cover" />
                                     ) : (
                                         <User className="w-3 h-3 text-white" />
                                     )}
@@ -206,7 +206,7 @@ const ReplyForm: React.FC<ReplyFormProps> = ({
                     ) : (
                         <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#9945FF] to-[#14F195] flex items-center justify-center overflow-hidden border-2 border-[#FFD700]/30">
                             {user?.avatar ? (
-                                <img src={user.avatar} alt="" className="w-full h-full object-cover" draggable={false} />
+                                <img src={user.avatar} alt="" className="w-full h-full object-cover" />
                             ) : (
                                 <User className="w-4 h-4 text-white" />
                             )}
@@ -239,7 +239,7 @@ const ReplyForm: React.FC<ReplyFormProps> = ({
                             >
                                 <div className="w-5 h-5 rounded-full bg-gradient-to-br from-[#9945FF] to-[#14F195] flex items-center justify-center overflow-hidden flex-shrink-0">
                                     {user?.avatar ? (
-                                        <img src={user.avatar} alt="" className="w-full h-full object-cover" draggable={false} />
+                                        <img src={user.avatar} alt="" className="w-full h-full object-cover" />
                                     ) : (
                                         <User className="w-2.5 h-2.5 text-white" />
                                     )}

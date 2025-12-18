@@ -218,16 +218,15 @@ export default function HomeFeed() {
                 >
                   {/* Horizontal Card - Logo + Name */}
                   <div 
-                    className="relative px-4 py-3 rounded-xl border border-white/10 bg-white/[0.02] backdrop-blur-sm transition-all duration-300 cursor-pointer flex items-center gap-3 partner-card"
+                    className="relative px-4 py-3 rounded-xl border border-white/10 bg-white/[0.02] backdrop-blur-sm transition-all duration-300 cursor-pointer flex items-center gap-3"
                     style={{
                       borderColor: isHovered ? 'rgba(255,255,255,0.3)' : 'rgba(255,255,255,0.1)',
                     }}
                     onClick={() => handleClick(partner.route, partner.external)}
-                    data-no-context
                   >
                     {/* Logo */}
                     <div 
-                      className={`w-10 h-10 sm:w-12 sm:h-12 rounded-lg flex items-center justify-center overflow-hidden transition-all duration-300 group-hover:scale-110 flex-shrink-0 partner-logo ${partner.hasFullLogo ? '' : ''}`}
+                      className={`w-10 h-10 sm:w-12 sm:h-12 rounded-lg flex items-center justify-center overflow-hidden transition-all duration-300 group-hover:scale-110 flex-shrink-0 ${partner.hasFullLogo ? '' : ''}`}
                       style={{ background: partner.hasFullLogo ? 'transparent' : partner.gradient }}
                     >
                       <Image 
@@ -236,7 +235,6 @@ export default function HomeFeed() {
                         width={partner.hasFullLogo ? 48 : 28}
                         height={partner.hasFullLogo ? 48 : 28}
                         className={partner.hasFullLogo ? "w-full h-full object-cover rounded-lg" : "object-contain"}
-                        draggable={false}
                       />
                     </div>
                     

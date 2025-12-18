@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useRef, useCallback, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Project } from '../lib/types';
 import { MessageSquare, Lightbulb, Rocket, Sparkles } from 'lucide-react';
 import { useAppStore } from '../lib/store';
@@ -19,13 +19,8 @@ export const ProjectCard: React.FC<ProjectCardProps> = ({ project }) => {
   const { user, voteProject, openConnectReminder } = useAppStore();
   const router = useRouter();
   const [isHovered, setIsHovered] = useState(false);
-  const [isMobileTapped, setIsMobileTapped] = useState(false);
-  const tapTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const isIdea = project.type === 'idea';
-
-  // Check if device is mobile/touch
-  const isTouchDevice = typeof window !== 'undefined' && ('ontouchstart' in window || navigator.maxTouchPoints > 0);
 
   const handleVote = async () => {
     if (!user) {
@@ -42,70 +37,22 @@ export const ProjectCard: React.FC<ProjectCardProps> = ({ project }) => {
     }
   };
 
-  const handleCardClick = useCallback((e: React.MouseEvent) => {
-    // On mobile: first tap shows hover effect, second tap navigates
-    if (isTouchDevice) {
-      if (!isMobileTapped) {
-        e.preventDefault();
-        e.stopPropagation();
-        setIsMobileTapped(true);
-        setIsHovered(true);
-        
-        // Auto-reset after 3 seconds if no second tap
-        if (tapTimeoutRef.current) clearTimeout(tapTimeoutRef.current);
-        tapTimeoutRef.current = setTimeout(() => {
-          setIsMobileTapped(false);
-          setIsHovered(false);
-        }, 3000);
-        return;
-      }
-    }
-    
-    // Navigate to detail page
+  const handleCardClick = () => {
+    // Create clean URL slug from title + short ID
     const slug = createUniqueSlug(project.title, project.id);
     const route = isIdea ? `/idea/${slug}` : `/projects/${slug}`;
     router.push(route);
-  }, [isTouchDevice, isMobileTapped, project.title, project.id, isIdea, router]);
-
-  // Reset mobile tap state when clicking outside
-  useEffect(() => {
-    if (!isMobileTapped) return;
-    
-    const handleClickOutside = (e: TouchEvent | MouseEvent) => {
-      const target = e.target as HTMLElement;
-      if (!target.closest(`[data-project-id="${project.id}"]`)) {
-        setIsMobileTapped(false);
-        setIsHovered(false);
-        if (tapTimeoutRef.current) clearTimeout(tapTimeoutRef.current);
-      }
-    };
-    
-    document.addEventListener('touchstart', handleClickOutside);
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => {
-      document.removeEventListener('touchstart', handleClickOutside);
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
-  }, [isMobileTapped, project.id]);
-
-  // Cleanup timeout on unmount
-  useEffect(() => {
-    return () => {
-      if (tapTimeoutRef.current) clearTimeout(tapTimeoutRef.current);
-    };
-  }, []);
+  };
 
   return (
     <motion.div
       onClick={handleCardClick}
-      onMouseEnter={() => !isTouchDevice && setIsHovered(true)}
-      onMouseLeave={() => !isTouchDevice && setIsHovered(false)}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
       whileHover={{ y: -6, scale: 1.01 }}
       whileTap={{ scale: 0.98 }}
       transition={{ type: "spring", stiffness: 400, damping: 25 }}
-      className={`relative rounded-2xl overflow-hidden cursor-pointer flex flex-col h-full group project-card ${isIdea ? 'glitch-card-idea' : 'glitch-card'}`}
-      data-no-context
-      data-project-id={project.id}
+      className={`relative rounded-2xl overflow-hidden cursor-pointer flex flex-col h-full group ${isIdea ? 'glitch-card-idea' : 'glitch-card'}`}
     >
       {/* Glitch border elements for Idea cards */}
       {isIdea && (

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronDown, Crown, Medal, Award, ThumbsUp, MessageCircle, Sparkles, User } from 'lucide-react';
 import { Project } from '../lib/types';
@@ -41,69 +41,13 @@ const RecommendedCard = ({
   onViewIdea: (idea: Project) => void;
 }) => {
   const [isHovered, setIsHovered] = useState(false);
-  const [isMobileTapped, setIsMobileTapped] = useState(false);
-  const tapTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-
-  // Check if device is mobile/touch
-  const isTouchDevice = typeof window !== 'undefined' && ('ontouchstart' in window || navigator.maxTouchPoints > 0);
-
-  const handleClick = useCallback((e: React.MouseEvent) => {
-    // On mobile: first tap shows hover effect, second tap navigates
-    if (isTouchDevice) {
-      if (!isMobileTapped) {
-        e.preventDefault();
-        e.stopPropagation();
-        setIsMobileTapped(true);
-        setIsHovered(true);
-        
-        // Auto-reset after 3 seconds if no second tap
-        if (tapTimeoutRef.current) clearTimeout(tapTimeoutRef.current);
-        tapTimeoutRef.current = setTimeout(() => {
-          setIsMobileTapped(false);
-          setIsHovered(false);
-        }, 3000);
-        return;
-      }
-    }
-    
-    onViewIdea(idea);
-  }, [isTouchDevice, isMobileTapped, idea, onViewIdea]);
-
-  // Reset mobile tap state when clicking outside
-  useEffect(() => {
-    if (!isMobileTapped) return;
-    
-    const handleClickOutside = (e: TouchEvent | MouseEvent) => {
-      const target = e.target as HTMLElement;
-      if (!target.closest(`[data-recommended-id="${idea.id}"]`)) {
-        setIsMobileTapped(false);
-        setIsHovered(false);
-        if (tapTimeoutRef.current) clearTimeout(tapTimeoutRef.current);
-      }
-    };
-    
-    document.addEventListener('touchstart', handleClickOutside);
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => {
-      document.removeEventListener('touchstart', handleClickOutside);
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
-  }, [isMobileTapped, idea.id]);
-
-  // Cleanup timeout on unmount
-  useEffect(() => {
-    return () => {
-      if (tapTimeoutRef.current) clearTimeout(tapTimeoutRef.current);
-    };
-  }, []);
 
   return (
     <motion.div
-      className="relative cursor-pointer no-select"
-      data-recommended-id={idea.id}
-      onMouseEnter={() => !isTouchDevice && setIsHovered(true)}
-      onMouseLeave={() => !isTouchDevice && setIsHovered(false)}
-      onClick={handleClick}
+      className="relative cursor-pointer"
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+      onClick={() => onViewIdea(idea)}
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: index * 0.1, duration: 0.3 }}
@@ -247,7 +191,7 @@ const RecommendedCard = ({
               style={{ background: `linear-gradient(135deg, ${medal.color}, ${medal.color}80)` }}
             >
               {idea.author?.avatar ? (
-                <img src={idea.author.avatar} alt="" className="w-full h-full object-cover" draggable={false} />
+                <img src={idea.author.avatar} alt="" className="w-full h-full object-cover" />
               ) : (
                 <User className="w-3 h-3 text-black" />
               )}

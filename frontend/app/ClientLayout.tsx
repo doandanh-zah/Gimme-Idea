@@ -28,51 +28,6 @@ function AuthStoreSync() {
   return null;
 }
 
-// Component to disable right-click context menu on images and cards
-function DisableContextMenu() {
-  useEffect(() => {
-    const handleContextMenu = (e: MouseEvent) => {
-      const target = e.target as HTMLElement;
-      
-      // Check if target or parent is an image, card, or has no-select class
-      const isProtected = 
-        target.tagName === 'IMG' ||
-        target.tagName === 'VIDEO' ||
-        target.closest('.card') ||
-        target.closest('.project-card') ||
-        target.closest('.idea-card') ||
-        target.closest('.feed-card') ||
-        target.closest('.glitch-card') ||
-        target.closest('[data-no-context]') ||
-        target.classList.contains('no-select');
-      
-      if (isProtected) {
-        e.preventDefault();
-        return false;
-      }
-    };
-
-    // Disable drag on images
-    const handleDragStart = (e: DragEvent) => {
-      const target = e.target as HTMLElement;
-      if (target.tagName === 'IMG' || target.tagName === 'VIDEO') {
-        e.preventDefault();
-        return false;
-      }
-    };
-
-    document.addEventListener('contextmenu', handleContextMenu);
-    document.addEventListener('dragstart', handleDragStart);
-
-    return () => {
-      document.removeEventListener('contextmenu', handleContextMenu);
-      document.removeEventListener('dragstart', handleDragStart);
-    };
-  }, []);
-
-  return null;
-}
-
 // Buffer polyfill for LazorKit
 if (typeof window !== 'undefined') {
   window.Buffer = window.Buffer || require('buffer').Buffer;
@@ -109,7 +64,6 @@ export default function ClientLayout({ children }: ClientLayoutProps) {
           <LazorkitProvider>
             <AuthProvider>
               <AuthStoreSync />
-              <DisableContextMenu />
               {/* Global Constellation Background */}
               <ConstellationBackground opacity={0.25} showShootingStars={true} showGradientOrbs={true} />
               <Navbar />

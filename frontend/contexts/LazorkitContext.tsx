@@ -4,7 +4,7 @@ import React, { createContext, useContext, useCallback, useState, useEffect } fr
 import { LazorkitProvider as LazorkitSDKProvider, useWallet as useLazorkitWallet } from '@lazorkit/wallet';
 import { PublicKey } from '@solana/web3.js';
 
-// LazorKit Configuration - DEVNET
+// LazorKit Configuration
 const LAZORKIT_CONFIG = {
   rpcUrl: process.env.NEXT_PUBLIC_SOLANA_RPC_URL || 'https://api.devnet.solana.com',
   portalUrl: 'https://portal.lazor.sh',

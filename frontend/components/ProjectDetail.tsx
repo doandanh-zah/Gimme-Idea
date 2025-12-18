@@ -337,7 +337,7 @@ export const ProjectDetail = () => {
       <div className="grid md:grid-cols-2 gap-8 mb-12">
          <div className="rounded-2xl overflow-hidden border border-white/10 h-[300px] md:h-[400px] relative group">
             {project.image ? (
-               <img src={project.image} alt={project.title} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" draggable={false} />
+               <img src={project.image} alt={project.title} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
             ) : (
                <div className="w-full h-full bg-gradient-to-br from-purple-900/20 to-black" />
             )}
