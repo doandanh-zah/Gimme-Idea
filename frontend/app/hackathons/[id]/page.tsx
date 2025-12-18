@@ -159,6 +159,11 @@ export default function HackathonDashboard({ params }: { params: { id: string } 
    // All hackathon teams list
    const [allTeams, setAllTeams] = useState<any[]>([]);
    const [isLoadingAllTeams, setIsLoadingAllTeams] = useState(false);
+   // Team Settings Modal
+   const [isTeamSettingsOpen, setIsTeamSettingsOpen] = useState(false);
+   const [teamSettingsTab, setTeamSettingsTab] = useState<'team' | 'members'>('team');
+   const [editTeamData, setEditTeamData] = useState({ name: '', description: '', isOpen: false });
+   const [isSavingTeam, setIsSavingTeam] = useState(false);
 
    // Get user from store
    const { user } = useAppStore();
@@ -423,6 +428,49 @@ export default function HackathonDashboard({ params }: { params: { id: string } 
       } catch (err: any) {
          console.error('Kick member error:', err);
          alert(err.message || 'Failed to remove member');
+      }
+   };
+
+   // Open Team Settings Modal (leader only)
+   const openTeamSettings = () => {
+      if (!userTeam || userTeamRole !== 'leader') return;
+      setEditTeamData({
+         name: userTeam.name || '',
+         description: userTeam.description || '',
+         isOpen: userTeam.isOpen || false
+      });
+      setTeamSettingsTab('team');
+      setIsTeamSettingsOpen(true);
+   };
+
+   // Save team settings
+   const handleSaveTeamSettings = async () => {
+      if (!userTeam || userTeamRole !== 'leader') return;
+      if (!editTeamData.name.trim()) {
+         alert('Team name is required');
+         return;
+      }
+
+      setIsSavingTeam(true);
+      try {
+         const response = await apiClient.updateTeam(id, userTeam.id, {
+            name: editTeamData.name.trim(),
+            description: editTeamData.description.trim() || undefined,
+            isLookingForMembers: editTeamData.isOpen
+         });
+         if (response.success) {
+            await loadMyTeam();
+            await loadAllTeams();
+            setIsTeamSettingsOpen(false);
+            alert('Team settings saved!');
+         } else {
+            alert(response.error || 'Failed to save settings');
+         }
+      } catch (err: any) {
+         console.error('Save team settings error:', err);
+         alert(err.message || 'Failed to save settings');
+      } finally {
+         setIsSavingTeam(false);
       }
    };
 
@@ -1790,7 +1838,11 @@ export default function HackathonDashboard({ params }: { params: { id: string } 
                                                          </div>
                                                          <div className="flex gap-2">
                                                             {userTeamRole === 'leader' && (
-                                                               <button className="p-2 rounded hover:bg-white/10 text-gray-400 hover:text-white transition-colors" title="Settings">
+                                                               <button 
+                                                                  onClick={openTeamSettings}
+                                                                  className="p-2 rounded hover:bg-white/10 text-gray-400 hover:text-white transition-colors" 
+                                                                  title="Team Settings"
+                                                               >
                                                                   <Settings className="w-4 h-4" />
                                                                </button>
                                                             )}
@@ -2268,6 +2320,198 @@ export default function HackathonDashboard({ params }: { params: { id: string } 
                setEditingSubmission(null);
             }}
          />
+
+         {/* Team Settings Modal */}
+         <AnimatePresence>
+            {isTeamSettingsOpen && userTeamRole === 'leader' && (
+               <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  className="fixed inset-0 bg-black/70 z-50 flex justify-center items-center p-4"
+                  onClick={() => setIsTeamSettingsOpen(false)}
+               >
+                  <motion.div
+                     initial={{ scale: 0.9, y: 50 }}
+                     animate={{ scale: 1, y: 0 }}
+                     exit={{ scale: 0.9, y: 50 }}
+                     className="bg-surface border border-white/10 rounded-xl shadow-lg w-full max-w-lg relative overflow-hidden"
+                     onClick={(e) => e.stopPropagation()}
+                  >
+                     {/* Header */}
+                     <div className="flex items-center justify-between p-4 border-b border-white/10">
+                        <h2 className="text-lg font-bold text-white font-quantico flex items-center gap-2">
+                           <Settings className="w-5 h-5 text-gold" /> Team Settings
+                        </h2>
+                        <button
+                           onClick={() => setIsTeamSettingsOpen(false)}
+                           className="text-gray-400 hover:text-white transition-colors"
+                        >
+                           <X className="w-5 h-5" />
+                        </button>
+                     </div>
+
+                     {/* Tab Switch */}
+                     <div className="flex p-2 gap-2 border-b border-white/5">
+                        <button
+                           onClick={() => setTeamSettingsTab('team')}
+                           className={`flex-1 py-2 px-4 rounded-lg text-sm font-medium transition-all ${
+                              teamSettingsTab === 'team'
+                                 ? 'bg-gold/20 text-gold border border-gold/30'
+                                 : 'text-gray-400 hover:text-white hover:bg-white/5'
+                           }`}
+                        >
+                           <div className="flex items-center justify-center gap-2">
+                              <Rocket className="w-4 h-4" />
+                              Team Info
+                           </div>
+                        </button>
+                        <button
+                           onClick={() => setTeamSettingsTab('members')}
+                           className={`flex-1 py-2 px-4 rounded-lg text-sm font-medium transition-all ${
+                              teamSettingsTab === 'members'
+                                 ? 'bg-gold/20 text-gold border border-gold/30'
+                                 : 'text-gray-400 hover:text-white hover:bg-white/5'
+                           }`}
+                        >
+                           <div className="flex items-center justify-center gap-2">
+                              <Users className="w-4 h-4" />
+                              Manage Members
+                           </div>
+                        </button>
+                     </div>
+
+                     {/* Tab Content */}
+                     <div className="p-4">
+                        {teamSettingsTab === 'team' ? (
+                           /* Team Info Tab */
+                           <div className="space-y-4">
+                              <div>
+                                 <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2">
+                                    Team Name *
+                                 </label>
+                                 <input
+                                    type="text"
+                                    value={editTeamData.name}
+                                    onChange={(e) => setEditTeamData(prev => ({ ...prev, name: e.target.value }))}
+                                    placeholder="Enter team name..."
+                                    className="w-full bg-black/40 border border-white/10 rounded-lg px-4 py-3 text-white focus:border-gold/50 focus:outline-none placeholder-gray-600 text-sm"
+                                 />
+                              </div>
+
+                              <div>
+                                 <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2">
+                                    Description
+                                 </label>
+                                 <textarea
+                                    value={editTeamData.description}
+                                    onChange={(e) => setEditTeamData(prev => ({ ...prev, description: e.target.value }))}
+                                    placeholder="Brief description of your team..."
+                                    rows={3}
+                                    className="w-full bg-black/40 border border-white/10 rounded-lg px-4 py-3 text-white focus:border-gold/50 focus:outline-none placeholder-gray-600 text-sm resize-none"
+                                 />
+                              </div>
+
+                              <div className="flex items-center gap-3 p-3 bg-black/20 rounded-lg border border-white/5">
+                                 <input
+                                    type="checkbox"
+                                    id="isOpenSetting"
+                                    checked={editTeamData.isOpen}
+                                    onChange={(e) => setEditTeamData(prev => ({ ...prev, isOpen: e.target.checked }))}
+                                    className="w-4 h-4 accent-gold"
+                                 />
+                                 <label htmlFor="isOpenSetting" className="text-sm text-gray-300 cursor-pointer">
+                                    Looking for team members (visible in team listings)
+                                 </label>
+                              </div>
+
+                              <button
+                                 onClick={handleSaveTeamSettings}
+                                 disabled={isSavingTeam || !editTeamData.name.trim()}
+                                 className="w-full py-3 bg-gold text-black font-bold rounded-lg hover:bg-gold/90 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                              >
+                                 {isSavingTeam ? (
+                                    <>
+                                       <div className="w-4 h-4 border-2 border-black border-t-transparent rounded-full animate-spin" />
+                                       Saving...
+                                    </>
+                                 ) : (
+                                    <>
+                                       <CheckCircle2 className="w-4 h-4" /> Save Changes
+                                    </>
+                                 )}
+                              </button>
+                           </div>
+                        ) : (
+                           /* Manage Members Tab */
+                           <div className="space-y-3">
+                              <p className="text-xs text-gray-500 mb-4">
+                                 Remove members from your team. You cannot remove yourself as the leader.
+                              </p>
+                              
+                              {(userTeam?.members || []).length === 0 ? (
+                                 <div className="text-center py-8 text-gray-500 text-sm">
+                                    No members in your team yet.
+                                 </div>
+                              ) : (
+                                 <div className="space-y-2 max-h-[300px] overflow-y-auto">
+                                    {(userTeam?.members || []).map((member: any) => (
+                                       <div 
+                                          key={member.id || member.userId} 
+                                          className="flex items-center justify-between p-3 bg-black/20 rounded-lg border border-white/5"
+                                       >
+                                          <div className="flex items-center gap-3">
+                                             {member.avatar ? (
+                                                <Image src={member.avatar} alt={member.username} width={36} height={36} className="rounded-full" />
+                                             ) : (
+                                                <div className="w-9 h-9 rounded-full bg-gradient-to-br from-purple-500 to-blue-500 flex items-center justify-center text-xs font-bold text-white">
+                                                   {(member.username || '?').charAt(0).toUpperCase()}
+                                                </div>
+                                             )}
+                                             <div>
+                                                <p className="text-sm font-medium text-white">{member.username}</p>
+                                                <p className="text-[10px] text-gray-500 capitalize flex items-center gap-1">
+                                                   {member.role === 'leader' && <Trophy className="w-3 h-3 text-gold" />}
+                                                   {member.role}
+                                                </p>
+                                             </div>
+                                          </div>
+                                          
+                                          {member.role !== 'leader' && (
+                                             <button
+                                                onClick={() => {
+                                                   if (window.confirm(`Remove ${member.username} from the team?`)) {
+                                                      handleKickMember(member.userId || member.id);
+                                                   }
+                                                }}
+                                                className="px-3 py-1.5 bg-red-500/10 text-red-400 text-xs font-medium rounded-lg hover:bg-red-500/20 transition-colors flex items-center gap-1"
+                                             >
+                                                <UserMinus className="w-3 h-3" /> Remove
+                                             </button>
+                                          )}
+                                       </div>
+                                    ))}
+                                 </div>
+                              )}
+
+                              <div className="pt-3 border-t border-white/5">
+                                 <button
+                                    onClick={() => {
+                                       setIsTeamSettingsOpen(false);
+                                       setIsInviteModalOpen(true);
+                                    }}
+                                    className="w-full py-3 border border-dashed border-gold/30 text-gold font-medium rounded-lg hover:bg-gold/5 transition-all flex items-center justify-center gap-2"
+                                 >
+                                    <UserPlus className="w-4 h-4" /> Invite New Member
+                                 </button>
+                              </div>
+                           </div>
+                        )}
+                     </div>
+                  </motion.div>
+               </motion.div>
+            )}
+         </AnimatePresence>
       </div>
    );
 }
