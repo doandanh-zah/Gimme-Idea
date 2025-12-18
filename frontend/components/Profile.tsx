@@ -6,7 +6,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useRouter, usePathname } from 'next/navigation';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { motion } from 'framer-motion';
-import { Camera, Edit2, Save, X, Github, Twitter, Facebook, Send, Pencil, Trash2, ArrowLeft, Wallet, Check, Repeat, Loader2, Lightbulb, MessageSquare, Heart, Star, Calendar, Link as LinkIcon, ImageIcon, ThumbsUp, TrendingUp, Users, Rss, Bookmark } from 'lucide-react';
+import { Camera, Edit2, Save, X, Github, Twitter, Facebook, Send, Pencil, Trash2, ArrowLeft, Wallet, Check, Repeat, Loader2, Lightbulb, MessageSquare, Heart, Star, Calendar, Link as LinkIcon, ImageIcon, ThumbsUp, TrendingUp, Users, Rss, Bookmark, LogOut, Mail, Unplug } from 'lucide-react';
 import { ProjectCard } from './ProjectCard';
 import { WalletReminderBadge } from './WalletReminderBadge';
 import { WalletRequiredModal } from './WalletRequiredModal';
@@ -34,7 +34,7 @@ interface UserStats {
 
 export const Profile = () => {
   const { user, viewedUser, projects, updateUserProfile, updateProject, deleteProject, openSubmitModal, setViewedUser } = useAppStore();
-  const { setShowWalletPopup, refreshUser, isLoading: authLoading } = useAuth();
+  const { setShowWalletPopup, refreshUser, isLoading: authLoading, signInWithGoogle, signOut } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
   const { connected, publicKey, connect, select, wallets, disconnect } = useWallet();
@@ -56,6 +56,14 @@ export const Profile = () => {
   const [coverFile, setCoverFile] = useState<File | null>(null);
   const [isUploadingCover, setIsUploadingCover] = useState(false);
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
+  
+  // Disconnect wallet & change email states
+  const [isDisconnectingWallet, setIsDisconnectingWallet] = useState(false);
+  const [isChangingEmail, setIsChangingEmail] = useState(false);
+  const [showAccountSettings, setShowAccountSettings] = useState(false);
+  const [showChangeEmailModal, setShowChangeEmailModal] = useState(false);
+  const [newEmail, setNewEmail] = useState('');
+  const [isSavingEmail, setIsSavingEmail] = useState(false);
   
   // Follow system state
   const [showFollowModal, setShowFollowModal] = useState(false);
@@ -84,6 +92,21 @@ export const Profile = () => {
       setViewedUser(null);
     }
   }, [isMyProfilePage, viewedUser, setViewedUser]);
+
+  // Close account settings dropdown when clicking outside
+  useEffect(() => {
+    if (!showAccountSettings) return;
+    
+    const handleClickOutside = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      if (!target.closest('[data-account-settings]')) {
+        setShowAccountSettings(false);
+      }
+    };
+    
+    document.addEventListener('click', handleClickOutside);
+    return () => document.removeEventListener('click', handleClickOutside);
+  }, [showAccountSettings]);
 
   const [editForm, setEditForm] = useState({
       username: '',
@@ -256,6 +279,77 @@ export const Profile = () => {
       }
     } finally {
       setIsReconnecting(false);
+    }
+  };
+
+  // Handle disconnect wallet from account
+  const handleDisconnectWallet = async () => {
+    if (!displayUser?.wallet) return;
+    
+    const confirmed = window.confirm(
+      'Are you sure you want to disconnect your wallet? You will no longer be able to receive tips until you connect a new wallet.'
+    );
+    
+    if (!confirmed) return;
+    
+    setIsDisconnectingWallet(true);
+    try {
+      // Disconnect the browser wallet first
+      if (connected) {
+        await disconnect();
+      }
+      
+      // Update user profile to remove wallet
+      await updateUserProfile({ wallet: null });
+      await refreshUser();
+      toast.success('Wallet disconnected successfully');
+      setShowAccountSettings(false);
+    } catch (error: any) {
+      console.error('Disconnect wallet error:', error);
+      toast.error('Failed to disconnect wallet');
+    } finally {
+      setIsDisconnectingWallet(false);
+    }
+  };
+
+  // Handle change Gmail/Email - Open modal
+  const handleChangeEmail = () => {
+    setNewEmail(displayUser?.email || '');
+    setShowChangeEmailModal(true);
+    setShowAccountSettings(false);
+  };
+
+  // Handle save new email
+  const handleSaveNewEmail = async () => {
+    if (!newEmail.trim()) {
+      toast.error('Please enter an email address');
+      return;
+    }
+    
+    // Basic email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(newEmail)) {
+      toast.error('Please enter a valid email address');
+      return;
+    }
+    
+    if (newEmail === displayUser?.email) {
+      toast.error('New email is the same as current email');
+      return;
+    }
+    
+    setIsSavingEmail(true);
+    try {
+      await updateUserProfile({ email: newEmail });
+      await refreshUser();
+      toast.success('Email updated successfully!');
+      setShowChangeEmailModal(false);
+      setNewEmail('');
+    } catch (error: any) {
+      console.error('Update email error:', error);
+      toast.error(error.message || 'Failed to update email');
+    } finally {
+      setIsSavingEmail(false);
     }
   };
 
@@ -675,6 +769,93 @@ export const Profile = () => {
                             <Calendar className="w-4 h-4" />
                             <span>Gimme Idea Member</span>
                         </div>
+                        
+                        {/* Account Settings Button - Only for own profile */}
+                        {isOwnProfile && !isEditing && (
+                            <div className="relative" data-account-settings>
+                                <button
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        setShowAccountSettings(!showAccountSettings);
+                                    }}
+                                    className="text-gray-400 hover:text-white text-[10px] bg-white/5 hover:bg-white/10 px-2 py-1 rounded transition-colors flex items-center gap-1"
+                                >
+                                    <Edit2 className="w-3 h-3" /> Settings
+                                </button>
+                                
+                                {/* Account Settings Dropdown */}
+                                {showAccountSettings && (
+                                    <div className="absolute top-full left-0 mt-2 w-56 bg-[#1a1a2e] border border-white/10 rounded-xl shadow-xl z-50 overflow-hidden">
+                                        <div className="p-2 border-b border-white/10">
+                                            <p className="text-xs text-gray-500 px-2">Account Settings</p>
+                                        </div>
+                                        
+                                        {/* Change Email */}
+                                        <button
+                                            onClick={handleChangeEmail}
+                                            className="w-full px-4 py-3 flex items-center gap-3 hover:bg-white/5 transition-colors text-left"
+                                        >
+                                            <Mail className="w-4 h-4 text-blue-400" />
+                                            <div className="flex-1">
+                                                <p className="text-sm text-white">Change Email</p>
+                                                <p className="text-[10px] text-gray-500">{displayUser.email}</p>
+                                            </div>
+                                        </button>
+                                        
+                                        {/* Change Wallet */}
+                                        {displayUser.wallet && (
+                                            <button
+                                                onClick={() => {
+                                                    setWalletModalMode('change');
+                                                    setShowWalletModal(true);
+                                                    setShowAccountSettings(false);
+                                                }}
+                                                className="w-full px-4 py-3 flex items-center gap-3 hover:bg-white/5 transition-colors text-left border-t border-white/5"
+                                            >
+                                                <Repeat className="w-4 h-4 text-purple-400" />
+                                                <div className="flex-1">
+                                                    <p className="text-sm text-white">Change Wallet</p>
+                                                    <p className="text-[10px] text-gray-500 font-mono">
+                                                        {displayUser.wallet.slice(0, 4)}...{displayUser.wallet.slice(-4)}
+                                                    </p>
+                                                </div>
+                                            </button>
+                                        )}
+                                        
+                                        {/* Disconnect Wallet */}
+                                        {displayUser.wallet && (
+                                            <button
+                                                onClick={handleDisconnectWallet}
+                                                disabled={isDisconnectingWallet}
+                                                className="w-full px-4 py-3 flex items-center gap-3 hover:bg-red-500/10 transition-colors text-left border-t border-white/5"
+                                            >
+                                                <Unplug className="w-4 h-4 text-red-400" />
+                                                <div className="flex-1">
+                                                    <p className="text-sm text-red-400">Disconnect Wallet</p>
+                                                    <p className="text-[10px] text-gray-500">Remove wallet from profile</p>
+                                                </div>
+                                                {isDisconnectingWallet && <Loader2 className="w-4 h-4 animate-spin text-red-400" />}
+                                            </button>
+                                        )}
+                                        
+                                        {/* Logout */}
+                                        <button
+                                            onClick={async () => {
+                                                await signOut();
+                                                router.push('/');
+                                            }}
+                                            className="w-full px-4 py-3 flex items-center gap-3 hover:bg-red-500/10 transition-colors text-left border-t border-white/10"
+                                        >
+                                            <LogOut className="w-4 h-4 text-red-400" />
+                                            <div className="flex-1">
+                                                <p className="text-sm text-red-400">Logout</p>
+                                                <p className="text-[10px] text-gray-500">Sign out of your account</p>
+                                            </div>
+                                        </button>
+                                    </div>
+                                )}
+                            </div>
+                        )}
                     </div>
 
                     {/* Social Links - Display */}
@@ -1026,6 +1207,85 @@ export const Profile = () => {
             username={displayUser.username}
             initialTab={followModalTab}
           />
+        )}
+
+        {/* Change Email Modal */}
+        {showChangeEmailModal && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center px-4">
+            <div 
+              className="absolute inset-0 bg-black/80 backdrop-blur-sm" 
+              onClick={() => setShowChangeEmailModal(false)} 
+            />
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="relative w-full max-w-md bg-[#1a1a2e] border border-white/10 rounded-2xl p-6 shadow-2xl"
+            >
+              <button
+                onClick={() => setShowChangeEmailModal(false)}
+                className="absolute top-4 right-4 text-gray-400 hover:text-white"
+              >
+                <X className="w-5 h-5" />
+              </button>
+
+              <div className="flex items-center gap-3 mb-6">
+                <div className="w-12 h-12 rounded-xl bg-blue-500/20 flex items-center justify-center">
+                  <Mail className="w-6 h-6 text-blue-400" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-bold text-white">Change Email</h3>
+                  <p className="text-xs text-gray-500">Update your account email address</p>
+                </div>
+              </div>
+
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm text-gray-400 mb-2">Current Email</label>
+                  <div className="px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-gray-500 text-sm">
+                    {displayUser?.email || 'No email set'}
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm text-gray-400 mb-2">New Email</label>
+                  <input
+                    type="email"
+                    value={newEmail}
+                    onChange={(e) => setNewEmail(e.target.value)}
+                    placeholder="Enter new email address"
+                    className="w-full px-4 py-3 bg-white/5 border border-white/20 rounded-xl text-white placeholder-gray-500 focus:border-blue-500 focus:outline-none transition-colors"
+                  />
+                </div>
+
+                <div className="flex gap-3 pt-2">
+                  <button
+                    onClick={() => setShowChangeEmailModal(false)}
+                    className="flex-1 px-4 py-3 border border-white/20 rounded-xl text-gray-400 hover:bg-white/5 transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleSaveNewEmail}
+                    disabled={isSavingEmail || !newEmail.trim()}
+                    className="flex-1 px-4 py-3 bg-blue-500 hover:bg-blue-600 disabled:bg-blue-500/50 disabled:cursor-not-allowed rounded-xl text-white font-semibold flex items-center justify-center gap-2 transition-colors"
+                  >
+                    {isSavingEmail ? (
+                      <>
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                        Saving...
+                      </>
+                    ) : (
+                      <>
+                        <Check className="w-4 h-4" />
+                        Save Email
+                      </>
+                    )}
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          </div>
         )}
     </motion.div>
   );
