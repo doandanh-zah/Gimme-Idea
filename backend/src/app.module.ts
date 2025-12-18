@@ -14,6 +14,7 @@ import { SettingsModule } from "./settings/settings.module";
 import { AIModule } from "./ai/ai.module";
 import { FeedsModule } from "./feeds/feeds.module";
 import { AdminModule } from "./admin/admin.module";
+import { HackathonsModule } from "./hackathons/hackathons.module";
 
 @Module({
   imports: [
@@ -34,6 +35,7 @@ import { AdminModule } from "./admin/admin.module";
     AIModule,
     FeedsModule,
     AdminModule,
+    HackathonsModule,
   ],
   controllers: [AppController],
   providers: [
@@ -47,4 +49,4 @@ import { AdminModule } from "./admin/admin.module";
   ],
   exports: [SupabaseService, SolanaService],
 })
-export class AppModule {}
+export class AppModule { }

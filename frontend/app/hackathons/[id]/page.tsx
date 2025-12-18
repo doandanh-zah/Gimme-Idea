@@ -8,7 +8,7 @@ import {
    AlertCircle, MoreHorizontal, Github, Disc, Link as LinkIcon,
    Monitor, Mic, SwatchBook, Code, ShieldCheck, Smartphone, UserPlus,
    RefreshCw, Lock, Search, Plus, Settings, LogOut, UserMinus,
-   LayoutDashboard, Rocket, BookOpen, Menu as MenuIcon, X, Sparkles, Activity, Send, CheckSquare, Globe, Video, Youtube, ThumbsUp, ArrowLeft, FileUp
+   LayoutDashboard, Rocket, BookOpen, Menu as MenuIcon, X, Sparkles, Activity, Send, CheckSquare, Globe, Video, Youtube, ThumbsUp, ArrowLeft, FileUp, Lightbulb, Edit3, Trash2, Filter, SortDesc
 } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -80,6 +80,13 @@ export default function HackathonDashboard({ params }: { params: { id: string } 
    const [submissionForm, setSubmissionForm] = useState({ repoUrl: '', videoUrl: '', notes: '' });
    const [isImportModalOpen, setIsImportModalOpen] = useState(false);
    const [importedIdeas, setImportedIdeas] = useState<Project[]>([]);
+
+   // Ideas List State
+   const [ideasSearchQuery, setIdeasSearchQuery] = useState('');
+   const [ideasCategoryFilter, setIdeasCategoryFilter] = useState('all');
+   const [ideasSortBy, setIdeasSortBy] = useState<'newest' | 'votes' | 'comments'>('newest');
+   const [showMyIdeasOnly, setShowMyIdeasOnly] = useState(false);
+   const [editingIdeaId, setEditingIdeaId] = useState<string | null>(null);
 
    // Background Stars
    const [stars, setStars] = useState<{ id: number; top: string; left: string; size: number; duration: string; opacity: number }[]>([]);
@@ -369,7 +376,16 @@ export default function HackathonDashboard({ params }: { params: { id: string } 
                   <span className="text-[9px] font-medium">Details</span>
                </button>
 
-               {/* Submission Tab */}
+               {/* Ideas Tab */}
+               <button
+                  onClick={() => setActiveSection('ideas')}
+                  className={`flex flex-col items-center gap-1 px-3 py-2 transition-colors ${activeSection === 'ideas' ? 'text-gold' : 'text-gray-500 hover:text-white'}`}
+               >
+                  <Lightbulb className="w-5 h-5" />
+                  <span className="text-[9px] font-medium">Ideas</span>
+               </button>
+
+               {/* Submission Tab */}}
                <button
                   onClick={() => setActiveSection('submission')}
                   className={`flex flex-col items-center gap-1 px-3 py-2 transition-colors ${activeSection === 'submission' ? 'text-gold' : 'text-gray-500 hover:text-white'}`}
@@ -419,6 +435,7 @@ export default function HackathonDashboard({ params }: { params: { id: string } 
                   <div className="text-[10px] text-gray-500 font-bold uppercase tracking-wider px-2 mb-2 mt-2">Menu</div>
                   <SidebarItem id="overview" label="Overview" icon={LayoutDashboard} activeSection={activeSection} setActiveSection={setActiveSection} setIsMobileMenuOpen={setIsMobileMenuOpen} />
                   <SidebarItem id="details" label="Details" icon={FileText} activeSection={activeSection} setActiveSection={setActiveSection} setIsMobileMenuOpen={setIsMobileMenuOpen} />
+                  <SidebarItem id="ideas" label="Ideas" icon={Lightbulb} activeSection={activeSection} setActiveSection={setActiveSection} setIsMobileMenuOpen={setIsMobileMenuOpen} />
 
                   <div className="my-4 border-t border-white/5" />
                   <div className="text-[10px] text-gray-500 font-bold uppercase tracking-wider px-2 mb-2">My Zone</div>
@@ -1373,6 +1390,302 @@ export default function HackathonDashboard({ params }: { params: { id: string } 
                                                 <p className="text-[10px] text-gray-500">External Link</p>
                                              </a>
                                           ))}
+                                       </div>
+                                    );
+
+                                 case 'ideas':
+                                    // Mock submitted ideas for this hackathon
+                                    const MOCK_SUBMITTED_IDEAS = [
+                                       { id: 'sub-1', title: 'DeFi Yield Optimizer', description: 'An AI-powered yield farming aggregator that automatically moves funds between protocols to maximize returns while minimizing gas fees.', category: 'DeFi', votes: 156, comments: 23, author: { username: 'alice_dev', avatar: '/avatars/alice.png' }, isOwner: false, submittedAt: '2024-12-15T10:30:00Z', tags: ['AI', 'Yield', 'Automation'] },
+                                       { id: 'sub-2', title: 'NFT Royalty Tracker', description: 'A comprehensive dashboard for creators to track their NFT royalties across multiple marketplaces in real-time.', category: 'NFT', votes: 98, comments: 15, author: { username: 'Thodium', avatar: '/avatars/default.png' }, isOwner: true, submittedAt: '2024-12-16T14:20:00Z', tags: ['Analytics', 'Creators'] },
+                                       { id: 'sub-3', title: 'GameFi Leaderboard System', description: 'A decentralized leaderboard and achievement system for blockchain games with anti-cheat mechanisms.', category: 'Gaming', votes: 87, comments: 12, author: { username: 'gamer_pro', avatar: '/avatars/gamer.png' }, isOwner: false, submittedAt: '2024-12-14T09:15:00Z', tags: ['Gaming', 'Achievements'] },
+                                       { id: 'sub-4', title: 'Cross-Chain Bridge UI', description: 'A user-friendly interface for bridging assets across multiple blockchains with real-time fee comparison.', category: 'Infrastructure', votes: 134, comments: 19, author: { username: 'Thodium', avatar: '/avatars/default.png' }, isOwner: true, submittedAt: '2024-12-17T08:45:00Z', tags: ['Bridge', 'UX'] },
+                                       { id: 'sub-5', title: 'DAO Voting Mobile App', description: 'A mobile-first application for participating in DAO governance with push notifications for proposals.', category: 'DAO', votes: 76, comments: 8, author: { username: 'dao_enthusiast', avatar: '/avatars/dao.png' }, isOwner: false, submittedAt: '2024-12-13T16:00:00Z', tags: ['Mobile', 'Governance'] },
+                                       { id: 'sub-6', title: 'Social Token Platform', description: 'A platform for creators to launch and manage their own social tokens with built-in engagement rewards.', category: 'Social', votes: 112, comments: 21, author: { username: 'creator_hub', avatar: '/avatars/creator.png' }, isOwner: false, submittedAt: '2024-12-12T11:30:00Z', tags: ['Creators', 'Tokens'] },
+                                    ];
+
+                                    // Filter and sort ideas
+                                    let filteredIdeas = [...MOCK_SUBMITTED_IDEAS];
+
+                                    // Search filter
+                                    if (ideasSearchQuery) {
+                                       filteredIdeas = filteredIdeas.filter(idea =>
+                                          idea.title.toLowerCase().includes(ideasSearchQuery.toLowerCase()) ||
+                                          idea.description.toLowerCase().includes(ideasSearchQuery.toLowerCase())
+                                       );
+                                    }
+
+                                    // Category filter
+                                    if (ideasCategoryFilter !== 'all') {
+                                       filteredIdeas = filteredIdeas.filter(idea => idea.category === ideasCategoryFilter);
+                                    }
+
+                                    // My ideas filter
+                                    if (showMyIdeasOnly) {
+                                       filteredIdeas = filteredIdeas.filter(idea => idea.isOwner);
+                                    }
+
+                                    // Sort
+                                    switch (ideasSortBy) {
+                                       case 'votes':
+                                          filteredIdeas.sort((a, b) => b.votes - a.votes);
+                                          break;
+                                       case 'comments':
+                                          filteredIdeas.sort((a, b) => b.comments - a.comments);
+                                          break;
+                                       case 'newest':
+                                       default:
+                                          filteredIdeas.sort((a, b) => new Date(b.submittedAt).getTime() - new Date(a.submittedAt).getTime());
+                                    }
+
+                                    const categories = ['all', 'DeFi', 'NFT', 'Gaming', 'Infrastructure', 'DAO', 'Social', 'DePIN', 'Mobile', 'Security'];
+                                    const myIdeasCount = MOCK_SUBMITTED_IDEAS.filter(i => i.isOwner).length;
+
+                                    return (
+                                       <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 md:gap-6 h-full overflow-y-auto md:overflow-hidden pb-6 md:pb-0">
+                                          {/* LEFT COLUMN: Ideas List (Span 8) */}
+                                          <div className="lg:col-span-8 flex flex-col gap-4 h-auto lg:h-full lg:overflow-y-auto pr-0 lg:pr-2">
+
+                                             {/* Search & Filter Bar */}
+                                             <div className="bg-surface border border-white/5 rounded-xl p-4 sticky top-0 z-10">
+                                                <div className="flex flex-col md:flex-row gap-3">
+                                                   {/* Search Input */}
+                                                   <div className="flex-1 relative">
+                                                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
+                                                      <input
+                                                         type="text"
+                                                         placeholder="Search ideas..."
+                                                         value={ideasSearchQuery}
+                                                         onChange={(e) => setIdeasSearchQuery(e.target.value)}
+                                                         className="w-full bg-black/30 border border-white/10 rounded-lg pl-10 pr-4 py-2 text-white text-sm focus:border-gold/50 outline-none transition-colors"
+                                                      />
+                                                   </div>
+
+                                                   {/* Filters Row */}
+                                                   <div className="flex items-center gap-2 flex-wrap">
+                                                      {/* Category Filter */}
+                                                      <div className="relative">
+                                                         <select
+                                                            value={ideasCategoryFilter}
+                                                            onChange={(e) => setIdeasCategoryFilter(e.target.value)}
+                                                            className="appearance-none bg-black/30 border border-white/10 rounded-lg px-3 py-2 pr-8 text-white text-xs focus:border-gold/50 outline-none cursor-pointer"
+                                                         >
+                                                            {categories.map(cat => (
+                                                               <option key={cat} value={cat}>{cat === 'all' ? 'All Categories' : cat}</option>
+                                                            ))}
+                                                         </select>
+                                                         <Filter className="absolute right-2 top-1/2 -translate-y-1/2 w-3 h-3 text-gray-500 pointer-events-none" />
+                                                      </div>
+
+                                                      {/* Sort */}
+                                                      <div className="relative">
+                                                         <select
+                                                            value={ideasSortBy}
+                                                            onChange={(e) => setIdeasSortBy(e.target.value as any)}
+                                                            className="appearance-none bg-black/30 border border-white/10 rounded-lg px-3 py-2 pr-8 text-white text-xs focus:border-gold/50 outline-none cursor-pointer"
+                                                         >
+                                                            <option value="newest">Newest</option>
+                                                            <option value="votes">Most Voted</option>
+                                                            <option value="comments">Most Discussed</option>
+                                                         </select>
+                                                         <SortDesc className="absolute right-2 top-1/2 -translate-y-1/2 w-3 h-3 text-gray-500 pointer-events-none" />
+                                                      </div>
+
+                                                      {/* My Ideas Toggle */}
+                                                      <button
+                                                         onClick={() => setShowMyIdeasOnly(!showMyIdeasOnly)}
+                                                         className={`px-3 py-2 rounded-lg text-xs font-medium transition-all flex items-center gap-1.5 ${showMyIdeasOnly ? 'bg-gold/20 text-gold border border-gold/30' : 'bg-black/30 text-gray-400 border border-white/10 hover:text-white'}`}
+                                                      >
+                                                         <Sparkles className="w-3 h-3" />
+                                                         My Ideas ({myIdeasCount})
+                                                      </button>
+                                                   </div>
+                                                </div>
+                                             </div>
+
+                                             {/* Ideas Grid */}
+                                             <div className="grid gap-4">
+                                                {filteredIdeas.length === 0 ? (
+                                                   <div className="flex flex-col items-center justify-center py-16 gap-3 text-center bg-surface border border-white/5 rounded-xl">
+                                                      <div className="w-16 h-16 bg-white/5 rounded-full flex items-center justify-center">
+                                                         <Lightbulb className="w-8 h-8 text-gray-600" />
+                                                      </div>
+                                                      <div>
+                                                         <p className="text-sm text-gray-400 mb-1">No ideas found</p>
+                                                         <p className="text-xs text-gray-500">Try adjusting your filters or search query</p>
+                                                      </div>
+                                                   </div>
+                                                ) : filteredIdeas.map(idea => (
+                                                   <div
+                                                      key={idea.id}
+                                                      className="group relative bg-surface border border-white/5 rounded-xl p-5 hover:border-white/10 transition-all"
+                                                   >
+                                                      {/* Header */}
+                                                      <div className="flex justify-between items-start mb-3">
+                                                         <div className="flex items-center gap-2 flex-wrap">
+                                                            <span className="bg-white/5 border border-white/10 px-2 py-0.5 rounded text-[10px] text-gray-400 font-mono">{idea.category}</span>
+                                                            {idea.tags.slice(0, 2).map(tag => (
+                                                               <span key={tag} className="bg-gold/5 border border-gold/10 px-2 py-0.5 rounded text-[10px] text-gold/70">{tag}</span>
+                                                            ))}
+                                                            {idea.isOwner && (
+                                                               <span className="bg-blue-500/10 border border-blue-500/30 px-2 py-0.5 rounded text-[10px] text-blue-400 font-bold">Your Idea</span>
+                                                            )}
+                                                         </div>
+
+                                                         {/* Actions for owner */}
+                                                         {idea.isOwner && (
+                                                            <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                               <button
+                                                                  onClick={() => setEditingIdeaId(idea.id)}
+                                                                  className="p-1.5 hover:bg-white/10 rounded-lg transition-colors text-gray-400 hover:text-white"
+                                                                  title="Edit idea"
+                                                               >
+                                                                  <Edit3 className="w-3.5 h-3.5" />
+                                                               </button>
+                                                               <button
+                                                                  onClick={() => {
+                                                                     if (window.confirm('Are you sure you want to delete this idea?')) {
+                                                                        // Handle delete
+                                                                        console.log('Delete idea:', idea.id);
+                                                                     }
+                                                                  }}
+                                                                  className="p-1.5 hover:bg-red-500/10 rounded-lg transition-colors text-gray-400 hover:text-red-400"
+                                                                  title="Delete idea"
+                                                               >
+                                                                  <Trash2 className="w-3.5 h-3.5" />
+                                                               </button>
+                                                            </div>
+                                                         )}
+                                                      </div>
+
+                                                      {/* Title & Description */}
+                                                      <h3 className="text-lg font-bold text-white mb-2 group-hover:text-gold transition-colors">{idea.title}</h3>
+                                                      <p className="text-sm text-gray-500 line-clamp-2 leading-relaxed mb-4">{idea.description}</p>
+
+                                                      {/* Footer */}
+                                                      <div className="flex items-center justify-between pt-3 border-t border-white/5">
+                                                         {/* Author */}
+                                                         <div className="flex items-center gap-2">
+                                                            <div className="w-6 h-6 rounded-full bg-gradient-to-br from-gold/30 to-yellow-600/30 flex items-center justify-center text-[10px] text-gold font-bold">
+                                                               {idea.author.username.charAt(0).toUpperCase()}
+                                                            </div>
+                                                            <span className="text-xs text-gray-400">{idea.author.username}</span>
+                                                            <span className="text-gray-700">•</span>
+                                                            <span className="text-[10px] text-gray-500">{format(new Date(idea.submittedAt), 'MMM dd')}</span>
+                                                         </div>
+
+                                                         {/* Stats */}
+                                                         <div className="flex items-center gap-4">
+                                                            <button className="flex items-center gap-1.5 text-gray-500 hover:text-gold transition-colors group/vote">
+                                                               <ThumbsUp className="w-4 h-4 group-hover/vote:scale-110 transition-transform" />
+                                                               <span className="text-xs font-medium">{idea.votes}</span>
+                                                            </button>
+                                                            <button className="flex items-center gap-1.5 text-gray-500 hover:text-blue-400 transition-colors">
+                                                               <MessageSquare className="w-4 h-4" />
+                                                               <span className="text-xs font-medium">{idea.comments}</span>
+                                                            </button>
+                                                         </div>
+                                                      </div>
+                                                   </div>
+                                                ))}
+                                             </div>
+                                          </div>
+
+                                          {/* RIGHT COLUMN: Stats Sidebar (Span 4) */}
+                                          <div className="hidden lg:flex lg:col-span-4 flex-col gap-4 h-full overflow-y-auto pr-2">
+
+                                             {/* Stats Overview */}
+                                             <div className="bg-surface border border-white/5 rounded-xl p-5">
+                                                <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-4 flex items-center gap-2">
+                                                   <Activity className="w-4 h-4" /> Submission Stats
+                                                </h3>
+                                                <div className="grid grid-cols-2 gap-4">
+                                                   <div className="bg-black/20 rounded-lg p-3 text-center">
+                                                      <p className="text-2xl font-bold text-white">{MOCK_SUBMITTED_IDEAS.length}</p>
+                                                      <p className="text-[10px] text-gray-500 uppercase">Total Ideas</p>
+                                                   </div>
+                                                   <div className="bg-black/20 rounded-lg p-3 text-center">
+                                                      <p className="text-2xl font-bold text-gold">{myIdeasCount}</p>
+                                                      <p className="text-[10px] text-gray-500 uppercase">Your Ideas</p>
+                                                   </div>
+                                                </div>
+                                             </div>
+
+                                             {/* Category Breakdown */}
+                                             <div className="bg-surface border border-white/5 rounded-xl p-5">
+                                                <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-4 flex items-center gap-2">
+                                                   <Target className="w-4 h-4" /> By Category
+                                                </h3>
+                                                <div className="space-y-3">
+                                                   {(() => {
+                                                      const catCounts = MOCK_SUBMITTED_IDEAS.reduce((acc, idea) => {
+                                                         acc[idea.category] = (acc[idea.category] || 0) + 1;
+                                                         return acc;
+                                                      }, {} as Record<string, number>);
+
+                                                      return Object.entries(catCounts)
+                                                         .sort((a, b) => b[1] - a[1])
+                                                         .map(([cat, count]) => (
+                                                            <div key={cat} className="flex items-center justify-between">
+                                                               <span className="text-xs text-gray-400">{cat}</span>
+                                                               <div className="flex items-center gap-2">
+                                                                  <div className="w-20 h-1.5 bg-black/30 rounded-full overflow-hidden">
+                                                                     <div
+                                                                        className="h-full bg-gold rounded-full"
+                                                                        style={{ width: `${(count / MOCK_SUBMITTED_IDEAS.length) * 100}%` }}
+                                                                     />
+                                                                  </div>
+                                                                  <span className="text-xs text-white font-medium w-6 text-right">{count}</span>
+                                                               </div>
+                                                            </div>
+                                                         ));
+                                                   })()}
+                                                </div>
+                                             </div>
+
+                                             {/* Top Contributors */}
+                                             <div className="bg-surface border border-white/5 rounded-xl p-5">
+                                                <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-4 flex items-center gap-2">
+                                                   <Trophy className="w-4 h-4" /> Top Contributors
+                                                </h3>
+                                                <div className="space-y-3">
+                                                   {(() => {
+                                                      const authorCounts = MOCK_SUBMITTED_IDEAS.reduce((acc, idea) => {
+                                                         acc[idea.author.username] = (acc[idea.author.username] || 0) + 1;
+                                                         return acc;
+                                                      }, {} as Record<string, number>);
+
+                                                      return Object.entries(authorCounts)
+                                                         .sort((a, b) => b[1] - a[1])
+                                                         .slice(0, 5)
+                                                         .map(([author, count], i) => (
+                                                            <div key={author} className="flex items-center gap-3">
+                                                               <span className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold ${i === 0 ? 'bg-gold/20 text-gold' : 'bg-white/5 text-gray-500'}`}>
+                                                                  {i + 1}
+                                                               </span>
+                                                               <div className="w-6 h-6 rounded-full bg-gradient-to-br from-gold/30 to-yellow-600/30 flex items-center justify-center text-[10px] text-gold font-bold">
+                                                                  {author.charAt(0).toUpperCase()}
+                                                               </div>
+                                                               <span className="text-xs text-white flex-1">{author}</span>
+                                                               <span className="text-xs text-gray-500">{count} ideas</span>
+                                                            </div>
+                                                         ));
+                                                   })()}
+                                                </div>
+                                             </div>
+
+                                             {/* Quick Actions */}
+                                             <div className="bg-gradient-to-br from-gold/10 to-yellow-600/5 border border-gold/20 rounded-xl p-5">
+                                                <h3 className="text-xs font-bold text-gold uppercase tracking-wider mb-3">Have an idea?</h3>
+                                                <p className="text-[10px] text-gray-400 mb-4">Submit your idea to compete for the prize pool!</p>
+                                                <button
+                                                   onClick={() => setActiveSection('submission')}
+                                                   className="w-full py-2.5 bg-gold text-black font-bold rounded-lg text-xs hover:bg-gold/90 transition-all flex items-center justify-center gap-2"
+                                                >
+                                                   <Send className="w-3 h-3" /> Submit Your Idea
+                                                </button>
+                                             </div>
+                                          </div>
                                        </div>
                                     );
 
