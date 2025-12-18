@@ -13,7 +13,7 @@ import {
 import Image from 'next/image';
 
 import { useSearchParams } from 'next/navigation';
-import { format, isBefore } from 'date-fns';
+import { format, isBefore, isSameDay } from 'date-fns';
 import { HACKATHONS_MOCK_DATA } from '@/lib/mock-hackathons';
 import InviteMemberModal from '@/components/InviteMemberModal';
 
@@ -475,7 +475,7 @@ export default function HackathonDashboard({ params }: { params: { id: string } 
                                                         <div className={`${step.status === 'active' ? 'text-white' : 'text-gray-500'}`}>
                                                            <p className="font-medium text-xs">{step.title}</p>
                                                            <p className="text-[10px] font-mono opacity-70">
-                                                              {format(new Date(step.startDate), 'MMM dd')}
+                                                              {step.endDate && isSameDay(new Date(step.startDate), new Date(step.endDate)) ? `on ${format(new Date(step.startDate), 'MMMM dd')}` : `${format(new Date(step.startDate), 'MMM dd')}${step.endDate ? ` - ${format(new Date(step.endDate), 'MMM dd')}` : ''}`}
                                                            </p>
                                                         </div>
                                                      </div>
@@ -858,7 +858,7 @@ export default function HackathonDashboard({ params }: { params: { id: string } 
                                                         <div className={`${step.status === 'active' ? 'text-white' : 'text-gray-500'}`}>
                                                            <p className="font-medium text-xs">{step.title}</p>
                                                            <p className="text-[10px] font-mono opacity-70">
-                                                              {format(new Date(step.startDate), 'MMM dd')}
+                                                              {step.endDate && isSameDay(new Date(step.startDate), new Date(step.endDate)) ? `on ${format(new Date(step.startDate), 'MMMM dd')}` : `${format(new Date(step.startDate), 'MMM dd')}${step.endDate ? ` - ${format(new Date(step.endDate), 'MMM dd')}` : ''}`}
                                                            </p>
                                                         </div>
                                                      </div>
