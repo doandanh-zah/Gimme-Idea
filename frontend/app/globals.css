@@ -88,6 +88,148 @@ body {
   opacity: 0.8;
 }
 
+/* Glitch Card Effect - Yellow & Purple */
+.glitch-card {
+  position: relative;
+  transition: all 0.3s ease;
+}
+
+.glitch-card::before,
+.glitch-card::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  border-radius: inherit;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease;
+}
+
+.glitch-card::before {
+  border: 1px solid #FFD700;
+  box-shadow: 0 0 15px rgba(255, 215, 0, 0.4), inset 0 0 15px rgba(255, 215, 0, 0.1);
+}
+
+.glitch-card::after {
+  border: 1px solid #9945FF;
+  box-shadow: 0 0 15px rgba(153, 69, 255, 0.4), inset 0 0 15px rgba(153, 69, 255, 0.1);
+}
+
+.glitch-card:hover::before {
+  opacity: 1;
+  animation: glitch-card-yellow 0.4s infinite;
+}
+
+.glitch-card:hover::after {
+  opacity: 1;
+  animation: glitch-card-purple 0.4s infinite;
+}
+
+.glitch-card:hover {
+  animation: glitch-card-shake 0.5s infinite;
+  box-shadow: 
+    0 0 20px rgba(255, 215, 0, 0.3),
+    0 0 40px rgba(153, 69, 255, 0.2);
+}
+
+@keyframes glitch-card-yellow {
+  0%, 100% { 
+    transform: translate(0);
+    clip-path: inset(0 0 50% 0);
+  }
+  25% { 
+    transform: translate(-2px, 1px);
+    clip-path: inset(0 0 60% 0);
+  }
+  50% { 
+    transform: translate(2px, -1px);
+    clip-path: inset(0 0 40% 0);
+  }
+  75% { 
+    transform: translate(-1px, 2px);
+    clip-path: inset(0 0 55% 0);
+  }
+}
+
+@keyframes glitch-card-purple {
+  0%, 100% { 
+    transform: translate(0);
+    clip-path: inset(50% 0 0 0);
+  }
+  25% { 
+    transform: translate(2px, -1px);
+    clip-path: inset(40% 0 0 0);
+  }
+  50% { 
+    transform: translate(-2px, 1px);
+    clip-path: inset(60% 0 0 0);
+  }
+  75% { 
+    transform: translate(1px, -2px);
+    clip-path: inset(45% 0 0 0);
+  }
+}
+
+@keyframes glitch-card-shake {
+  0%, 100% { transform: translate(0); }
+  10% { transform: translate(-1px, 0); }
+  20% { transform: translate(1px, 0); }
+  30% { transform: translate(0, 1px); }
+  40% { transform: translate(0, -1px); }
+  50% { transform: translate(-1px, 1px); }
+  60% { transform: translate(1px, -1px); }
+  70% { transform: translate(0); }
+}
+
+/* Glitch Title in Card - Yellow & Purple */
+.glitch-title {
+  position: relative;
+  display: inline-block;
+}
+
+.glitch-title::before,
+.glitch-title::after {
+  content: attr(data-text);
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.glitch-card:hover .glitch-title::before {
+  animation: glitch-title-yellow 0.3s infinite;
+  color: #FFD700;
+  text-shadow: 0 0 10px rgba(255, 215, 0, 0.8);
+  opacity: 0.8;
+}
+
+.glitch-card:hover .glitch-title::after {
+  animation: glitch-title-purple 0.3s infinite;
+  color: #9945FF;
+  text-shadow: 0 0 10px rgba(153, 69, 255, 0.8);
+  opacity: 0.6;
+}
+
+@keyframes glitch-title-yellow {
+  0%, 100% { transform: translate(0); clip-path: inset(0 0 50% 0); }
+  25% { transform: translate(-2px, 0); }
+  50% { transform: translate(2px, 0); }
+  75% { transform: translate(-1px, 0); }
+}
+
+@keyframes glitch-title-purple {
+  0%, 100% { transform: translate(0); clip-path: inset(50% 0 0 0); }
+  25% { transform: translate(2px, 0); }
+  50% { transform: translate(-2px, 0); }
+  75% { transform: translate(1px, 0); }
+}
+
 /* Strong Glitch Effect for Popup Titles */
 .glitch-strong {
   position: relative;

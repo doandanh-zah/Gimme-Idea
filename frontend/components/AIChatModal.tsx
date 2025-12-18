@@ -627,14 +627,17 @@ export const AIChatModal: React.FC<AIChatModalProps> = ({ isOpen, onClose }) => 
                         <div
                           key={idea.id}
                           onClick={() => handleIdeaClick(idea)}
-                          className="p-3 sm:p-4 bg-white/5 border border-[#FFD700]/20 rounded-xl hover:border-[#FFD700]/50 hover:bg-white/10 transition-all cursor-pointer group"
+                          className="glitch-card p-3 sm:p-4 bg-white/5 border border-[#FFD700]/20 rounded-xl transition-all cursor-pointer group"
                         >
                           <div className="flex items-start gap-2 sm:gap-3">
                             <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-lg bg-[#FFD700]/20 flex items-center justify-center text-[#FFD700] font-bold text-xs sm:text-sm flex-shrink-0">
                               {idx + 1}
                             </div>
                             <div className="flex-1 min-w-0">
-                              <h4 className="font-bold text-[#FFD700] group-hover:underline line-clamp-1 text-sm">
+                              <h4 
+                                className="glitch-title font-bold text-[#FFD700] line-clamp-1 text-sm"
+                                data-text={idea.title}
+                              >
                                 {idea.title}
                               </h4>
                               <p className="text-[10px] sm:text-xs text-gray-400 mt-1 line-clamp-2">
