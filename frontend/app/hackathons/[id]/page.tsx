@@ -18,6 +18,7 @@ import { format, isBefore, isSameDay } from 'date-fns';
 import { HACKATHONS_MOCK_DATA, MY_IDEAS } from '@/lib/mock-hackathons';
 import InviteMemberModal from '@/components/InviteMemberModal';
 import ImportIdeaModal from '@/components/ImportIdeaModal';
+import { EditProjectModal } from '@/components/EditProjectModal';
 import { useAppStore } from '@/lib/store';
 import { Project } from '@/lib/types';
 
@@ -75,12 +76,11 @@ export default function HackathonDashboard({ params }: { params: { id: string } 
    const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
    // Submission State
-   const [submissionStep, setSubmissionStep] = useState<'list' | 'view' | 'edit' | 'new'>('list');
+   const [submissionStep, setSubmissionStep] = useState<'list' | 'view' | 'new'>('list');
    const [selectedIdeaId, setSelectedIdeaId] = useState<string | null>(null);
-   const [submissionForm, setSubmissionForm] = useState({ repoUrl: '', videoUrl: '', notes: '' });
    const [isImportModalOpen, setIsImportModalOpen] = useState(false);
    const [importedIdeas, setImportedIdeas] = useState<Project[]>([]);
-   const [isEditMode, setIsEditMode] = useState(false);
+   const [editingSubmission, setEditingSubmission] = useState<Project | null>(null);
 
    // Ideas List State
    const [ideasSearchQuery, setIdeasSearchQuery] = useState('');
@@ -844,7 +844,6 @@ export default function HackathonDashboard({ params }: { params: { id: string } 
                                                             <button
                                                                onClick={() => {
                                                                   setSelectedIdeaId(null);
-                                                                  setSubmissionForm({ repoUrl: '', videoUrl: '', notes: '' });
                                                                   setSubmissionStep('new');
                                                                }}
                                                                className="px-4 py-2.5 bg-gradient-to-r from-gold to-yellow-600 text-black font-bold rounded-lg hover:shadow-[0_0_20px_rgba(255,215,0,0.2)] transition-all flex items-center gap-2 text-xs"
@@ -870,7 +869,6 @@ export default function HackathonDashboard({ params }: { params: { id: string } 
                                                             <button
                                                                onClick={() => {
                                                                   setSelectedIdeaId(null);
-                                                                  setSubmissionForm({ repoUrl: '', videoUrl: '', notes: '' });
                                                                   setSubmissionStep('new');
                                                                }}
                                                                className="px-5 py-3 bg-gradient-to-r from-gold to-yellow-600 text-black font-bold rounded-lg hover:shadow-[0_0_20px_rgba(255,215,0,0.2)] transition-all flex items-center justify-center gap-2 text-sm mx-auto"
@@ -917,13 +915,21 @@ export default function HackathonDashboard({ params }: { params: { id: string } 
                                                                      <button
                                                                         onClick={(e) => {
                                                                            e.stopPropagation();
-                                                                           setSelectedIdeaId(idea.id);
-                                                                           setSubmissionForm({
-                                                                              videoUrl: idea.videoUrl || '',
-                                                                              repoUrl: idea.deckUrl || '',
-                                                                              notes: idea.notes || ''
-                                                                           });
-                                                                           setSubmissionStep('edit');
+                                                                           // Convert to Project type for EditProjectModal
+                                                                           const projectToEdit: Project = {
+                                                                              id: idea.id,
+                                                                              title: idea.title,
+                                                                              description: idea.description,
+                                                                              category: idea.category as Project['category'],
+                                                                              votes: idea.votes,
+                                                                              type: 'idea',
+                                                                              stage: 'Idea',
+                                                                              tags: [],
+                                                                              feedbackCount: 0,
+                                                                              createdAt: idea.submittedAt,
+                                                                              author: { username: 'current-user', wallet: '' }
+                                                                           };
+                                                                           setEditingSubmission(projectToEdit);
                                                                         }}
                                                                         className="p-2 rounded-lg bg-white/5 hover:bg-gold/20 text-gray-400 hover:text-gold transition-colors"
                                                                         title="Edit Submission"
@@ -974,12 +980,21 @@ export default function HackathonDashboard({ params }: { params: { id: string } 
                                                          </div>
                                                          <button
                                                             onClick={() => {
-                                                               setSubmissionForm({
-                                                                  videoUrl: selectedSubmission.videoUrl || '',
-                                                                  repoUrl: selectedSubmission.deckUrl || '',
-                                                                  notes: selectedSubmission.notes || ''
-                                                               });
-                                                               setSubmissionStep('edit');
+                                                               // Convert to Project type for EditProjectModal
+                                                               const projectToEdit: Project = {
+                                                                  id: selectedSubmission.id,
+                                                                  title: selectedSubmission.title,
+                                                                  description: selectedSubmission.description,
+                                                                  category: selectedSubmission.category as Project['category'],
+                                                                  votes: selectedSubmission.votes,
+                                                                  type: 'idea',
+                                                                  stage: 'Idea',
+                                                                  tags: [],
+                                                                  feedbackCount: 0,
+                                                                  createdAt: selectedSubmission.submittedAt,
+                                                                  author: { username: 'current-user', wallet: '' }
+                                                               };
+                                                               setEditingSubmission(projectToEdit);
                                                             }}
                                                             className="px-4 py-2 bg-gold/10 hover:bg-gold/20 border border-gold/30 rounded-lg text-gold text-xs font-bold transition-all flex items-center gap-2"
                                                          >
@@ -988,37 +1003,27 @@ export default function HackathonDashboard({ params }: { params: { id: string } 
                                                       </div>
                                                    </div>
 
-                                                   {/* Submission Details */}
+                                                   {/* Submission Info */}
                                                    <div className="bg-surface border border-white/5 rounded-xl p-6 space-y-5">
                                                       <h3 className="text-sm font-bold text-white uppercase tracking-wider flex items-center gap-2">
-                                                         <FileText className="w-4 h-4 text-gold" /> Submission Details
+                                                         <Lightbulb className="w-4 h-4 text-gold" /> Idea Details
                                                       </h3>
 
                                                       <div className="space-y-4">
                                                          <div>
-                                                            <label className="block text-[10px] font-bold text-gray-500 uppercase mb-1.5">Pitch Video</label>
-                                                            <a href={selectedSubmission.videoUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-sm text-gold hover:underline">
-                                                               <Youtube className="w-4 h-4" />
-                                                               {selectedSubmission.videoUrl}
-                                                            </a>
+                                                            <label className="block text-[10px] font-bold text-gray-500 uppercase mb-1.5">Description</label>
+                                                            <p className="text-sm text-gray-300 bg-black/20 rounded-lg p-3 border border-white/5">{selectedSubmission.description}</p>
                                                          </div>
 
-                                                         {selectedSubmission.deckUrl && (
-                                                            <div>
-                                                               <label className="block text-[10px] font-bold text-gray-500 uppercase mb-1.5">Pitch Deck</label>
-                                                               <a href={selectedSubmission.deckUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-sm text-gold hover:underline">
-                                                                  <FileText className="w-4 h-4" />
-                                                                  {selectedSubmission.deckUrl}
-                                                               </a>
-                                                            </div>
-                                                         )}
+                                                         <div>
+                                                            <label className="block text-[10px] font-bold text-gray-500 uppercase mb-1.5">Category</label>
+                                                            <span className="inline-block bg-white/5 border border-white/10 px-3 py-1 rounded-lg text-sm text-gray-300">{selectedSubmission.category}</span>
+                                                         </div>
 
-                                                         {selectedSubmission.notes && (
-                                                            <div>
-                                                               <label className="block text-[10px] font-bold text-gray-500 uppercase mb-1.5">Judging Notes</label>
-                                                               <p className="text-sm text-gray-300 bg-black/20 rounded-lg p-3 border border-white/5">{selectedSubmission.notes}</p>
-                                                            </div>
-                                                         )}
+                                                         <div>
+                                                            <label className="block text-[10px] font-bold text-gray-500 uppercase mb-1.5">Submitted At</label>
+                                                            <p className="text-sm text-gray-300">{format(new Date(selectedSubmission.submittedAt), 'MMMM dd, yyyy - HH:mm')}</p>
+                                                         </div>
                                                       </div>
                                                    </div>
 
@@ -1036,93 +1041,6 @@ export default function HackathonDashboard({ params }: { params: { id: string } 
                                                          <div className="text-2xl font-bold text-white font-mono">{Math.floor(Math.random() * 100) + 50}</div>
                                                          <div className="text-[10px] text-gray-500 uppercase tracking-wider">Views</div>
                                                       </div>
-                                                   </div>
-                                                </div>
-                                             )}
-
-                                             {/* EDIT STATE: Edit submission */}
-                                             {submissionStep === 'edit' && selectedSubmission && (
-                                                <div className="space-y-6">
-                                                   <div className="bg-surface border border-white/5 rounded-xl p-6">
-                                                      <button onClick={() => setSubmissionStep('view')} className="text-xs text-gray-500 hover:text-white mb-4 flex items-center gap-1"><ArrowLeft className="w-3 h-3" /> Back</button>
-                                                      <h2 className="text-xl font-bold text-white mb-1 font-quantico flex items-center gap-2">
-                                                         <Edit3 className="w-5 h-5 text-gold" />
-                                                         Edit Submission
-                                                      </h2>
-                                                      <p className="text-gray-400 text-sm">Update your pitch video and supporting materials.</p>
-                                                   </div>
-
-                                                   {/* Selected Idea Info */}
-                                                   <div className="bg-gold/5 border border-gold/20 rounded-xl p-4">
-                                                      <div className="flex items-center gap-3">
-                                                         <div className="w-10 h-10 bg-gold/20 rounded-lg flex items-center justify-center">
-                                                            <Lightbulb className="w-5 h-5 text-gold" />
-                                                         </div>
-                                                         <div>
-                                                            <h4 className="text-sm font-bold text-white">{selectedSubmission.title}</h4>
-                                                            <p className="text-xs text-gray-400">{selectedSubmission.category}</p>
-                                                         </div>
-                                                      </div>
-                                                   </div>
-
-                                                   <div className="bg-surface border border-white/5 rounded-xl p-6 space-y-4">
-                                                      <div>
-                                                         <label className="block text-xs font-bold text-gray-400 uppercase mb-1.5">Pitch Video Link <span className="text-red-400">*</span></label>
-                                                         <div className="relative">
-                                                            <Youtube className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
-                                                            <input
-                                                               type="text"
-                                                               value={submissionForm.videoUrl}
-                                                               onChange={e => setSubmissionForm({ ...submissionForm, videoUrl: e.target.value })}
-                                                               placeholder="https://youtube.com/watch?v=... or Loom link"
-                                                               className="w-full bg-black/20 border border-white/10 rounded-lg pl-10 pr-4 py-2.5 text-white text-sm focus:border-gold/50 outline-none transition-colors"
-                                                            />
-                                                         </div>
-                                                         <p className="text-[10px] text-gray-500 mt-1.5">A short (max 3 min) video explaining the problem and your proposed solution.</p>
-                                                      </div>
-
-                                                      <div>
-                                                         <label className="block text-xs font-bold text-gray-400 uppercase mb-1.5">Pitch Deck / Doc Link (Optional)</label>
-                                                         <div className="relative">
-                                                            <FileText className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
-                                                            <input
-                                                               type="text"
-                                                               value={submissionForm.repoUrl}
-                                                               onChange={e => setSubmissionForm({ ...submissionForm, repoUrl: e.target.value })}
-                                                               placeholder="https://docs.google.com/presentation/..."
-                                                               className="w-full bg-black/20 border border-white/10 rounded-lg pl-10 pr-4 py-2.5 text-white text-sm focus:border-gold/50 outline-none transition-colors"
-                                                            />
-                                                         </div>
-                                                      </div>
-
-                                                      <div>
-                                                         <label className="block text-xs font-bold text-gray-400 uppercase mb-1.5">Judging Notes</label>
-                                                         <textarea
-                                                            value={submissionForm.notes}
-                                                            onChange={e => setSubmissionForm({ ...submissionForm, notes: e.target.value })}
-                                                            placeholder="Anything else the judges should know about your idea?"
-                                                            className="w-full bg-black/20 border border-white/10 rounded-lg px-4 py-3 text-white text-sm focus:border-gold/50 outline-none transition-colors min-h-[100px]"
-                                                         />
-                                                      </div>
-                                                   </div>
-
-                                                   <div className="flex justify-end gap-3 pt-4">
-                                                      <button
-                                                         onClick={() => setSubmissionStep('view')}
-                                                         className="px-6 py-3 bg-white/5 hover:bg-white/10 text-white rounded-lg text-sm font-bold transition-colors"
-                                                      >
-                                                         Cancel
-                                                      </button>
-                                                      <button
-                                                         disabled={!submissionForm.videoUrl}
-                                                         onClick={() => {
-                                                            // Save changes and go back to view
-                                                            setSubmissionStep('view');
-                                                         }}
-                                                         className={`px-6 py-3 rounded-lg font-bold text-sm transition-colors flex items-center gap-2 ${(!submissionForm.videoUrl) ? 'bg-gray-800 text-gray-500 cursor-not-allowed' : 'bg-gold text-black hover:bg-gold/90'}`}
-                                                      >
-                                                         <CheckCircle2 className="w-4 h-4" /> Save Changes
-                                                      </button>
                                                    </div>
                                                 </div>
                                              )}
@@ -1832,7 +1750,7 @@ export default function HackathonDashboard({ params }: { params: { id: string } 
                                                 ))}
                                              </div>
                                           )}
-z                                       </div>
+                                          z                                       </div>
                                     );
 
                                  default:
@@ -1862,6 +1780,17 @@ z                                       </div>
             isOpen={isImportModalOpen}
             onClose={() => setIsImportModalOpen(false)}
             onSelectIdea={handleImportIdea}
+         />
+         {/* Edit Submission Modal */}
+         <EditProjectModal
+            project={editingSubmission}
+            isOpen={!!editingSubmission}
+            onClose={() => setEditingSubmission(null)}
+            onSave={(updatedData) => {
+               // Here you would save the changes - for now just close modal
+               console.log('Updated submission:', updatedData);
+               setEditingSubmission(null);
+            }}
          />
       </div>
    );
