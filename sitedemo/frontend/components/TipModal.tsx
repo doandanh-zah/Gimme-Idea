@@ -66,12 +66,12 @@ export function TipModal({ isOpen, onClose, idea }: TipModalProps) {
 
       setTxSignature(signature);
 
-      // Verify transaction on backend
-      await api.verifyTransaction({
+      // Record transaction in Supabase
+      await api.recordTip({
         signature,
-        type: 'tip',
         amount: tipAmount,
         projectId: idea.id,
+        recipientAddress: recipientWallet,
       });
 
       toast.success(`Tipped ${tipAmount} SOL successfully!`);

@@ -13,23 +13,37 @@ A simplified demo version of Gimme Idea platform with core functionalities.
 6. **Comment on Ideas**
 
 ### 🏗️ Tech Stack
-- **Frontend**: Next.js 14, React, TailwindCSS
-- **Wallet**: Lazorkit (Passkey-based wallet)
+- **Frontend**: Next.js 15, React 19, TailwindCSS
+- **Wallet**: Lazorkit (Passkey-based smart wallet)
 - **Blockchain**: Solana (Devnet)
-- **Backend**: NestJS (shared with main project)
+- **Database**: Supabase (PostgreSQL)
 
 ## Getting Started
+
+### 1. Setup Supabase
+
+1. Create a new project at [supabase.com](https://supabase.com)
+2. Go to SQL Editor and run the schema in `database/sitedemo_schema.sql`
+3. Copy your project URL and anon key from Settings > API
+
+### 2. Setup Frontend
 
 ```bash
 cd sitedemo/frontend
 npm install
+cp .env.example .env.local
+# Edit .env.local with your Supabase credentials
 npm run dev
 ```
+
+Open [http://localhost:3002](http://localhost:3002)
 
 ## Project Structure
 
 ```
 sitedemo/
+├── database/
+│   └── sitedemo_schema.sql  # Database schema + RLS policies
 ├── frontend/
 │   ├── app/
 │   │   ├── page.tsx         # Home page with ideas list
@@ -42,15 +56,33 @@ sitedemo/
 │   │   ├── TipModal.tsx     # SOL tip modal
 │   │   └── WalletButton.tsx
 │   ├── contexts/
-│   │   └── WalletContext.tsx
+│   │   └── WalletContext.tsx # Lazorkit wallet provider
 │   └── lib/
-│       └── api.ts           # API client
+│       ├── supabase.ts      # Supabase client & queries
+│       └── api.ts           # API wrapper
 └── README.md
 ```
 
 ## Environment Variables
 
 ```env
-NEXT_PUBLIC_API_URL=http://localhost:3001/api
+# Required - Supabase
+NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
+
+# Solana (optional - defaults to devnet)
 NEXT_PUBLIC_SOLANA_RPC_URL=https://api.devnet.solana.com
+NEXT_PUBLIC_LAZORKIT_PAYMASTER_URL=https://kora.devnet.lazorkit.com/
 ```
+
+## How It Works
+
+1. **Authentication**: Users connect via Lazorkit passkey wallet. The wallet address is used as unique identifier in Supabase.
+
+2. **Create Ideas**: Connected users can submit new ideas with title, description, problem, solution, and tags.
+
+3. **Vote**: Users can vote once per idea. Votes are tracked to prevent duplicates.
+
+4. **Tip**: Users can send SOL tips directly to idea creators via Solana transactions. Transactions are recorded in Supabase.
+
+5. **Comments**: Users can discuss ideas through comments.

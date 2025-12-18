@@ -197,17 +197,46 @@ CREATE TRIGGER update_feedback_count_on_comment
   FOR EACH ROW EXECUTE FUNCTION update_feedback_count();
 
 -- =============================================
--- ROW LEVEL SECURITY (Disable for backend access)
--- If using service_role key, RLS is bypassed automatically
+-- ROW LEVEL SECURITY (RLS)
+-- Backend uses service_role key which bypasses RLS
 -- =============================================
 
--- Disable RLS for simpler backend access (service_role bypasses anyway)
-ALTER TABLE users DISABLE ROW LEVEL SECURITY;
-ALTER TABLE projects DISABLE ROW LEVEL SECURITY;
-ALTER TABLE comments DISABLE ROW LEVEL SECURITY;
-ALTER TABLE transactions DISABLE ROW LEVEL SECURITY;
-ALTER TABLE project_votes DISABLE ROW LEVEL SECURITY;
-ALTER TABLE comment_likes DISABLE ROW LEVEL SECURITY;
+-- Enable RLS on all tables
+ALTER TABLE users ENABLE ROW LEVEL SECURITY;
+ALTER TABLE projects ENABLE ROW LEVEL SECURITY;
+ALTER TABLE comments ENABLE ROW LEVEL SECURITY;
+ALTER TABLE transactions ENABLE ROW LEVEL SECURITY;
+ALTER TABLE project_votes ENABLE ROW LEVEL SECURITY;
+ALTER TABLE comment_likes ENABLE ROW LEVEL SECURITY;
+
+-- Users: Anyone can read
+CREATE POLICY "Users are viewable by everyone" ON users FOR SELECT USING (true);
+CREATE POLICY "Users can be created by service" ON users FOR INSERT WITH CHECK (true);
+CREATE POLICY "Users can be updated by service" ON users FOR UPDATE USING (true);
+
+-- Projects: Anyone can read
+CREATE POLICY "Projects are viewable by everyone" ON projects FOR SELECT USING (true);
+CREATE POLICY "Projects can be created by service" ON projects FOR INSERT WITH CHECK (true);
+CREATE POLICY "Projects can be updated by service" ON projects FOR UPDATE USING (true);
+CREATE POLICY "Projects can be deleted by service" ON projects FOR DELETE USING (true);
+
+-- Comments: Anyone can read
+CREATE POLICY "Comments are viewable by everyone" ON comments FOR SELECT USING (true);
+CREATE POLICY "Comments can be created by service" ON comments FOR INSERT WITH CHECK (true);
+CREATE POLICY "Comments can be updated by service" ON comments FOR UPDATE USING (true);
+CREATE POLICY "Comments can be deleted by service" ON comments FOR DELETE USING (true);
+
+-- Transactions: Anyone can read
+CREATE POLICY "Transactions are viewable by everyone" ON transactions FOR SELECT USING (true);
+CREATE POLICY "Transactions can be created by service" ON transactions FOR INSERT WITH CHECK (true);
+
+-- Project Votes: Anyone can read
+CREATE POLICY "Project votes are viewable by everyone" ON project_votes FOR SELECT USING (true);
+CREATE POLICY "Project votes can be created by service" ON project_votes FOR INSERT WITH CHECK (true);
+
+-- Comment Likes: Anyone can read
+CREATE POLICY "Comment likes are viewable by everyone" ON comment_likes FOR SELECT USING (true);
+CREATE POLICY "Comment likes can be created by service" ON comment_likes FOR INSERT WITH CHECK (true);
 
 -- =============================================
 -- SAMPLE DATA (Demo purposes)

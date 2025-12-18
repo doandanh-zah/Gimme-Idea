@@ -3,6 +3,8 @@
 import React, { createContext, useContext, useCallback, useState, useEffect } from 'react';
 import { LazorkitProvider as LazorkitSDKProvider, useWallet as useLazorkitWallet } from '@lazorkit/wallet';
 import { PublicKey } from '@solana/web3.js';
+import { api } from '../lib/api';
+import type { User } from '../lib/supabase';
 
 const LAZORKIT_CONFIG = {
   rpcUrl: process.env.NEXT_PUBLIC_SOLANA_RPC_URL || 'https://api.devnet.solana.com',
@@ -17,6 +19,7 @@ interface WalletContextType {
   isConnecting: boolean;
   walletAddress: string | null;
   publicKey: PublicKey | null;
+  user: User | null;
   connect: () => Promise<void>;
   disconnect: () => Promise<void>;
   signAndSendTransaction: (params: { instructions: any[] }) => Promise<string>;
@@ -37,13 +40,27 @@ function WalletProviderInner({ children }: { children: React.ReactNode }) {
   } = useLazorkitWallet();
 
   const [walletAddress, setWalletAddress] = useState<string | null>(null);
+  const [user, setUser] = useState<User | null>(null);
 
+  // Sync user with Supabase when wallet connects
   useEffect(() => {
-    if (isConnected && smartWalletPubkey) {
-      setWalletAddress(smartWalletPubkey.toBase58());
-    } else {
-      setWalletAddress(null);
-    }
+    const syncUser = async () => {
+      if (isConnected && smartWalletPubkey) {
+        const address = smartWalletPubkey.toBase58();
+        setWalletAddress(address);
+        
+        // Login/create user in Supabase
+        const result = await api.login({ publicKey: address });
+        if (result.success && result.data?.user) {
+          setUser(result.data.user);
+        }
+      } else {
+        setWalletAddress(null);
+        setUser(null);
+      }
+    };
+    
+    syncUser();
   }, [isConnected, smartWalletPubkey]);
 
   const connect = useCallback(async () => {
@@ -58,7 +75,9 @@ function WalletProviderInner({ children }: { children: React.ReactNode }) {
   const disconnect = useCallback(async () => {
     try {
       await lazorDisconnect();
+      api.logout();
       setWalletAddress(null);
+      setUser(null);
     } catch (error) {
       console.error('Disconnect error:', error);
       throw error;
@@ -72,6 +91,7 @@ function WalletProviderInner({ children }: { children: React.ReactNode }) {
         isConnecting,
         walletAddress,
         publicKey: smartWalletPubkey || null,
+        user,
         connect,
         disconnect,
         signAndSendTransaction,
