@@ -3,7 +3,7 @@
 import { Inter, JetBrains_Mono, Space_Grotesk, Quantico } from 'next/font/google';
 import { Toaster } from 'react-hot-toast';
 import { WalletProvider } from '../components/WalletProvider';
-import { AuthProvider } from '../contexts/AuthContext';
+import { AuthProvider, useAuth } from '../contexts/AuthContext';
 import { LazorkitProvider } from '../contexts/LazorkitContext';
 import Navbar from '../components/Navbar';
 import { ConnectReminderModal } from '../components/ConnectReminderModal';
@@ -12,6 +12,20 @@ import { SubmissionModal } from '../components/SubmissionModal';
 import ErrorBoundary from '../components/ErrorBoundary';
 import Script from 'next/script';
 import React, { useEffect } from 'react';
+import { useAppStore } from '../lib/store';
+
+// Component to sync AuthContext user with Zustand store
+function AuthStoreSync() {
+  const { user: authUser } = useAuth();
+  const setUser = useAppStore((state) => state.setUser);
+
+  useEffect(() => {
+    console.log('[AuthStoreSync] Syncing user to store:', authUser?.username || 'null');
+    setUser(authUser);
+  }, [authUser, setUser]);
+
+  return null;
+}
 
 // Buffer polyfill for LazorKit
 if (typeof window !== 'undefined') {
@@ -48,6 +62,7 @@ export default function ClientLayout({ children }: ClientLayoutProps) {
         <WalletProvider>
           <LazorkitProvider>
             <AuthProvider>
+              <AuthStoreSync />
               <Navbar />
               <ConnectReminderModal />
               <ConnectWalletPopup />
