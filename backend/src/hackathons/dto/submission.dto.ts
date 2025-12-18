@@ -82,6 +82,10 @@ export class QuerySubmissionsDto {
     sortBy?: "newest" | "votes" | "score";
 
     @IsOptional()
+    @IsString()
+    mine?: string; // "true" to get only current user's submissions
+
+    @IsOptional()
     limit?: number = 20;
 
     @IsOptional()

@@ -15,12 +15,13 @@ import Link from 'next/link';
 
 import { useSearchParams } from 'next/navigation';
 import { format, isBefore, isSameDay } from 'date-fns';
-import { HACKATHONS_MOCK_DATA, MY_IDEAS } from '@/lib/mock-hackathons';
+import { HACKATHONS_MOCK_DATA } from '@/lib/mock-hackathons';
 import InviteMemberModal from '@/components/InviteMemberModal';
 import ImportIdeaModal from '@/components/ImportIdeaModal';
 import { EditProjectModal } from '@/components/EditProjectModal';
 import { useAppStore } from '@/lib/store';
 import { Project } from '@/lib/types';
+import { apiClient } from '@/lib/api-client';
 
 // Map icon names from mock data to Lucide React components
 const LucideIconMap: { [key: string]: React.ElementType } = {
@@ -81,6 +82,11 @@ export default function HackathonDashboard({ params }: { params: { id: string } 
    const [isImportModalOpen, setIsImportModalOpen] = useState(false);
    const [importedIdeas, setImportedIdeas] = useState<Project[]>([]);
    const [editingSubmission, setEditingSubmission] = useState<Project | null>(null);
+   // API-connected submission state
+   const [mySubmissions, setMySubmissions] = useState<any[]>([]);
+   const [isLoadingSubmissions, setIsLoadingSubmissions] = useState(false);
+   const [submissionError, setSubmissionError] = useState<string | null>(null);
+   const [isSubmitting, setIsSubmitting] = useState(false);
 
    // Ideas List State
    const [ideasSearchQuery, setIdeasSearchQuery] = useState('');
@@ -241,28 +247,68 @@ export default function HackathonDashboard({ params }: { params: { id: string } 
    // Submission State
    const [submission, setSubmission] = useState<{ track?: string }>({});
 
-   // Handle import idea from platform
-   const handleImportIdea = (idea: Project) => {
-      // Check if idea is already imported
-      if (!importedIdeas.find(i => i.id === idea.id)) {
-         setImportedIdeas(prev => [...prev, idea]);
+   // Load my submissions from API
+   const loadMySubmissions = async () => {
+      if (!id) return;
+      setIsLoadingSubmissions(true);
+      setSubmissionError(null);
+      try {
+         const response = await apiClient.getMySubmissions(id);
+         // Response is ApiResponse<any[]>, extract data
+         if (response.success && response.data) {
+            setMySubmissions(response.data);
+         } else {
+            setMySubmissions([]);
+            if (response.error) {
+               setSubmissionError(response.error);
+            }
+         }
+      } catch (err: any) {
+         console.error('Error loading submissions:', err);
+         setSubmissionError(err.message || 'Failed to load submissions');
+      } finally {
+         setIsLoadingSubmissions(false);
       }
-      // Auto-select the imported idea
-      setSelectedIdeaId(idea.id);
    };
 
-   // Combined ideas list (mock + imported)
-   const allIdeas = [
-      ...MY_IDEAS,
-      ...importedIdeas.map(idea => ({
-         id: idea.id,
-         title: idea.title,
-         category: idea.category,
-         description: idea.description,
-         votes: idea.votes,
-         isImported: true // Flag to show it's imported
-      }))
-   ];
+   // Load submissions when entering submission tab
+   useEffect(() => {
+      if (activeSection === 'submission') {
+         loadMySubmissions();
+      }
+   }, [activeSection, id]);
+
+   // Handle import idea from platform - now creates a submission via API
+   const handleImportIdea = async (idea: Project) => {
+      if (!id) return;
+      
+      // Check if already submitted
+      if (mySubmissions.find(s => s.projectId === idea.id || s.project?.id === idea.id)) {
+         alert('This idea has already been submitted to this hackathon.');
+         return;
+      }
+
+      setIsSubmitting(true);
+      try {
+         const response = await apiClient.createSubmission({
+            hackathonId: id,
+            projectId: idea.id,
+         });
+         if (response.success) {
+            // Reload submissions after creating
+            await loadMySubmissions();
+            setIsImportModalOpen(false);
+            setSubmissionStep('list');
+         } else {
+            throw new Error(response.error || 'Failed to create submission');
+         }
+      } catch (err: any) {
+         console.error('Error submitting idea:', err);
+         alert(err.message || 'Failed to submit idea');
+      } finally {
+         setIsSubmitting(false);
+      }
+   };
 
    // Auto-set single track
    useEffect(() => {
@@ -811,24 +857,39 @@ export default function HackathonDashboard({ params }: { params: { id: string } 
 
 
                                  case 'submission':
-                                    // Mock submitted ideas with submission details
-                                    const submittedIdeas = allIdeas.map(idea => ({
-                                       ...idea,
-                                       submittedAt: new Date(Date.now() - Math.random() * 7 * 24 * 60 * 60 * 1000).toISOString(),
-                                       videoUrl: 'https://youtube.com/watch?v=example',
-                                       deckUrl: 'https://docs.google.com/presentation/d/example',
-                                       notes: 'This is a revolutionary idea that will change the future of education.',
-                                       status: 'submitted' as const
-                                    }));
-                                    const selectedSubmission = selectedIdeaId ? submittedIdeas.find(s => s.id === selectedIdeaId) : null;
+                                    // Get selected submission from API data
+                                    const selectedSubmission = selectedIdeaId 
+                                       ? mySubmissions.find(s => s.id === selectedIdeaId || s.projectId === selectedIdeaId)
+                                       : null;
 
                                     return (
                                        <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 md:gap-6 h-full overflow-y-auto md:overflow-hidden pb-6 md:pb-0">
                                           {/* LEFT COLUMN: Submission Process (Span 8) */}
                                           <div className="lg:col-span-8 flex flex-col h-auto lg:h-full lg:overflow-y-auto pr-0 lg:pr-2 order-1">
 
+                                             {/* Loading State */}
+                                             {isLoadingSubmissions && (
+                                                <div className="flex items-center justify-center h-64">
+                                                   <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gold"></div>
+                                                </div>
+                                             )}
+
+                                             {/* Error State */}
+                                             {submissionError && !isLoadingSubmissions && (
+                                                <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-6 text-center">
+                                                   <AlertCircle className="w-8 h-8 text-red-400 mx-auto mb-2" />
+                                                   <p className="text-red-400 text-sm">{submissionError}</p>
+                                                   <button
+                                                      onClick={loadMySubmissions}
+                                                      className="mt-4 px-4 py-2 bg-white/5 hover:bg-white/10 rounded-lg text-xs text-gray-400 hover:text-white transition-colors"
+                                                   >
+                                                      Try Again
+                                                   </button>
+                                                </div>
+                                             )}
+
                                              {/* LIST STATE: Show submitted ideas */}
-                                             {submissionStep === 'list' && (
+                                             {!isLoadingSubmissions && !submissionError && submissionStep === 'list' && (
                                                 <div className="space-y-6 h-full">
                                                    {/* Header with actions */}
                                                    <div className="bg-surface border border-white/5 rounded-xl p-6">
@@ -855,7 +916,7 @@ export default function HackathonDashboard({ params }: { params: { id: string } 
                                                    </div>
 
                                                    {/* Submitted Ideas Grid or Empty State */}
-                                                   {submittedIdeas.length === 0 ? (
+                                                   {mySubmissions.length === 0 ? (
                                                       <div className="flex-1 flex flex-col items-center justify-center text-center p-8 bg-surface border border-white/5 rounded-xl relative overflow-hidden min-h-[400px]">
                                                          <div className="absolute inset-0 bg-gradient-to-b from-gold/5 to-transparent pointer-events-none" />
                                                          <div className="relative z-10 max-w-lg">
@@ -880,23 +941,26 @@ export default function HackathonDashboard({ params }: { params: { id: string } 
                                                    ) : (
                                                       <div className="grid gap-4">
                                                          <div className="text-[10px] font-bold text-gray-500 uppercase tracking-widest ml-1">
-                                                            {submittedIdeas.length} Submitted Idea{submittedIdeas.length > 1 ? 's' : ''}
+                                                            {mySubmissions.length} Submitted Idea{mySubmissions.length > 1 ? 's' : ''}
                                                          </div>
-                                                         {submittedIdeas.map(idea => (
+                                                         {mySubmissions.map(submission => {
+                                                            const project = submission.project;
+                                                            const statusColor = submission.status === 'approved' ? 'green' 
+                                                               : submission.status === 'rejected' ? 'red' 
+                                                               : submission.status === 'winner' || submission.status === 'finalist' ? 'gold'
+                                                               : 'green';
+                                                            return (
                                                             <div
-                                                               key={idea.id}
+                                                               key={submission.id}
                                                                className="group relative p-5 rounded-xl border bg-black/20 border-white/5 hover:border-gold/30 hover:bg-gold/5 transition-all"
                                                             >
                                                                <div className="flex justify-between items-start mb-3">
                                                                   <div className="flex items-center gap-2">
-                                                                     <span className="bg-green-500/10 border border-green-500/30 px-2 py-0.5 rounded text-[10px] text-green-400 font-bold flex items-center gap-1">
-                                                                        <CheckCircle2 className="w-2.5 h-2.5" /> Submitted
+                                                                     <span className={`bg-${statusColor}-500/10 border border-${statusColor}-500/30 px-2 py-0.5 rounded text-[10px] text-${statusColor}-400 font-bold flex items-center gap-1`}>
+                                                                        <CheckCircle2 className="w-2.5 h-2.5" /> {submission.status || 'Submitted'}
                                                                      </span>
-                                                                     <span className="bg-white/5 border border-white/10 px-2 py-0.5 rounded text-[10px] text-gray-400 font-mono">{idea.category}</span>
-                                                                     {'isImported' in idea && idea.isImported && (
-                                                                        <span className="bg-gold/10 border border-gold/30 px-2 py-0.5 rounded text-[10px] text-gold font-bold flex items-center gap-1">
-                                                                           <FileUp className="w-2.5 h-2.5" /> Imported
-                                                                        </span>
+                                                                     {project?.category && (
+                                                                        <span className="bg-white/5 border border-white/10 px-2 py-0.5 rounded text-[10px] text-gray-400 font-mono">{project.category}</span>
                                                                      )}
                                                                   </div>
                                                                   {/* Action Buttons */}
@@ -904,7 +968,7 @@ export default function HackathonDashboard({ params }: { params: { id: string } 
                                                                      <button
                                                                         onClick={(e) => {
                                                                            e.stopPropagation();
-                                                                           setSelectedIdeaId(idea.id);
+                                                                           setSelectedIdeaId(submission.id);
                                                                            setSubmissionStep('view');
                                                                         }}
                                                                         className="p-2 rounded-lg bg-white/5 hover:bg-white/10 text-gray-400 hover:text-white transition-colors"
@@ -917,17 +981,17 @@ export default function HackathonDashboard({ params }: { params: { id: string } 
                                                                            e.stopPropagation();
                                                                            // Convert to Project type for EditProjectModal
                                                                            const projectToEdit: Project = {
-                                                                              id: idea.id,
-                                                                              title: idea.title,
-                                                                              description: idea.description,
-                                                                              category: idea.category as Project['category'],
-                                                                              votes: idea.votes,
+                                                                              id: project?.id || submission.projectId,
+                                                                              title: project?.title || 'Untitled',
+                                                                              description: project?.description || '',
+                                                                              category: (project?.category || 'Other') as Project['category'],
+                                                                              votes: project?.votes || 0,
                                                                               type: 'idea',
                                                                               stage: 'Idea',
                                                                               tags: [],
                                                                               feedbackCount: 0,
-                                                                              createdAt: idea.submittedAt,
-                                                                              author: { username: 'current-user', wallet: '' }
+                                                                              createdAt: submission.submittedAt,
+                                                                              author: { username: submission.author?.username || 'Unknown', wallet: '' }
                                                                            };
                                                                            setEditingSubmission(projectToEdit);
                                                                         }}
@@ -941,20 +1005,20 @@ export default function HackathonDashboard({ params }: { params: { id: string } 
                                                                <h3
                                                                   className="text-lg font-bold text-white mb-2 group-hover:text-gold transition-colors cursor-pointer"
                                                                   onClick={() => {
-                                                                     setSelectedIdeaId(idea.id);
+                                                                     setSelectedIdeaId(submission.id);
                                                                      setSubmissionStep('view');
                                                                   }}
                                                                >
-                                                                  {idea.title}
+                                                                  {project?.title || 'Untitled Submission'}
                                                                </h3>
-                                                               <p className="text-sm text-gray-500 line-clamp-2 leading-relaxed mb-4">{idea.description}</p>
+                                                               <p className="text-sm text-gray-500 line-clamp-2 leading-relaxed mb-4">{project?.description || 'No description'}</p>
                                                                <div className="flex items-center gap-4 text-[10px] font-bold text-gray-600 uppercase tracking-tighter">
-                                                                  <span className="flex items-center gap-1"><ThumbsUp className="w-3 h-3" /> {idea.votes} Votes</span>
+                                                                  <span className="flex items-center gap-1"><ThumbsUp className="w-3 h-3" /> {submission.voteCount || project?.votes || 0} Votes</span>
                                                                   <span className="text-gray-800">•</span>
-                                                                  <span>Submitted {format(new Date(idea.submittedAt), 'MMM dd, HH:mm')}</span>
+                                                                  <span>Submitted {format(new Date(submission.submittedAt), 'MMM dd, HH:mm')}</span>
                                                                </div>
                                                             </div>
-                                                         ))}
+                                                         );})}
                                                       </div>
                                                    )}
 
@@ -963,7 +1027,9 @@ export default function HackathonDashboard({ params }: { params: { id: string } 
                                              )}
 
                                              {/* VIEW STATE: View submission details */}
-                                             {submissionStep === 'view' && selectedSubmission && (
+                                             {!isLoadingSubmissions && submissionStep === 'view' && selectedSubmission && (() => {
+                                                const project = selectedSubmission.project;
+                                                return (
                                                 <div className="space-y-6">
                                                    <div className="bg-surface border border-white/5 rounded-xl p-6">
                                                       <button onClick={() => { setSubmissionStep('list'); setSelectedIdeaId(null); }} className="text-xs text-gray-500 hover:text-white mb-4 flex items-center gap-1"><ArrowLeft className="w-3 h-3" /> Back to Submissions</button>
@@ -971,28 +1037,30 @@ export default function HackathonDashboard({ params }: { params: { id: string } 
                                                          <div>
                                                             <div className="flex items-center gap-2 mb-2">
                                                                <span className="bg-green-500/10 border border-green-500/30 px-2 py-0.5 rounded text-[10px] text-green-400 font-bold flex items-center gap-1">
-                                                                  <CheckCircle2 className="w-2.5 h-2.5" /> Submitted
+                                                                  <CheckCircle2 className="w-2.5 h-2.5" /> {selectedSubmission.status || 'Submitted'}
                                                                </span>
-                                                               <span className="bg-white/5 border border-white/10 px-2 py-0.5 rounded text-[10px] text-gray-400 font-mono">{selectedSubmission.category}</span>
+                                                               {project?.category && (
+                                                                  <span className="bg-white/5 border border-white/10 px-2 py-0.5 rounded text-[10px] text-gray-400 font-mono">{project.category}</span>
+                                                               )}
                                                             </div>
-                                                            <h2 className="text-xl font-bold text-white mb-1 font-quantico">{selectedSubmission.title}</h2>
-                                                            <p className="text-gray-400 text-sm">{selectedSubmission.description}</p>
+                                                            <h2 className="text-xl font-bold text-white mb-1 font-quantico">{project?.title || 'Untitled'}</h2>
+                                                            <p className="text-gray-400 text-sm">{project?.description || 'No description'}</p>
                                                          </div>
                                                          <button
                                                             onClick={() => {
                                                                // Convert to Project type for EditProjectModal
                                                                const projectToEdit: Project = {
-                                                                  id: selectedSubmission.id,
-                                                                  title: selectedSubmission.title,
-                                                                  description: selectedSubmission.description,
-                                                                  category: selectedSubmission.category as Project['category'],
-                                                                  votes: selectedSubmission.votes,
+                                                                  id: project?.id || selectedSubmission.projectId,
+                                                                  title: project?.title || 'Untitled',
+                                                                  description: project?.description || '',
+                                                                  category: (project?.category || 'Other') as Project['category'],
+                                                                  votes: project?.votes || 0,
                                                                   type: 'idea',
                                                                   stage: 'Idea',
                                                                   tags: [],
                                                                   feedbackCount: 0,
                                                                   createdAt: selectedSubmission.submittedAt,
-                                                                  author: { username: 'current-user', wallet: '' }
+                                                                  author: { username: selectedSubmission.author?.username || 'Unknown', wallet: '' }
                                                                };
                                                                setEditingSubmission(projectToEdit);
                                                             }}
@@ -1012,41 +1080,48 @@ export default function HackathonDashboard({ params }: { params: { id: string } 
                                                       <div className="space-y-4">
                                                          <div>
                                                             <label className="block text-[10px] font-bold text-gray-500 uppercase mb-1.5">Description</label>
-                                                            <p className="text-sm text-gray-300 bg-black/20 rounded-lg p-3 border border-white/5">{selectedSubmission.description}</p>
+                                                            <p className="text-sm text-gray-300 bg-black/20 rounded-lg p-3 border border-white/5">{project?.description || 'No description'}</p>
                                                          </div>
 
                                                          <div>
                                                             <label className="block text-[10px] font-bold text-gray-500 uppercase mb-1.5">Category</label>
-                                                            <span className="inline-block bg-white/5 border border-white/10 px-3 py-1 rounded-lg text-sm text-gray-300">{selectedSubmission.category}</span>
+                                                            <span className="inline-block bg-white/5 border border-white/10 px-3 py-1 rounded-lg text-sm text-gray-300">{project?.category || 'N/A'}</span>
                                                          </div>
 
                                                          <div>
                                                             <label className="block text-[10px] font-bold text-gray-500 uppercase mb-1.5">Submitted At</label>
                                                             <p className="text-sm text-gray-300">{format(new Date(selectedSubmission.submittedAt), 'MMMM dd, yyyy - HH:mm')}</p>
                                                          </div>
+
+                                                         {selectedSubmission.notes && (
+                                                            <div>
+                                                               <label className="block text-[10px] font-bold text-gray-500 uppercase mb-1.5">Notes</label>
+                                                               <p className="text-sm text-gray-300 bg-black/20 rounded-lg p-3 border border-white/5">{selectedSubmission.notes}</p>
+                                                            </div>
+                                                         )}
                                                       </div>
                                                    </div>
 
                                                    {/* Stats */}
                                                    <div className="grid grid-cols-3 gap-3">
                                                       <div className="bg-surface border border-white/5 rounded-xl p-4 text-center">
-                                                         <div className="text-2xl font-bold text-gold font-mono">{selectedSubmission.votes}</div>
+                                                         <div className="text-2xl font-bold text-gold font-mono">{selectedSubmission.voteCount || project?.votes || 0}</div>
                                                          <div className="text-[10px] text-gray-500 uppercase tracking-wider">Votes</div>
                                                       </div>
                                                       <div className="bg-surface border border-white/5 rounded-xl p-4 text-center">
-                                                         <div className="text-2xl font-bold text-white font-mono">#{Math.floor(Math.random() * 20) + 1}</div>
-                                                         <div className="text-[10px] text-gray-500 uppercase tracking-wider">Rank</div>
+                                                         <div className="text-2xl font-bold text-white font-mono">{selectedSubmission.judgeScore ? `${selectedSubmission.judgeScore}/100` : '—'}</div>
+                                                         <div className="text-[10px] text-gray-500 uppercase tracking-wider">Score</div>
                                                       </div>
                                                       <div className="bg-surface border border-white/5 rounded-xl p-4 text-center">
-                                                         <div className="text-2xl font-bold text-white font-mono">{Math.floor(Math.random() * 100) + 50}</div>
-                                                         <div className="text-[10px] text-gray-500 uppercase tracking-wider">Views</div>
+                                                         <div className="text-2xl font-bold text-white font-mono capitalize">{selectedSubmission.status || 'pending'}</div>
+                                                         <div className="text-[10px] text-gray-500 uppercase tracking-wider">Status</div>
                                                       </div>
                                                    </div>
                                                 </div>
-                                             )}
+                                             );})()}
 
                                              {/* NEW STATE: Submit new idea */}
-                                             {submissionStep === 'new' && (
+                                             {!isLoadingSubmissions && !submissionError && submissionStep === 'new' && (
                                                 <div className="space-y-6">
                                                    <div className="bg-surface border border-white/5 rounded-xl p-6">
                                                       <button onClick={() => setSubmissionStep('list')} className="text-xs text-gray-500 hover:text-white mb-4 flex items-center gap-1"><ArrowLeft className="w-3 h-3" /> Back to Submissions</button>
@@ -1097,58 +1172,37 @@ export default function HackathonDashboard({ params }: { params: { id: string } 
                                                 </h3>
                                                 <div className="grid grid-cols-2 gap-3">
                                                    <div className="bg-black/20 rounded-lg p-3 text-center">
-                                                      <div className="text-xl font-bold text-gold font-mono">{submittedIdeas.length}</div>
+                                                      <div className="text-xl font-bold text-gold font-mono">{mySubmissions.length}</div>
                                                       <div className="text-[10px] text-gray-500 uppercase">Submitted</div>
                                                    </div>
                                                    <div className="bg-black/20 rounded-lg p-3 text-center">
-                                                      <div className="text-xl font-bold text-white font-mono">{submittedIdeas.reduce((sum, i) => sum + i.votes, 0)}</div>
+                                                      <div className="text-xl font-bold text-white font-mono">{mySubmissions.reduce((sum, s) => sum + (s.voteCount || s.project?.votes || 0), 0)}</div>
                                                       <div className="text-[10px] text-gray-500 uppercase">Total Votes</div>
                                                    </div>
                                                 </div>
                                              </div>
 
-                                             {/* Checklist Widget */}
+                                             {/* Tips Widget */}
                                              <div className="bg-surface border border-white/5 rounded-xl p-5">
                                                 <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-4 flex items-center gap-2">
-                                                   <CheckSquare className="w-4 h-4" /> Submission Tips
+                                                   <Lightbulb className="w-4 h-4" /> Tips for Success
                                                 </h3>
-                                                <div className="space-y-3">
-                                                   <div className="flex items-center gap-3 text-sm text-green-400">
-                                                      <div className="w-4 h-4 rounded-full border flex items-center justify-center border-green-400 bg-green-400/20">
-                                                         <CheckCircle2 className="w-3 h-3" />
-                                                      </div>
-                                                      <span>Add pitch video</span>
-                                                   </div>
-                                                   <div className="flex items-center gap-3 text-sm text-gray-500">
-                                                      <div className="w-4 h-4 rounded-full border flex items-center justify-center border-gray-600">
-                                                      </div>
-                                                      <span>Include pitch deck (optional)</span>
-                                                   </div>
-                                                   <div className="flex items-center gap-3 text-sm text-gray-500">
-                                                      <div className="w-4 h-4 rounded-full border flex items-center justify-center border-gray-600">
-                                                      </div>
-                                                      <span>Add judging notes</span>
-                                                   </div>
-                                                </div>
-                                             </div>
-
-                                             {/* Rules Widget */}
-                                             <div className="bg-surface border border-white/5 rounded-xl p-5">
-                                                <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-4 flex items-center gap-2">
-                                                   <AlertCircle className="w-4 h-4" /> Submission Rules
-                                                </h3>
-                                                <ul className="space-y-2 text-xs text-gray-400">
-                                                   <li className="flex gap-2">
-                                                      <span className="text-gold">•</span>
-                                                      Video must explain both problem & solution.
+                                                <ul className="space-y-3 text-xs text-gray-400">
+                                                   <li className="flex gap-2 items-start">
+                                                      <span className="text-gold mt-0.5">✦</span>
+                                                      <span>Keep your idea title clear and catchy</span>
                                                    </li>
-                                                   <li className="flex gap-2">
-                                                      <span className="text-gold">•</span>
-                                                      Max video length: 3 minutes.
+                                                   <li className="flex gap-2 items-start">
+                                                      <span className="text-gold mt-0.5">✦</span>
+                                                      <span>Describe the problem you're solving</span>
                                                    </li>
-                                                   <li className="flex gap-2">
-                                                      <span className="text-gold">•</span>
-                                                      Make sure external links are accessible.
+                                                   <li className="flex gap-2 items-start">
+                                                      <span className="text-gold mt-0.5">✦</span>
+                                                      <span>Explain your unique solution approach</span>
+                                                   </li>
+                                                   <li className="flex gap-2 items-start">
+                                                      <span className="text-gold mt-0.5">✦</span>
+                                                      <span>Add relevant tags for better visibility</span>
                                                    </li>
                                                 </ul>
                                              </div>

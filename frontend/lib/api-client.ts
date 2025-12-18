@@ -416,10 +416,10 @@ export const apiClient = {
   }) => {
     const query = params
       ? new URLSearchParams(
-          Object.entries(params)
-            .filter(([, v]) => v !== undefined)
-            .map(([k, v]) => [k, String(v)])
-        ).toString()
+        Object.entries(params)
+          .filter(([, v]) => v !== undefined)
+          .map(([k, v]) => [k, String(v)])
+      ).toString()
       : "";
     return apiFetch<{
       success: boolean;
@@ -472,10 +472,10 @@ export const apiClient = {
   }) => {
     const query = params
       ? new URLSearchParams(
-          Object.entries(params)
-            .filter(([, v]) => v !== undefined)
-            .map(([k, v]) => [k, String(v)])
-        ).toString()
+        Object.entries(params)
+          .filter(([, v]) => v !== undefined)
+          .map(([k, v]) => [k, String(v)])
+      ).toString()
       : "";
     return apiFetch<any>(`/feeds${query ? `?${query}` : ""}`);
   },
@@ -506,10 +506,10 @@ export const apiClient = {
   ) => {
     const query = params
       ? new URLSearchParams(
-          Object.entries(params)
-            .filter(([, v]) => v !== undefined)
-            .map(([k, v]) => [k, String(v)])
-        ).toString()
+        Object.entries(params)
+          .filter(([, v]) => v !== undefined)
+          .map(([k, v]) => [k, String(v)])
+      ).toString()
       : "";
     return apiFetch<any>(
       `/feeds/${feedIdOrSlug}/items${query ? `?${query}` : ""}`
@@ -676,4 +676,90 @@ export const apiClient = {
   // Get admin activity log
   getAdminActivityLog: (limit?: number) =>
     apiFetch<any[]>(`/admin/activity${limit ? `?limit=${limit}` : ""}`),
+
+  // =============================================
+  // HACKATHON SUBMISSIONS (Public)
+  // =============================================
+
+  // Get all submissions for a hackathon
+  getSubmissions: (
+    hackathonId: string,
+    options?: {
+      userId?: string;
+      status?: string;
+      search?: string;
+      category?: string;
+      sortBy?: "newest" | "votes" | "score";
+      limit?: number;
+      offset?: number;
+    }
+  ) => {
+    const params = new URLSearchParams();
+    if (options?.userId) params.append("userId", options.userId);
+    if (options?.status) params.append("status", options.status);
+    if (options?.search) params.append("search", options.search);
+    if (options?.category) params.append("category", options.category);
+    if (options?.sortBy) params.append("sortBy", options.sortBy);
+    if (options?.limit) params.append("limit", options.limit.toString());
+    if (options?.offset) params.append("offset", options.offset.toString());
+
+    const queryString = params.toString();
+    return apiFetch<any[]>(
+      `/hackathons/${hackathonId}/submissions${queryString ? `?${queryString}` : ""}`
+    );
+  },
+
+  // Get single submission by ID
+  getSubmissionById: (submissionId: string) =>
+    apiFetch<any>(`/hackathons/submissions/${submissionId}`),
+
+  // Create a new submission (submit idea to hackathon)
+  createSubmission: (data: {
+    hackathonId: string;
+    projectId: string;
+    pitchVideoUrl?: string;
+    pitchDeckUrl?: string;
+    notes?: string;
+  }) =>
+    apiFetch<any>("/hackathons/submissions", {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
+
+  // Update a submission
+  updateSubmission: (
+    submissionId: string,
+    data: {
+      pitchVideoUrl?: string;
+      pitchDeckUrl?: string;
+      notes?: string;
+      status?: string;
+    }
+  ) =>
+    apiFetch<any>(`/hackathons/submissions/${submissionId}`, {
+      method: "PUT",
+      body: JSON.stringify(data),
+    }),
+
+  // Delete a submission
+  deleteSubmission: (submissionId: string) =>
+    apiFetch<void>(`/hackathons/submissions/${submissionId}`, {
+      method: "DELETE",
+    }),
+
+  // Vote for a submission
+  voteSubmission: (submissionId: string) =>
+    apiFetch<any>(`/hackathons/submissions/${submissionId}/vote`, {
+      method: "POST",
+    }),
+
+  // Unvote a submission
+  unvoteSubmission: (submissionId: string) =>
+    apiFetch<void>(`/hackathons/submissions/${submissionId}/vote`, {
+      method: "DELETE",
+    }),
+
+  // Get my submissions for a hackathon
+  getMySubmissions: (hackathonId: string) =>
+    apiFetch<any[]>(`/hackathons/${hackathonId}/submissions?mine=true`),
 };

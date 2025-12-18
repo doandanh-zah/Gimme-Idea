@@ -37,6 +37,10 @@ export class HackathonsController {
         @CurrentUser("userId") userId?: string
     ) {
         query.hackathonId = hackathonId;
+        // If mine=true, filter by current user
+        if (query.mine === "true" && userId) {
+            query.userId = userId;
+        }
         return this.hackathonsService.getSubmissions(query, userId);
     }
 
