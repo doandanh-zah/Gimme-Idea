@@ -48,7 +48,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
-  const processEmailLogin = useCallback(async (supabaseUser: SupabaseUser, isNewLogin: boolean = false) => {
+  const processEmailLogin = useCallback(async (supabaseUser: SupabaseUser, isNewLogin: boolean = false): Promise<User | null> => {
     try {
       const response = await apiClient.loginWithEmail({
         email: supabaseUser.email || '',
@@ -88,28 +88,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
         return userData;
       } else {
-        // API call failed - clear all auth state
+        // API call failed - just clear user state, don't sign out from Supabase
+        // This allows the user to retry or the app to retry
         console.warn('Login API failed:', response.error);
         setUser(null);
-        setSupabaseUser(null);
-        setSession(null);
         setIsAdmin(false);
         localStorage.removeItem('auth_token');
-        // Sign out from Supabase to clear stale session
-        await supabase.auth.signOut();
         return null;
       }
     } catch (error) {
       console.error('Email login error:', error);
       setUser(null);
-      setSupabaseUser(null);
-      setSession(null);
       setIsAdmin(false);
       localStorage.removeItem('auth_token');
-      // Sign out from Supabase to clear stale session
-      await supabase.auth.signOut();
+      return null;
     }
-    return null;
   }, [checkAdminStatus]);
 
   const refreshUser = useCallback(async () => {
@@ -141,23 +134,33 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, [supabaseUser]);
 
+  // Handle auth:unauthorized event from API client
+  // This means the backend JWT is invalid/expired
   useEffect(() => {
-    // Handle auth:unauthorized event from API client
     const handleUnauthorized = async () => {
-      console.warn('Session expired - logging out');
+      console.warn('Backend session expired - clearing app state');
+      // Only clear app-level state, don't touch Supabase session
       setUser(null);
-      setSupabaseUser(null);
-      setSession(null);
       setIsNewUser(false);
       setShowWalletPopup(false);
       setIsAdmin(false);
       localStorage.removeItem('auth_token');
-      // Also sign out from Supabase to clear session completely
-      await supabase.auth.signOut();
+      
+      // If there's a valid Supabase session, try to re-login to backend
+      if (session?.user) {
+        console.log('Attempting to refresh backend session...');
+        const result = await processEmailLogin(session.user, false);
+        if (result) {
+          console.log('Backend session refreshed successfully');
+        }
+      }
     };
 
     window.addEventListener('auth:unauthorized', handleUnauthorized);
-    
+    return () => window.removeEventListener('auth:unauthorized', handleUnauthorized);
+  }, [session, processEmailLogin]);
+
+  useEffect(() => {
     // Handle hash fragment from OAuth redirect (when Supabase redirects to root with hash)
     const handleHashFragment = async () => {
       if (typeof window !== 'undefined' && window.location.hash) {
@@ -183,7 +186,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     handleHashFragment();
 
-    // Get initial session and validate it
+    // Get initial session and validate it with retry logic
     const initializeAuth = async () => {
       try {
         const { data: { session }, error } = await supabase.auth.getSession();
@@ -198,12 +201,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           setSession(session);
           setSupabaseUser(session.user);
           
-          // Validate session with backend - if fails, clear everything
-          const result = await processEmailLogin(session.user, false);
+          // Try to validate session with backend with retry
+          let result = await processEmailLogin(session.user, false);
+          
+          // If first attempt fails, wait a bit and retry once
+          // This handles the case where backend is slow to respond
+          if (!result) {
+            console.log('First login attempt failed, retrying in 1s...');
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            result = await processEmailLogin(session.user, false);
+          }
           
           if (!result) {
-            // Session is invalid, already cleared by processEmailLogin
-            console.warn('Session validation failed, user logged out');
+            // Backend validation failed after retry
+            // User will see logged-in state from Supabase but won't have app data
+            // They can manually logout or refresh to try again
+            console.warn('Backend login failed after retry - user may need to re-login');
           }
         } else {
           // No session, make sure everything is cleared
@@ -214,10 +227,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
       } catch (error) {
         console.error('Auth initialization error:', error);
-        // On error, clear everything to be safe
+        // On error, just clear user data but keep Supabase session
         setUser(null);
-        setSupabaseUser(null);
-        setSession(null);
         localStorage.removeItem('auth_token');
       } finally {
         setIsLoading(false);
@@ -249,7 +260,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     return () => {
       subscription.unsubscribe();
-      window.removeEventListener('auth:unauthorized', handleUnauthorized);
     };
   }, [processEmailLogin]);
 
