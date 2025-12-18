@@ -1,4 +1,4 @@
-import { Controller, Get, Patch, Body, Param, UseGuards } from "@nestjs/common";
+import { Controller, Get, Patch, Body, Param, UseGuards, Query } from "@nestjs/common";
 import { UsersService } from "./users.service";
 import { UpdateProfileDto } from "./dto/update-profile.dto";
 import { AuthGuard } from "../common/guards/auth.guard";
@@ -16,7 +16,22 @@ interface UserStats {
 
 @Controller("users")
 export class UsersController {
-  constructor(private usersService: UsersService) {}
+  constructor(private usersService: UsersService) { }
+
+  /**
+   * GET /api/users/search?q=xxx
+   * Search users by username (for invite feature)
+   */
+  @Get("search")
+  @UseGuards(AuthGuard)
+  async searchUsers(
+    @Query("q") query: string,
+    @Query("exclude") exclude?: string,
+    @Query("limit") limit?: number
+  ): Promise<ApiResponse<any[]>> {
+    const excludeIds = exclude ? exclude.split(",") : [];
+    return this.usersService.searchUsers(query, excludeIds, limit || 10);
+  }
 
   /**
    * GET /api/users/:username

@@ -254,6 +254,23 @@ export const apiClient = {
       body: JSON.stringify(data),
     }),
 
+  // Search users (for invite member feature)
+  searchUsers: (query: string, excludeUserIds?: string[], limit?: number) => {
+    const params = new URLSearchParams();
+    params.append("q", query);
+    if (excludeUserIds && excludeUserIds.length > 0) {
+      params.append("exclude", excludeUserIds.join(","));
+    }
+    if (limit) params.append("limit", limit.toString());
+    return apiFetch<Array<{
+      id: string;
+      username: string;
+      avatar?: string;
+      bio?: string;
+      reputationScore: number;
+    }>>(`/users/search?${params.toString()}`);
+  },
+
   // =====================================
   // AI API
   // =====================================

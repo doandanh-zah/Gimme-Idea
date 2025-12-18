@@ -128,20 +128,8 @@ export default function HackathonDashboard({ params }: { params: { id: string } 
       return { ...step, status };
    }) || [];
 
-   // MOCK DATA for inviting users
-   const MOCK_AVAILABLE_USERS = [
-      { id: 'user-a', name: 'Alice Smith', skills: ['Frontend', 'UI/UX'] },
-      { id: 'user-b', name: 'Bob Johnson', skills: ['Backend', 'Database'] },
-      { id: 'user-c', name: 'Charlie Brown', skills: ['Solidity', 'Smart Contracts'] },
-      { id: 'user-d', name: 'Diana Prince', skills: ['DevOps', 'Cloud'] },
-      { id: 'user-e', name: 'Eve Adams', skills: ['Project Management', 'Marketing'] },
-      { id: 'user-f', name: 'Frank White', skills: ['AI/ML', 'Data Science'] },
-      { id: 'current-user', name: 'Thodium', skills: ['Frontend', 'UI/UX', 'Fullstack'] }, // Add Thodium as a user to receive invites
-   ];
-
    // Team Invite States
    const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
-   const [searchInviteUserQuery, setSearchInviteUserQuery] = useState('');
    const [pendingInvitations, setPendingInvitations] = useState<any[]>([]); // Pending invites from API
 
    // Data States
@@ -2297,11 +2285,9 @@ export default function HackathonDashboard({ params }: { params: { id: string } 
          <InviteMemberModal
             isOpen={isInviteModalOpen}
             onClose={() => setIsInviteModalOpen(false)}
-            availableUsers={MOCK_AVAILABLE_USERS}
-            searchQuery={searchInviteUserQuery}
-            onSearchQueryChange={setSearchInviteUserQuery}
             onInvite={handleInviteUserToTeam}
-            teamMembers={userTeam ? userTeam.members : []}
+            teamMembers={userTeam?.members || []}
+            hackathonId={id}
          />
          {/* Import Idea Modal */}
          <ImportIdeaModal

@@ -19,7 +19,7 @@ interface UserStats {
 
 @Injectable()
 export class UsersService {
-  constructor(private supabaseService: SupabaseService) {}
+  constructor(private supabaseService: SupabaseService) { }
 
   /**
    * Get user by username or slug
@@ -281,6 +281,51 @@ export class UsersService {
         likesReceived,
         votesReceived,
       },
+    };
+  }
+
+  /**
+   * Search users by username
+   */
+  async searchUsers(
+    query: string,
+    excludeUserIds?: string[],
+    limit: number = 10
+  ): Promise<ApiResponse<any[]>> {
+    const supabase = this.supabaseService.getAdminClient();
+
+    if (!query || query.trim().length < 2) {
+      return { success: true, data: [] };
+    }
+
+    let dbQuery = supabase
+      .from("users")
+      .select("id, username, avatar, bio, reputation_score")
+      .ilike("username", `%${query.trim()}%`)
+      .order("reputation_score", { ascending: false })
+      .limit(limit);
+
+    // Exclude specific user IDs (e.g., current team members)
+    if (excludeUserIds && excludeUserIds.length > 0) {
+      dbQuery = dbQuery.not("id", "in", `(${excludeUserIds.join(",")})`);
+    }
+
+    const { data: users, error } = await dbQuery;
+
+    if (error) {
+      console.error("Search users error:", error);
+      return { success: true, data: [] };
+    }
+
+    return {
+      success: true,
+      data: users?.map(u => ({
+        id: u.id,
+        username: u.username,
+        avatar: u.avatar,
+        bio: u.bio,
+        reputationScore: u.reputation_score || 0,
+      })) || [],
     };
   }
 }
