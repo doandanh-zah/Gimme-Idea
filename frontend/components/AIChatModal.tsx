@@ -622,14 +622,14 @@ export const AIChatModal: React.FC<AIChatModalProps> = ({ isOpen, onClose }) => 
 
                   {/* Recommended Ideas Cards */}
                   {msg.recommendedIdeas && msg.recommendedIdeas.length > 0 && (
-                    <div className="mt-3 sm:mt-4 space-y-2 sm:space-y-3">
+                    <div className="mt-3 sm:mt-4 space-y-3 sm:space-y-4 overflow-visible">
                       {msg.recommendedIdeas.map((idea, idx) => (
                         <div
                           key={idea.id}
                           onClick={() => handleIdeaClick(idea)}
-                          className="glitch-card p-3 sm:p-4 bg-white/5 border border-[#FFD700]/20 rounded-xl transition-all cursor-pointer group"
+                          className="glitch-card p-3 sm:p-4 bg-[#12131a] border border-[#FFD700]/30 rounded-xl cursor-pointer group relative overflow-visible"
                         >
-                          <div className="flex items-start gap-2 sm:gap-3">
+                          <div className="flex items-start gap-2 sm:gap-3 relative z-10">
                             <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-lg bg-[#FFD700]/20 flex items-center justify-center text-[#FFD700] font-bold text-xs sm:text-sm flex-shrink-0">
                               {idx + 1}
                             </div>
