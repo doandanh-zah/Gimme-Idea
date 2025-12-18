@@ -71,3 +71,9 @@ export const HACKATHONS_MOCK_DATA = [
     ]
   },
 ];
+
+export const MY_IDEAS = [
+    { id: 'idea-101', title: 'Solana Pay Vending', category: 'DeFi', description: 'NFC-enabled vending machines using Solana Pay for instant settlement.', votes: 45 },
+    { id: 'idea-102', title: 'Decentralized Identity Vault', category: 'Identity', description: 'Zero-knowledge proof identity verification system for on-chain KYC.', votes: 128 },
+    { id: 'idea-103', title: 'EcoTrack DAO', category: 'Social Impact', description: 'Supply chain transparency tool for sustainable coffee sourcing.', votes: 32 },
+];

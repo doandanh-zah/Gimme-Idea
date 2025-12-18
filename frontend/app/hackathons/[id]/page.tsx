@@ -8,13 +8,14 @@ import {
   AlertCircle, MoreHorizontal, Github, Disc, Link as LinkIcon,
   Monitor, Mic, SwatchBook, Code, ShieldCheck, Smartphone, UserPlus, 
   RefreshCw, Lock, Search, Plus, Settings, LogOut, UserMinus,
-  LayoutDashboard, Rocket, BookOpen, Menu as MenuIcon, X, Sparkles, Activity
+  LayoutDashboard, Rocket, BookOpen, Menu as MenuIcon, X, Sparkles, Activity, Send, CheckSquare, Globe, Video, Youtube, ThumbsUp, ArrowLeft
 } from 'lucide-react';
 import Image from 'next/image';
+import Link from 'next/link';
 
 import { useSearchParams } from 'next/navigation';
 import { format, isBefore, isSameDay } from 'date-fns';
-import { HACKATHONS_MOCK_DATA } from '@/lib/mock-hackathons';
+import { HACKATHONS_MOCK_DATA, MY_IDEAS } from '@/lib/mock-hackathons';
 import InviteMemberModal from '@/components/InviteMemberModal';
 
 // Map icon names from mock data to Lucide React components
@@ -26,10 +27,15 @@ const LucideIconMap: { [key: string]: React.ElementType } = {
 };
 
 const DEFAULT_NEW_TEAM = {
+
   name: 'My New Team',
+
   tags: ['New', 'Idea'],
+
   members: [{ id: 'current-user', name: 'You', role: 'Leader', isLeader: true }], // Added id for current user
+
   maxMembers: 5
+
 };
 
 
@@ -61,6 +67,11 @@ export default function HackathonDashboard({ params }: { params: { id: string } 
   // Layout State
   const [activeSection, setActiveSection] = useState('overview');
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
+  // Submission State
+  const [submissionStep, setSubmissionStep] = useState<'select' | 'details' | 'completed'>('select');
+  const [selectedIdeaId, setSelectedIdeaId] = useState<string | null>(null);
+  const [submissionForm, setSubmissionForm] = useState({ repoUrl: '', videoUrl: '', notes: '' });
 
   // Background Stars
   const [stars, setStars] = useState<{ id: number; top: string; left: string; size: number; duration: string; opacity: number }[]>([]);
@@ -318,6 +329,7 @@ export default function HackathonDashboard({ params }: { params: { id: string } 
 
             <div className="my-4 border-t border-white/5" />
             <div className="text-[10px] text-gray-500 font-bold uppercase tracking-wider px-2 mb-2">My Zone</div>
+            <SidebarItem id="submission" label="Submission" icon={Send} activeSection={activeSection} setActiveSection={setActiveSection} setIsMobileMenuOpen={setIsMobileMenuOpen} />
             <SidebarItem id="project" label="Team" icon={Rocket} activeSection={activeSection} setActiveSection={setActiveSection} setIsMobileMenuOpen={setIsMobileMenuOpen} />
             <SidebarItem id="resources" label="Resources" icon={BookOpen} activeSection={activeSection} setActiveSection={setActiveSection} setIsMobileMenuOpen={setIsMobileMenuOpen} />
           </nav>
@@ -623,6 +635,189 @@ export default function HackathonDashboard({ params }: { params: { id: string } 
 
 
                             
+                            case 'submission':
+                                return (
+                                   <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 h-full">
+                                      {/* LEFT COLUMN: Submission Process (Span 8) */}
+                                      <div className="lg:col-span-8 flex flex-col h-full overflow-y-auto pr-2 pb-20 md:pb-0">
+                                         {submissionStep === 'select' && (
+                                            <div className="space-y-6">
+                                               <div className="bg-surface border border-white/5 rounded-xl p-6">
+                                                  <h2 className="text-xl font-bold text-white mb-2 font-quantico">Select Idea</h2>
+                                                  <p className="text-gray-400 text-sm">Choose one of your existing ideas to submit to this hackathon.</p>
+                                               </div>
+                                               <div className="grid gap-4">
+                                                  {MY_IDEAS.map(idea => (
+                                                     <div key={idea.id} className={`p-4 rounded-xl border cursor-pointer transition-all ${selectedIdeaId === idea.id ? 'bg-gold/10 border-gold' : 'bg-surface border-white/5 hover:border-white/20'}`} onClick={() => setSelectedIdeaId(idea.id)}>
+                                                        <div className="flex justify-between items-start mb-2">
+                                                           <span className="bg-white/10 px-2 py-0.5 rounded text-[10px] text-gray-300">{idea.category}</span>
+                                                           {selectedIdeaId === idea.id && <CheckCircle2 className="w-5 h-5 text-gold" />}
+                                                        </div>
+                                                        <h3 className="text-lg font-bold text-white mb-1">{idea.title}</h3>
+                                                        <p className="text-sm text-gray-400 mb-3">{idea.description}</p>
+                                                        <div className="flex items-center gap-2 text-xs text-gray-500">
+                                                           <ThumbsUp className="w-3 h-3" /> {idea.votes} Votes
+                                                        </div>
+                                                     </div>
+                                                  ))}
+                                               </div>
+                                               <div className="flex justify-end pt-4">
+                                                  <button 
+                                                     disabled={!selectedIdeaId}
+                                                     onClick={() => setSubmissionStep('details')}
+                                                     className={`px-6 py-2.5 rounded-lg font-bold text-sm transition-colors flex items-center gap-2 ${!selectedIdeaId ? 'bg-gray-800 text-gray-500 cursor-not-allowed' : 'bg-gold text-black hover:bg-gold/90'}`}
+                                                  >
+                                                     Next Step <ChevronRight className="w-4 h-4" />
+                                                  </button>
+                                               </div>
+                                            </div>
+                                         )}
+
+                                         {submissionStep === 'details' && (
+                                            <div className="space-y-6">
+                                               <div className="bg-surface border border-white/5 rounded-xl p-6">
+                                                  <button onClick={() => setSubmissionStep('select')} className="text-xs text-gray-500 hover:text-white mb-4 flex items-center gap-1"><ArrowLeft className="w-3 h-3" /> Back</button>
+                                                  <h2 className="text-xl font-bold text-white mb-2 font-quantico">Submission Details</h2>
+                                                  <p className="text-gray-400 text-sm">Provide the necessary links for judges to review your work.</p>
+                                               </div>
+                                               
+                                               <div className="bg-surface border border-white/5 rounded-xl p-6 space-y-4">
+                                                  <div>
+                                                     <label className="block text-xs font-bold text-gray-400 uppercase mb-1.5">Github Repository <span className="text-red-400">*</span></label>
+                                                     <div className="relative">
+                                                        <Github className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
+                                                        <input 
+                                                           type="text" 
+                                                           value={submissionForm.repoUrl} 
+                                                           onChange={e => setSubmissionForm({...submissionForm, repoUrl: e.target.value})}
+                                                           placeholder="https://github.com/username/project"
+                                                           className="w-full bg-black/20 border border-white/10 rounded-lg pl-10 pr-4 py-2.5 text-white text-sm focus:border-gold/50 outline-none transition-colors"
+                                                        />
+                                                     </div>
+                                                  </div>
+
+                                                  <div>
+                                                     <label className="block text-xs font-bold text-gray-400 uppercase mb-1.5">Demo Video <span className="text-red-400">*</span></label>
+                                                     <div className="relative">
+                                                        <Youtube className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
+                                                        <input 
+                                                           type="text" 
+                                                           value={submissionForm.videoUrl} 
+                                                           onChange={e => setSubmissionForm({...submissionForm, videoUrl: e.target.value})}
+                                                           placeholder="https://youtube.com/watch?v=..."
+                                                           className="w-full bg-black/20 border border-white/10 rounded-lg pl-10 pr-4 py-2.5 text-white text-sm focus:border-gold/50 outline-none transition-colors"
+                                                        />
+                                                     </div>
+                                                  </div>
+
+                                                  <div>
+                                                     <label className="block text-xs font-bold text-gray-400 uppercase mb-1.5">Additional Notes</label>
+                                                     <textarea 
+                                                        value={submissionForm.notes} 
+                                                        onChange={e => setSubmissionForm({...submissionForm, notes: e.target.value})}
+                                                        placeholder="Any instructions for testing, demo accounts, etc."
+                                                        className="w-full bg-black/20 border border-white/10 rounded-lg px-4 py-3 text-white text-sm focus:border-gold/50 outline-none transition-colors min-h-[100px]"
+                                                     />
+                                                  </div>
+                                               </div>
+
+                                               <div className="flex justify-end pt-4">
+                                                  <button 
+                                                     disabled={!submissionForm.repoUrl || !submissionForm.videoUrl}
+                                                     onClick={() => setSubmissionStep('completed')}
+                                                     className={`px-8 py-3 rounded-lg font-bold text-sm transition-colors flex items-center gap-2 ${(!submissionForm.repoUrl || !submissionForm.videoUrl) ? 'bg-gray-800 text-gray-500 cursor-not-allowed' : 'bg-gold text-black hover:bg-gold/90'}`}
+                                                  >
+                                                     <Send className="w-4 h-4" /> Submit Project
+                                                  </button>
+                                               </div>
+                                            </div>
+                                         )}
+
+                                         {submissionStep === 'completed' && (
+                                            <div className="h-full flex flex-col items-center justify-center text-center p-8">
+                                               <div className="w-20 h-20 bg-green-500/20 rounded-full flex items-center justify-center mb-6">
+                                                  <CheckCircle2 className="w-10 h-10 text-green-500" />
+                                               </div>
+                                               <h2 className="text-3xl font-bold text-white mb-2 font-quantico">Submission Received!</h2>
+                                               <p className="text-gray-400 max-w-md mb-8">
+                                                  Your project has been successfully submitted. You can update your submission until the deadline.
+                                               </p>
+                                               <div className="flex gap-4">
+                                                  <button onClick={() => setSubmissionStep('details')} className="px-6 py-2.5 bg-white/10 hover:bg-white/20 text-white rounded-lg text-sm font-bold transition-colors">
+                                                     Edit Submission
+                                                  </button>
+                                                  <Link href="/dashboard" className="px-6 py-2.5 bg-gold text-black hover:bg-gold/90 rounded-lg text-sm font-bold transition-colors">
+                                                     Back to Dashboard
+                                                  </Link>
+                                               </div>
+                                            </div>
+                                         )}
+                                      </div>
+
+                                      {/* RIGHT COLUMN: Sidebar Widgets (Span 4) */}
+                                      <div className="lg:col-span-4 flex flex-col gap-6 h-full overflow-y-auto pr-2 pb-20 md:pb-0">
+                                         
+                                         {/* Checklist Widget */}
+                                         <div className="bg-surface border border-white/5 rounded-xl p-5">
+                                            <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-4 flex items-center gap-2">
+                                               <CheckSquare className="w-4 h-4" /> Submission Checklist
+                                            </h3>
+                                            <div className="space-y-3">
+                                               <div className={`flex items-center gap-3 text-sm ${selectedIdeaId ? 'text-green-400' : 'text-gray-500'}`}>
+                                                  <div className={`w-4 h-4 rounded-full border flex items-center justify-center ${selectedIdeaId ? 'border-green-400 bg-green-400/20' : 'border-gray-600'}`}>
+                                                     {selectedIdeaId && <CheckCircle2 className="w-3 h-3" />}
+                                                  </div>
+                                                  <span>Select an Idea</span>
+                                               </div>
+                                               <div className={`flex items-center gap-3 text-sm ${submissionForm.repoUrl ? 'text-green-400' : 'text-gray-500'}`}>
+                                                  <div className={`w-4 h-4 rounded-full border flex items-center justify-center ${submissionForm.repoUrl ? 'border-green-400 bg-green-400/20' : 'border-gray-600'}`}>
+                                                     {submissionForm.repoUrl && <CheckCircle2 className="w-3 h-3" />}
+                                                  </div>
+                                                  <span>Public Github Repo</span>
+                                               </div>
+                                               <div className={`flex items-center gap-3 text-sm ${submissionForm.videoUrl ? 'text-green-400' : 'text-gray-500'}`}>
+                                                  <div className={`w-4 h-4 rounded-full border flex items-center justify-center ${submissionForm.videoUrl ? 'border-green-400 bg-green-400/20' : 'border-gray-600'}`}>
+                                                     {submissionForm.videoUrl && <CheckCircle2 className="w-3 h-3" />}
+                                                  </div>
+                                                  <span>Demo Video (YouTube)</span>
+                                               </div>
+                                            </div>
+                                         </div>
+
+                                         {/* Rules Widget */}
+                                         <div className="bg-surface border border-white/5 rounded-xl p-5">
+                                            <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-4 flex items-center gap-2">
+                                               <AlertCircle className="w-4 h-4" /> Important Rules
+                                            </h3>
+                                            <ul className="space-y-2 text-xs text-gray-400">
+                                               <li className="flex gap-2">
+                                                  <span className="text-gold">•</span>
+                                                  Repository must be public for judging.
+                                               </li>
+                                               <li className="flex gap-2">
+                                                  <span className="text-gold">•</span>
+                                                  Video should not exceed 3 minutes.
+                                               </li>
+                                               <li className="flex gap-2">
+                                                  <span className="text-gold">•</span>
+                                                  All team members must be registered.
+                                               </li>
+                                            </ul>
+                                         </div>
+
+                                         {/* Deadline Widget */}
+                                         <div className="bg-surface border border-white/5 rounded-xl p-5">
+                                            <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Submission Deadline</h3>
+                                            <div className="text-xl font-bold text-white font-mono">
+                                               {format(new Date(eventEndDate!), 'MMM dd, HH:mm')}
+                                            </div>
+                                            <p className="text-[10px] text-red-400 mt-1">Late submissions are not accepted.</p>
+                                         </div>
+
+                                      </div>
+                                   </div>
+                                );
+
                             case 'project':
                                 return (
                                    <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 h-full">
