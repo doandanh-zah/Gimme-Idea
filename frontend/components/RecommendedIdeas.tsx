@@ -171,20 +171,24 @@ export const RecommendedIdeas = () => {
           const medal = medals[index];
           const MedalIcon = medal.icon;
           const summary = createSummary(idea.problem, idea.solution);
-          // Random delay for each card's scanline (2-6 seconds)
-          const scanDelay = 2 + Math.random() * 4;
-          const scanDuration = 4 + Math.random() * 3; // 4-7 seconds per scan
+          // Random timing for scanline (staggered between cards)
+          const scanDelay = index * 1.5; // Stagger start time
           
           return (
             <motion.div
               key={idea.id}
               initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              whileHover={{ 
-                y: -6, 
-                scale: 1.01,
-                boxShadow: `0 0 20px ${medal.color}40, 0 0 40px ${medal.color}20, inset 0 0 20px ${medal.color}05`
+              animate={{ 
+                opacity: 1, 
+                y: 0,
+                // Continuous glitch box shadow
+                boxShadow: [
+                  `0 0 15px ${medal.color}25, 0 0 30px ${medal.color}15, inset 0 0 15px ${medal.color}03`,
+                  `0 0 20px ${medal.color}40, 0 0 40px ${medal.color}20, inset 0 0 20px ${medal.color}05`,
+                  `0 0 15px ${medal.color}25, 0 0 30px ${medal.color}15, inset 0 0 15px ${medal.color}03`,
+                ]
               }}
+              whileHover={{ y: -6, scale: 1.01 }}
               whileTap={{ scale: 0.98 }}
               transition={{ 
                 delay: index * 0.1, 
@@ -192,62 +196,78 @@ export const RecommendedIdeas = () => {
                 ease: "easeOut",
                 type: "spring",
                 stiffness: 400,
-                damping: 25
+                damping: 25,
+                boxShadow: { duration: 2, repeat: Infinity, ease: "easeInOut" }
               }}
               onClick={() => handleViewIdea(idea)}
               className={`relative p-6 rounded-2xl cursor-pointer group min-h-[300px] flex flex-col overflow-hidden
                 bg-gradient-to-br from-white/[0.08] to-white/[0.02] backdrop-blur-sm
                 transition-all duration-500`}
-              style={{ border: `1px solid ${medal.color}30` }}
+              style={{ border: `1px solid ${medal.color}40` }}
             >
-              {/* Colored border glow on hover */}
-              <motion.div
-                className="absolute inset-0 rounded-2xl pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-500"
-                style={{ 
-                  border: `1px solid ${medal.color}`,
-                  boxShadow: `0 0 15px ${medal.color}30, inset 0 0 15px ${medal.color}05`
-                }}
-              />
-
-              {/* Random scanline - appears occasionally */}
-              <motion.div
-                className="absolute inset-0 pointer-events-none overflow-hidden rounded-2xl z-20"
+              {/* Continuous scanline effect - like regular idea cards */}
+              <motion.div 
+                className="absolute inset-0 overflow-hidden pointer-events-none rounded-2xl z-10"
               >
-                <motion.div
-                  className="absolute w-full h-[2px]"
-                  style={{ 
-                    background: `linear-gradient(90deg, transparent, ${medal.color}60, transparent)`,
-                    boxShadow: `0 0 8px ${medal.color}40`
+                {/* Horizontal scan lines pattern */}
+                <div 
+                  className="absolute inset-0"
+                  style={{
+                    background: `repeating-linear-gradient(0deg, transparent, transparent 2px, ${medal.color}03 2px, ${medal.color}03 4px)`
                   }}
-                  initial={{ top: '-10%', opacity: 0 }}
-                  animate={{ 
-                    top: ['-10%', '110%'],
-                    opacity: [0, 0.7, 0.7, 0]
+                />
+                {/* Moving scanline gradient */}
+                <motion.div 
+                  className="absolute left-0 right-0 h-16"
+                  style={{
+                    background: `linear-gradient(to bottom, ${medal.color}15, transparent)`
                   }}
+                  animate={{ top: ['-64px', '100%'] }}
                   transition={{ 
-                    duration: scanDuration, 
+                    duration: 3, 
                     repeat: Infinity, 
-                    repeatDelay: scanDelay,
-                    ease: 'linear' 
+                    ease: 'linear',
+                    delay: scanDelay 
                   }}
                 />
               </motion.div>
 
-              {/* Glitch effects - ONLY on hover (like regular idea cards) */}
+              {/* Continuous glitch border effects */}
               <motion.div
-                className="absolute inset-0 rounded-2xl pointer-events-none z-10 opacity-0 group-hover:opacity-100"
+                className="absolute inset-0 rounded-2xl pointer-events-none"
                 style={{ border: `1px solid ${medal.color}` }}
                 animate={{
+                  opacity: [0.4, 0.7, 0.4],
                   x: [0, -2, 2, 0],
                 }}
-                transition={{ duration: 0.3, repeat: Infinity }}
+                transition={{ duration: 0.5, repeat: Infinity }}
+              />
+              <motion.div
+                className="absolute inset-0 rounded-2xl pointer-events-none"
+                style={{ borderTop: `1px solid ${medal.color}`, borderBottom: `1px solid ${medal.color}` }}
+                animate={{
+                  opacity: [0.3, 0.5, 0.3],
+                  x: [0, 3, -3, 0],
+                }}
+                transition={{ duration: 0.5, repeat: Infinity, delay: 0.1 }}
+              />
+
+              {/* Subtle color overlay glitch */}
+              <motion.div
+                className="absolute inset-0 rounded-2xl pointer-events-none"
+                style={{ background: `linear-gradient(45deg, ${medal.color}08, transparent)` }}
+                animate={{
+                  opacity: [0.3, 0.6, 0.3],
+                  x: [0, -3, 3, 0],
+                }}
+                transition={{ duration: 0.6, repeat: Infinity }}
               />
               
               {/* Sparkle border animation on hover */}
               <div 
                 className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"
                 style={{
-                  background: `linear-gradient(135deg, ${medal.color}15, transparent 50%, ${medal.color}15)`,
+                  background: `linear-gradient(135deg, ${medal.color}20, transparent 50%, ${medal.color}20)`,
                 }}
               />
               
@@ -256,7 +276,7 @@ export const RecommendedIdeas = () => {
                 <div 
                   className="absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-in-out"
                   style={{
-                    background: `linear-gradient(90deg, transparent, ${medal.color}15, transparent)`,
+                    background: `linear-gradient(90deg, transparent, ${medal.color}20, transparent)`,
                   }}
                 />
               </div>
@@ -293,13 +313,22 @@ export const RecommendedIdeas = () => {
                 </span>
               </div>
 
-              {/* Title - glitch only on hover */}
-              <h3 
-                className="relative z-10 text-lg font-bold mb-3 line-clamp-2 transition-all duration-300 group-hover:brightness-125"
+              {/* Title with continuous glitch effect */}
+              <motion.h3 
+                className="relative z-10 text-lg font-bold mb-3 line-clamp-2"
                 style={{ color: medal.color }}
+                animate={{
+                  textShadow: [
+                    `0 0 5px ${medal.color}40`,
+                    `-1px 0 ${medal.color}60, 1px 0 ${medal.color}30`,
+                    `1px 0 ${medal.color}60, -1px 0 ${medal.color}30`,
+                    `0 0 5px ${medal.color}40`,
+                  ]
+                }}
+                transition={{ duration: 0.5, repeat: Infinity }}
               >
                 {idea.title}
-              </h3>
+              </motion.h3>
 
               {/* AI Summary - Problem → Solution */}
               <p className="relative z-10 text-sm text-gray-400 line-clamp-2 mb-4 flex-grow leading-relaxed">
