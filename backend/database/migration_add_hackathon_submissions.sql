@@ -2,6 +2,20 @@
 -- Description: Creates tables for managing idea submissions to hackathons
 
 -- =============================================
+-- DROP EXISTING OBJECTS (if any)
+-- =============================================
+
+-- Drop tables first (CASCADE will handle indexes, triggers, policies)
+DROP TABLE IF EXISTS hackathon_submission_votes CASCADE;
+DROP TABLE IF EXISTS hackathon_registrations CASCADE;
+DROP TABLE IF EXISTS hackathon_submissions CASCADE;
+
+-- Drop functions (safe to drop even if not exists)
+DROP FUNCTION IF EXISTS get_submission_vote_count(UUID);
+DROP FUNCTION IF EXISTS has_user_voted_submission(UUID, UUID);
+DROP FUNCTION IF EXISTS update_hackathon_participants_count();
+
+-- =============================================
 -- HACKATHON SUBMISSIONS TABLE
 -- =============================================
 -- Links ideas/projects to hackathons (many-to-many relationship)

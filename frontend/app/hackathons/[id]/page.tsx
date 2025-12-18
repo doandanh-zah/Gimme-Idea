@@ -250,21 +250,25 @@ export default function HackathonDashboard({ params }: { params: { id: string } 
    // Load my submissions from API
    const loadMySubmissions = async () => {
       if (!id) return;
+      console.log('[Hackathon Submission] 📋 Loading my submissions for hackathon:', id);
       setIsLoadingSubmissions(true);
       setSubmissionError(null);
       try {
          const response = await apiClient.getMySubmissions(id);
+         console.log('[Hackathon Submission] 📡 getMySubmissions response:', response);
          // Response is ApiResponse<any[]>, extract data
          if (response.success && response.data) {
+            console.log('[Hackathon Submission] ✅ Loaded', response.data.length, 'submissions');
             setMySubmissions(response.data);
          } else {
+            console.log('[Hackathon Submission] ⚠️ No submissions or error:', response.error);
             setMySubmissions([]);
             if (response.error) {
                setSubmissionError(response.error);
             }
          }
       } catch (err: any) {
-         console.error('Error loading submissions:', err);
+         console.error('[Hackathon Submission] ❌ Error loading submissions:', err);
          setSubmissionError(err.message || 'Failed to load submissions');
       } finally {
          setIsLoadingSubmissions(false);
@@ -274,6 +278,7 @@ export default function HackathonDashboard({ params }: { params: { id: string } 
    // Load submissions when entering submission tab
    useEffect(() => {
       if (activeSection === 'submission') {
+         console.log('[Hackathon Submission] 🔄 Entering submission tab, loading data...');
          loadMySubmissions();
       }
    }, [activeSection, id]);
@@ -282,28 +287,40 @@ export default function HackathonDashboard({ params }: { params: { id: string } 
    const handleImportIdea = async (idea: Project) => {
       if (!id) return;
 
+      console.log('[Hackathon Submission] 📥 Importing idea to hackathon:', {
+         hackathonId: id,
+         projectId: idea.id,
+         projectTitle: idea.title,
+      });
+
       // Check if already submitted
       if (mySubmissions.find(s => s.projectId === idea.id || s.project?.id === idea.id)) {
+         console.log('[Hackathon Submission] ⚠️ Idea already submitted');
          alert('This idea has already been submitted to this hackathon.');
          return;
       }
 
       setIsSubmitting(true);
       try {
+         console.log('[Hackathon Submission] 🚀 Calling createSubmission API...');
          const response = await apiClient.createSubmission({
             hackathonId: id,
             projectId: idea.id,
          });
+         console.log('[Hackathon Submission] 📡 API Response:', response);
+         
          if (response.success) {
+            console.log('[Hackathon Submission] ✅ Submission created successfully!', response.data);
             // Reload submissions after creating
             await loadMySubmissions();
             setIsImportModalOpen(false);
             setSubmissionStep('list');
          } else {
+            console.error('[Hackathon Submission] ❌ API returned error:', response.error);
             throw new Error(response.error || 'Failed to create submission');
          }
       } catch (err: any) {
-         console.error('Error submitting idea:', err);
+         console.error('[Hackathon Submission] ❌ Error submitting idea:', err);
          alert(err.message || 'Failed to submit idea');
       } finally {
          setIsSubmitting(false);
