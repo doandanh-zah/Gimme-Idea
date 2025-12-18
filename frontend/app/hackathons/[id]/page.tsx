@@ -436,12 +436,48 @@ export default function HackathonDashboard({ params }: { params: { id: string } 
                                                       <div className="text-[10px] text-gold/80">SECURE_CONNECTION</div>
                                                    </div>
                                                    <div className="flex-1 overflow-y-auto space-y-2 text-gold/80 pr-2 scrollbar-thin scrollbar-thumb-gold/20">
-                                                      {hackathon.announcements?.map((log: any) => (
-                                                         <div key={log.id} className="group">
-                                                            <span className="opacity-50 text-[10px] mr-2">[{format(new Date(log.date), 'HH:mm')}]</span>
-                                                            <span className="text-gold">{log.message}</span>
-                                                         </div>
-                                                      ))}
+                                                      {hackathon.announcements?.map((log: any) => {
+                                                         // Effect Logic - from Legacy
+                                                         let effectClass = '';
+                                                         if (log.config?.effect === 'pulse') effectClass = 'animate-pulse font-bold';
+                                                         if (log.config?.effect === 'typewriter') effectClass = 'border-r-2 border-gold pr-1 animate-pulse'; // Cursor simulation
+                                                         if (log.config?.effect === 'glitch') effectClass = 'text-shadow-glitch'; // Glitch effect
+
+                                                         // Widget Logic (Countdown)
+                                                         let widgetContent = null;
+                                                         if (log.config?.widget?.type === 'countdown') {
+                                                            const target = new Date(log.config.widget.target);
+                                                            const diff = target.getTime() - now.getTime();
+                                                            if (diff > 0) {
+                                                               const hrs = Math.floor(diff / (1000 * 60 * 60));
+                                                               const mins = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+                                                               const secs = Math.floor((diff % (1000 * 60)) / 1000);
+                                                               widgetContent = (
+                                                                  <span className="ml-2 text-red-500 font-bold bg-red-900/20 px-1 rounded">
+                                                                     {String(hrs).padStart(2, '0')}:{String(mins).padStart(2, '0')}:{String(secs).padStart(2, '0')}
+                                                                  </span>
+                                                               );
+                                                            } else {
+                                                               widgetContent = <span className="ml-2 text-gray-500">[EXPIRED]</span>;
+                                                            }
+                                                         }
+
+                                                         return (
+                                                            <div key={log.id} className="group">
+                                                               <span className="opacity-50 text-[10px] mr-2">[{format(new Date(log.date), 'HH:mm')}]</span>
+                                                               <span
+                                                                  className={`
+                                                                     ${log.type === 'warning' ? 'text-yellow-400' : log.type === 'success' ? 'text-green-400' : 'text-gold'}
+                                                                     ${effectClass}
+                                                                  `}
+                                                                  style={log.config?.effect === 'glitch' ? { textShadow: '2px 0 red, -2px 0 blue' } : {}}
+                                                               >
+                                                                  {log.message}
+                                                               </span>
+                                                               {widgetContent}
+                                                            </div>
+                                                         );
+                                                      })}
                                                       {terminalHistory.map((item, idx) => (
                                                          <div key={idx} className={item.type === 'error' ? 'text-red-500' : 'text-gold'}>
                                                             {item.type === 'command' ? `$ ${item.content}` : item.content}

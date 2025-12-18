@@ -44,11 +44,11 @@ body {
 }
 
 .glass-panel {
-    background: rgba(3, 2, 8, 0.92);
-    backdrop-filter: blur(30px);
-    -webkit-backdrop-filter: blur(30px);
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.7);
+  background: rgba(3, 2, 8, 0.92);
+  backdrop-filter: blur(30px);
+  -webkit-backdrop-filter: blur(30px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.7);
 }
 
 /* Text Utilities */
@@ -76,18 +76,45 @@ body {
 }
 
 @keyframes orb-float-1 {
-  0%, 100% { transform: translate(0, 0) scale(1); opacity: 0.4; }
-  50% { transform: translate(50px, 30px) scale(1.2); opacity: 0.6; }
+
+  0%,
+  100% {
+    transform: translate(0, 0) scale(1);
+    opacity: 0.4;
+  }
+
+  50% {
+    transform: translate(50px, 30px) scale(1.2);
+    opacity: 0.6;
+  }
 }
 
 @keyframes orb-float-2 {
-  0%, 100% { transform: translate(0, 0) scale(1); opacity: 0.3; }
-  50% { transform: translate(-40px, -20px) scale(1.1); opacity: 0.5; }
+
+  0%,
+  100% {
+    transform: translate(0, 0) scale(1);
+    opacity: 0.3;
+  }
+
+  50% {
+    transform: translate(-40px, -20px) scale(1.1);
+    opacity: 0.5;
+  }
 }
 
 @keyframes orb-float-3 {
-  0%, 100% { transform: translate(0, 0) scale(1); opacity: 0.3; }
-  50% { transform: translate(30px, -40px) scale(1.15); opacity: 0.5; }
+
+  0%,
+  100% {
+    transform: translate(0, 0) scale(1);
+    opacity: 0.3;
+  }
+
+  50% {
+    transform: translate(30px, -40px) scale(1.15);
+    opacity: 0.5;
+  }
 }
 
 .animate-orb-1 {
@@ -110,7 +137,7 @@ body {
   width: 100vw;
   height: 100vh;
   z-index: -20;
-  background-image: 
+  background-image:
     linear-gradient(to right, rgba(153, 69, 255, 0.1) 1px, transparent 1px),
     linear-gradient(to bottom, rgba(153, 69, 255, 0.1) 1px, transparent 1px);
   background-size: 50px 50px;
@@ -152,7 +179,7 @@ body {
 
 .star-cross {
   border-radius: 50%;
-  box-shadow: 
+  box-shadow:
     0 0 4px rgba(255, 255, 255, 1),
     0 -3px 2px rgba(255, 255, 255, 0.5),
     0 3px 2px rgba(255, 255, 255, 0.5),
@@ -162,14 +189,23 @@ body {
 
 .star-sparkle {
   border-radius: 50%;
-  box-shadow: 
+  box-shadow:
     0 0 6px rgba(255, 255, 255, 1),
     0 0 12px rgba(255, 215, 0, 0.3);
 }
 
 @keyframes twinkle {
-  0%, 100% { opacity: var(--opacity, 0.5); transform: scale(1); }
-  50% { opacity: 1; transform: scale(1.5); }
+
+  0%,
+  100% {
+    opacity: var(--opacity, 0.5);
+    transform: scale(1);
+  }
+
+  50% {
+    opacity: 1;
+    transform: scale(1.5);
+  }
 }
 
 /* Shooting Stars */
@@ -199,14 +235,18 @@ body {
 
 @keyframes shoot {
   0% {
-    transform: rotate(315deg) translateX(1000px); /* Start far off-screen in the direction of origin */
+    transform: rotate(315deg) translateX(1000px);
+    /* Start far off-screen in the direction of origin */
     opacity: 1;
   }
+
   70% {
     opacity: 1;
   }
+
   100% {
-    transform: rotate(315deg) translateX(-1200px); /* End far off-screen in the direction of travel */
+    transform: rotate(315deg) translateX(-1200px);
+    /* End far off-screen in the direction of travel */
     opacity: 0;
   }
 }
@@ -220,24 +260,61 @@ body {
 
 /* Glitch effect animations */
 @keyframes glitch-1 {
-  0%, 100% { transform: translate(0); }
-  20% { transform: translate(-2px, 1px); }
-  40% { transform: translate(2px, -1px); }
-  60% { transform: translate(-1px, 2px); }
-  80% { transform: translate(1px, -2px); }
+
+  0%,
+  100% {
+    transform: translate(0);
+  }
+
+  20% {
+    transform: translate(-2px, 1px);
+  }
+
+  40% {
+    transform: translate(2px, -1px);
+  }
+
+  60% {
+    transform: translate(-1px, 2px);
+  }
+
+  80% {
+    transform: translate(1px, -2px);
+  }
 }
 
 @keyframes glitch-2 {
-  0%, 100% { transform: translate(0); }
-  20% { transform: translate(2px, -1px); }
-  40% { transform: translate(-2px, 1px); }
-  60% { transform: translate(1px, -2px); }
-  80% { transform: translate(-1px, 2px); }
+
+  0%,
+  100% {
+    transform: translate(0);
+  }
+
+  20% {
+    transform: translate(2px, -1px);
+  }
+
+  40% {
+    transform: translate(-2px, 1px);
+  }
+
+  60% {
+    transform: translate(1px, -2px);
+  }
+
+  80% {
+    transform: translate(-1px, 2px);
+  }
 }
 
 @keyframes scan {
-  0% { transform: translateY(-100%); }
-  100% { transform: translateY(100%); }
+  0% {
+    transform: translateY(-100%);
+  }
+
+  100% {
+    transform: translateY(100%);
+  }
 }
 
 .animate-glitch-1 {
@@ -249,14 +326,58 @@ body {
   animation-delay: 0.1s;
 }
 
+/* Text shadow glitch effect for terminal */
+.text-shadow-glitch {
+  animation: text-glitch 0.3s ease-in-out infinite;
+  position: relative;
+}
+
+@keyframes text-glitch {
+
+  0%,
+  100% {
+    text-shadow: 2px 0 #ff0000, -2px 0 #00ffff;
+    transform: translate(0);
+  }
+
+  20% {
+    text-shadow: -2px 1px #ff0000, 2px -1px #00ffff;
+    transform: translate(-1px, 1px);
+  }
+
+  40% {
+    text-shadow: 2px -1px #ff0000, -2px 1px #00ffff;
+    transform: translate(1px, -1px);
+  }
+
+  60% {
+    text-shadow: -1px 2px #ff0000, 1px -2px #00ffff;
+    transform: translate(-1px, 1px);
+  }
+
+  80% {
+    text-shadow: 1px -2px #ff0000, -1px 2px #00ffff;
+    transform: translate(1px, -1px);
+  }
+}
+
 .animate-scan {
   animation: scan 2s linear infinite;
 }
 
 /* Slow pulse animation for orbs */
 @keyframes pulse-slow {
-  0%, 100% { opacity: 0.4; transform: scale(1); }
-  50% { opacity: 0.6; transform: scale(1.05); }
+
+  0%,
+  100% {
+    opacity: 0.4;
+    transform: scale(1);
+  }
+
+  50% {
+    opacity: 0.6;
+    transform: scale(1.05);
+  }
 }
 
 .animate-pulse-slow {
