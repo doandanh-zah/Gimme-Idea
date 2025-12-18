@@ -66,6 +66,7 @@ export class HackathonsController {
         @Body() dto: CreateSubmissionDto,
         @CurrentUser("userId") userId: string
     ) {
+        console.log('[HackathonsController] createSubmission called with:', { dto, userId });
         return this.hackathonsService.createSubmission(dto, userId);
     }
 

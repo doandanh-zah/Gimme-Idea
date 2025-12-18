@@ -372,9 +372,11 @@ export class HackathonsService {
         dto: CreateSubmissionDto,
         userId: string
     ): Promise<ApiResponse<HackathonSubmission>> {
+        this.logger.log(`[createSubmission] Called with dto: ${JSON.stringify(dto)}, userId: ${userId}`);
         const supabase = this.supabaseService.getAdminClient();
 
         // Resolve hackathon ID from slug if needed
+        this.logger.log(`[createSubmission] Resolving hackathon ID for: ${dto.hackathonId}`);
         const hackathonId = await this.resolveHackathonId(dto.hackathonId);
         if (!hackathonId) {
             throw new NotFoundException(`Hackathon not found: ${dto.hackathonId}`);
