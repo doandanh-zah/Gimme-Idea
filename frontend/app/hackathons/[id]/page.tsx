@@ -281,7 +281,7 @@ export default function HackathonDashboard({ params }: { params: { id: string } 
    // Handle import idea from platform - now creates a submission via API
    const handleImportIdea = async (idea: Project) => {
       if (!id) return;
-      
+
       // Check if already submitted
       if (mySubmissions.find(s => s.projectId === idea.id || s.project?.id === idea.id)) {
          alert('This idea has already been submitted to this hackathon.');
@@ -307,6 +307,29 @@ export default function HackathonDashboard({ params }: { params: { id: string } 
          alert(err.message || 'Failed to submit idea');
       } finally {
          setIsSubmitting(false);
+      }
+   };
+
+   // Handle delete submission
+   const handleDeleteSubmission = async (submissionId: string) => {
+      if (!confirm('Are you sure you want to remove this submission from the hackathon?')) {
+         return;
+      }
+      try {
+         const response = await apiClient.deleteSubmission(submissionId);
+         if (response.success) {
+            await loadMySubmissions();
+            // If viewing the deleted submission, go back to list
+            if (selectedIdeaId === submissionId) {
+               setSelectedIdeaId(null);
+               setSubmissionStep('list');
+            }
+         } else {
+            throw new Error(response.error || 'Failed to delete submission');
+         }
+      } catch (err: any) {
+         console.error('Error deleting submission:', err);
+         alert(err.message || 'Failed to delete submission');
       }
    };
 
@@ -858,7 +881,7 @@ export default function HackathonDashboard({ params }: { params: { id: string } 
 
                                  case 'submission':
                                     // Get selected submission from API data
-                                    const selectedSubmission = selectedIdeaId 
+                                    const selectedSubmission = selectedIdeaId
                                        ? mySubmissions.find(s => s.id === selectedIdeaId || s.projectId === selectedIdeaId)
                                        : null;
 
@@ -945,80 +968,91 @@ export default function HackathonDashboard({ params }: { params: { id: string } 
                                                          </div>
                                                          {mySubmissions.map(submission => {
                                                             const project = submission.project;
-                                                            const statusColor = submission.status === 'approved' ? 'green' 
-                                                               : submission.status === 'rejected' ? 'red' 
-                                                               : submission.status === 'winner' || submission.status === 'finalist' ? 'gold'
-                                                               : 'green';
+                                                            const statusColor = submission.status === 'approved' ? 'green'
+                                                               : submission.status === 'rejected' ? 'red'
+                                                                  : submission.status === 'winner' || submission.status === 'finalist' ? 'gold'
+                                                                     : 'green';
                                                             return (
-                                                            <div
-                                                               key={submission.id}
-                                                               className="group relative p-5 rounded-xl border bg-black/20 border-white/5 hover:border-gold/30 hover:bg-gold/5 transition-all"
-                                                            >
-                                                               <div className="flex justify-between items-start mb-3">
-                                                                  <div className="flex items-center gap-2">
-                                                                     <span className={`bg-${statusColor}-500/10 border border-${statusColor}-500/30 px-2 py-0.5 rounded text-[10px] text-${statusColor}-400 font-bold flex items-center gap-1`}>
-                                                                        <CheckCircle2 className="w-2.5 h-2.5" /> {submission.status || 'Submitted'}
-                                                                     </span>
-                                                                     {project?.category && (
-                                                                        <span className="bg-white/5 border border-white/10 px-2 py-0.5 rounded text-[10px] text-gray-400 font-mono">{project.category}</span>
-                                                                     )}
-                                                                  </div>
-                                                                  {/* Action Buttons */}
-                                                                  <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                                                     <button
-                                                                        onClick={(e) => {
-                                                                           e.stopPropagation();
-                                                                           setSelectedIdeaId(submission.id);
-                                                                           setSubmissionStep('view');
-                                                                        }}
-                                                                        className="p-2 rounded-lg bg-white/5 hover:bg-white/10 text-gray-400 hover:text-white transition-colors"
-                                                                        title="View Details"
-                                                                     >
-                                                                        <FileText className="w-3.5 h-3.5" />
-                                                                     </button>
-                                                                     <button
-                                                                        onClick={(e) => {
-                                                                           e.stopPropagation();
-                                                                           // Convert to Project type for EditProjectModal
-                                                                           const projectToEdit: Project = {
-                                                                              id: project?.id || submission.projectId,
-                                                                              title: project?.title || 'Untitled',
-                                                                              description: project?.description || '',
-                                                                              category: (project?.category || 'Other') as Project['category'],
-                                                                              votes: project?.votes || 0,
-                                                                              type: 'idea',
-                                                                              stage: 'Idea',
-                                                                              tags: [],
-                                                                              feedbackCount: 0,
-                                                                              createdAt: submission.submittedAt,
-                                                                              author: { username: submission.author?.username || 'Unknown', wallet: '' }
-                                                                           };
-                                                                           setEditingSubmission(projectToEdit);
-                                                                        }}
-                                                                        className="p-2 rounded-lg bg-white/5 hover:bg-gold/20 text-gray-400 hover:text-gold transition-colors"
-                                                                        title="Edit Submission"
-                                                                     >
-                                                                        <Edit3 className="w-3.5 h-3.5" />
-                                                                     </button>
-                                                                  </div>
-                                                               </div>
-                                                               <h3
-                                                                  className="text-lg font-bold text-white mb-2 group-hover:text-gold transition-colors cursor-pointer"
-                                                                  onClick={() => {
-                                                                     setSelectedIdeaId(submission.id);
-                                                                     setSubmissionStep('view');
-                                                                  }}
+                                                               <div
+                                                                  key={submission.id}
+                                                                  className="group relative p-5 rounded-xl border bg-black/20 border-white/5 hover:border-gold/30 hover:bg-gold/5 transition-all"
                                                                >
-                                                                  {project?.title || 'Untitled Submission'}
-                                                               </h3>
-                                                               <p className="text-sm text-gray-500 line-clamp-2 leading-relaxed mb-4">{project?.description || 'No description'}</p>
-                                                               <div className="flex items-center gap-4 text-[10px] font-bold text-gray-600 uppercase tracking-tighter">
-                                                                  <span className="flex items-center gap-1"><ThumbsUp className="w-3 h-3" /> {submission.voteCount || project?.votes || 0} Votes</span>
-                                                                  <span className="text-gray-800">•</span>
-                                                                  <span>Submitted {format(new Date(submission.submittedAt), 'MMM dd, HH:mm')}</span>
+                                                                  <div className="flex justify-between items-start mb-3">
+                                                                     <div className="flex items-center gap-2">
+                                                                        <span className={`bg-${statusColor}-500/10 border border-${statusColor}-500/30 px-2 py-0.5 rounded text-[10px] text-${statusColor}-400 font-bold flex items-center gap-1`}>
+                                                                           <CheckCircle2 className="w-2.5 h-2.5" /> {submission.status || 'Submitted'}
+                                                                        </span>
+                                                                        {project?.category && (
+                                                                           <span className="bg-white/5 border border-white/10 px-2 py-0.5 rounded text-[10px] text-gray-400 font-mono">{project.category}</span>
+                                                                        )}
+                                                                     </div>
+                                                                     {/* Action Buttons */}
+                                                                     <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                                        <button
+                                                                           onClick={(e) => {
+                                                                              e.stopPropagation();
+                                                                              setSelectedIdeaId(submission.id);
+                                                                              setSubmissionStep('view');
+                                                                           }}
+                                                                           className="p-2 rounded-lg bg-white/5 hover:bg-white/10 text-gray-400 hover:text-white transition-colors"
+                                                                           title="View Details"
+                                                                        >
+                                                                           <FileText className="w-3.5 h-3.5" />
+                                                                        </button>
+                                                                        <button
+                                                                           onClick={(e) => {
+                                                                              e.stopPropagation();
+                                                                              // Convert to Project type for EditProjectModal
+                                                                              const projectToEdit: Project = {
+                                                                                 id: project?.id || submission.projectId,
+                                                                                 title: project?.title || 'Untitled',
+                                                                                 description: project?.description || '',
+                                                                                 category: (project?.category || 'Other') as Project['category'],
+                                                                                 votes: project?.votes || 0,
+                                                                                 type: 'idea',
+                                                                                 stage: 'Idea',
+                                                                                 tags: [],
+                                                                                 feedbackCount: 0,
+                                                                                 createdAt: submission.submittedAt,
+                                                                                 author: { username: submission.author?.username || 'Unknown', wallet: '' }
+                                                                              };
+                                                                              setEditingSubmission(projectToEdit);
+                                                                           }}
+                                                                           className="p-2 rounded-lg bg-white/5 hover:bg-gold/20 text-gray-400 hover:text-gold transition-colors"
+                                                                           title="Edit Submission"
+                                                                        >
+                                                                           <Edit3 className="w-3.5 h-3.5" />
+                                                                        </button>
+                                                                        <button
+                                                                           onClick={(e) => {
+                                                                              e.stopPropagation();
+                                                                              handleDeleteSubmission(submission.id);
+                                                                           }}
+                                                                           className="p-2 rounded-lg bg-white/5 hover:bg-red-500/20 text-gray-400 hover:text-red-400 transition-colors"
+                                                                           title="Remove Submission"
+                                                                        >
+                                                                           <Trash2 className="w-3.5 h-3.5" />
+                                                                        </button>
+                                                                     </div>
+                                                                  </div>
+                                                                  <h3
+                                                                     className="text-lg font-bold text-white mb-2 group-hover:text-gold transition-colors cursor-pointer"
+                                                                     onClick={() => {
+                                                                        setSelectedIdeaId(submission.id);
+                                                                        setSubmissionStep('view');
+                                                                     }}
+                                                                  >
+                                                                     {project?.title || 'Untitled Submission'}
+                                                                  </h3>
+                                                                  <p className="text-sm text-gray-500 line-clamp-2 leading-relaxed mb-4">{project?.description || 'No description'}</p>
+                                                                  <div className="flex items-center gap-4 text-[10px] font-bold text-gray-600 uppercase tracking-tighter">
+                                                                     <span className="flex items-center gap-1"><ThumbsUp className="w-3 h-3" /> {submission.voteCount || project?.votes || 0} Votes</span>
+                                                                     <span className="text-gray-800">•</span>
+                                                                     <span>Submitted {format(new Date(submission.submittedAt), 'MMM dd, HH:mm')}</span>
+                                                                  </div>
                                                                </div>
-                                                            </div>
-                                                         );})}
+                                                            );
+                                                         })}
                                                       </div>
                                                    )}
 
@@ -1030,95 +1064,104 @@ export default function HackathonDashboard({ params }: { params: { id: string } 
                                              {!isLoadingSubmissions && submissionStep === 'view' && selectedSubmission && (() => {
                                                 const project = selectedSubmission.project;
                                                 return (
-                                                <div className="space-y-6">
-                                                   <div className="bg-surface border border-white/5 rounded-xl p-6">
-                                                      <button onClick={() => { setSubmissionStep('list'); setSelectedIdeaId(null); }} className="text-xs text-gray-500 hover:text-white mb-4 flex items-center gap-1"><ArrowLeft className="w-3 h-3" /> Back to Submissions</button>
-                                                      <div className="flex justify-between items-start">
-                                                         <div>
-                                                            <div className="flex items-center gap-2 mb-2">
-                                                               <span className="bg-green-500/10 border border-green-500/30 px-2 py-0.5 rounded text-[10px] text-green-400 font-bold flex items-center gap-1">
-                                                                  <CheckCircle2 className="w-2.5 h-2.5" /> {selectedSubmission.status || 'Submitted'}
-                                                               </span>
-                                                               {project?.category && (
-                                                                  <span className="bg-white/5 border border-white/10 px-2 py-0.5 rounded text-[10px] text-gray-400 font-mono">{project.category}</span>
-                                                               )}
-                                                            </div>
-                                                            <h2 className="text-xl font-bold text-white mb-1 font-quantico">{project?.title || 'Untitled'}</h2>
-                                                            <p className="text-gray-400 text-sm">{project?.description || 'No description'}</p>
-                                                         </div>
-                                                         <button
-                                                            onClick={() => {
-                                                               // Convert to Project type for EditProjectModal
-                                                               const projectToEdit: Project = {
-                                                                  id: project?.id || selectedSubmission.projectId,
-                                                                  title: project?.title || 'Untitled',
-                                                                  description: project?.description || '',
-                                                                  category: (project?.category || 'Other') as Project['category'],
-                                                                  votes: project?.votes || 0,
-                                                                  type: 'idea',
-                                                                  stage: 'Idea',
-                                                                  tags: [],
-                                                                  feedbackCount: 0,
-                                                                  createdAt: selectedSubmission.submittedAt,
-                                                                  author: { username: selectedSubmission.author?.username || 'Unknown', wallet: '' }
-                                                               };
-                                                               setEditingSubmission(projectToEdit);
-                                                            }}
-                                                            className="px-4 py-2 bg-gold/10 hover:bg-gold/20 border border-gold/30 rounded-lg text-gold text-xs font-bold transition-all flex items-center gap-2"
-                                                         >
-                                                            <Edit3 className="w-3 h-3" /> Edit
-                                                         </button>
-                                                      </div>
-                                                   </div>
-
-                                                   {/* Submission Info */}
-                                                   <div className="bg-surface border border-white/5 rounded-xl p-6 space-y-5">
-                                                      <h3 className="text-sm font-bold text-white uppercase tracking-wider flex items-center gap-2">
-                                                         <Lightbulb className="w-4 h-4 text-gold" /> Idea Details
-                                                      </h3>
-
-                                                      <div className="space-y-4">
-                                                         <div>
-                                                            <label className="block text-[10px] font-bold text-gray-500 uppercase mb-1.5">Description</label>
-                                                            <p className="text-sm text-gray-300 bg-black/20 rounded-lg p-3 border border-white/5">{project?.description || 'No description'}</p>
-                                                         </div>
-
-                                                         <div>
-                                                            <label className="block text-[10px] font-bold text-gray-500 uppercase mb-1.5">Category</label>
-                                                            <span className="inline-block bg-white/5 border border-white/10 px-3 py-1 rounded-lg text-sm text-gray-300">{project?.category || 'N/A'}</span>
-                                                         </div>
-
-                                                         <div>
-                                                            <label className="block text-[10px] font-bold text-gray-500 uppercase mb-1.5">Submitted At</label>
-                                                            <p className="text-sm text-gray-300">{format(new Date(selectedSubmission.submittedAt), 'MMMM dd, yyyy - HH:mm')}</p>
-                                                         </div>
-
-                                                         {selectedSubmission.notes && (
+                                                   <div className="space-y-6">
+                                                      <div className="bg-surface border border-white/5 rounded-xl p-6">
+                                                         <button onClick={() => { setSubmissionStep('list'); setSelectedIdeaId(null); }} className="text-xs text-gray-500 hover:text-white mb-4 flex items-center gap-1"><ArrowLeft className="w-3 h-3" /> Back to Submissions</button>
+                                                         <div className="flex justify-between items-start">
                                                             <div>
-                                                               <label className="block text-[10px] font-bold text-gray-500 uppercase mb-1.5">Notes</label>
-                                                               <p className="text-sm text-gray-300 bg-black/20 rounded-lg p-3 border border-white/5">{selectedSubmission.notes}</p>
+                                                               <div className="flex items-center gap-2 mb-2">
+                                                                  <span className="bg-green-500/10 border border-green-500/30 px-2 py-0.5 rounded text-[10px] text-green-400 font-bold flex items-center gap-1">
+                                                                     <CheckCircle2 className="w-2.5 h-2.5" /> {selectedSubmission.status || 'Submitted'}
+                                                                  </span>
+                                                                  {project?.category && (
+                                                                     <span className="bg-white/5 border border-white/10 px-2 py-0.5 rounded text-[10px] text-gray-400 font-mono">{project.category}</span>
+                                                                  )}
+                                                               </div>
+                                                               <h2 className="text-xl font-bold text-white mb-1 font-quantico">{project?.title || 'Untitled'}</h2>
+                                                               <p className="text-gray-400 text-sm">{project?.description || 'No description'}</p>
                                                             </div>
-                                                         )}
+                                                            <div className="flex items-center gap-2">
+                                                               <button
+                                                                  onClick={() => {
+                                                                     // Convert to Project type for EditProjectModal
+                                                                     const projectToEdit: Project = {
+                                                                        id: project?.id || selectedSubmission.projectId,
+                                                                        title: project?.title || 'Untitled',
+                                                                        description: project?.description || '',
+                                                                        category: (project?.category || 'Other') as Project['category'],
+                                                                        votes: project?.votes || 0,
+                                                                        type: 'idea',
+                                                                        stage: 'Idea',
+                                                                        tags: [],
+                                                                        feedbackCount: 0,
+                                                                        createdAt: selectedSubmission.submittedAt,
+                                                                        author: { username: selectedSubmission.author?.username || 'Unknown', wallet: '' }
+                                                                     };
+                                                                     setEditingSubmission(projectToEdit);
+                                                                  }}
+                                                                  className="px-4 py-2 bg-gold/10 hover:bg-gold/20 border border-gold/30 rounded-lg text-gold text-xs font-bold transition-all flex items-center gap-2"
+                                                               >
+                                                                  <Edit3 className="w-3 h-3" /> Edit
+                                                               </button>
+                                                               <button
+                                                                  onClick={() => handleDeleteSubmission(selectedSubmission.id)}
+                                                                  className="px-4 py-2 bg-red-500/10 hover:bg-red-500/20 border border-red-500/30 rounded-lg text-red-400 text-xs font-bold transition-all flex items-center gap-2"
+                                                               >
+                                                                  <Trash2 className="w-3 h-3" /> Remove
+                                                               </button>
+                                                            </div>
+                                                         </div>
                                                       </div>
-                                                   </div>
 
-                                                   {/* Stats */}
-                                                   <div className="grid grid-cols-3 gap-3">
-                                                      <div className="bg-surface border border-white/5 rounded-xl p-4 text-center">
-                                                         <div className="text-2xl font-bold text-gold font-mono">{selectedSubmission.voteCount || project?.votes || 0}</div>
-                                                         <div className="text-[10px] text-gray-500 uppercase tracking-wider">Votes</div>
+                                                      {/* Submission Info */}
+                                                      <div className="bg-surface border border-white/5 rounded-xl p-6 space-y-5">
+                                                         <h3 className="text-sm font-bold text-white uppercase tracking-wider flex items-center gap-2">
+                                                            <Lightbulb className="w-4 h-4 text-gold" /> Idea Details
+                                                         </h3>
+
+                                                         <div className="space-y-4">
+                                                            <div>
+                                                               <label className="block text-[10px] font-bold text-gray-500 uppercase mb-1.5">Description</label>
+                                                               <p className="text-sm text-gray-300 bg-black/20 rounded-lg p-3 border border-white/5">{project?.description || 'No description'}</p>
+                                                            </div>
+
+                                                            <div>
+                                                               <label className="block text-[10px] font-bold text-gray-500 uppercase mb-1.5">Category</label>
+                                                               <span className="inline-block bg-white/5 border border-white/10 px-3 py-1 rounded-lg text-sm text-gray-300">{project?.category || 'N/A'}</span>
+                                                            </div>
+
+                                                            <div>
+                                                               <label className="block text-[10px] font-bold text-gray-500 uppercase mb-1.5">Submitted At</label>
+                                                               <p className="text-sm text-gray-300">{format(new Date(selectedSubmission.submittedAt), 'MMMM dd, yyyy - HH:mm')}</p>
+                                                            </div>
+
+                                                            {selectedSubmission.notes && (
+                                                               <div>
+                                                                  <label className="block text-[10px] font-bold text-gray-500 uppercase mb-1.5">Notes</label>
+                                                                  <p className="text-sm text-gray-300 bg-black/20 rounded-lg p-3 border border-white/5">{selectedSubmission.notes}</p>
+                                                               </div>
+                                                            )}
+                                                         </div>
                                                       </div>
-                                                      <div className="bg-surface border border-white/5 rounded-xl p-4 text-center">
-                                                         <div className="text-2xl font-bold text-white font-mono">{selectedSubmission.judgeScore ? `${selectedSubmission.judgeScore}/100` : '—'}</div>
-                                                         <div className="text-[10px] text-gray-500 uppercase tracking-wider">Score</div>
-                                                      </div>
-                                                      <div className="bg-surface border border-white/5 rounded-xl p-4 text-center">
-                                                         <div className="text-2xl font-bold text-white font-mono capitalize">{selectedSubmission.status || 'pending'}</div>
-                                                         <div className="text-[10px] text-gray-500 uppercase tracking-wider">Status</div>
+
+                                                      {/* Stats */}
+                                                      <div className="grid grid-cols-3 gap-3">
+                                                         <div className="bg-surface border border-white/5 rounded-xl p-4 text-center">
+                                                            <div className="text-2xl font-bold text-gold font-mono">{selectedSubmission.voteCount || project?.votes || 0}</div>
+                                                            <div className="text-[10px] text-gray-500 uppercase tracking-wider">Votes</div>
+                                                         </div>
+                                                         <div className="bg-surface border border-white/5 rounded-xl p-4 text-center">
+                                                            <div className="text-2xl font-bold text-white font-mono">{selectedSubmission.judgeScore ? `${selectedSubmission.judgeScore}/100` : '—'}</div>
+                                                            <div className="text-[10px] text-gray-500 uppercase tracking-wider">Score</div>
+                                                         </div>
+                                                         <div className="bg-surface border border-white/5 rounded-xl p-4 text-center">
+                                                            <div className="text-2xl font-bold text-white font-mono capitalize">{selectedSubmission.status || 'pending'}</div>
+                                                            <div className="text-[10px] text-gray-500 uppercase tracking-wider">Status</div>
+                                                         </div>
                                                       </div>
                                                    </div>
-                                                </div>
-                                             );})()}
+                                                );
+                                             })()}
 
                                              {/* NEW STATE: Submit new idea */}
                                              {!isLoadingSubmissions && !submissionError && submissionStep === 'new' && (
