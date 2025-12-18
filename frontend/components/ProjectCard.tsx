@@ -53,114 +53,26 @@ export const ProjectCard: React.FC<ProjectCardProps> = ({ project }) => {
       whileHover={{ y: -6, scale: 1.01 }}
       whileTap={{ scale: 0.98 }}
       transition={{ type: "spring", stiffness: 400, damping: 25 }}
-      animate={{
-        boxShadow: [
-          '0 0 15px rgba(255, 215, 0, 0.15), 0 0 30px rgba(153, 69, 255, 0.1)',
-          '0 0 25px rgba(255, 215, 0, 0.3), 0 0 45px rgba(153, 69, 255, 0.2)',
-          '0 0 15px rgba(255, 215, 0, 0.15), 0 0 30px rgba(153, 69, 255, 0.1)',
-        ]
-      }}
-      className="relative rounded-2xl overflow-hidden cursor-pointer flex flex-col h-full group"
+      className="relative rounded-2xl overflow-hidden cursor-pointer flex flex-col h-full group glitch-card"
     >
-      {/* Animated scanline - Always running */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none rounded-2xl z-10">
-        <div className="absolute inset-0 bg-[repeating-linear-gradient(0deg,transparent,transparent_2px,rgba(255,215,0,0.02)_2px,rgba(255,215,0,0.02)_4px)]" />
-        <motion.div 
-          className="absolute left-0 right-0 h-16 bg-gradient-to-b from-[#FFD700]/10 to-transparent"
-          animate={{ top: ['-64px', '100%'] }}
-          transition={{ duration: 3, repeat: Infinity, ease: 'linear' }}
-        />
-      </div>
-      
-      {/* GLITCH EFFECT BORDERS - Always running */}
-      {/* Top border - Yellow glitch */}
-      <motion.div
-        className="absolute top-0 left-0 right-0 h-[2px] z-30 pointer-events-none"
-        style={{ background: 'linear-gradient(90deg, transparent, #FFD700, transparent)' }}
-        animate={{
-          x: [-10, 10, -10],
-          opacity: [0.5, 1, 0.5],
-        }}
-        transition={{ duration: 0.5, repeat: Infinity }}
-      />
-      
-      {/* Bottom border - Purple glitch */}
-      <motion.div
-        className="absolute bottom-0 left-0 right-0 h-[2px] z-30 pointer-events-none"
-        style={{ background: 'linear-gradient(90deg, transparent, #9945FF, transparent)' }}
-        animate={{
-          x: [10, -10, 10],
-          opacity: [0.5, 1, 0.5],
-        }}
-        transition={{ duration: 0.5, repeat: Infinity, delay: 0.1 }}
-      />
-      
-      {/* Left border - Yellow/Purple gradient glitch */}
-      <motion.div
-        className="absolute top-0 bottom-0 left-0 w-[2px] z-30 pointer-events-none"
-        style={{ background: 'linear-gradient(180deg, #FFD700, transparent, #9945FF)' }}
-        animate={{
-          opacity: [0.3, 0.8, 0.3],
-        }}
-        transition={{ duration: 0.8, repeat: Infinity }}
-      />
-      
-      {/* Right border - Purple/Yellow gradient glitch */}
-      <motion.div
-        className="absolute top-0 bottom-0 right-0 w-[2px] z-30 pointer-events-none"
-        style={{ background: 'linear-gradient(180deg, #9945FF, transparent, #FFD700)' }}
-        animate={{
-          opacity: [0.3, 0.8, 0.3],
-        }}
-        transition={{ duration: 0.8, repeat: Infinity, delay: 0.15 }}
-      />
-      
-      {/* Glitch overlay layers - Always running */}
-      <motion.div
-        className="absolute inset-0 z-20 pointer-events-none rounded-2xl overflow-hidden"
-        animate={{
-          opacity: [0, 0.15, 0.05, 0.2, 0.08],
-          x: [-3, 3, -2, 2, 0],
-        }}
-        transition={{ duration: 0.3, repeat: Infinity }}
-      >
-        <div className="absolute inset-0 bg-gradient-to-r from-[#FFD700]/15 via-transparent to-[#9945FF]/15" />
-      </motion.div>
-      
-      <motion.div
-        className="absolute inset-0 z-20 pointer-events-none rounded-2xl overflow-hidden"
-        animate={{
-          opacity: [0, 0.12, 0.04, 0.18, 0.06],
-          x: [3, -3, 2, -2, 0],
-        }}
-        transition={{ duration: 0.3, repeat: Infinity, delay: 0.08 }}
-      >
-        <div className="absolute inset-0 bg-gradient-to-l from-[#FFD700]/15 via-transparent to-[#9945FF]/15" />
-      </motion.div>
-      
-      {/* Random glitch slices - Always running */}
-      <motion.div
-        className="absolute left-0 right-0 h-[3px] z-20 pointer-events-none overflow-hidden bg-[#FFD700]/30"
-        style={{ top: '30%' }}
-        animate={{
-          opacity: [0, 0.7, 0, 0.5, 0],
-          x: [-100, 100, -50, 0],
-          scaleX: [0, 1.5, 0.5, 0],
-        }}
-        transition={{ duration: 0.4, repeat: Infinity, repeatDelay: 1.5 }}
-      />
-      
-      {/* Purple glitch slice */}
-      <motion.div
-        className="absolute left-0 right-0 h-[3px] z-20 pointer-events-none overflow-hidden bg-[#9945FF]/30"
-        style={{ top: '70%' }}
-        animate={{
-          opacity: [0, 0.7, 0, 0.5, 0],
-          x: [100, -100, 50, 0],
-          scaleX: [0, 1.5, 0.5, 0],
-        }}
-        transition={{ duration: 0.4, repeat: Infinity, repeatDelay: 1.8, delay: 0.3 }}
-      />
+      {/* Animated scanline - Only on hover */}
+      <AnimatePresence>
+        {isHovered && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="absolute inset-0 overflow-hidden pointer-events-none rounded-2xl z-10"
+          >
+            <div className="absolute inset-0 bg-[repeating-linear-gradient(0deg,transparent,transparent_2px,rgba(255,215,0,0.02)_2px,rgba(255,215,0,0.02)_4px)]" />
+            <motion.div 
+              className="absolute left-0 right-0 h-16 bg-gradient-to-b from-[#FFD700]/10 to-transparent"
+              animate={{ top: ['-64px', '100%'] }}
+              transition={{ duration: 3, repeat: Infinity, ease: 'linear' }}
+            />
+          </motion.div>
+        )}
+      </AnimatePresence>
       
       {/* Card background - more transparent */}
       <div className="absolute inset-0 bg-[#12131a]/70 backdrop-blur-sm group-hover:bg-[#12131a]/80 transition-all duration-500" />
@@ -247,23 +159,15 @@ export const ProjectCard: React.FC<ProjectCardProps> = ({ project }) => {
       )}
 
       <div className={`relative z-10 p-5 flex flex-col flex-grow ${isIdea ? 'pt-2' : ''}`}>
-        {/* Title with Glitch Effect - Always running */}
-        <motion.h3 
-          className={`text-lg font-bold mb-2 line-clamp-2 transition-colors duration-500 ${
+        {/* Title with Glitch Effect - Only on hover via CSS */}
+        <h3 
+          className={`glitch-title text-lg font-bold mb-2 line-clamp-2 transition-colors duration-500 ${
             isIdea ? 'text-[#FFD700]' : 'text-white group-hover:text-[#9945FF]'
           }`}
-          animate={{
-            textShadow: [
-              '0 0 8px rgba(255, 215, 0, 0.6)',
-              '-2px 0 rgba(153, 69, 255, 0.8), 2px 0 rgba(255, 215, 0, 0.8)',
-              '2px 0 rgba(153, 69, 255, 0.8), -2px 0 rgba(255, 215, 0, 0.8)',
-              '0 0 8px rgba(255, 215, 0, 0.6)'
-            ]
-          }}
-          transition={{ duration: 0.25, repeat: Infinity }}
+          data-text={project.title}
         >
           {project.title}
-        </motion.h3>
+        </h3>
 
         <p className="text-gray-500 text-sm mb-4 line-clamp-2 flex-grow leading-relaxed group-hover:text-gray-400 transition-colors duration-500">
           {project.description}

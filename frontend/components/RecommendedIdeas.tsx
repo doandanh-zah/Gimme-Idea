@@ -176,8 +176,21 @@ export const RecommendedIdeas = () => {
             <motion.div
               key={idea.id}
               initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: index * 0.1, duration: 0.3, ease: "easeOut" }}
+              animate={{ 
+                opacity: 1, 
+                y: 0,
+                boxShadow: [
+                  `0 0 20px ${medal.color}30, inset 0 0 20px ${medal.color}05`,
+                  `0 0 35px ${medal.color}50, inset 0 0 30px ${medal.color}10`,
+                  `0 0 20px ${medal.color}30, inset 0 0 20px ${medal.color}05`,
+                ]
+              }}
+              transition={{ 
+                delay: index * 0.1, 
+                duration: 0.3, 
+                ease: "easeOut",
+                boxShadow: { duration: 2, repeat: Infinity, ease: "easeInOut" }
+              }}
               onClick={() => handleViewIdea(idea)}
               whileHover={{ y: -4 }}
               whileTap={{ scale: 0.98 }}
@@ -186,6 +199,76 @@ export const RecommendedIdeas = () => {
                 border ${medal.borderColor} ${medal.hoverBorder} ${medal.hoverShadow}
                 transition-all duration-500`}
             >
+              {/* Continuous Glitch Scanline */}
+              <motion.div
+                className="absolute inset-0 pointer-events-none overflow-hidden rounded-2xl z-20"
+                initial={{ opacity: 0.3 }}
+              >
+                <motion.div
+                  className="absolute w-full h-[2px]"
+                  style={{ 
+                    background: `linear-gradient(90deg, transparent, ${medal.color}80, transparent)`,
+                    boxShadow: `0 0 10px ${medal.color}60`
+                  }}
+                  animate={{ top: ['-10%', '110%'] }}
+                  transition={{ duration: 2.5, repeat: Infinity, ease: 'linear' }}
+                />
+              </motion.div>
+
+              {/* Continuous Glitch Border Effects */}
+              <motion.div
+                className="absolute inset-0 rounded-2xl pointer-events-none"
+                style={{ border: `1px solid ${medal.color}` }}
+                animate={{
+                  opacity: [0.3, 0.7, 0.3],
+                  x: [0, -2, 2, 0],
+                }}
+                transition={{ duration: 0.3, repeat: Infinity }}
+              />
+              <motion.div
+                className="absolute inset-0 rounded-2xl pointer-events-none"
+                style={{ borderTop: `1px solid ${medal.color}`, borderBottom: `1px solid ${medal.color}` }}
+                animate={{
+                  opacity: [0.2, 0.5, 0.2],
+                  x: [0, 3, -3, 0],
+                }}
+                transition={{ duration: 0.25, repeat: Infinity, delay: 0.1 }}
+              />
+
+              {/* Glitch Color Overlay */}
+              <motion.div
+                className="absolute inset-0 rounded-2xl pointer-events-none mix-blend-overlay"
+                style={{ background: `linear-gradient(45deg, ${medal.color}10, transparent)` }}
+                animate={{
+                  opacity: [0.1, 0.3, 0.1],
+                  x: [0, -3, 3, 0],
+                }}
+                transition={{ duration: 0.4, repeat: Infinity }}
+              />
+
+              {/* Random Glitch Slices */}
+              {[...Array(3)].map((_, i) => (
+                <motion.div
+                  key={i}
+                  className="absolute left-0 right-0 pointer-events-none overflow-hidden"
+                  style={{
+                    top: `${20 + i * 25}%`,
+                    height: '3px',
+                    background: `linear-gradient(90deg, transparent 20%, ${medal.color}40 50%, transparent 80%)`,
+                  }}
+                  animate={{
+                    opacity: [0, 0.6, 0],
+                    x: [0, i % 2 === 0 ? 5 : -5, 0],
+                    scaleX: [1, 1.02, 1],
+                  }}
+                  transition={{
+                    duration: 0.15,
+                    repeat: Infinity,
+                    repeatDelay: 1.5 + i * 0.3,
+                  }}
+                />
+              ))}
+              
               {/* Sparkle border animation on hover */}
               <div 
                 className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"
@@ -236,18 +319,23 @@ export const RecommendedIdeas = () => {
                 </span>
               </div>
 
-              {/* Title */}
-              <h3 
-                className="relative z-10 text-lg font-bold text-white mb-3 line-clamp-2 transition-colors duration-300"
-                style={{ 
-                  // @ts-ignore
-                  '--hover-color': medal.color 
+              {/* Title with Glitch Effect */}
+              <motion.h3 
+                className="relative z-10 text-lg font-bold text-white mb-3 line-clamp-2"
+                animate={{
+                  textShadow: [
+                    `0 0 8px ${medal.color}60`,
+                    `-2px 0 ${medal.color}80, 2px 0 ${medal.color}40`,
+                    `2px 0 ${medal.color}80, -2px 0 ${medal.color}40`,
+                    `0 0 8px ${medal.color}60`,
+                  ]
                 }}
+                transition={{ duration: 0.25, repeat: Infinity }}
               >
-                <span className="group-hover:text-[var(--hover-color)] transition-colors duration-300">
+                <span className="group-hover:brightness-125 transition-all duration-300" style={{ color: medal.color }}>
                   {idea.title}
                 </span>
-              </h3>
+              </motion.h3>
 
               {/* AI Summary - Problem → Solution */}
               <p className="relative z-10 text-sm text-gray-400 line-clamp-2 mb-4 flex-grow leading-relaxed">
