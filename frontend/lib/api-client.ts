@@ -862,7 +862,7 @@ export const apiClient = {
         members: Array<{ id: string; username: string; avatar?: string; role: string; joinedAt: string }>;
       };
       role?: 'leader' | 'member';
-    }>(`/hackathons/${hackathonId}/teams/my`),
+    }>(`/hackathons/${hackathonId}/my-team`),
 
   // Update a team
   updateTeam: (hackathonId: string, teamId: string, data: { name?: string; description?: string; isLookingForMembers?: boolean }) =>
@@ -871,28 +871,28 @@ export const apiClient = {
       name: string;
       description?: string;
       isLookingForMembers: boolean;
-    }>(`/hackathons/${hackathonId}/teams/${teamId}`, {
+    }>(`/hackathons/teams/${teamId}`, {
       method: "PUT",
       body: JSON.stringify(data),
     }),
 
   // Delete a team (leader only)
   deleteTeam: (hackathonId: string, teamId: string) =>
-    apiFetch<void>(`/hackathons/${hackathonId}/teams/${teamId}`, {
+    apiFetch<void>(`/hackathons/teams/${teamId}`, {
       method: "DELETE",
     }),
 
   // Invite a user to the team
-  inviteToTeam: (hackathonId: string, teamId: string, userId: string) =>
+  inviteToTeam: (hackathonId: string, teamId: string, inviteeId: string) =>
     apiFetch<{
       id: string;
       teamId: string;
       invitedUserId: string;
       status: string;
       createdAt: string;
-    }>(`/hackathons/${hackathonId}/teams/${teamId}/invite`, {
+    }>(`/hackathons/teams/${teamId}/invite`, {
       method: "POST",
-      body: JSON.stringify({ userId }),
+      body: JSON.stringify({ inviteeId }),
     }),
 
   // Accept a team invite
@@ -900,30 +900,30 @@ export const apiClient = {
     apiFetch<{
       teamId: string;
       message: string;
-    }>(`/hackathons/${hackathonId}/teams/invites/${inviteId}/accept`, {
+    }>(`/hackathons/teams/invites/${inviteId}/accept`, {
       method: "POST",
     }),
 
   // Reject a team invite
   rejectInvite: (hackathonId: string, inviteId: string) =>
-    apiFetch<void>(`/hackathons/${hackathonId}/teams/invites/${inviteId}/reject`, {
+    apiFetch<void>(`/hackathons/teams/invites/${inviteId}/reject`, {
       method: "POST",
     }),
 
   // Leave a team
   leaveTeam: (hackathonId: string, teamId: string) =>
-    apiFetch<void>(`/hackathons/${hackathonId}/teams/${teamId}/leave`, {
+    apiFetch<void>(`/hackathons/teams/${teamId}/leave`, {
       method: "POST",
     }),
 
   // Kick a member from the team (leader only)
-  kickMember: (hackathonId: string, teamId: string, userId: string) =>
-    apiFetch<void>(`/hackathons/${hackathonId}/teams/${teamId}/members/${userId}`, {
+  kickMember: (hackathonId: string, teamId: string, memberId: string) =>
+    apiFetch<void>(`/hackathons/teams/${teamId}/members/${memberId}`, {
       method: "DELETE",
     }),
 
   // Get all pending invites for current user
-  getMyInvites: (hackathonId: string) =>
+  getMyInvites: (hackathonId?: string) =>
     apiFetch<{
       invites: Array<{
         id: string;
@@ -934,5 +934,5 @@ export const apiClient = {
         status: string;
         createdAt: string;
       }>;
-    }>(`/hackathons/${hackathonId}/teams/invites/my`),
+    }>(`/hackathons/teams/invites/my`),
 };

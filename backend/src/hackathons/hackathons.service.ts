@@ -952,33 +952,50 @@ export class HackathonsService {
         // Resolve hackathon ID
         const hackathonId = await this.resolveHackathonId(hackathonIdOrSlug);
         if (!hackathonId) {
+            this.logger.warn(`getMyTeam: hackathon not found for ${hackathonIdOrSlug}`);
             return { success: true, data: { team: null, role: null } };
         }
 
-        // Find user's team membership
-        const { data: membership } = await supabase
+        this.logger.log(`getMyTeam: Looking for user ${userId} in hackathon ${hackathonId}`);
+
+        // First, find all teams in this hackathon that user is a member of
+        const { data: membership, error: membershipError } = await supabase
             .from("hackathon_team_members")
             .select(`
                 team_id,
                 role,
-                hackathon_teams!inner(hackathon_id)
+                hackathon_teams(id, hackathon_id)
             `)
-            .eq("user_id", userId)
-            .eq("hackathon_teams.hackathon_id", hackathonId)
-            .single();
+            .eq("user_id", userId);
 
-        if (!membership) {
+        if (membershipError) {
+            this.logger.error(`getMyTeam error: ${membershipError.message}`);
             return { success: true, data: { team: null, role: null } };
         }
 
+        this.logger.log(`getMyTeam: Found ${membership?.length || 0} memberships for user`);
+
+        // Filter to find the one for this hackathon
+        const teamMembership = membership?.find((m: any) => {
+            const team = Array.isArray(m.hackathon_teams) ? m.hackathon_teams[0] : m.hackathon_teams;
+            return team?.hackathon_id === hackathonId;
+        });
+
+        if (!teamMembership) {
+            this.logger.log(`getMyTeam: No team found for user in this hackathon`);
+            return { success: true, data: { team: null, role: null } };
+        }
+
+        this.logger.log(`getMyTeam: Found team ${teamMembership.team_id} with role ${teamMembership.role}`);
+
         // Get full team data
-        const teamResponse = await this.getTeamById(membership.team_id, userId);
+        const teamResponse = await this.getTeamById(teamMembership.team_id, userId);
 
         return {
             success: true,
             data: {
                 team: teamResponse.data,
-                role: membership.role as 'leader' | 'member'
+                role: teamMembership.role as 'leader' | 'member'
             }
         };
     }
