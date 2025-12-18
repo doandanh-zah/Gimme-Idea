@@ -1,8 +1,8 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
-import { ChevronDown, Crown, Medal, Award, ThumbsUp, MessageCircle, Sparkles } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { ChevronDown, Crown, Medal, Award, ThumbsUp, MessageCircle, Sparkles, User } from 'lucide-react';
 import { Project } from '../lib/types';
 import { useRouter } from 'next/navigation';
 import axios from 'axios';
@@ -10,6 +10,229 @@ import { AuthorLink } from './AuthorLink';
 import { createUniqueSlug } from '../lib/slug-utils';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+
+// Medal type
+interface MedalType {
+  icon: any;
+  label: string;
+  watermark: string;
+  color: string;
+  borderColor: string;
+  hoverBorder: string;
+  hoverShadow: string;
+  glowColor: string;
+}
+
+// RecommendedCard Component - similar style to IdeaCard but with medal colors
+const RecommendedCard = ({ 
+  idea, 
+  medal, 
+  MedalIcon, 
+  summary, 
+  index, 
+  onViewIdea 
+}: { 
+  idea: Project; 
+  medal: MedalType; 
+  MedalIcon: any; 
+  summary: string; 
+  index: number;
+  onViewIdea: (idea: Project) => void;
+}) => {
+  const [isHovered, setIsHovered] = useState(false);
+
+  return (
+    <motion.div
+      className="relative cursor-pointer"
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+      onClick={() => onViewIdea(idea)}
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: index * 0.1, duration: 0.3 }}
+    >
+      {/* Card Container */}
+      <div 
+        className="relative bg-gradient-to-br from-[#1a1a2e]/95 to-[#0d0d1a]/98 backdrop-blur-xl rounded-xl overflow-hidden transition-all duration-300 h-[280px] flex flex-col"
+        style={{
+          border: `1px solid ${medal.color}30`,
+          boxShadow: isHovered 
+            ? `0 0 30px ${medal.color}40, 0 0 60px ${medal.color}20`
+            : `0 4px 20px rgba(0, 0, 0, 0.3), 0 0 15px ${medal.color}15`
+        }}
+      >
+        {/* Large watermark number */}
+        <div 
+          className="absolute top-0 right-2 text-[100px] font-black leading-none pointer-events-none select-none transition-opacity duration-300"
+          style={{ color: isHovered ? `${medal.color}15` : `${medal.color}08` }}
+        >
+          {medal.watermark}
+        </div>
+
+        {/* Scanline Effect - Only on hover */}
+        <AnimatePresence>
+          {isHovered && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="absolute inset-0 pointer-events-none z-10 overflow-hidden"
+            >
+              <div 
+                className="absolute inset-0 opacity-[0.03]"
+                style={{
+                  backgroundImage: 'repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(255,255,255,0.03) 2px, rgba(255,255,255,0.03) 4px)',
+                }}
+              />
+              <motion.div
+                className="absolute left-0 right-0 h-[2px]"
+                style={{ background: `linear-gradient(to right, transparent, ${medal.color}80, transparent)` }}
+                animate={{ top: ['0%', '100%'] }}
+                transition={{ duration: 2, repeat: Infinity, ease: 'linear' }}
+              />
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Glitch Border Effects - Only on hover */}
+        <AnimatePresence>
+          {isHovered && (
+            <>
+              {/* Top border */}
+              <motion.div
+                initial={{ scaleX: 0, opacity: 0 }}
+                animate={{ scaleX: 1, opacity: 1 }}
+                exit={{ scaleX: 0, opacity: 0 }}
+                transition={{ duration: 0.3 }}
+                className="absolute top-0 left-0 right-0 h-[2px] origin-left"
+                style={{ background: `linear-gradient(to right, transparent, ${medal.color}, transparent)` }}
+              />
+              {/* Bottom border */}
+              <motion.div
+                initial={{ scaleX: 0, opacity: 0 }}
+                animate={{ scaleX: 1, opacity: 1 }}
+                exit={{ scaleX: 0, opacity: 0 }}
+                transition={{ duration: 0.3, delay: 0.1 }}
+                className="absolute bottom-0 left-0 right-0 h-[2px] origin-right"
+                style={{ background: `linear-gradient(to right, transparent, ${medal.color}, transparent)` }}
+              />
+              {/* Left border */}
+              <motion.div
+                initial={{ scaleY: 0, opacity: 0 }}
+                animate={{ scaleY: 1, opacity: 1 }}
+                exit={{ scaleY: 0, opacity: 0 }}
+                transition={{ duration: 0.3, delay: 0.15 }}
+                className="absolute top-0 bottom-0 left-0 w-[2px] origin-top"
+                style={{ background: `linear-gradient(to bottom, ${medal.color}, transparent, ${medal.color})` }}
+              />
+              {/* Right border */}
+              <motion.div
+                initial={{ scaleY: 0, opacity: 0 }}
+                animate={{ scaleY: 1, opacity: 1 }}
+                exit={{ scaleY: 0, opacity: 0 }}
+                transition={{ duration: 0.3, delay: 0.2 }}
+                className="absolute top-0 bottom-0 right-0 w-[2px] origin-bottom"
+                style={{ background: `linear-gradient(to bottom, ${medal.color}, transparent, ${medal.color})` }}
+              />
+            </>
+          )}
+        </AnimatePresence>
+
+        {/* Card Content */}
+        <div className="p-5 relative z-[5] flex flex-col flex-1">
+          {/* Header with medal */}
+          <div className="flex items-start justify-between mb-3">
+            <div className="flex items-center gap-2.5">
+              <div 
+                className="w-10 h-10 rounded-lg flex items-center justify-center shadow-lg transition-transform duration-300"
+                style={{ 
+                  backgroundColor: medal.color,
+                  transform: isHovered ? 'scale(1.1)' : 'scale(1)'
+                }}
+              >
+                <MedalIcon className="w-5 h-5 text-black" />
+              </div>
+              <div 
+                className="text-base font-bold tracking-tight"
+                style={{ color: medal.color }}
+              >
+                {medal.label}
+              </div>
+            </div>
+            
+            <span className="px-2 py-0.5 bg-black/30 border border-white/10 text-gray-400 rounded-full font-mono text-[9px] uppercase">
+              {idea.category}
+            </span>
+          </div>
+
+          {/* Title */}
+          <h3 
+            className="font-bold text-base mb-2 line-clamp-2 transition-all duration-300"
+            style={{
+              color: isHovered ? medal.color : '#ffffff',
+              textShadow: isHovered 
+                ? `0 0 10px ${medal.color}60, 2px 0 ${medal.color}40, -2px 0 ${medal.color}40`
+                : 'none'
+            }}
+          >
+            {idea.title}
+          </h3>
+
+          {/* Summary */}
+          <p className="text-xs text-gray-400 line-clamp-2 mb-3 leading-relaxed flex-1">
+            {summary}
+          </p>
+
+          {/* Author */}
+          <div className="flex items-center gap-2 mb-3">
+            <div 
+              className="w-5 h-5 rounded-full flex items-center justify-center overflow-hidden"
+              style={{ background: `linear-gradient(135deg, ${medal.color}, ${medal.color}80)` }}
+            >
+              {idea.author?.avatar ? (
+                <img src={idea.author.avatar} alt="" className="w-full h-full object-cover" />
+              ) : (
+                <User className="w-3 h-3 text-black" />
+              )}
+            </div>
+            <span className="text-xs text-gray-500">
+              {idea.author?.username || 'Anonymous'}
+            </span>
+          </div>
+
+          {/* Footer Stats */}
+          <div className="flex items-center justify-between pt-3 border-t border-white/10 mt-auto">
+            <div className="flex items-center gap-4 text-xs">
+              <div className="flex items-center gap-1.5 text-gray-400">
+                <ThumbsUp className="w-3.5 h-3.5" />
+                <span>{idea.votes || 0}</span>
+              </div>
+              <div className="flex items-center gap-1.5 text-gray-400">
+                <MessageCircle className="w-3.5 h-3.5" />
+                <span>{idea.feedbackCount || 0}</span>
+              </div>
+            </div>
+
+            {/* Terminal Hint - Only on hover */}
+            <AnimatePresence>
+              {isHovered && (
+                <motion.span
+                  initial={{ opacity: 0, x: 10 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: 10 }}
+                  className="text-[10px] font-mono"
+                  style={{ color: `${medal.color}90` }}
+                >
+                  CLICK_TO_VIEW
+                </motion.span>
+              )}
+            </AnimatePresence>
+          </div>
+        </div>
+      </div>
+    </motion.div>
+  );
+};
 
 // Helper to create AI summary from problem and solution
 const createSummary = (problem?: string, solution?: string): string => {
@@ -173,163 +396,15 @@ export const RecommendedIdeas = () => {
           const summary = createSummary(idea.problem, idea.solution);
           
           return (
-            <motion.div
+            <RecommendedCard 
               key={idea.id}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ 
-                opacity: 1, 
-                y: 0,
-                // Continuous glitch box shadow
-                boxShadow: [
-                  `0 0 15px ${medal.color}25, 0 0 30px ${medal.color}15, inset 0 0 15px ${medal.color}03`,
-                  `0 0 20px ${medal.color}40, 0 0 40px ${medal.color}20, inset 0 0 20px ${medal.color}05`,
-                  `0 0 15px ${medal.color}25, 0 0 30px ${medal.color}15, inset 0 0 15px ${medal.color}03`,
-                ]
-              }}
-              whileHover={{ y: -6, scale: 1.01 }}
-              whileTap={{ scale: 0.98 }}
-              transition={{ 
-                delay: index * 0.1, 
-                duration: 0.3, 
-                ease: "easeOut",
-                type: "spring",
-                stiffness: 400,
-                damping: 25,
-                boxShadow: { duration: 2, repeat: Infinity, ease: "easeInOut" }
-              }}
-              onClick={() => handleViewIdea(idea)}
-              className={`relative p-6 rounded-2xl cursor-pointer group min-h-[300px] flex flex-col overflow-hidden
-                bg-gradient-to-br from-white/[0.08] to-white/[0.02] backdrop-blur-sm
-                transition-all duration-500`}
-              style={{ border: `1px solid ${medal.color}40` }}
-            >
-              {/* Continuous glitch border effects */}
-              <motion.div
-                className="absolute inset-0 rounded-2xl pointer-events-none"
-                style={{ border: `1px solid ${medal.color}` }}
-                animate={{
-                  opacity: [0.4, 0.7, 0.4],
-                  x: [0, -2, 2, 0],
-                }}
-                transition={{ duration: 0.5, repeat: Infinity }}
-              />
-              <motion.div
-                className="absolute inset-0 rounded-2xl pointer-events-none"
-                style={{ borderTop: `1px solid ${medal.color}`, borderBottom: `1px solid ${medal.color}` }}
-                animate={{
-                  opacity: [0.3, 0.5, 0.3],
-                  x: [0, 3, -3, 0],
-                }}
-                transition={{ duration: 0.5, repeat: Infinity, delay: 0.1 }}
-              />
-
-              {/* Subtle color overlay glitch */}
-              <motion.div
-                className="absolute inset-0 rounded-2xl pointer-events-none"
-                style={{ background: `linear-gradient(45deg, ${medal.color}08, transparent)` }}
-                animate={{
-                  opacity: [0.3, 0.6, 0.3],
-                  x: [0, -3, 3, 0],
-                }}
-                transition={{ duration: 0.6, repeat: Infinity }}
-              />
-              
-              {/* Sparkle border animation on hover */}
-              <div 
-                className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"
-                style={{
-                  background: `linear-gradient(135deg, ${medal.color}20, transparent 50%, ${medal.color}20)`,
-                }}
-              />
-              
-              {/* Shimmer effect on hover */}
-              <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none overflow-hidden rounded-2xl">
-                <div 
-                  className="absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-in-out"
-                  style={{
-                    background: `linear-gradient(90deg, transparent, ${medal.color}20, transparent)`,
-                  }}
-                />
-              </div>
-
-              {/* Large watermark number */}
-              <div 
-                className="absolute top-2 right-4 text-[120px] font-black leading-none pointer-events-none select-none transition-opacity duration-300"
-                style={{ color: `${medal.color}08` }}
-              >
-                {medal.watermark}
-              </div>
-
-              {/* Header with medal */}
-              <div className="relative z-10 flex items-start justify-between mb-4">
-                <div className="flex items-center gap-3">
-                  <div 
-                    className="w-11 h-11 rounded-xl flex items-center justify-center shadow-lg"
-                    style={{ backgroundColor: medal.color }}
-                  >
-                    <MedalIcon className="w-6 h-6 text-black" />
-                  </div>
-                  <div>
-                    <div 
-                      className="text-lg font-extrabold tracking-tight"
-                      style={{ color: medal.color }}
-                    >
-                      {medal.label}
-                    </div>
-                  </div>
-                </div>
-                
-                <span className="px-2 py-1 bg-black/30 border border-white/10 text-gray-400 rounded-lg font-mono text-[9px] uppercase">
-                  {idea.category}
-                </span>
-              </div>
-
-              {/* Title with continuous glitch effect */}
-              <motion.h3 
-                className="relative z-10 text-lg font-bold mb-3 line-clamp-2"
-                style={{ color: medal.color }}
-                animate={{
-                  textShadow: [
-                    `0 0 5px ${medal.color}40`,
-                    `-1px 0 ${medal.color}60, 1px 0 ${medal.color}30`,
-                    `1px 0 ${medal.color}60, -1px 0 ${medal.color}30`,
-                    `0 0 5px ${medal.color}40`,
-                  ]
-                }}
-                transition={{ duration: 0.5, repeat: Infinity }}
-              >
-                {idea.title}
-              </motion.h3>
-
-              {/* AI Summary - Problem → Solution */}
-              <p className="relative z-10 text-sm text-gray-400 line-clamp-2 mb-4 flex-grow leading-relaxed">
-                {summary}
-              </p>
-
-              {/* Footer */}
-              <div className="relative z-10 flex items-center justify-between pt-3 border-t border-white/10 mt-auto">
-                <div className="flex items-center gap-4 text-xs">
-                  {/* Like first */}
-                  <div className="flex items-center gap-1.5 text-gray-400">
-                    <ThumbsUp className="w-3.5 h-3.5" />
-                    <span>{idea.votes || 0}</span>
-                  </div>
-                  {/* Comment second */}
-                  <div className="flex items-center gap-1.5 text-gray-400">
-                    <MessageCircle className="w-3.5 h-3.5" />
-                    <span>{idea.feedbackCount || 0}</span>
-                  </div>
-                </div>
-                {/* Author last */}
-                <AuthorLink
-                  username={idea.author?.username || 'Anonymous'}
-                  avatar={idea.author?.avatar}
-                  isAnonymous={idea.isAnonymous || !idea.author}
-                  showAvatar={false}
-                  className="text-xs text-gray-500 font-mono hover:text-white transition-colors"
-                />
-              </div>
-            </motion.div>
+              idea={idea}
+              medal={medal}
+              MedalIcon={MedalIcon}
+              summary={summary}
+              index={index}
+              onViewIdea={handleViewIdea}
+            />
           );
         })}
       </div>

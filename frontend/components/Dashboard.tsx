@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { ProjectCard } from './ProjectCard';
 import { IdeaCard } from './IdeaCard';
 import { RecommendedIdeas } from './RecommendedIdeas';
@@ -44,12 +44,19 @@ export default function Dashboard({ mode }: DashboardProps) {
     }
   }, [mode]);
 
-  // Fetch projects on mount (skip for project mode)
+  // Fetch projects on mount or when mode changes (skip for project mode)
+  // Using ref to track if initial fetch was done to prevent double fetching
+  const hasFetchedRef = useRef(false);
+  const lastModeRef = useRef(mode);
+  
   useEffect(() => {
-    if (mode !== 'project') {
+    // Only fetch if mode changed or first mount
+    if (mode !== 'project' && (!hasFetchedRef.current || lastModeRef.current !== mode)) {
+      hasFetchedRef.current = true;
+      lastModeRef.current = mode;
       fetchProjects({ type: mode });
     }
-  }, [mode, fetchProjects]);
+  }, [mode]); // Remove fetchProjects from dependencies to prevent re-fetching
 
   // Subscribe to realtime project updates
   useRealtimeProjects({
@@ -234,24 +241,24 @@ export default function Dashboard({ mode }: DashboardProps) {
 
             {/* Load More Button */}
             {filteredProjects.length > 0 && hasMoreProjects && !searchQuery && categoryFilter === 'All' && (
-              <div className="flex justify-center mt-8 sm:mt-12">
+              <div className="flex justify-center mt-8 sm:mt-10">
                 <button
                   onClick={fetchMoreProjects}
                   disabled={isLoading}
-                  className="px-8 sm:px-10 py-3 sm:py-3.5 bg-white/5 hover:bg-[#FFD700] border border-white/20 hover:border-[#FFD700] rounded-full text-white hover:text-black font-semibold transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 group"
+                  className="px-5 sm:px-6 py-2 sm:py-2.5 bg-white/5 hover:bg-[#FFD700] border border-white/20 hover:border-[#FFD700] rounded-full text-sm text-white hover:text-black font-medium transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 group"
                 >
                   {isLoading ? (
                     <>
                       <motion.div
                         animate={{ rotate: 360 }}
                         transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-                        className="w-5 h-5 border-2 border-white/20 border-t-white group-hover:border-black/20 group-hover:border-t-black rounded-full"
+                        className="w-4 h-4 border-2 border-white/20 border-t-white group-hover:border-black/20 group-hover:border-t-black rounded-full"
                       />
-                      Loading...
+                      <span className="text-sm">Loading...</span>
                     </>
                   ) : (
                     <>
-                      Load More {mode === 'idea' ? 'Ideas' : 'Projects'}
+                      Load More
                     </>
                   )}
                 </button>

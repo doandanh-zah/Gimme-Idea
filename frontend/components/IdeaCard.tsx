@@ -81,7 +81,7 @@ export const IdeaCard: React.FC<IdeaCardProps> = ({ project }) => {
     >
       {/* Card Container - Always visible */}
       <div 
-        className="relative bg-gradient-to-br from-[#1a1a2e]/95 to-[#0d0d1a]/98 backdrop-blur-xl border border-white/10 rounded-xl overflow-hidden transition-all duration-300"
+        className="relative bg-gradient-to-br from-[#1a1a2e]/95 to-[#0d0d1a]/98 backdrop-blur-xl border border-white/10 rounded-xl overflow-hidden transition-all duration-300 h-[220px] flex flex-col"
         style={{
           boxShadow: isHovered 
             ? '0 0 30px rgba(255, 215, 0, 0.3), 0 0 60px rgba(153, 69, 255, 0.2)'
@@ -153,7 +153,7 @@ export const IdeaCard: React.FC<IdeaCardProps> = ({ project }) => {
         </AnimatePresence>
 
         {/* Card Content */}
-        <div className="p-4 relative z-[5]">
+        <div className="p-4 relative z-[5] flex flex-col flex-1">
           {/* Header Row */}
           <div className="flex items-start justify-between gap-3 mb-3">
             {/* Category Badge */}
@@ -184,7 +184,7 @@ export const IdeaCard: React.FC<IdeaCardProps> = ({ project }) => {
           </h3>
 
           {/* Description */}
-          <p className="text-xs text-gray-400 line-clamp-2 mb-3 leading-relaxed">
+          <p className="text-xs text-gray-400 line-clamp-2 mb-3 leading-relaxed flex-1">
             {project.description}
           </p>
 
