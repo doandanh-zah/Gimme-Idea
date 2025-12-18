@@ -569,59 +569,6 @@ export class HackathonsService {
     }
 
     /**
-     * Register for a hackathon
-     */
-    async registerForHackathon(
-        hackathonId: string,
-        userId: string,
-        teamName?: string
-    ): Promise<ApiResponse<void>> {
-        const supabase = this.supabaseService.getAdminClient();
-
-        const { error } = await supabase.from("hackathon_registrations").insert({
-            hackathon_id: hackathonId,
-            user_id: userId,
-            team_name: teamName,
-        });
-
-        if (error) {
-            if (error.code === "23505") {
-                throw new ConflictException(
-                    "You are already registered for this hackathon"
-                );
-            }
-            throw new Error(`Failed to register: ${error.message}`);
-        }
-
-        return {
-            success: true,
-            message: "Successfully registered for hackathon",
-        };
-    }
-
-    /**
-     * Check if user is registered for a hackathon
-     */
-    async isRegistered(
-        hackathonId: string,
-        userId: string
-    ): Promise<ApiResponse<boolean>> {
-        const supabase = this.supabaseService.getAdminClient();
-
-        const { data } = await supabase
-            .from("hackathon_registrations")
-            .select("id")
-            .eq("hackathon_id", hackathonId)
-            .eq("user_id", userId)
-            .single();
-
-        return {
-            success: true,
-            data: !!data,
-        };
-    }
-
-    /**
      * Get hackathon stats
      */
     async getHackathonStats(
@@ -676,6 +623,218 @@ export class HackathonsService {
                 totalSubmissions: totalSubmissions || 0,
                 totalParticipants: totalParticipants || 0,
                 categoryBreakdown,
+            },
+        };
+    }
+
+    // =============================================
+    // HACKATHON REGISTRATIONS
+    // =============================================
+
+    /**
+     * Register for a hackathon
+     */
+    async registerForHackathon(
+        hackathonIdOrSlug: string,
+        userId: string,
+        teamName?: string
+    ): Promise<ApiResponse<{ id: string; registeredAt: string }>> {
+        const supabase = this.supabaseService.getAdminClient();
+
+        // Resolve hackathon ID
+        const hackathonId = await this.resolveHackathonId(hackathonIdOrSlug);
+        if (!hackathonId) {
+            throw new NotFoundException(`Hackathon not found: ${hackathonIdOrSlug}`);
+        }
+
+        // Check if already registered
+        const { data: existing } = await supabase
+            .from("hackathon_registrations")
+            .select("id")
+            .eq("hackathon_id", hackathonId)
+            .eq("user_id", userId)
+            .single();
+
+        if (existing) {
+            throw new ConflictException("You are already registered for this hackathon");
+        }
+
+        // Create registration
+        const { data, error } = await supabase
+            .from("hackathon_registrations")
+            .insert({
+                hackathon_id: hackathonId,
+                user_id: userId,
+                team_name: teamName || null,
+            })
+            .select("id, registered_at")
+            .single();
+
+        if (error) {
+            this.logger.error(`Failed to register: ${error.message}`);
+            throw new Error(`Failed to register: ${error.message}`);
+        }
+
+        this.logger.log(`User ${userId} registered for hackathon ${hackathonId}`);
+
+        return {
+            success: true,
+            data: {
+                id: data.id,
+                registeredAt: data.registered_at,
+            },
+            message: "Successfully registered for hackathon",
+        };
+    }
+
+    /**
+     * Unregister from a hackathon
+     */
+    async unregisterFromHackathon(
+        hackathonIdOrSlug: string,
+        userId: string
+    ): Promise<ApiResponse<void>> {
+        const supabase = this.supabaseService.getAdminClient();
+
+        // Resolve hackathon ID
+        const hackathonId = await this.resolveHackathonId(hackathonIdOrSlug);
+        if (!hackathonId) {
+            throw new NotFoundException(`Hackathon not found: ${hackathonIdOrSlug}`);
+        }
+
+        // Check if registered
+        const { data: existing } = await supabase
+            .from("hackathon_registrations")
+            .select("id")
+            .eq("hackathon_id", hackathonId)
+            .eq("user_id", userId)
+            .single();
+
+        if (!existing) {
+            throw new NotFoundException("You are not registered for this hackathon");
+        }
+
+        // Delete registration
+        const { error } = await supabase
+            .from("hackathon_registrations")
+            .delete()
+            .eq("id", existing.id);
+
+        if (error) {
+            this.logger.error(`Failed to unregister: ${error.message}`);
+            throw new Error(`Failed to unregister: ${error.message}`);
+        }
+
+        this.logger.log(`User ${userId} unregistered from hackathon ${hackathonId}`);
+
+        return {
+            success: true,
+            message: "Successfully unregistered from hackathon",
+        };
+    }
+
+    /**
+     * Get user's registration for a hackathon
+     */
+    async getMyRegistration(
+        hackathonIdOrSlug: string,
+        userId: string
+    ): Promise<ApiResponse<{ isRegistered: boolean; registration?: any }>> {
+        const supabase = this.supabaseService.getAdminClient();
+
+        // Resolve hackathon ID
+        const hackathonId = await this.resolveHackathonId(hackathonIdOrSlug);
+        if (!hackathonId) {
+            return { success: true, data: { isRegistered: false } };
+        }
+
+        const { data, error } = await supabase
+            .from("hackathon_registrations")
+            .select("id, team_name, registered_at")
+            .eq("hackathon_id", hackathonId)
+            .eq("user_id", userId)
+            .single();
+
+        if (error || !data) {
+            return { success: true, data: { isRegistered: false } };
+        }
+
+        return {
+            success: true,
+            data: {
+                isRegistered: true,
+                registration: {
+                    id: data.id,
+                    teamName: data.team_name,
+                    registeredAt: data.registered_at,
+                },
+            },
+        };
+    }
+
+    /**
+     * Get all participants for a hackathon
+     */
+    async getHackathonParticipants(
+        hackathonIdOrSlug: string,
+        limit: number = 50,
+        offset: number = 0
+    ): Promise<ApiResponse<{ participants: any[]; total: number }>> {
+        const supabase = this.supabaseService.getAdminClient();
+
+        // Resolve hackathon ID
+        const hackathonId = await this.resolveHackathonId(hackathonIdOrSlug);
+        if (!hackathonId) {
+            return { success: true, data: { participants: [], total: 0 } };
+        }
+
+        // Get total count
+        const { count: total } = await supabase
+            .from("hackathon_registrations")
+            .select("*", { count: "exact", head: true })
+            .eq("hackathon_id", hackathonId);
+
+        // Get participants with user info
+        const { data, error } = await supabase
+            .from("hackathon_registrations")
+            .select(`
+                id,
+                team_name,
+                registered_at,
+                user:users!hackathon_registrations_user_id_fkey(
+                    id,
+                    username,
+                    avatar
+                )
+            `)
+            .eq("hackathon_id", hackathonId)
+            .order("registered_at", { ascending: false })
+            .range(offset, offset + limit - 1);
+
+        if (error) {
+            this.logger.error(`Failed to get participants: ${error.message}`);
+            throw new Error(`Failed to get participants: ${error.message}`);
+        }
+
+        const participants = data.map((r) => {
+            const userData = Array.isArray(r.user) ? r.user[0] : r.user;
+            return {
+                id: r.id,
+                teamName: r.team_name,
+                registeredAt: r.registered_at,
+                user: userData ? {
+                    id: userData.id,
+                    username: userData.username,
+                    avatar: userData.avatar,
+                } : null,
+            };
+        });
+
+        return {
+            success: true,
+            data: {
+                participants,
+                total: total || 0,
             },
         };
     }

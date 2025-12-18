@@ -133,6 +133,19 @@ export class HackathonsController {
     }
 
     /**
+     * Unregister from a hackathon
+     * DELETE /hackathons/:hackathonId/register
+     */
+    @Delete(":hackathonId/register")
+    @UseGuards(AuthGuard)
+    async unregisterFromHackathon(
+        @Param("hackathonId") hackathonId: string,
+        @CurrentUser("userId") userId: string
+    ) {
+        return this.hackathonsService.unregisterFromHackathon(hackathonId, userId);
+    }
+
+    /**
      * Check if user is registered
      * GET /hackathons/:hackathonId/registration
      */
@@ -142,7 +155,24 @@ export class HackathonsController {
         @Param("hackathonId") hackathonId: string,
         @CurrentUser("userId") userId: string
     ) {
-        return this.hackathonsService.isRegistered(hackathonId, userId);
+        return this.hackathonsService.getMyRegistration(hackathonId, userId);
+    }
+
+    /**
+     * Get all participants for a hackathon
+     * GET /hackathons/:hackathonId/participants
+     */
+    @Get(":hackathonId/participants")
+    async getParticipants(
+        @Param("hackathonId") hackathonId: string,
+        @Query("limit") limit?: number,
+        @Query("offset") offset?: number
+    ) {
+        return this.hackathonsService.getHackathonParticipants(
+            hackathonId,
+            limit || 50,
+            offset || 0
+        );
     }
 
     // =============================================

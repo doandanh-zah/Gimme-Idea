@@ -149,15 +149,86 @@ export default function HackathonDashboard({ params }: { params: { id: string } 
    const [isCreatingTeam, setIsCreatingTeam] = useState(false);
    const [newTeamData, setNewTeamData] = useState({ name: '' });
    const [isRegistered, setIsRegistered] = useState(false);
+   const [registrationData, setRegistrationData] = useState<{ id: string; teamName?: string; registeredAt: string } | null>(null);
+   const [isLoadingRegistration, setIsLoadingRegistration] = useState(false);
+   const [isRegistering, setIsRegistering] = useState(false);
    const [countdown, setCountdown] = useState({ text: 'Calculating...', label: 'Loading...' });
 
-   const handleRegister = () => {
-      // Mock registration logic
-      const confirm = window.confirm("Confirm registration for this Hackathon?");
-      if (confirm) {
-         setIsRegistered(true);
+   // Get user from store
+   const { user } = useAppStore();
+
+   // Load registration status
+   const loadRegistrationStatus = async () => {
+      if (!id || !user) return;
+      setIsLoadingRegistration(true);
+      try {
+         const response = await apiClient.getMyRegistration(id);
+         if (response.success && response.data) {
+            setIsRegistered(response.data.isRegistered);
+            setRegistrationData(response.data.registration || null);
+         }
+      } catch (err) {
+         console.error('Failed to load registration status:', err);
+      } finally {
+         setIsLoadingRegistration(false);
       }
    };
+
+   // Load registration on mount
+   useEffect(() => {
+      if (user) {
+         loadRegistrationStatus();
+      }
+   }, [id, user]);
+
+   const handleRegister = async () => {
+      if (!user) {
+         alert('Please login to register for this hackathon');
+         return;
+      }
+      const confirm = window.confirm("Confirm registration for this Hackathon?");
+      if (!confirm) return;
+
+      setIsRegistering(true);
+      try {
+         const response = await apiClient.registerForHackathon(id);
+         if (response.success) {
+            setIsRegistered(true);
+            setRegistrationData(response.data || null);
+            alert('Successfully registered for the hackathon!');
+         } else {
+            alert(response.error || 'Failed to register');
+         }
+      } catch (err: any) {
+         console.error('Registration error:', err);
+         alert(err.message || 'Failed to register');
+      } finally {
+         setIsRegistering(false);
+      }
+   };
+
+   const handleUnregister = async () => {
+      const confirm = window.confirm("Are you sure you want to unregister from this hackathon?");
+      if (!confirm) return;
+
+      setIsRegistering(true);
+      try {
+         const response = await apiClient.unregisterFromHackathon(id);
+         if (response.success) {
+            setIsRegistered(false);
+            setRegistrationData(null);
+            alert('Successfully unregistered from the hackathon');
+         } else {
+            alert(response.error || 'Failed to unregister');
+         }
+      } catch (err: any) {
+         console.error('Unregister error:', err);
+         alert(err.message || 'Failed to unregister');
+      } finally {
+         setIsRegistering(false);
+      }
+   };
+
    // Handle inviting a user (mock functionality)
    const handleInviteUser = (userId: string) => {
       const invitedUser = MOCK_AVAILABLE_USERS.find(user => user.id === userId);
@@ -702,6 +773,65 @@ export default function HackathonDashboard({ params }: { params: { id: string } 
 
                                           {/* RIGHT COLUMN: Sidebar Widgets (Span 4) - Hidden on mobile */}
                                           <div className="hidden lg:flex lg:col-span-4 flex-col gap-4 md:gap-6 h-auto lg:h-full lg:overflow-y-auto pr-0 lg:pr-2">
+
+                                             {/* Registration Status */}
+                                             {user && (
+                                                <div className={`border rounded-xl p-4 shrink-0 ${isRegistered 
+                                                   ? 'bg-gradient-to-br from-green-500/10 to-emerald-600/5 border-green-500/30' 
+                                                   : 'bg-surface border-white/5'}`}
+                                                >
+                                                   {isLoadingRegistration ? (
+                                                      <div className="flex items-center gap-2 text-gray-400">
+                                                         <div className="w-4 h-4 border-2 border-gray-400 border-t-transparent rounded-full animate-spin" />
+                                                         <span className="text-xs">Checking registration...</span>
+                                                      </div>
+                                                   ) : isRegistered ? (
+                                                      <div>
+                                                         <div className="flex items-center gap-2 mb-2">
+                                                            <div className="w-6 h-6 bg-green-500/20 rounded-full flex items-center justify-center">
+                                                               <CheckCircle2 className="w-4 h-4 text-green-500" />
+                                                            </div>
+                                                            <span className="text-sm font-bold text-green-500">Registered</span>
+                                                         </div>
+                                                         {registrationData?.registeredAt && (
+                                                            <p className="text-[10px] text-gray-500 mb-3">
+                                                               Since {format(new Date(registrationData.registeredAt), 'MMM dd, yyyy')}
+                                                            </p>
+                                                         )}
+                                                         <button
+                                                            onClick={handleUnregister}
+                                                            disabled={isRegistering}
+                                                            className="w-full py-1.5 bg-white/5 text-gray-400 font-medium rounded-lg text-[10px] hover:bg-red-500/10 hover:text-red-400 hover:border-red-500/30 border border-white/10 transition-all flex items-center justify-center gap-1 disabled:opacity-50"
+                                                         >
+                                                            <UserMinus className="w-3 h-3" /> Leave Hackathon
+                                                         </button>
+                                                      </div>
+                                                   ) : (
+                                                      <div>
+                                                         <div className="flex items-center gap-2 mb-2">
+                                                            <div className="w-6 h-6 bg-gold/20 rounded-full flex items-center justify-center">
+                                                               <UserPlus className="w-4 h-4 text-gold" />
+                                                            </div>
+                                                            <span className="text-sm font-bold text-white">Not Registered</span>
+                                                         </div>
+                                                         <p className="text-[10px] text-gray-500 mb-3">Register to join the hackathon</p>
+                                                         <button
+                                                            onClick={handleRegister}
+                                                            disabled={isRegistering}
+                                                            className="w-full py-2 bg-gold text-black font-bold rounded-lg text-xs hover:bg-gold/90 transition-all flex items-center justify-center gap-1 disabled:opacity-50"
+                                                         >
+                                                            {isRegistering ? (
+                                                               <div className="w-4 h-4 border-2 border-black border-t-transparent rounded-full animate-spin" />
+                                                            ) : (
+                                                               <>
+                                                                  <UserPlus className="w-3 h-3" /> Register Now
+                                                               </>
+                                                            )}
+                                                         </button>
+                                                      </div>
+                                                   )}
+                                                </div>
+                                             )}
 
                                              {/* 0. Quick Action: Submit */}
                                              <div className="bg-gradient-to-br from-gold/20 to-yellow-600/5 border border-gold/30 rounded-xl p-4 shrink-0 shadow-lg shadow-gold/5">
@@ -1297,7 +1427,14 @@ export default function HackathonDashboard({ params }: { params: { id: string } 
                                        <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 md:gap-6 h-full overflow-y-auto md:overflow-hidden pb-6 md:pb-0">
                                           {/* LEFT COLUMN: Team Management (Span 8) */}
                                           <div className="lg:col-span-8 flex flex-col gap-4 md:gap-6 h-auto lg:h-full lg:overflow-y-auto pr-0 lg:pr-2 order-1">
-                                             {!isRegistered ? (
+                                             {isLoadingRegistration ? (
+                                                <div className="h-full flex items-center justify-center">
+                                                   <div className="flex flex-col items-center gap-4">
+                                                      <div className="w-8 h-8 border-2 border-gold border-t-transparent rounded-full animate-spin" />
+                                                      <p className="text-gray-400 text-sm">Loading registration status...</p>
+                                                   </div>
+                                                </div>
+                                             ) : !isRegistered ? (
                                                 <div className="h-full flex flex-col items-center justify-center text-center p-8 bg-surface border border-white/5 rounded-xl relative overflow-hidden">
                                                    <div className="absolute inset-0 bg-gradient-to-b from-gold/5 to-transparent pointer-events-none" />
                                                    <div className="relative z-10 max-w-lg">
@@ -1306,14 +1443,27 @@ export default function HackathonDashboard({ params }: { params: { id: string } 
                                                       </div>
                                                       <h2 className="text-3xl font-bold text-white mb-4 font-quantico">Join the Hackathon</h2>
                                                       <p className="text-gray-400 mb-8 leading-relaxed">
-                                                         Register now to access team formation, project submission, and compete for the <strong>{hackathon.prizePool}</strong> prize pool.
+                                                         Register now to access team formation, project submission, and compete for the <strong>{hackathon?.prizePool}</strong> prize pool.
                                                       </p>
                                                       <button
                                                          onClick={handleRegister}
-                                                         className="px-8 py-4 bg-gradient-to-r from-gold to-yellow-600 text-black font-bold text-lg rounded-xl hover:shadow-[0_0_30px_rgba(255,215,0,0.3)] hover:scale-105 transition-all flex items-center justify-center gap-3 w-full sm:w-auto mx-auto"
+                                                         disabled={isRegistering || !user}
+                                                         className="px-8 py-4 bg-gradient-to-r from-gold to-yellow-600 text-black font-bold text-lg rounded-xl hover:shadow-[0_0_30px_rgba(255,215,0,0.3)] hover:scale-105 transition-all flex items-center justify-center gap-3 w-full sm:w-auto mx-auto disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
                                                       >
-                                                         <CheckCircle2 className="w-6 h-6" /> Register Now
+                                                         {isRegistering ? (
+                                                            <>
+                                                               <div className="w-5 h-5 border-2 border-black border-t-transparent rounded-full animate-spin" />
+                                                               Registering...
+                                                            </>
+                                                         ) : (
+                                                            <>
+                                                               <CheckCircle2 className="w-6 h-6" /> Register Now
+                                                            </>
+                                                         )}
                                                       </button>
+                                                      {!user && (
+                                                         <p className="text-xs text-amber-400 mt-4">Please login to register for this hackathon</p>
+                                                      )}
                                                       <p className="text-xs text-gray-500 mt-6">By registering, you agree to the hackathon rules and terms.</p>
                                                    </div>
                                                 </div>

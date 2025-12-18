@@ -771,4 +771,41 @@ export const apiClient = {
   // Get my submissions for a hackathon
   getMySubmissions: (hackathonId: string) =>
     apiFetch<any[]>(`/hackathons/${hackathonId}/submissions?mine=true`),
+
+  // =============================================
+  // HACKATHON REGISTRATION
+  // =============================================
+
+  // Register for a hackathon
+  registerForHackathon: (hackathonId: string, teamName?: string) =>
+    apiFetch<{ id: string; registeredAt: string }>(
+      `/hackathons/${hackathonId}/register`,
+      {
+        method: "POST",
+        body: JSON.stringify({ teamName }),
+      }
+    ),
+
+  // Unregister from a hackathon
+  unregisterFromHackathon: (hackathonId: string) =>
+    apiFetch<void>(`/hackathons/${hackathonId}/register`, {
+      method: "DELETE",
+    }),
+
+  // Check if user is registered for a hackathon
+  getMyRegistration: (hackathonId: string) =>
+    apiFetch<{ isRegistered: boolean; registration?: { id: string; teamName?: string; registeredAt: string } }>(
+      `/hackathons/${hackathonId}/registration`
+    ),
+
+  // Get all participants for a hackathon
+  getHackathonParticipants: (hackathonId: string, limit?: number, offset?: number) => {
+    const params = new URLSearchParams();
+    if (limit) params.append("limit", limit.toString());
+    if (offset) params.append("offset", offset.toString());
+    const queryString = params.toString();
+    return apiFetch<{ participants: any[]; total: number }>(
+      `/hackathons/${hackathonId}/participants${queryString ? `?${queryString}` : ""}`
+    );
+  },
 };
