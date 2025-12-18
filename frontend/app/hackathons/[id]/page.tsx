@@ -308,7 +308,7 @@ export default function HackathonDashboard({ params }: { params: { id: string } 
             projectId: idea.id,
          });
          console.log('[Hackathon Submission] 📡 API Response:', response);
-         
+
          if (response.success) {
             console.log('[Hackathon Submission] ✅ Submission created successfully!', response.data);
             // Reload submissions after creating
@@ -985,10 +985,22 @@ export default function HackathonDashboard({ params }: { params: { id: string } 
                                                          </div>
                                                          {mySubmissions.map(submission => {
                                                             const project = submission.project;
-                                                            const statusColor = submission.status === 'approved' ? 'green'
-                                                               : submission.status === 'rejected' ? 'red'
-                                                                  : submission.status === 'winner' || submission.status === 'finalist' ? 'gold'
-                                                                     : 'green';
+                                                            // Status badge styles (Tailwind doesn't support dynamic classes)
+                                                            const getStatusStyles = (status: string) => {
+                                                               switch (status) {
+                                                                  case 'winner':
+                                                                  case 'finalist':
+                                                                     return 'bg-gold/10 border-gold/30 text-gold';
+                                                                  case 'rejected':
+                                                                     return 'bg-red-500/10 border-red-500/30 text-red-400';
+                                                                  case 'under_review':
+                                                                  case 'shortlisted':
+                                                                     return 'bg-blue-500/10 border-blue-500/30 text-blue-400';
+                                                                  default: // submitted, draft
+                                                                     return 'bg-green-500/10 border-green-500/30 text-green-400';
+                                                               }
+                                                            };
+                                                            const statusStyles = getStatusStyles(submission.status);
                                                             return (
                                                                <div
                                                                   key={submission.id}
@@ -996,8 +1008,8 @@ export default function HackathonDashboard({ params }: { params: { id: string } 
                                                                >
                                                                   <div className="flex justify-between items-start mb-3">
                                                                      <div className="flex items-center gap-2">
-                                                                        <span className={`bg-${statusColor}-500/10 border border-${statusColor}-500/30 px-2 py-0.5 rounded text-[10px] text-${statusColor}-400 font-bold flex items-center gap-1`}>
-                                                                           <CheckCircle2 className="w-2.5 h-2.5" /> {submission.status || 'Submitted'}
+                                                                        <span className={`${statusStyles} border px-2 py-0.5 rounded text-[10px] font-bold flex items-center gap-1 capitalize`}>
+                                                                           <CheckCircle2 className="w-2.5 h-2.5" /> {(submission.status || 'submitted').replace('_', ' ')}
                                                                         </span>
                                                                         {project?.category && (
                                                                            <span className="bg-white/5 border border-white/10 px-2 py-0.5 rounded text-[10px] text-gray-400 font-mono">{project.category}</span>
