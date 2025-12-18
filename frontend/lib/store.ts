@@ -55,7 +55,13 @@ interface AppState {
     type?: "project" | "idea";
     category?: string;
     search?: string;
+    limit?: number;
+    offset?: number;
+    append?: boolean; // For load more functionality
   }) => Promise<void>;
+  fetchMoreProjects: () => Promise<void>;
+  hasMoreProjects: boolean;
+  projectsOffset: number;
   fetchProjectById: (id: string) => Promise<Project | null>;
   addProject: (
     project: Omit<
@@ -117,6 +123,8 @@ export const useAppStore = create<AppState>((set, get) => ({
   selectedProject: null,
   searchQuery: "",
   notifications: [],
+  hasMoreProjects: true,
+  projectsOffset: 0,
 
   openConnectReminder: () => set({ isConnectReminderOpen: true }),
   closeConnectReminder: () => set({ isConnectReminderOpen: false }),
@@ -303,23 +311,68 @@ export const useAppStore = create<AppState>((set, get) => ({
   fetchProjects: async (filters) => {
     try {
       set({ isLoading: true });
-      // Default limit to reduce egress - can be increased with pagination
+      const limit = filters?.limit || 50; // Increased default limit
+      const offset = filters?.offset || 0;
+      const append = filters?.append || false;
+
       const response = await apiClient.getProjects({
-        limit: 20,
-        ...filters,
+        limit,
+        offset,
+        type: filters?.type,
+        category: filters?.category,
+        search: filters?.search,
       });
+
       if (response.success && response.data) {
         // Map imageUrl to image for frontend compatibility
-        const projects = response.data.map((p) => ({
+        const newProjects = response.data.map((p) => ({
           ...p,
           image: p.imageUrl || p.image,
         }));
-        set({ projects, isLoading: false });
+
+        if (append) {
+          // Append to existing projects (for load more)
+          const existingProjects = get().projects;
+          const existingIds = new Set(existingProjects.map((p) => p.id));
+          const uniqueNewProjects = newProjects.filter(
+            (p) => !existingIds.has(p.id)
+          );
+          set({
+            projects: [...existingProjects, ...uniqueNewProjects],
+            isLoading: false,
+            hasMoreProjects: newProjects.length >= limit,
+            projectsOffset: offset + newProjects.length,
+          });
+        } else {
+          // Replace projects (initial load)
+          set({
+            projects: newProjects,
+            isLoading: false,
+            hasMoreProjects: newProjects.length >= limit,
+            projectsOffset: newProjects.length,
+          });
+        }
+      } else {
+        set({ isLoading: false, hasMoreProjects: false });
       }
     } catch (error) {
       console.error("Failed to fetch projects:", error);
       set({ isLoading: false });
     }
+  },
+
+  fetchMoreProjects: async () => {
+    const state = get();
+    if (state.isLoading || !state.hasMoreProjects) return;
+
+    // Determine current filter type from existing projects
+    const currentType = state.projects[0]?.type || "idea";
+
+    await state.fetchProjects({
+      type: currentType as "project" | "idea",
+      offset: state.projectsOffset,
+      append: true,
+    });
   },
 
   fetchProjectById: async (idOrPrefix) => {

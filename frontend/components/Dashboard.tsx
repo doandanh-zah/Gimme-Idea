@@ -24,6 +24,8 @@ export default function Dashboard({ mode }: DashboardProps) {
     setSearchQuery,
     openSubmitModal,
     fetchProjects,
+    fetchMoreProjects,
+    hasMoreProjects,
     isLoading,
     handleRealtimeNewProject,
     handleRealtimeUpdateProject,
@@ -227,6 +229,32 @@ export default function Dashboard({ mode }: DashboardProps) {
                     Clear all filters
                  </button>
                </div>
+            )}
+
+            {/* Load More Button */}
+            {filteredProjects.length > 0 && hasMoreProjects && !searchQuery && categoryFilter === 'All' && (
+              <div className="flex justify-center mt-8 sm:mt-12">
+                <button
+                  onClick={fetchMoreProjects}
+                  disabled={isLoading}
+                  className="px-6 sm:px-8 py-3 sm:py-4 bg-white/5 hover:bg-white/10 border border-white/10 hover:border-white/20 rounded-xl text-white font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                >
+                  {isLoading ? (
+                    <>
+                      <motion.div
+                        animate={{ rotate: 360 }}
+                        transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                        className="w-5 h-5 border-2 border-white/20 border-t-white rounded-full"
+                      />
+                      Loading...
+                    </>
+                  ) : (
+                    <>
+                      Load More {mode === 'idea' ? 'Ideas' : 'Projects'}
+                    </>
+                  )}
+                </button>
+              </div>
             )}
           </>
         )}

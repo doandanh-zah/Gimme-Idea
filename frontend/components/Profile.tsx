@@ -66,6 +66,10 @@ export const Profile = () => {
   // Feeds state
   const [userFeeds, setUserFeeds] = useState<Feed[]>([]);
   const [isLoadingFeeds, setIsLoadingFeeds] = useState(false);
+  
+  // User's ideas state (fetched directly, not from global store)
+  const [userIdeas, setUserIdeas] = useState<Project[]>([]);
+  const [isLoadingIdeas, setIsLoadingIdeas] = useState(false);
 
   // Determine if this is the "My Profile" page (not viewing someone else)
   const isMyProfilePage = pathname === '/profile';
@@ -149,6 +153,34 @@ export const Profile = () => {
 
     fetchFollowStats();
   }, [displayUser?.id]);
+
+  // Fetch user's ideas/projects directly from API
+  useEffect(() => {
+    const fetchUserIdeas = async () => {
+      if (!displayUser?.username) return;
+      
+      setIsLoadingIdeas(true);
+      try {
+        const response = await apiClient.getUserProjects(displayUser.username);
+        if (response.success && response.data) {
+          // Filter to only show ideas and map data
+          const ideas = response.data
+            .filter((p: any) => p.type === 'idea')
+            .map((p: any) => ({
+              ...p,
+              image: p.imageUrl || p.image,
+            }));
+          setUserIdeas(ideas);
+        }
+      } catch (error) {
+        console.error('Failed to fetch user ideas:', error);
+      } finally {
+        setIsLoadingIdeas(false);
+      }
+    };
+
+    fetchUserIdeas();
+  }, [displayUser?.username]);
 
   // Fetch user's public feeds
   useEffect(() => {
@@ -246,8 +278,6 @@ export const Profile = () => {
           </div>
       );
   }
-
-  const userIdeas = projects.filter(p => p.author.username === displayUser.username && p.type === 'idea');
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -379,9 +409,11 @@ export const Profile = () => {
       setEditingProject(project);
   };
 
-  const handleDeleteProject = (id: string) => {
+  const handleDeleteProject = async (id: string) => {
       if (window.confirm("Are you sure you want to delete this idea?")) {
-          deleteProject(id);
+          await deleteProject(id);
+          // Also remove from local state
+          setUserIdeas(prev => prev.filter(p => p.id !== id));
           toast.success("Idea deleted");
       }
   };
@@ -818,7 +850,12 @@ export const Profile = () => {
             <div className="mt-4">
                 {activeTab === 'ideas' ? (
                     <>
-                        {userIdeas.length > 0 ? (
+                        {isLoadingIdeas ? (
+                            <div className="flex flex-col items-center justify-center py-16">
+                                <Loader2 className="w-8 h-8 animate-spin text-purple-400 mb-4" />
+                                <p className="text-gray-400">Loading ideas...</p>
+                            </div>
+                        ) : userIdeas.length > 0 ? (
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 {userIdeas.map(project => (
                                     <div key={project.id} className="relative group">

@@ -115,6 +115,7 @@ export const apiClient = {
     stage?: string;
     search?: string;
     limit?: number;
+    offset?: number;
   }) => {
     const query = new URLSearchParams(
       params as Record<string, string>
