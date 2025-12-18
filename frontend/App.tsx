@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect } from 'react';
 import Navbar from './components/Navbar';
 import Hero from './components/Hero';
 import StatsDashboard from './components/StatsDashboard';
@@ -20,24 +20,11 @@ import { ConnectWalletPopup } from './components/ConnectWalletPopup';
 function App() {
   const { currentView, isNavigating, openSubmitModal, setUser } = useAppStore();
   const { user: authUser, isLoading: authLoading } = useAuth();
-  const [stars, setStars] = useState<{ id: number; top: string; left: string; size: number; duration: string; opacity: number }[]>([]);
 
   // Sync AuthContext user with Store
   useEffect(() => {
     setUser(authUser);
   }, [authUser, setUser]);
-
-  useEffect(() => {
-    const newStars = Array.from({ length: 50 }).map((_, i) => ({
-      id: i,
-      top: `${Math.random() * 100}%`,
-      left: `${Math.random() * 100}%`,
-      size: Math.random() * 2 + 1,
-      duration: `${Math.random() * 3 + 2}s`,
-      opacity: Math.random()
-    }));
-    setStars(newStars);
-  }, []);
 
   const renderContent = () => {
     switch (currentView) {
@@ -101,29 +88,6 @@ function App() {
           <LoadingLightbulb text={authLoading ? "Loading..." : "Accessing Protocol..."} />
         </div>
       )}
-
-      {/* Global Dynamic Background & Stars */}
-      <div className="fixed inset-0 z-[-20]">
-          <div className="bg-grid opacity-40"></div>
-          <div className="stars-container">
-            {stars.map((star) => (
-              <div
-                key={star.id}
-                className="star"
-                style={{
-                  top: star.top,
-                  left: star.left,
-                  width: `${star.size}px`,
-                  height: `${star.size}px`,
-                  '--duration': star.duration,
-                  '--opacity': star.opacity
-                } as React.CSSProperties}
-              />
-            ))}
-            <div className="shooting-star" style={{ top: '20%', left: '80%' }} />
-            <div className="shooting-star" style={{ top: '60%', left: '10%', animationDelay: '2s' }} />
-          </div>
-      </div>
 
       <Navbar />
       <ConnectWalletPopup />

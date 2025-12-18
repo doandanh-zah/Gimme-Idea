@@ -243,24 +243,14 @@ export default function HomeFeed() {
                   <AnimatePresence>
                     {isHovered && (
                       <>
-                        {/* Mobile: Fixed centered popup with backdrop */}
-                        {isMobile && (
-                          <motion.div
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
-                            exit={{ opacity: 0 }}
-                            className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm"
-                            onClick={() => setHoveredItem(null)}
-                          />
-                        )}
                         <motion.div
-                          initial={{ opacity: 0, y: isMobile ? 20 : 10, scale: 0.95 }}
+                          initial={{ opacity: 0, y: 10, scale: 0.95 }}
                           animate={{ opacity: 1, y: 0, scale: 1 }}
-                          exit={{ opacity: 0, y: isMobile ? 20 : 10, scale: 0.95 }}
+                          exit={{ opacity: 0, y: 10, scale: 0.95 }}
                           transition={{ duration: 0.2 }}
                           className={
                             isMobile 
-                              ? "fixed z-50 left-4 right-4 top-1/2 -translate-y-1/2 max-w-sm mx-auto" 
+                              ? "absolute z-50 left-0 right-0 top-full mt-2 w-full" 
                               : "absolute z-50 left-1/2 -translate-x-1/2 bottom-full mb-3 w-80 pointer-events-none"
                           }
                         >
