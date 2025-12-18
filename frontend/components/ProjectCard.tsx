@@ -15,7 +15,7 @@ interface ProjectCardProps {
 }
 
 export const ProjectCard: React.FC<ProjectCardProps> = ({ project }) => {
-  const { voteProject } = useAppStore();
+  const { user, voteProject, openConnectReminder } = useAppStore();
   const router = useRouter();
   const [isLiked, setIsLiked] = useState(false);
   const [showBurst, setShowBurst] = useState(false);
@@ -25,6 +25,12 @@ export const ProjectCard: React.FC<ProjectCardProps> = ({ project }) => {
 
   const handleVote = async (e: React.MouseEvent) => {
     e.stopPropagation();
+    
+    if (!user) {
+      openConnectReminder();
+      return;
+    }
+    
     if (!isLiked) {
       try {
         await voteProject(project.id);

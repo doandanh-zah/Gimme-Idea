@@ -6,7 +6,6 @@ import { ThumbsUp, MessageSquare, User, Sparkles } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { Project } from '../lib/types';
 import { useAppStore } from '../lib/store';
-import { useAuth } from '../contexts/AuthContext';
 import toast from 'react-hot-toast';
 
 interface IdeaCardProps {
@@ -16,8 +15,7 @@ interface IdeaCardProps {
 export const IdeaCard: React.FC<IdeaCardProps> = ({ project }) => {
   const router = useRouter();
   const [isHovered, setIsHovered] = useState(false);
-  const { user, voteProject } = useAppStore();
-  const { setShowWalletPopup } = useAuth();
+  const { user, voteProject, openConnectReminder } = useAppStore();
   const [isVoting, setIsVoting] = useState(false);
   const [localVotes, setLocalVotes] = useState(project.votes);
   const [hasVoted, setHasVoted] = useState(false);
@@ -32,7 +30,7 @@ export const IdeaCard: React.FC<IdeaCardProps> = ({ project }) => {
     e.stopPropagation();
     
     if (!user) {
-      setShowWalletPopup(true);
+      openConnectReminder();
       return;
     }
 

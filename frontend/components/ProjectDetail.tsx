@@ -269,6 +269,10 @@ export const ProjectDetail = () => {
   };
 
   const handleVote = async () => {
+    if (!user) {
+      openConnectReminder();
+      return;
+    }
     try {
       await voteProject(project.id);
       toast.success('Voted!');

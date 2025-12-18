@@ -172,7 +172,7 @@ export const LoadingSpinner: React.FC<LoadingSpinnerProps> = ({
 
                 {/* Logo */}
                 <motion.img
-                  src="/logo.png"
+                  src="/logo-gmi.png"
                   alt="Loading"
                   style={{ width: config.logo, height: config.logo }}
                   className="relative z-10 drop-shadow-[0_0_10px_rgba(255,215,0,0.5)]"
