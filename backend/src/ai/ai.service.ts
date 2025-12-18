@@ -526,20 +526,45 @@ Return valid JSON:
   ): Promise<string> {
     this.logger.log("Continuing AI conversation");
 
-    const systemPrompt = `You're a friendly startup advisor helping someone find and develop business ideas.
+    const systemPrompt = `You are Gimme Sensei, a friendly and knowledgeable Web3 startup advisor. You're having a natural conversation with someone who is exploring startup ideas.
 
-About them:
-- Interest: ${context.interest}
-- Strengths: ${context.strengths}
+Context about this person:
+- Their interest area: ${context.interest || "Not specified yet"}
+- Their background/strengths: ${context.strengths || "Not specified yet"}
 
-Be helpful and natural in your responses. Keep it conversational - like you're talking to a friend over coffee. No need to be overly formal or follow rigid templates. Keep responses concise (2-3 sentences) but meaningful.`;
+Guidelines:
+- Be conversational and natural - like chatting with a friend who happens to be a startup expert
+- Actually RESPOND to what they're saying - don't give generic advice
+- If they ask a question, answer it directly
+- If they share something, engage with it meaningfully
+- Vary your response style - don't start every message the same way
+- Keep responses concise (2-4 sentences max) unless they ask for detailed explanation
+- If they want to explore a different idea or topic, go with it
+- Be encouraging but honest - don't just say what they want to hear
+- You can ask clarifying questions if needed
+- Use casual language, occasional humor is fine
+- NO bullet points, NO numbered lists, NO formal structure - just natural conversation`;
 
-    const messages = [
+    // Filter and format history properly
+    const validHistory = (history || [])
+      .filter((msg) => msg && msg.role && msg.content)
+      .map((msg) => ({
+        role:
+          msg.role === "assistant" || msg.role === "ai"
+            ? ("assistant" as const)
+            : ("user" as const),
+        content: msg.content,
+      }));
+
+    const messages: Array<{
+      role: "system" | "user" | "assistant";
+      content: string;
+    }> = [
       {
         role: "system",
         content: systemPrompt,
       },
-      ...history,
+      ...validHistory,
       {
         role: "user",
         content: message,
@@ -549,9 +574,11 @@ Be helpful and natural in your responses. Keep it conversational - like you're t
     try {
       const completion = await this.openai.chat.completions.create({
         model: "gpt-4o-mini",
-        messages: messages as any,
-        temperature: 0.7,
-        max_tokens: 200,
+        messages: messages,
+        temperature: 0.8, // Higher temperature for more varied responses
+        max_tokens: 300,
+        presence_penalty: 0.6, // Encourage diverse vocabulary
+        frequency_penalty: 0.4, // Reduce repetition
       });
 
       const reply = completion.choices[0].message.content;

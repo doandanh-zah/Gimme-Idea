@@ -70,7 +70,12 @@ export const AIChatModal: React.FC<AIChatModalProps> = ({ isOpen, onClose }) => 
         setSessions(parsed.map((s: any) => ({
           ...s,
           createdAt: new Date(s.createdAt),
-          messages: s.messages.map((m: any) => ({ ...m, timestamp: new Date(m.timestamp) }))
+          messages: s.messages.map((m: any) => ({ 
+            ...m, 
+            timestamp: new Date(m.timestamp),
+            // Ensure recommendedIdeas is preserved
+            recommendedIdeas: m.recommendedIdeas || undefined
+          }))
         })));
       } catch (e) {
         console.error('Failed to load chat sessions:', e);
@@ -78,12 +83,23 @@ export const AIChatModal: React.FC<AIChatModalProps> = ({ isOpen, onClose }) => 
     }
   }, []);
 
-  // Save sessions to localStorage
+  // Save sessions to localStorage (with debounce to prevent excessive writes)
   useEffect(() => {
     if (sessions.length > 0) {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(sessions));
+      const timeoutId = setTimeout(() => {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(sessions));
+      }, 100);
+      return () => clearTimeout(timeoutId);
     }
   }, [sessions]);
+
+  // Reset loading state when modal closes
+  useEffect(() => {
+    if (!isOpen) {
+      setIsLoading(false);
+      setInput('');
+    }
+  }, [isOpen]);
 
   // Scroll to bottom
   useEffect(() => {
@@ -122,8 +138,9 @@ export const AIChatModal: React.FC<AIChatModalProps> = ({ isOpen, onClose }) => 
 
   // Create new session
   const createNewSession = () => {
+    const newId = Date.now().toString();
     const newSession: ChatSession = {
-      id: Date.now().toString(),
+      id: newId,
       title: 'New Chat',
       messages: [{
         id: '1',
@@ -134,10 +151,11 @@ export const AIChatModal: React.FC<AIChatModalProps> = ({ isOpen, onClose }) => 
       isLocked: false,
       createdAt: new Date()
     };
-    setSessions(prev => [newSession, ...prev]);
-    setActiveSessionId(newSession.id);
+    // Reset conversation state BEFORE setting the new session
     setConversationStep(0);
     setUserContext({ interest: '', context: '' });
+    setSessions(prev => [newSession, ...prev]);
+    setActiveSessionId(newId);
     setShowHistory(false);
   };
 
@@ -149,6 +167,39 @@ export const AIChatModal: React.FC<AIChatModalProps> = ({ isOpen, onClose }) => 
       setActiveSessionId(sessions[0].id);
     }
   }, [isOpen]);
+
+  // Reset conversation state when switching sessions
+  useEffect(() => {
+    if (activeSessionId && activeSession) {
+      // Analyze the session to determine current step
+      const messages = activeSession.messages;
+      const userMessages = messages.filter(m => m.role === 'user');
+      const hasRecommendations = messages.some(m => m.recommendedIdeas && m.recommendedIdeas.length > 0);
+      
+      if (activeSession.isLocked) {
+        // Session is locked, conversation was at step 2
+        setConversationStep(2);
+      } else if (hasRecommendations) {
+        // Has recommendations and unlocked means step 3+
+        setConversationStep(3);
+      } else if (userMessages.length >= 2) {
+        // User has sent 2 messages, step 2 (awaiting or showing results)
+        setConversationStep(2);
+      } else if (userMessages.length === 1) {
+        // User has sent 1 message about interest, now at step 1
+        setConversationStep(1);
+        // Extract interest from first user message
+        const firstUserMsg = userMessages[0];
+        if (firstUserMsg) {
+          setUserContext(prev => ({ ...prev, interest: firstUserMsg.content }));
+        }
+      } else {
+        // Fresh session
+        setConversationStep(0);
+        setUserContext({ interest: '', context: '' });
+      }
+    }
+  }, [activeSessionId]);
 
   // Delete session
   const deleteSession = (sessionId: string) => {
@@ -211,6 +262,9 @@ export const AIChatModal: React.FC<AIChatModalProps> = ({ isOpen, onClose }) => 
     if (!input.trim() || !activeSession || activeSession.isLocked) return;
 
     const userMessage = input.trim();
+    const currentSessionId = activeSessionId; // Capture current session ID
+    const currentInterest = userContext.interest; // Capture current context
+    
     addMessage({ role: 'user', content: userMessage });
     setInput('');
     setIsLoading(true);
@@ -222,6 +276,9 @@ export const AIChatModal: React.FC<AIChatModalProps> = ({ isOpen, onClose }) => 
         updateSessionTitle(userMessage);
 
         setTimeout(() => {
+          // Check if still on the same session
+          if (activeSessionId !== currentSessionId) return;
+          
           addMessage({
             role: 'ai',
             content: `Interesting! "${userMessage}" sounds exciting. 🎯\n\nNow tell me more about your situation - what's your background, skills, or unique advantage? Why do you want to build in this space?`
@@ -243,50 +300,88 @@ export const AIChatModal: React.FC<AIChatModalProps> = ({ isOpen, onClose }) => 
         // Fetch AI recommendations
         try {
           const response = await axios.post(`${API_URL}/ai/find-ideas`, {
-            interest: userContext.interest,
+            interest: currentInterest || userContext.interest, // Use captured or current
             strengths: userMessage,
           });
+
+          // Check if still on the same session before updating
+          if (activeSessionId !== currentSessionId) {
+            setIsLoading(false);
+            return;
+          }
 
           if (response.data.success && response.data.data.ideas?.length > 0) {
             const ideas = response.data.data.ideas;
             
+            // Add recommendations message directly without setTimeout to prevent race conditions
+            setSessions(prev => prev.map(s => 
+              s.id === currentSessionId 
+                ? { 
+                    ...s, 
+                    messages: [...s.messages, {
+                      id: Date.now().toString(),
+                      role: 'ai' as const,
+                      content: response.data.data.reasoning || "Here are my top 3 recommendations based on your interests and background! Click any idea to learn more:",
+                      recommendedIdeas: ideas,
+                      timestamp: new Date()
+                    }]
+                  }
+                : s
+            ));
+            setIsLoading(false);
+            setConversationStep(2);
+            
+            // Lock the session after showing recommendations
             setTimeout(() => {
-              addMessage({
-                role: 'ai',
-                content: "Here are my top 3 recommendations based on your interests and background! Click any idea to learn more:",
-                recommendedIdeas: ideas
-              });
-              setIsLoading(false);
-              setConversationStep(2);
-              
-              // Lock the session after showing recommendations
-              setTimeout(() => {
-                lockSession();
-              }, 500);
-            }, 1500);
+              setSessions(prev => prev.map(s =>
+                s.id === currentSessionId
+                  ? { ...s, isLocked: true }
+                  : s
+              ));
+            }, 500);
           } else {
             throw new Error('No ideas found');
           }
         } catch (error) {
           console.error('Failed to fetch ideas:', error);
-          addMessage({
-            role: 'ai',
-            content: "I couldn't find matching ideas right now. Please try again with different criteria."
-          });
+          if (activeSessionId === currentSessionId) {
+            addMessage({
+              role: 'ai',
+              content: "I couldn't find matching ideas right now. Please try again with different criteria."
+            });
+            setConversationStep(0);
+          }
           setIsLoading(false);
-          setConversationStep(0);
         }
       }
       // Step 3+: Continued chat after unlock
       else if (conversationStep >= 3) {
         try {
+          // Format history properly for the API (role must be 'user' or 'assistant')
+          const formattedHistory = activeSession.messages
+            .slice(-10)
+            .filter(m => m.content && !m.recommendedIdeas) // Skip recommendation messages
+            .map(m => ({
+              role: m.role === 'ai' ? 'assistant' : 'user',
+              content: m.content
+            }));
+
           const response = await axios.post(`${API_URL}/ai/chat`, {
             message: userMessage,
-            context: userContext,
-            history: activeSession.messages.slice(-10)
+            context: {
+              interest: userContext.interest || '',
+              strengths: userContext.context || ''
+            },
+            history: formattedHistory
           });
 
-          if (response.data.success) {
+          // Check if still on the same session
+          if (activeSessionId !== currentSessionId) {
+            setIsLoading(false);
+            return;
+          }
+
+          if (response.data.success && response.data.data.reply) {
             addMessage({
               role: 'ai',
               content: response.data.data.reply

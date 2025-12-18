@@ -43,12 +43,22 @@ async function apiFetch<T>(
     if (response.status === 401) {
       if (typeof window !== "undefined") {
         localStorage.removeItem("auth_token");
+        // Clear any other auth-related storage
+        localStorage.removeItem("gimme_ai_chat_sessions");
         // Dispatch custom event to notify auth context
         window.dispatchEvent(new CustomEvent("auth:unauthorized"));
       }
       return {
         success: false,
         error: "Session expired. Please sign in again.",
+      };
+    }
+
+    // Handle 403 Forbidden - also might indicate auth issues
+    if (response.status === 403) {
+      return {
+        success: false,
+        error: data.error || "Access denied.",
       };
     }
 

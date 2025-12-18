@@ -88,17 +88,29 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
         return userData;
       } else {
-        // API call failed - clear user state
+        // API call failed - clear all auth state
         console.warn('Login API failed:', response.error);
         setUser(null);
+        setSupabaseUser(null);
+        setSession(null);
+        setIsAdmin(false);
+        localStorage.removeItem('auth_token');
+        // Sign out from Supabase to clear stale session
+        await supabase.auth.signOut();
         return null;
       }
     } catch (error) {
       console.error('Email login error:', error);
       setUser(null);
+      setSupabaseUser(null);
+      setSession(null);
+      setIsAdmin(false);
+      localStorage.removeItem('auth_token');
+      // Sign out from Supabase to clear stale session
+      await supabase.auth.signOut();
     }
     return null;
-  }, []);
+  }, [checkAdminStatus]);
 
   const refreshUser = useCallback(async () => {
     if (!supabaseUser) return;
@@ -131,13 +143,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     // Handle auth:unauthorized event from API client
-    const handleUnauthorized = () => {
+    const handleUnauthorized = async () => {
       console.warn('Session expired - logging out');
       setUser(null);
+      setSupabaseUser(null);
+      setSession(null);
       setIsNewUser(false);
       setShowWalletPopup(false);
-      // Also sign out from Supabase to clear session
-      supabase.auth.signOut();
+      setIsAdmin(false);
+      localStorage.removeItem('auth_token');
+      // Also sign out from Supabase to clear session completely
+      await supabase.auth.signOut();
     };
 
     window.addEventListener('auth:unauthorized', handleUnauthorized);
@@ -167,20 +183,48 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     handleHashFragment();
 
-    // Get initial session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setSupabaseUser(session?.user ?? null);
-      
-      if (session?.user) {
-        // Session restore - NOT a new login, don't show popup
-        processEmailLogin(session.user, false).finally(() => {
+    // Get initial session and validate it
+    const initializeAuth = async () => {
+      try {
+        const { data: { session }, error } = await supabase.auth.getSession();
+        
+        if (error) {
+          console.error('Error getting session:', error);
           setIsLoading(false);
-        });
-      } else {
+          return;
+        }
+
+        if (session?.user) {
+          setSession(session);
+          setSupabaseUser(session.user);
+          
+          // Validate session with backend - if fails, clear everything
+          const result = await processEmailLogin(session.user, false);
+          
+          if (!result) {
+            // Session is invalid, already cleared by processEmailLogin
+            console.warn('Session validation failed, user logged out');
+          }
+        } else {
+          // No session, make sure everything is cleared
+          setUser(null);
+          setSupabaseUser(null);
+          setSession(null);
+          localStorage.removeItem('auth_token');
+        }
+      } catch (error) {
+        console.error('Auth initialization error:', error);
+        // On error, clear everything to be safe
+        setUser(null);
+        setSupabaseUser(null);
+        setSession(null);
+        localStorage.removeItem('auth_token');
+      } finally {
         setIsLoading(false);
       }
-    });
+    };
+
+    initializeAuth();
 
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
@@ -220,13 +264,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const signOut = async () => {
-    const { error } = await supabase.auth.signOut();
-    if (error) throw error;
+    try {
+      await supabase.auth.signOut();
+    } catch (error) {
+      console.error('Sign out error:', error);
+    }
+    // Always clear local state even if supabase signout fails
     setUser(null);
+    setSupabaseUser(null);
+    setSession(null);
     setIsNewUser(false);
     setShowWalletPopup(false);
     setIsAdmin(false);
     localStorage.removeItem('auth_token');
+    // Clear any other cached data
+    localStorage.removeItem('gimme_ai_chat_sessions');
   };
 
   return (
