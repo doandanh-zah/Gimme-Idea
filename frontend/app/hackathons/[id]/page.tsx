@@ -302,37 +302,35 @@ export default function HackathonDashboard({ params }: { params: { id: string } 
         </div>
       </div>
 
-      {/* Mobile Header */}
-      <div className="md:hidden fixed top-0 left-0 right-0 flex items-center justify-between p-4 bg-surface/95 backdrop-blur border-b border-white/10 z-50 h-16">
-         <div className="flex items-center gap-2 text-white font-quantico font-bold text-lg">
-            <div className="w-8 h-8 bg-gradient-to-br from-gold to-yellow-600 rounded flex items-center justify-center text-black text-xs">H</div>
-            HackHub
-         </div>
-         <button onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)} className="p-2 text-white">
-            {isMobileMenuOpen ? <X /> : <MenuIcon />}
-         </button>
-      </div>
+
 
       {/* Mobile Menu Backdrop */}
       {isMobileMenuOpen && (
         <div 
-            className="fixed inset-0 z-40 bg-black/80 backdrop-blur-sm md:hidden"
+            className="fixed inset-0 z-[60] bg-black/80 backdrop-blur-sm md:hidden"
             onClick={() => setIsMobileMenuOpen(false)}
         />
       )}
 
-      <div className="flex-1 flex overflow-hidden relative pt-16 md:pt-0">
+      <div className="flex-1 flex overflow-hidden relative pt-20 md:pt-24">
         {/* Sidebar */}
         <aside className={`
-            fixed inset-y-0 left-0 z-50 w-64 bg-[#0a0a0a] border-r border-white/10 flex flex-col transform transition-transform duration-300 md:translate-x-0 md:relative md:bg-transparent md:border-white/5 md:z-auto md:w-56
+            fixed inset-y-0 left-0 z-[70] w-64 bg-[#0a0a0a] border-r border-white/10 flex flex-col transform transition-transform duration-300 md:translate-x-0 md:relative md:bg-transparent md:border-white/5 md:z-auto md:w-56
             ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'}
         `}>
-          <div className="p-4 hidden md:block">
-             <div className="flex items-center gap-2 text-white font-quantico font-bold text-lg mb-1">
-                <div className="w-8 h-8 bg-gradient-to-br from-gold to-yellow-600 rounded flex items-center justify-center text-black text-xs">H</div>
-                HackHub
+          <div className="p-4 flex flex-col gap-6">
+             <Link href="/home" className="flex items-center gap-2 text-gray-500 hover:text-gold transition-colors group">
+                <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
+                <span className="text-[10px] font-bold uppercase tracking-[0.2em]">Back to Hub</span>
+             </Link>
+
+             <div className="hidden md:block">
+                <div className="flex items-center gap-2 text-white font-quantico font-bold text-lg mb-1">
+                   <div className="w-8 h-8 bg-gradient-to-br from-gold to-yellow-600 rounded flex items-center justify-center text-black text-xs">H</div>
+                   HackHub
+                </div>
+                <p className="text-[10px] text-gray-500 uppercase tracking-widest pl-10">Workspace</p>
              </div>
-             <p className="text-[10px] text-gray-500 uppercase tracking-widest pl-10">Workspace</p>
           </div>
           <nav className="flex-1 px-3 space-y-1 overflow-y-auto pt-4 md:pt-0">
             <div className="text-[10px] text-gray-500 font-bold uppercase tracking-wider px-2 mb-2 mt-2">Menu</div>
