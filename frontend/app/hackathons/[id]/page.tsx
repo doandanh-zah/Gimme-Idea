@@ -75,11 +75,12 @@ export default function HackathonDashboard({ params }: { params: { id: string } 
    const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
    // Submission State
-   const [submissionStep, setSubmissionStep] = useState<'initial' | 'details' | 'completed'>('initial');
+   const [submissionStep, setSubmissionStep] = useState<'list' | 'view' | 'edit' | 'new'>('list');
    const [selectedIdeaId, setSelectedIdeaId] = useState<string | null>(null);
    const [submissionForm, setSubmissionForm] = useState({ repoUrl: '', videoUrl: '', notes: '' });
    const [isImportModalOpen, setIsImportModalOpen] = useState(false);
    const [importedIdeas, setImportedIdeas] = useState<Project[]>([]);
+   const [isEditMode, setIsEditMode] = useState(false);
 
    // Ideas List State
    const [ideasSearchQuery, setIdeasSearchQuery] = useState('');
@@ -810,82 +811,89 @@ export default function HackathonDashboard({ params }: { params: { id: string } 
 
 
                                  case 'submission':
+                                    // Mock submitted ideas with submission details
+                                    const submittedIdeas = allIdeas.map(idea => ({
+                                       ...idea,
+                                       submittedAt: new Date(Date.now() - Math.random() * 7 * 24 * 60 * 60 * 1000).toISOString(),
+                                       videoUrl: 'https://youtube.com/watch?v=example',
+                                       deckUrl: 'https://docs.google.com/presentation/d/example',
+                                       notes: 'This is a revolutionary idea that will change the future of education.',
+                                       status: 'submitted' as const
+                                    }));
+                                    const selectedSubmission = selectedIdeaId ? submittedIdeas.find(s => s.id === selectedIdeaId) : null;
+
                                     return (
                                        <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 md:gap-6 h-full overflow-y-auto md:overflow-hidden pb-6 md:pb-0">
                                           {/* LEFT COLUMN: Submission Process (Span 8) */}
                                           <div className="lg:col-span-8 flex flex-col h-auto lg:h-full lg:overflow-y-auto pr-0 lg:pr-2 order-1">
 
-                                             {/* INITIAL STATE: Show ideas list or empty state */}
-                                             {submissionStep === 'initial' && (
+                                             {/* LIST STATE: Show submitted ideas */}
+                                             {submissionStep === 'list' && (
                                                 <div className="space-y-6 h-full">
                                                    {/* Header with actions */}
                                                    <div className="bg-surface border border-white/5 rounded-xl p-6">
                                                       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                                                          <div>
                                                             <h2 className="text-xl font-bold text-white mb-1 font-quantico flex items-center gap-2">
-                                                               <Sparkles className="w-5 h-5 text-gold" />
-                                                               My Hackathon Ideas
+                                                               <Send className="w-5 h-5 text-gold" />
+                                                               My Submissions
                                                             </h2>
-                                                            <p className="text-gray-400 text-xs">Select an idea to submit or create a new one for this hackathon.</p>
+                                                            <p className="text-gray-400 text-xs">View and manage your submitted ideas for this hackathon.</p>
                                                          </div>
                                                          <div className="flex items-center gap-2 shrink-0">
                                                             <button
-                                                               onClick={() => setIsImportModalOpen(true)}
-                                                               className="px-4 py-2.5 bg-white/5 hover:bg-white/10 border border-white/10 hover:border-white/20 rounded-lg text-white text-xs font-bold transition-all flex items-center gap-2"
-                                                            >
-                                                               <FileUp className="w-3.5 h-3.5" /> Import from GimmeIdea
-                                                            </button>
-                                                            <button
-                                                               onClick={() => openSubmitModal('idea')}
+                                                               onClick={() => {
+                                                                  setSelectedIdeaId(null);
+                                                                  setSubmissionForm({ repoUrl: '', videoUrl: '', notes: '' });
+                                                                  setSubmissionStep('new');
+                                                               }}
                                                                className="px-4 py-2.5 bg-gradient-to-r from-gold to-yellow-600 text-black font-bold rounded-lg hover:shadow-[0_0_20px_rgba(255,215,0,0.2)] transition-all flex items-center gap-2 text-xs"
                                                             >
-                                                               <Plus className="w-3.5 h-3.5" /> Create New
+                                                               <Plus className="w-3.5 h-3.5" /> Submit New Idea
                                                             </button>
                                                          </div>
                                                       </div>
                                                    </div>
 
-                                                   {/* Ideas Grid or Empty State */}
-                                                   {allIdeas.length === 0 ? (
+                                                   {/* Submitted Ideas Grid or Empty State */}
+                                                   {submittedIdeas.length === 0 ? (
                                                       <div className="flex-1 flex flex-col items-center justify-center text-center p-8 bg-surface border border-white/5 rounded-xl relative overflow-hidden min-h-[400px]">
                                                          <div className="absolute inset-0 bg-gradient-to-b from-gold/5 to-transparent pointer-events-none" />
                                                          <div className="relative z-10 max-w-lg">
                                                             <div className="w-20 h-20 mx-auto mb-6 bg-gold/10 rounded-full flex items-center justify-center border border-gold/30">
                                                                <Lightbulb className="w-10 h-10 text-gold" />
                                                             </div>
-                                                            <h3 className="text-xl font-bold text-white mb-3 font-quantico">No Ideas Yet</h3>
+                                                            <h3 className="text-xl font-bold text-white mb-3 font-quantico">No Submissions Yet</h3>
                                                             <p className="text-gray-400 mb-6 leading-relaxed text-sm">
-                                                               Start by creating a new idea for this hackathon or import one from your GimmeIdea profile.
+                                                               You haven't submitted any ideas to this hackathon yet. Start by submitting your first idea!
                                                             </p>
-                                                            <div className="flex flex-col sm:flex-row gap-3 justify-center">
-                                                               <button
-                                                                  onClick={() => openSubmitModal('idea')}
-                                                                  className="px-5 py-3 bg-gradient-to-r from-gold to-yellow-600 text-black font-bold rounded-lg hover:shadow-[0_0_20px_rgba(255,215,0,0.2)] transition-all flex items-center justify-center gap-2 text-sm"
-                                                               >
-                                                                  <Plus className="w-4 h-4" /> Create New Idea
-                                                               </button>
-                                                               <button
-                                                                  onClick={() => setIsImportModalOpen(true)}
-                                                                  className="px-5 py-3 bg-white/10 hover:bg-white/15 text-white font-bold rounded-lg border border-white/10 hover:border-white/20 transition-all flex items-center justify-center gap-2 text-sm"
-                                                               >
-                                                                  <FileUp className="w-4 h-4" /> Import from GimmeIdea
-                                                               </button>
-                                                            </div>
+                                                            <button
+                                                               onClick={() => {
+                                                                  setSelectedIdeaId(null);
+                                                                  setSubmissionForm({ repoUrl: '', videoUrl: '', notes: '' });
+                                                                  setSubmissionStep('new');
+                                                               }}
+                                                               className="px-5 py-3 bg-gradient-to-r from-gold to-yellow-600 text-black font-bold rounded-lg hover:shadow-[0_0_20px_rgba(255,215,0,0.2)] transition-all flex items-center justify-center gap-2 text-sm mx-auto"
+                                                            >
+                                                               <Plus className="w-4 h-4" /> Submit Your First Idea
+                                                            </button>
                                                          </div>
                                                       </div>
                                                    ) : (
                                                       <div className="grid gap-4">
                                                          <div className="text-[10px] font-bold text-gray-500 uppercase tracking-widest ml-1">
-                                                            {allIdeas.length} Idea{allIdeas.length > 1 ? 's' : ''} Available
+                                                            {submittedIdeas.length} Submitted Idea{submittedIdeas.length > 1 ? 's' : ''}
                                                          </div>
-                                                         {allIdeas.map(idea => (
+                                                         {submittedIdeas.map(idea => (
                                                             <div
                                                                key={idea.id}
-                                                               className={`group relative p-5 rounded-xl border transition-all cursor-pointer ${selectedIdeaId === idea.id ? 'bg-gold/10 border-gold shadow-lg shadow-gold/5' : 'bg-black/20 border-white/5 hover:border-white/20 hover:bg-white/5'}`}
-                                                               onClick={() => setSelectedIdeaId(idea.id)}
+                                                               className="group relative p-5 rounded-xl border bg-black/20 border-white/5 hover:border-gold/30 hover:bg-gold/5 transition-all"
                                                             >
                                                                <div className="flex justify-between items-start mb-3">
                                                                   <div className="flex items-center gap-2">
+                                                                     <span className="bg-green-500/10 border border-green-500/30 px-2 py-0.5 rounded text-[10px] text-green-400 font-bold flex items-center gap-1">
+                                                                        <CheckCircle2 className="w-2.5 h-2.5" /> Submitted
+                                                                     </span>
                                                                      <span className="bg-white/5 border border-white/10 px-2 py-0.5 rounded text-[10px] text-gray-400 font-mono">{idea.category}</span>
                                                                      {'isImported' in idea && idea.isImported && (
                                                                         <span className="bg-gold/10 border border-gold/30 px-2 py-0.5 rounded text-[10px] text-gold font-bold flex items-center gap-1">
@@ -893,30 +901,54 @@ export default function HackathonDashboard({ params }: { params: { id: string } 
                                                                         </span>
                                                                      )}
                                                                   </div>
-                                                                  <div className={`w-5 h-5 rounded-full border flex items-center justify-center transition-colors ${selectedIdeaId === idea.id ? 'bg-gold border-gold' : 'border-gray-600 group-hover:border-gray-400'}`}>
-                                                                     {selectedIdeaId === idea.id && <CheckCircle2 className="w-3 h-3 text-black" />}
+                                                                  {/* Action Buttons */}
+                                                                  <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                                     <button
+                                                                        onClick={(e) => {
+                                                                           e.stopPropagation();
+                                                                           setSelectedIdeaId(idea.id);
+                                                                           setSubmissionStep('view');
+                                                                        }}
+                                                                        className="p-2 rounded-lg bg-white/5 hover:bg-white/10 text-gray-400 hover:text-white transition-colors"
+                                                                        title="View Details"
+                                                                     >
+                                                                        <FileText className="w-3.5 h-3.5" />
+                                                                     </button>
+                                                                     <button
+                                                                        onClick={(e) => {
+                                                                           e.stopPropagation();
+                                                                           setSelectedIdeaId(idea.id);
+                                                                           setSubmissionForm({
+                                                                              videoUrl: idea.videoUrl || '',
+                                                                              repoUrl: idea.deckUrl || '',
+                                                                              notes: idea.notes || ''
+                                                                           });
+                                                                           setSubmissionStep('edit');
+                                                                        }}
+                                                                        className="p-2 rounded-lg bg-white/5 hover:bg-gold/20 text-gray-400 hover:text-gold transition-colors"
+                                                                        title="Edit Submission"
+                                                                     >
+                                                                        <Edit3 className="w-3.5 h-3.5" />
+                                                                     </button>
                                                                   </div>
                                                                </div>
-                                                               <h3 className="text-lg font-bold text-white mb-2 group-hover:text-gold transition-colors">{idea.title}</h3>
+                                                               <h3
+                                                                  className="text-lg font-bold text-white mb-2 group-hover:text-gold transition-colors cursor-pointer"
+                                                                  onClick={() => {
+                                                                     setSelectedIdeaId(idea.id);
+                                                                     setSubmissionStep('view');
+                                                                  }}
+                                                               >
+                                                                  {idea.title}
+                                                               </h3>
                                                                <p className="text-sm text-gray-500 line-clamp-2 leading-relaxed mb-4">{idea.description}</p>
                                                                <div className="flex items-center gap-4 text-[10px] font-bold text-gray-600 uppercase tracking-tighter">
                                                                   <span className="flex items-center gap-1"><ThumbsUp className="w-3 h-3" /> {idea.votes} Votes</span>
                                                                   <span className="text-gray-800">•</span>
-                                                                  <span>{'isImported' in idea && idea.isImported ? 'From GimmeIdea' : 'Created for Hackathon'}</span>
+                                                                  <span>Submitted {format(new Date(idea.submittedAt), 'MMM dd, HH:mm')}</span>
                                                                </div>
                                                             </div>
                                                          ))}
-
-                                                         {/* Continue Button */}
-                                                         <div className="flex justify-end pt-4 sticky bottom-0 bg-background/80 backdrop-blur-sm pb-4">
-                                                            <button
-                                                               disabled={!selectedIdeaId}
-                                                               onClick={() => setSubmissionStep('details')}
-                                                               className={`px-8 py-3 rounded-xl font-bold text-sm uppercase tracking-widest transition-all flex items-center gap-3 ${!selectedIdeaId ? 'bg-gray-800 text-gray-500 cursor-not-allowed' : 'bg-gold text-black hover:bg-gold/90 shadow-lg shadow-gold/10'}`}
-                                                            >
-                                                               Continue to Submit <ChevronRight className="w-4 h-4" />
-                                                            </button>
-                                                         </div>
                                                       </div>
                                                    )}
 
@@ -924,12 +956,113 @@ export default function HackathonDashboard({ params }: { params: { id: string } 
                                                 </div>
                                              )}
 
-                                             {submissionStep === 'details' && (
+                                             {/* VIEW STATE: View submission details */}
+                                             {submissionStep === 'view' && selectedSubmission && (
                                                 <div className="space-y-6">
                                                    <div className="bg-surface border border-white/5 rounded-xl p-6">
-                                                      <button onClick={() => setSubmissionStep('initial')} className="text-xs text-gray-500 hover:text-white mb-4 flex items-center gap-1"><ArrowLeft className="w-3 h-3" /> Back</button>
-                                                      <h2 className="text-xl font-bold text-white mb-2 font-quantico">Final Details</h2>
-                                                      <p className="text-gray-400 text-sm">Add a pitch video and any supporting materials to complete your submission.</p>
+                                                      <button onClick={() => { setSubmissionStep('list'); setSelectedIdeaId(null); }} className="text-xs text-gray-500 hover:text-white mb-4 flex items-center gap-1"><ArrowLeft className="w-3 h-3" /> Back to Submissions</button>
+                                                      <div className="flex justify-between items-start">
+                                                         <div>
+                                                            <div className="flex items-center gap-2 mb-2">
+                                                               <span className="bg-green-500/10 border border-green-500/30 px-2 py-0.5 rounded text-[10px] text-green-400 font-bold flex items-center gap-1">
+                                                                  <CheckCircle2 className="w-2.5 h-2.5" /> Submitted
+                                                               </span>
+                                                               <span className="bg-white/5 border border-white/10 px-2 py-0.5 rounded text-[10px] text-gray-400 font-mono">{selectedSubmission.category}</span>
+                                                            </div>
+                                                            <h2 className="text-xl font-bold text-white mb-1 font-quantico">{selectedSubmission.title}</h2>
+                                                            <p className="text-gray-400 text-sm">{selectedSubmission.description}</p>
+                                                         </div>
+                                                         <button
+                                                            onClick={() => {
+                                                               setSubmissionForm({
+                                                                  videoUrl: selectedSubmission.videoUrl || '',
+                                                                  repoUrl: selectedSubmission.deckUrl || '',
+                                                                  notes: selectedSubmission.notes || ''
+                                                               });
+                                                               setSubmissionStep('edit');
+                                                            }}
+                                                            className="px-4 py-2 bg-gold/10 hover:bg-gold/20 border border-gold/30 rounded-lg text-gold text-xs font-bold transition-all flex items-center gap-2"
+                                                         >
+                                                            <Edit3 className="w-3 h-3" /> Edit
+                                                         </button>
+                                                      </div>
+                                                   </div>
+
+                                                   {/* Submission Details */}
+                                                   <div className="bg-surface border border-white/5 rounded-xl p-6 space-y-5">
+                                                      <h3 className="text-sm font-bold text-white uppercase tracking-wider flex items-center gap-2">
+                                                         <FileText className="w-4 h-4 text-gold" /> Submission Details
+                                                      </h3>
+
+                                                      <div className="space-y-4">
+                                                         <div>
+                                                            <label className="block text-[10px] font-bold text-gray-500 uppercase mb-1.5">Pitch Video</label>
+                                                            <a href={selectedSubmission.videoUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-sm text-gold hover:underline">
+                                                               <Youtube className="w-4 h-4" />
+                                                               {selectedSubmission.videoUrl}
+                                                            </a>
+                                                         </div>
+
+                                                         {selectedSubmission.deckUrl && (
+                                                            <div>
+                                                               <label className="block text-[10px] font-bold text-gray-500 uppercase mb-1.5">Pitch Deck</label>
+                                                               <a href={selectedSubmission.deckUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-sm text-gold hover:underline">
+                                                                  <FileText className="w-4 h-4" />
+                                                                  {selectedSubmission.deckUrl}
+                                                               </a>
+                                                            </div>
+                                                         )}
+
+                                                         {selectedSubmission.notes && (
+                                                            <div>
+                                                               <label className="block text-[10px] font-bold text-gray-500 uppercase mb-1.5">Judging Notes</label>
+                                                               <p className="text-sm text-gray-300 bg-black/20 rounded-lg p-3 border border-white/5">{selectedSubmission.notes}</p>
+                                                            </div>
+                                                         )}
+                                                      </div>
+                                                   </div>
+
+                                                   {/* Stats */}
+                                                   <div className="grid grid-cols-3 gap-3">
+                                                      <div className="bg-surface border border-white/5 rounded-xl p-4 text-center">
+                                                         <div className="text-2xl font-bold text-gold font-mono">{selectedSubmission.votes}</div>
+                                                         <div className="text-[10px] text-gray-500 uppercase tracking-wider">Votes</div>
+                                                      </div>
+                                                      <div className="bg-surface border border-white/5 rounded-xl p-4 text-center">
+                                                         <div className="text-2xl font-bold text-white font-mono">#{Math.floor(Math.random() * 20) + 1}</div>
+                                                         <div className="text-[10px] text-gray-500 uppercase tracking-wider">Rank</div>
+                                                      </div>
+                                                      <div className="bg-surface border border-white/5 rounded-xl p-4 text-center">
+                                                         <div className="text-2xl font-bold text-white font-mono">{Math.floor(Math.random() * 100) + 50}</div>
+                                                         <div className="text-[10px] text-gray-500 uppercase tracking-wider">Views</div>
+                                                      </div>
+                                                   </div>
+                                                </div>
+                                             )}
+
+                                             {/* EDIT STATE: Edit submission */}
+                                             {submissionStep === 'edit' && selectedSubmission && (
+                                                <div className="space-y-6">
+                                                   <div className="bg-surface border border-white/5 rounded-xl p-6">
+                                                      <button onClick={() => setSubmissionStep('view')} className="text-xs text-gray-500 hover:text-white mb-4 flex items-center gap-1"><ArrowLeft className="w-3 h-3" /> Back</button>
+                                                      <h2 className="text-xl font-bold text-white mb-1 font-quantico flex items-center gap-2">
+                                                         <Edit3 className="w-5 h-5 text-gold" />
+                                                         Edit Submission
+                                                      </h2>
+                                                      <p className="text-gray-400 text-sm">Update your pitch video and supporting materials.</p>
+                                                   </div>
+
+                                                   {/* Selected Idea Info */}
+                                                   <div className="bg-gold/5 border border-gold/20 rounded-xl p-4">
+                                                      <div className="flex items-center gap-3">
+                                                         <div className="w-10 h-10 bg-gold/20 rounded-lg flex items-center justify-center">
+                                                            <Lightbulb className="w-5 h-5 text-gold" />
+                                                         </div>
+                                                         <div>
+                                                            <h4 className="text-sm font-bold text-white">{selectedSubmission.title}</h4>
+                                                            <p className="text-xs text-gray-400">{selectedSubmission.category}</p>
+                                                         </div>
+                                                      </div>
                                                    </div>
 
                                                    <div className="bg-surface border border-white/5 rounded-xl p-6 space-y-4">
@@ -954,7 +1087,7 @@ export default function HackathonDashboard({ params }: { params: { id: string } 
                                                             <FileText className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
                                                             <input
                                                                type="text"
-                                                               value={submissionForm.repoUrl} // Reusing repoUrl state for deckUrl to avoid complex state changes
+                                                               value={submissionForm.repoUrl}
                                                                onChange={e => setSubmissionForm({ ...submissionForm, repoUrl: e.target.value })}
                                                                placeholder="https://docs.google.com/presentation/..."
                                                                className="w-full bg-black/20 border border-white/10 rounded-lg pl-10 pr-4 py-2.5 text-white text-sm focus:border-gold/50 outline-none transition-colors"
@@ -973,38 +1106,65 @@ export default function HackathonDashboard({ params }: { params: { id: string } 
                                                       </div>
                                                    </div>
 
-                                                   <div className="flex justify-end pt-4">
+                                                   <div className="flex justify-end gap-3 pt-4">
+                                                      <button
+                                                         onClick={() => setSubmissionStep('view')}
+                                                         className="px-6 py-3 bg-white/5 hover:bg-white/10 text-white rounded-lg text-sm font-bold transition-colors"
+                                                      >
+                                                         Cancel
+                                                      </button>
                                                       <button
                                                          disabled={!submissionForm.videoUrl}
-                                                         onClick={() => setSubmissionStep('completed')}
-                                                         className={`px-8 py-3 rounded-lg font-bold text-sm transition-colors flex items-center gap-2 ${(!submissionForm.videoUrl) ? 'bg-gray-800 text-gray-500 cursor-not-allowed' : 'bg-gold text-black hover:bg-gold/90'}`}
+                                                         onClick={() => {
+                                                            // Save changes and go back to view
+                                                            setSubmissionStep('view');
+                                                         }}
+                                                         className={`px-6 py-3 rounded-lg font-bold text-sm transition-colors flex items-center gap-2 ${(!submissionForm.videoUrl) ? 'bg-gray-800 text-gray-500 cursor-not-allowed' : 'bg-gold text-black hover:bg-gold/90'}`}
                                                       >
-                                                         <Send className="w-4 h-4" /> Submit Idea
+                                                         <CheckCircle2 className="w-4 h-4" /> Save Changes
                                                       </button>
                                                    </div>
                                                 </div>
                                              )}
 
-                                             {submissionStep === 'completed' && (
-                                                <div className="h-full flex flex-col items-center justify-center text-center p-8 bg-surface border border-white/5 rounded-xl relative overflow-hidden">
-                                                   <div className="absolute inset-0 bg-gradient-to-b from-green-500/5 to-transparent pointer-events-none" />
-                                                   <div className="relative z-10">
-                                                      <div className="w-24 h-24 bg-green-500/20 rounded-full flex items-center justify-center mb-6 mx-auto border border-green-500/30">
-                                                         <CheckCircle2 className="w-12 h-12 text-green-500" />
-                                                      </div>
-                                                      <h2 className="text-2xl md:text-3xl font-bold text-white mb-3 font-quantico">Idea Submitted Successfully!</h2>
-                                                      <p className="text-gray-400 max-w-md mb-8 text-sm">
-                                                         🎉 Congratulations! Your idea has been submitted to the hackathon. You can edit your submission anytime before the deadline.
-                                                      </p>
-                                                      <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                                                         <button onClick={() => setSubmissionStep('details')} className="px-6 py-3 bg-white/10 hover:bg-white/20 text-white rounded-xl text-sm font-bold transition-colors flex items-center justify-center gap-2">
-                                                            <FileText className="w-4 h-4" /> Edit Submission
-                                                         </button>
-                                                         <button onClick={() => setActiveSection('overview')} className="px-6 py-3 bg-gold text-black hover:bg-gold/90 rounded-xl text-sm font-bold transition-colors flex items-center justify-center gap-2">
-                                                            <LayoutDashboard className="w-4 h-4" /> Back to Overview
-                                                         </button>
-                                                      </div>
+                                             {/* NEW STATE: Submit new idea */}
+                                             {submissionStep === 'new' && (
+                                                <div className="space-y-6">
+                                                   <div className="bg-surface border border-white/5 rounded-xl p-6">
+                                                      <button onClick={() => setSubmissionStep('list')} className="text-xs text-gray-500 hover:text-white mb-4 flex items-center gap-1"><ArrowLeft className="w-3 h-3" /> Back to Submissions</button>
+                                                      <h2 className="text-xl font-bold text-white mb-1 font-quantico flex items-center gap-2">
+                                                         <Plus className="w-5 h-5 text-gold" />
+                                                         Submit New Idea
+                                                      </h2>
+                                                      <p className="text-gray-400 text-sm">Create a new idea or import from your GimmeIdea profile.</p>
                                                    </div>
+
+                                                   {/* Action Cards */}
+                                                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                      <button
+                                                         onClick={() => openSubmitModal('idea')}
+                                                         className="group p-6 bg-surface border border-white/5 hover:border-gold/30 rounded-xl text-left transition-all hover:bg-gold/5"
+                                                      >
+                                                         <div className="w-12 h-12 bg-gold/10 rounded-xl flex items-center justify-center mb-4 group-hover:bg-gold/20 transition-colors">
+                                                            <Sparkles className="w-6 h-6 text-gold" />
+                                                         </div>
+                                                         <h3 className="text-lg font-bold text-white mb-2 group-hover:text-gold transition-colors">Create New Idea</h3>
+                                                         <p className="text-sm text-gray-500">Start fresh with a brand new idea specifically for this hackathon.</p>
+                                                      </button>
+
+                                                      <button
+                                                         onClick={() => setIsImportModalOpen(true)}
+                                                         className="group p-6 bg-surface border border-white/5 hover:border-gold/30 rounded-xl text-left transition-all hover:bg-gold/5"
+                                                      >
+                                                         <div className="w-12 h-12 bg-white/5 rounded-xl flex items-center justify-center mb-4 group-hover:bg-gold/10 transition-colors">
+                                                            <FileUp className="w-6 h-6 text-gray-400 group-hover:text-gold transition-colors" />
+                                                         </div>
+                                                         <h3 className="text-lg font-bold text-white mb-2 group-hover:text-gold transition-colors">Import from GimmeIdea</h3>
+                                                         <p className="text-sm text-gray-500">Use an existing idea from your GimmeIdea profile.</p>
+                                                      </button>
+                                                   </div>
+
+                                                   <p className="text-xs text-gray-500 text-center">Deadline: {eventEndDate && format(new Date(eventEndDate), 'MMM dd, yyyy HH:mm')}</p>
                                                 </div>
                                              )}
                                           </div>
@@ -1012,29 +1172,44 @@ export default function HackathonDashboard({ params }: { params: { id: string } 
                                           {/* RIGHT COLUMN: Sidebar Widgets (Span 4) */}
                                           <div className="lg:col-span-4 flex flex-col gap-4 md:gap-6 h-auto lg:h-full lg:overflow-y-auto pr-0 lg:pr-2 order-2">
 
+                                             {/* Stats Widget */}
+                                             <div className="bg-surface border border-white/5 rounded-xl p-5">
+                                                <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-4 flex items-center gap-2">
+                                                   <Activity className="w-4 h-4" /> Your Stats
+                                                </h3>
+                                                <div className="grid grid-cols-2 gap-3">
+                                                   <div className="bg-black/20 rounded-lg p-3 text-center">
+                                                      <div className="text-xl font-bold text-gold font-mono">{submittedIdeas.length}</div>
+                                                      <div className="text-[10px] text-gray-500 uppercase">Submitted</div>
+                                                   </div>
+                                                   <div className="bg-black/20 rounded-lg p-3 text-center">
+                                                      <div className="text-xl font-bold text-white font-mono">{submittedIdeas.reduce((sum, i) => sum + i.votes, 0)}</div>
+                                                      <div className="text-[10px] text-gray-500 uppercase">Total Votes</div>
+                                                   </div>
+                                                </div>
+                                             </div>
+
                                              {/* Checklist Widget */}
                                              <div className="bg-surface border border-white/5 rounded-xl p-5">
                                                 <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-4 flex items-center gap-2">
-                                                   <CheckSquare className="w-4 h-4" /> Submission Checklist
+                                                   <CheckSquare className="w-4 h-4" /> Submission Tips
                                                 </h3>
                                                 <div className="space-y-3">
-                                                   <div className={`flex items-center gap-3 text-sm ${selectedIdeaId ? 'text-green-400' : 'text-gray-500'}`}>
-                                                      <div className={`w-4 h-4 rounded-full border flex items-center justify-center ${selectedIdeaId ? 'border-green-400 bg-green-400/20' : 'border-gray-600'}`}>
-                                                         {selectedIdeaId && <CheckCircle2 className="w-3 h-3" />}
+                                                   <div className="flex items-center gap-3 text-sm text-green-400">
+                                                      <div className="w-4 h-4 rounded-full border flex items-center justify-center border-green-400 bg-green-400/20">
+                                                         <CheckCircle2 className="w-3 h-3" />
                                                       </div>
-                                                      <span>Select an Idea</span>
+                                                      <span>Add pitch video</span>
                                                    </div>
-                                                   <div className={`flex items-center gap-3 text-sm ${submissionForm.videoUrl ? 'text-green-400' : 'text-gray-500'}`}>
-                                                      <div className={`w-4 h-4 rounded-full border flex items-center justify-center ${submissionForm.videoUrl ? 'border-green-400 bg-green-400/20' : 'border-gray-600'}`}>
-                                                         {submissionForm.videoUrl && <CheckCircle2 className="w-3 h-3" />}
+                                                   <div className="flex items-center gap-3 text-sm text-gray-500">
+                                                      <div className="w-4 h-4 rounded-full border flex items-center justify-center border-gray-600">
                                                       </div>
-                                                      <span>Pitch Video Link</span>
+                                                      <span>Include pitch deck (optional)</span>
                                                    </div>
-                                                   <div className={`flex items-center gap-3 text-sm ${submissionForm.repoUrl ? 'text-green-400' : 'text-gray-500'}`}>
-                                                      <div className={`w-4 h-4 rounded-full border flex items-center justify-center ${submissionForm.repoUrl ? 'border-green-400 bg-green-400/20' : 'border-gray-600'}`}>
-                                                         {submissionForm.repoUrl && <CheckCircle2 className="w-3 h-3" />}
+                                                   <div className="flex items-center gap-3 text-sm text-gray-500">
+                                                      <div className="w-4 h-4 rounded-full border flex items-center justify-center border-gray-600">
                                                       </div>
-                                                      <span>Pitch Deck (Optional)</span>
+                                                      <span>Add judging notes</span>
                                                    </div>
                                                 </div>
                                              </div>
@@ -1657,7 +1832,7 @@ export default function HackathonDashboard({ params }: { params: { id: string } 
                                                 ))}
                                              </div>
                                           )}
-                                       </div>
+z                                       </div>
                                     );
 
                                  default:
