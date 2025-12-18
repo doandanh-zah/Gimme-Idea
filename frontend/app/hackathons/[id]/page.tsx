@@ -130,8 +130,16 @@ export default function HackathonDashboard({ params }: { params: { id: string } 
    const [userTeam, setUserTeam] = useState<any>(null);
    const [isCreatingTeam, setIsCreatingTeam] = useState(false);
    const [newTeamData, setNewTeamData] = useState({ name: '' });
+   const [isRegistered, setIsRegistered] = useState(false);
    const [countdown, setCountdown] = useState({ text: 'Calculating...', label: 'Loading...' });
 
+   const handleRegister = () => {
+      // Mock registration logic
+      const confirm = window.confirm("Confirm registration for this Hackathon?");
+      if (confirm) {
+         setIsRegistered(true);
+      }
+   };
    // Handle inviting a user (mock functionality)
    const handleInviteUser = (userId: string) => {
       const invitedUser = MOCK_AVAILABLE_USERS.find(user => user.id === userId);
@@ -241,17 +249,18 @@ export default function HackathonDashboard({ params }: { params: { id: string } 
          milestones.sort((a, b) => a.date.getTime() - b.date.getTime());
          const nextStep = milestones.find(m => m.date > currentNow);
 
-               if (nextStep) {
-                 const diff = nextStep.date.getTime() - currentNow.getTime();
-                 const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-                 const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-                 const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-                 const seconds = Math.floor((diff % (1000 * 60)) / 1000);
-                 setCountdown({
-                     text: `${String(days).padStart(2, '0')}D : ${String(hours).padStart(2, '0')}H : ${String(minutes).padStart(2, '0')}M : ${String(seconds).padStart(2, '0')}S`,
-                     label: `Next: ${nextStep.title}`
-                 });
-               } else {            setCountdown({ text: 'Event Ended', label: 'Status' });
+         if (nextStep) {
+            const diff = nextStep.date.getTime() - currentNow.getTime();
+            const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+            const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+            const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+            const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+            setCountdown({
+               text: `${String(days).padStart(2, '0')}D : ${String(hours).padStart(2, '0')}H : ${String(minutes).padStart(2, '0')}M : ${String(seconds).padStart(2, '0')}S`,
+               label: `Next: ${nextStep.title}`
+            });
+         } else {
+            setCountdown({ text: 'Event Ended', label: 'Status' });
          }
       };
       updateTimer();
@@ -326,7 +335,7 @@ export default function HackathonDashboard({ params }: { params: { id: string } 
                   <div className="hidden md:block">
                      <div className="flex items-center gap-2 text-white font-quantico font-bold text-lg mb-1">
                         <div className="w-8 h-8 bg-gradient-to-br from-gold to-yellow-600 rounded flex items-center justify-center text-black text-xs">H</div>
-                        HackHub
+                        HACKATHON
                      </div>
                      <p className="text-[10px] text-gray-500 uppercase tracking-widest pl-10">Workspace</p>
                   </div>
@@ -339,7 +348,7 @@ export default function HackathonDashboard({ params }: { params: { id: string } 
                   <div className="my-4 border-t border-white/5" />
                   <div className="text-[10px] text-gray-500 font-bold uppercase tracking-wider px-2 mb-2">My Zone</div>
                   <SidebarItem id="submission" label="Submission" icon={Send} activeSection={activeSection} setActiveSection={setActiveSection} setIsMobileMenuOpen={setIsMobileMenuOpen} />
-                  <SidebarItem id="project" label="Team" icon={Rocket} activeSection={activeSection} setActiveSection={setActiveSection} setIsMobileMenuOpen={setIsMobileMenuOpen} />
+                  <SidebarItem id="project" label="Team & Reg" icon={Rocket} activeSection={activeSection} setActiveSection={setActiveSection} setIsMobileMenuOpen={setIsMobileMenuOpen} />
                   <SidebarItem id="resources" label="Resources" icon={BookOpen} activeSection={activeSection} setActiveSection={setActiveSection} setIsMobileMenuOpen={setIsMobileMenuOpen} />
                </nav>
                <div className="p-4 border-t border-white/5 bg-black/20">
@@ -866,8 +875,28 @@ export default function HackathonDashboard({ params }: { params: { id: string } 
                                        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 h-full">
                                           {/* LEFT COLUMN: Team Management (Span 8) */}
                                           <div className="lg:col-span-8 flex flex-col gap-6 h-full overflow-y-auto pr-2 pb-20 md:pb-0">
-                                             {!userTeam ? (
-                                                !isCreatingTeam ? (
+                                             {!isRegistered ? (
+                                                <div className="h-full flex flex-col items-center justify-center text-center p-8 bg-surface border border-white/5 rounded-xl relative overflow-hidden">
+                                                   <div className="absolute inset-0 bg-gradient-to-b from-gold/5 to-transparent pointer-events-none" />
+                                                   <div className="relative z-10 max-w-lg">
+                                                      <div className="w-20 h-20 mx-auto mb-6 bg-gold/10 rounded-full flex items-center justify-center border border-gold/30">
+                                                         <Trophy className="w-10 h-10 text-gold" />
+                                                      </div>
+                                                      <h2 className="text-3xl font-bold text-white mb-4 font-quantico">Join the Hackathon</h2>
+                                                      <p className="text-gray-400 mb-8 leading-relaxed">
+                                                         Register now to access team formation, project submission, and compete for the <strong>{hackathon.prizePool}</strong> prize pool.
+                                                      </p>
+                                                      <button
+                                                         onClick={handleRegister}
+                                                         className="px-8 py-4 bg-gradient-to-r from-gold to-yellow-600 text-black font-bold text-lg rounded-xl hover:shadow-[0_0_30px_rgba(255,215,0,0.3)] hover:scale-105 transition-all flex items-center justify-center gap-3 w-full sm:w-auto mx-auto"
+                                                      >
+                                                         <CheckCircle2 className="w-6 h-6" /> Register Now
+                                                      </button>
+                                                      <p className="text-xs text-gray-500 mt-6">By registering, you agree to the hackathon rules and terms.</p>
+                                                   </div>
+                                                </div>
+                                             ) : (
+                                                !userTeam ? (!isCreatingTeam ? (
                                                    <div className="h-full flex flex-col justify-center max-w-4xl mx-auto w-full">
                                                       {/* Pending Invitations */}
                                                       {pendingInvitations.length > 0 && (
@@ -1000,65 +1029,66 @@ export default function HackathonDashboard({ params }: { params: { id: string } 
                                                       </div>
                                                    </div>
                                                 )
-                                             ) : (
-                                                <div className="space-y-6">
-                                                   {/* Team Header */}
-                                                   <div className="bg-surface border border-white/5 rounded-xl p-6 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                                                      <div>
-                                                         <div className="flex items-center gap-3 mb-1">
-                                                            <h2 className="text-2xl font-bold text-white font-quantico">{userTeam.name}</h2>
-                                                            <span className="bg-gold/20 text-gold text-[10px] px-2 py-0.5 rounded border border-gold/20 uppercase font-bold">Leader</span>
+                                                ) : (
+                                                   <div className="space-y-6">
+                                                      {/* Team Header */}
+                                                      <div className="bg-surface border border-white/5 rounded-xl p-6 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                                                         <div>
+                                                            <div className="flex items-center gap-3 mb-1">
+                                                               <h2 className="text-2xl font-bold text-white font-quantico">{userTeam.name}</h2>
+                                                               <span className="bg-gold/20 text-gold text-[10px] px-2 py-0.5 rounded border border-gold/20 uppercase font-bold">Leader</span>
+                                                            </div>
+                                                            <p className="text-gray-400 text-xs">Team ID: #8823 • Created just now</p>
                                                          </div>
-                                                         <p className="text-gray-400 text-xs">Team ID: #8823 • Created just now</p>
-                                                      </div>
-                                                      <div className="flex gap-2">
-                                                         <button className="p-2 rounded hover:bg-white/10 text-gray-400 hover:text-white transition-colors" title="Settings">
-                                                            <Settings className="w-4 h-4" />
-                                                         </button>
-                                                         <button onClick={() => setUserTeam(null)} className="p-2 rounded hover:bg-red-500/10 text-red-500 transition-colors" title="Leave Team">
-                                                            <LogOut className="w-4 h-4" />
-                                                         </button>
-                                                      </div>
-                                                   </div>
-
-                                                   <div className="grid md:grid-cols-2 gap-6">
-                                                      {/* Members */}
-                                                      <div className="bg-surface border border-white/5 rounded-xl p-6">
-                                                         <h3 className="text-sm font-bold text-white mb-4 flex items-center gap-2 uppercase tracking-wider">
-                                                            <Users className="w-4 h-4 text-gold" /> Team Members
-                                                         </h3>
-                                                         <div className="space-y-3">
-                                                            {userTeam.members.map((member: any, i: number) => (
-                                                               <div key={i} className="flex items-center justify-between p-3 bg-white/5 rounded-lg border border-white/5">
-                                                                  <div className="flex items-center gap-3">
-                                                                     <div className="w-8 h-8 rounded-full bg-gradient-to-br from-purple-500 to-blue-500 flex items-center justify-center text-xs font-bold text-white">
-                                                                        {member.name.charAt(0)}
-                                                                     </div>
-                                                                     <div>
-                                                                        <p className="text-sm font-bold text-white leading-none mb-1">{member.name}</p>
-                                                                        <p className="text-[10px] text-gray-400">{member.role}</p>
-                                                                     </div>
-                                                                  </div>
-                                                                  {member.isLeader && <Trophy className="w-3 h-3 text-gold" />}
-                                                               </div>
-                                                            ))}
-                                                            <button onClick={() => setIsInviteModalOpen(true)} className="w-full py-3 border border-dashed border-white/10 rounded-lg flex items-center justify-center text-gray-500 text-xs gap-2 hover:border-gold/30 hover:text-gold transition-all">
-                                                               <Plus className="w-3 h-3" /> Invite Member
+                                                         <div className="flex gap-2">
+                                                            <button className="p-2 rounded hover:bg-white/10 text-gray-400 hover:text-white transition-colors" title="Settings">
+                                                               <Settings className="w-4 h-4" />
+                                                            </button>
+                                                            <button onClick={() => setUserTeam(null)} className="p-2 rounded hover:bg-red-500/10 text-red-500 transition-colors" title="Leave Team">
+                                                               <LogOut className="w-4 h-4" />
                                                             </button>
                                                          </div>
                                                       </div>
 
-                                                      {/* Chat Placeholder */}
-                                                      <div className="bg-surface border border-white/5 rounded-xl p-6 flex flex-col">
-                                                         <h3 className="text-sm font-bold text-white mb-4 flex items-center gap-2 uppercase tracking-wider">
-                                                            <MessageSquare className="w-4 h-4 text-blue-400" /> Team Chat
-                                                         </h3>
-                                                         <div className="flex-1 bg-black/20 rounded-lg flex items-center justify-center text-gray-600 text-xs italic border border-white/5 min-h-[150px]">
-                                                            Chat feature coming soon...
+                                                      <div className="grid md:grid-cols-2 gap-6">
+                                                         {/* Members */}
+                                                         <div className="bg-surface border border-white/5 rounded-xl p-6">
+                                                            <h3 className="text-sm font-bold text-white mb-4 flex items-center gap-2 uppercase tracking-wider">
+                                                               <Users className="w-4 h-4 text-gold" /> Team Members
+                                                            </h3>
+                                                            <div className="space-y-3">
+                                                               {userTeam.members.map((member: any, i: number) => (
+                                                                  <div key={i} className="flex items-center justify-between p-3 bg-white/5 rounded-lg border border-white/5">
+                                                                     <div className="flex items-center gap-3">
+                                                                        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-purple-500 to-blue-500 flex items-center justify-center text-xs font-bold text-white">
+                                                                           {member.name.charAt(0)}
+                                                                        </div>
+                                                                        <div>
+                                                                           <p className="text-sm font-bold text-white leading-none mb-1">{member.name}</p>
+                                                                           <p className="text-[10px] text-gray-400">{member.role}</p>
+                                                                        </div>
+                                                                     </div>
+                                                                     {member.isLeader && <Trophy className="w-3 h-3 text-gold" />}
+                                                                  </div>
+                                                               ))}
+                                                               <button onClick={() => setIsInviteModalOpen(true)} className="w-full py-3 border border-dashed border-white/10 rounded-lg flex items-center justify-center text-gray-500 text-xs gap-2 hover:border-gold/30 hover:text-gold transition-all">
+                                                                  <Plus className="w-3 h-3" /> Invite Member
+                                                               </button>
+                                                            </div>
+                                                         </div>
+
+                                                         {/* Chat Placeholder */}
+                                                         <div className="bg-surface border border-white/5 rounded-xl p-6 flex flex-col">
+                                                            <h3 className="text-sm font-bold text-white mb-4 flex items-center gap-2 uppercase tracking-wider">
+                                                               <MessageSquare className="w-4 h-4 text-blue-400" /> Team Chat
+                                                            </h3>
+                                                            <div className="flex-1 bg-black/20 rounded-lg flex items-center justify-center text-gray-600 text-xs italic border border-white/5 min-h-[150px]">
+                                                               Chat feature coming soon...
+                                                            </div>
                                                          </div>
                                                       </div>
                                                    </div>
-                                                </div>
+                                                )
                                              )}
                                           </div>
 
