@@ -385,7 +385,7 @@ export default function HackathonDashboard({ params }: { params: { id: string } 
                   <span className="text-[9px] font-medium">Ideas</span>
                </button>
 
-               {/* Submission Tab */}}
+               {/* Submission Tab */}
                <button
                   onClick={() => setActiveSection('submission')}
                   className={`flex flex-col items-center gap-1 px-3 py-2 transition-colors ${activeSection === 'submission' ? 'text-gold' : 'text-gray-500 hover:text-white'}`}
