@@ -75,7 +75,7 @@ export default function HackathonDashboard({ params }: { params: { id: string } 
    const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
    // Submission State
-   const [submissionStep, setSubmissionStep] = useState<'select' | 'details' | 'completed'>('select');
+   const [submissionStep, setSubmissionStep] = useState<'initial' | 'select' | 'details' | 'completed'>('initial');
    const [selectedIdeaId, setSelectedIdeaId] = useState<string | null>(null);
    const [submissionForm, setSubmissionForm] = useState({ repoUrl: '', videoUrl: '', notes: '' });
    const [isImportModalOpen, setIsImportModalOpen] = useState(false);
@@ -339,27 +339,75 @@ export default function HackathonDashboard({ params }: { params: { id: string } 
 
 
 
-         {/* Mobile Menu Backdrop */}
-         {isMobileMenuOpen && (
-            <div
-               className="fixed inset-0 z-[60] bg-black/80 backdrop-blur-sm md:hidden"
-               onClick={() => setIsMobileMenuOpen(false)}
-            />
-         )}
+         {/* Mobile Bottom Tab Bar */}
+         <div className="fixed bottom-0 left-0 right-0 z-[80] md:hidden bg-[#0a0a0a]/95 backdrop-blur-lg border-t border-white/10 safe-area-pb">
+            <div className="flex items-center justify-around px-2 py-2">
+               {/* Back to Home Button */}
+               <Link
+                  href="/home"
+                  className="flex flex-col items-center gap-1 px-3 py-2 text-gray-500 hover:text-gold transition-colors"
+               >
+                  <ArrowLeft className="w-5 h-5" />
+                  <span className="text-[9px] font-medium">Home</span>
+               </Link>
 
-         <div className="flex-1 flex overflow-hidden relative pt-20 md:pt-24">
-            {/* Sidebar */}
-            <aside className={`
-            fixed inset-y-0 left-0 z-[70] w-64 bg-[#0a0a0a] border-r border-white/10 flex flex-col transform transition-transform duration-300 md:translate-x-0 md:relative md:bg-transparent md:border-white/5 md:z-auto md:w-56
-            ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'}
-        `}>
+               {/* Overview Tab */}
+               <button
+                  onClick={() => setActiveSection('overview')}
+                  className={`flex flex-col items-center gap-1 px-3 py-2 transition-colors ${activeSection === 'overview' ? 'text-gold' : 'text-gray-500 hover:text-white'}`}
+               >
+                  <LayoutDashboard className="w-5 h-5" />
+                  <span className="text-[9px] font-medium">Overview</span>
+               </button>
+
+               {/* Details Tab */}
+               <button
+                  onClick={() => setActiveSection('details')}
+                  className={`flex flex-col items-center gap-1 px-3 py-2 transition-colors ${activeSection === 'details' ? 'text-gold' : 'text-gray-500 hover:text-white'}`}
+               >
+                  <FileText className="w-5 h-5" />
+                  <span className="text-[9px] font-medium">Details</span>
+               </button>
+
+               {/* Submission Tab */}
+               <button
+                  onClick={() => setActiveSection('submission')}
+                  className={`flex flex-col items-center gap-1 px-3 py-2 transition-colors ${activeSection === 'submission' ? 'text-gold' : 'text-gray-500 hover:text-white'}`}
+               >
+                  <Send className="w-5 h-5" />
+                  <span className="text-[9px] font-medium">Submit</span>
+               </button>
+
+               {/* Team Tab */}
+               <button
+                  onClick={() => setActiveSection('project')}
+                  className={`flex flex-col items-center gap-1 px-3 py-2 transition-colors ${activeSection === 'project' ? 'text-gold' : 'text-gray-500 hover:text-white'}`}
+               >
+                  <Users className="w-5 h-5" />
+                  <span className="text-[9px] font-medium">Team</span>
+               </button>
+
+               {/* Resources Tab */}
+               <button
+                  onClick={() => setActiveSection('resources')}
+                  className={`flex flex-col items-center gap-1 px-3 py-2 transition-colors ${activeSection === 'resources' ? 'text-gold' : 'text-gray-500 hover:text-white'}`}
+               >
+                  <BookOpen className="w-5 h-5" />
+                  <span className="text-[9px] font-medium">Docs</span>
+               </button>
+            </div>
+         </div>
+
+         <div className="flex-1 flex overflow-hidden relative pt-4 pb-20 md:pt-24 md:pb-0">
+            {/* Sidebar - Hidden on mobile */}
+            <aside className="hidden md:flex md:relative md:bg-transparent md:border-white/5 md:z-auto md:w-56 flex-col border-r border-white/10">
                <div className="p-4 flex flex-col gap-6">
                   <Link href="/home" className="flex items-center gap-2 text-gray-500 hover:text-gold transition-colors group">
                      <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
                      <span className="text-[10px] font-bold uppercase tracking-[0.2em]">Back to Hub</span>
                   </Link>
 
-                  <div className="hidden md:block">
+                  <div>
                      <div className="flex items-center gap-2 text-white font-quantico font-bold text-lg mb-1">
                         <div className="w-8 h-8 bg-gradient-to-br from-gold to-yellow-600 rounded flex items-center justify-center text-black text-xs">H</div>
                         HACKATHON
@@ -367,7 +415,7 @@ export default function HackathonDashboard({ params }: { params: { id: string } 
                      <p className="text-[10px] text-gray-500 uppercase tracking-widest pl-10">Workspace</p>
                   </div>
                </div>
-               <nav className="flex-1 px-3 space-y-1 overflow-y-auto pt-4 md:pt-0">
+               <nav className="flex-1 px-3 space-y-1 overflow-y-auto">
                   <div className="text-[10px] text-gray-500 font-bold uppercase tracking-wider px-2 mb-2 mt-2">Menu</div>
                   <SidebarItem id="overview" label="Overview" icon={LayoutDashboard} activeSection={activeSection} setActiveSection={setActiveSection} setIsMobileMenuOpen={setIsMobileMenuOpen} />
                   <SidebarItem id="details" label="Details" icon={FileText} activeSection={activeSection} setActiveSection={setActiveSection} setIsMobileMenuOpen={setIsMobileMenuOpen} />
@@ -403,13 +451,13 @@ export default function HackathonDashboard({ params }: { params: { id: string } 
                               switch (activeSection) {
                                  case 'overview':
                                     return (
-                                       <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 md:gap-6 h-full overflow-y-auto md:overflow-hidden pb-6 md:pb-0">
+                                       <div className="flex flex-col lg:grid lg:grid-cols-12 gap-4 md:gap-6 h-auto lg:h-full overflow-y-auto lg:overflow-hidden pb-6 lg:pb-0">
 
                                           {/* LEFT COLUMN: Title, Description, Terminal (Span 8) */}
-                                          <div className="lg:col-span-8 flex flex-col gap-4 h-full min-h-0 order-1">
+                                          <div className="lg:col-span-8 flex flex-col gap-4 lg:h-full lg:min-h-0 lg:overflow-y-auto">
                                              {/* 1x6 Image Banner */}
                                              {hackathon.image_url && (
-                                                <div className="relative w-full aspect-[2/1] md:aspect-[4/1] lg:aspect-[6/1] rounded-b-xl overflow-hidden shadow-2xl border-x border-b border-white/10 shrink-0">
+                                                <div className="relative w-full aspect-[2/1] md:aspect-[3/1] lg:aspect-[6/1] rounded-xl overflow-hidden shadow-2xl border border-white/10 shrink-0">
                                                    <Image
                                                       src={hackathon.image_url}
                                                       alt={`${hackathon.title} Banner`}
@@ -420,26 +468,57 @@ export default function HackathonDashboard({ params }: { params: { id: string } 
                                                    <div className="absolute inset-0 bg-gradient-to-t from-background/90 via-transparent to-transparent" />
                                                 </div>
                                              )}
-                                             <div>
-                                                <div className="flex items-center gap-3 mb-2">
+
+                                             {/* Title Section */}
+                                             <div className="px-1">
+                                                <div className="flex flex-wrap items-center gap-2 mb-2">
                                                    <span className={`px-2 py-0.5 rounded text-[10px] uppercase font-bold border ${hackathon.status === 'active' ? 'bg-green-500/10 text-green-500 border-green-500/20' : 'bg-blue-500/10 text-blue-500 border-blue-500/20'}`}>
                                                       {hackathon.status === 'active' ? 'Live Event' : 'Upcoming'}
                                                    </span>
-                                                   <span className="text-gray-500 text-xs flex items-center gap-1">
+                                                   <span className="text-gray-500 text-[10px] md:text-xs flex items-center gap-1">
                                                       <Calendar className="w-3 h-3" />
                                                       {eventStartDate && format(new Date(eventStartDate), 'MMM dd')} - {eventEndDate && format(new Date(eventEndDate), 'MMM dd, yyyy')}
                                                    </span>
                                                 </div>
-                                                <h1 className="text-lg md:text-xl lg:text-2xl font-bold text-white font-quantico leading-tight">
+                                                <h1 className="text-base md:text-xl lg:text-2xl font-bold text-white font-quantico leading-tight mb-1">
                                                    {hackathon.title}
                                                 </h1>
-                                                <p className="text-gray-400 max-w-xl text-[10px] leading-relaxed line-clamp-2">
+                                                <p className="text-gray-400 text-[10px] md:text-xs leading-relaxed line-clamp-2">
                                                    Build the future of decentralized technology. Join thousands of developers to compete for the grand prize.
                                                 </p>
                                              </div>
 
+                                             {/* Mobile: Quick Actions - Show on mobile only */}
+                                             <div className="lg:hidden bg-gradient-to-br from-gold/20 to-yellow-600/5 border border-gold/30 rounded-xl p-4 shadow-lg shadow-gold/5">
+                                                <div className="flex items-center justify-between">
+                                                   <div>
+                                                      <h3 className="text-xs font-bold text-gold uppercase tracking-wider flex items-center gap-2">
+                                                         <Send className="w-3 h-3" /> Ready to ship?
+                                                      </h3>
+                                                      <p className="text-[10px] text-gray-400 mt-1">Submit your idea for judging</p>
+                                                   </div>
+                                                   <button
+                                                      onClick={() => setActiveSection('submission')}
+                                                      className="px-4 py-2 bg-gold text-black font-bold rounded-lg text-xs hover:bg-gold/90 flex items-center gap-1"
+                                                   >
+                                                      Submit <ChevronRight className="w-3 h-3" />
+                                                   </button>
+                                                </div>
+                                             </div>
+
+                                             {/* Mobile: Countdown - Show on mobile only */}
+                                             <div className="lg:hidden bg-surface border border-white/5 rounded-xl p-3">
+                                                <div className="flex items-center justify-between">
+                                                   <p className="text-[10px] text-gray-500 uppercase tracking-wider">{countdown.label}</p>
+                                                   <div className="flex items-center gap-2 text-gold bg-gold/5 px-3 py-1.5 rounded-lg border border-gold/10">
+                                                      <Clock className="w-3 h-3" />
+                                                      <span className="font-mono font-bold text-xs">{countdown.text}</span>
+                                                   </div>
+                                                </div>
+                                             </div>
+
                                              {/* Terminal */}
-                                             <div className="flex-1 flex flex-col bg-black border border-amber-200/20 rounded-xl p-4 md:p-6 font-mono text-xs shadow-[0_0_20px_rgba(251,191,36,0.05)] overflow-hidden min-h-[300px]">
+                                             <div className="flex-1 flex flex-col bg-black border border-amber-200/20 rounded-xl p-3 md:p-6 font-mono text-xs shadow-[0_0_20px_rgba(251,191,36,0.05)] overflow-hidden min-h-[200px] md:min-h-[300px]">
                                                 <div className="flex-1 flex flex-col space-y-2 overflow-hidden min-h-0">
                                                    <div className="border-b border-amber-200/10 pb-2 flex justify-between shrink-0">
                                                       <div><span className="text-amber-100">$</span> <span className="text-amber-100">cat system_announcements.log</span></div>
@@ -517,8 +596,8 @@ export default function HackathonDashboard({ params }: { params: { id: string } 
                                              </div>
                                           </div>
 
-                                          {/* RIGHT COLUMN: Sidebar Widgets (Span 4) */}
-                                          <div className="lg:col-span-4 flex flex-col gap-4 md:gap-6 h-auto lg:h-full lg:overflow-y-auto pr-0 lg:pr-2 order-2">
+                                          {/* RIGHT COLUMN: Sidebar Widgets (Span 4) - Hidden on mobile */}
+                                          <div className="hidden lg:flex lg:col-span-4 flex-col gap-4 md:gap-6 h-auto lg:h-full lg:overflow-y-auto pr-0 lg:pr-2">
 
                                              {/* 0. Quick Action: Submit */}
                                              <div className="bg-gradient-to-br from-gold/20 to-yellow-600/5 border border-gold/30 rounded-xl p-4 shrink-0 shadow-lg shadow-gold/5">
@@ -718,31 +797,63 @@ export default function HackathonDashboard({ params }: { params: { id: string } 
                                        <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 md:gap-6 h-full overflow-y-auto md:overflow-hidden pb-6 md:pb-0">
                                           {/* LEFT COLUMN: Submission Process (Span 8) */}
                                           <div className="lg:col-span-8 flex flex-col h-auto lg:h-full lg:overflow-y-auto pr-0 lg:pr-2 order-1">
-                                             {submissionStep === 'select' && (
-                                                <div className="space-y-6">
-                                                   <div className="bg-surface border border-white/5 rounded-xl p-6 flex flex-col md:flex-row justify-between items-center gap-4">
-                                                      <div>
-                                                         <h2 className="text-xl font-bold text-white mb-1 font-quantico">Submit Your Idea</h2>
-                                                         <p className="text-gray-400 text-xs">Choose an existing idea or create a new one for this hackathon.</p>
+
+                                             {/* INITIAL STATE: Submit Your Idea CTA */}
+                                             {submissionStep === 'initial' && (
+                                                <div className="h-full flex flex-col items-center justify-center text-center p-8 bg-surface border border-white/5 rounded-xl relative overflow-hidden">
+                                                   <div className="absolute inset-0 bg-gradient-to-b from-gold/5 to-transparent pointer-events-none" />
+                                                   <div className="relative z-10 max-w-lg">
+                                                      <div className="w-24 h-24 mx-auto mb-6 bg-gold/10 rounded-full flex items-center justify-center border border-gold/30">
+                                                         <Sparkles className="w-12 h-12 text-gold" />
                                                       </div>
-                                                      <div className="flex items-center gap-2 shrink-0">
-                                                         <button
-                                                            onClick={() => setIsImportModalOpen(true)}
-                                                            className="px-4 py-2 bg-gold/10 hover:bg-gold/20 border border-gold/30 rounded-lg text-gold text-xs font-bold transition-all flex items-center gap-2"
-                                                         >
-                                                            <FileUp className="w-3 h-3" /> Import Your Idea
-                                                         </button>
+                                                      <h2 className="text-2xl md:text-3xl font-bold text-white mb-3 font-quantico">Submit Your Idea</h2>
+                                                      <p className="text-gray-400 mb-8 leading-relaxed text-sm">
+                                                         Share your innovative idea with the hackathon judges. You can create a brand new idea or select from your existing GimmeIdea submissions.
+                                                      </p>
+
+                                                      <div className="flex flex-col sm:flex-row gap-4 justify-center">
                                                          <button
                                                             onClick={() => openSubmitModal('idea')}
-                                                            className="px-4 py-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg text-white text-xs font-bold transition-all flex items-center gap-2"
+                                                            className="px-6 py-4 bg-gradient-to-r from-gold to-yellow-600 text-black font-bold rounded-xl hover:shadow-[0_0_30px_rgba(255,215,0,0.3)] hover:scale-105 transition-all flex items-center justify-center gap-3"
                                                          >
-                                                            <Plus className="w-3 h-3" /> Create New Idea
+                                                            <Plus className="w-5 h-5" /> Create New Idea
                                                          </button>
+                                                         <button
+                                                            onClick={() => setSubmissionStep('select')}
+                                                            className="px-6 py-4 bg-white/10 hover:bg-white/15 text-white font-bold rounded-xl border border-white/10 hover:border-white/20 transition-all flex items-center justify-center gap-3"
+                                                         >
+                                                            <FileUp className="w-5 h-5" /> Select Existing Idea
+                                                         </button>
+                                                      </div>
+
+                                                      <p className="text-xs text-gray-500 mt-8">Deadline: {eventEndDate && format(new Date(eventEndDate), 'MMM dd, yyyy HH:mm')}</p>
+                                                   </div>
+                                                </div>
+                                             )}
+
+                                             {/* SELECT STATE: Choose from existing ideas */}
+                                             {submissionStep === 'select' && (
+                                                <div className="space-y-6">
+                                                   <div className="bg-surface border border-white/5 rounded-xl p-6">
+                                                      <button onClick={() => setSubmissionStep('initial')} className="text-xs text-gray-500 hover:text-white mb-4 flex items-center gap-1"><ArrowLeft className="w-3 h-3" /> Back</button>
+                                                      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                                                         <div>
+                                                            <h2 className="text-xl font-bold text-white mb-1 font-quantico">Select Your Idea</h2>
+                                                            <p className="text-gray-400 text-xs">Choose from your existing ideas or import from GimmeIdea platform.</p>
+                                                         </div>
+                                                         <div className="flex items-center gap-2 shrink-0">
+                                                            <button
+                                                               onClick={() => setIsImportModalOpen(true)}
+                                                               className="px-4 py-2 bg-gold/10 hover:bg-gold/20 border border-gold/30 rounded-lg text-gold text-xs font-bold transition-all flex items-center gap-2"
+                                                            >
+                                                               <FileUp className="w-3 h-3" /> Import from GimmeIdea
+                                                            </button>
+                                                         </div>
                                                       </div>
                                                    </div>
 
                                                    <div className="grid gap-4">
-                                                      <div className="text-[10px] font-bold text-gray-500 uppercase tracking-widest ml-1">Your Hackathon Ideas</div>
+                                                      <div className="text-[10px] font-bold text-gray-500 uppercase tracking-widest ml-1">Your Ideas</div>
                                                       {allIdeas.length === 0 ? (
                                                          <div className="flex flex-col items-center justify-center py-12 gap-3 text-center bg-surface border border-white/5 rounded-xl">
                                                             <div className="w-16 h-16 bg-white/5 rounded-full flex items-center justify-center">
@@ -750,8 +861,14 @@ export default function HackathonDashboard({ params }: { params: { id: string } 
                                                             </div>
                                                             <div>
                                                                <p className="text-sm text-gray-400 mb-1">No ideas yet</p>
-                                                               <p className="text-xs text-gray-500">Create a new idea or import from your GimmeIdea submissions</p>
+                                                               <p className="text-xs text-gray-500">Import from GimmeIdea or go back to create a new one</p>
                                                             </div>
+                                                            <button
+                                                               onClick={() => setSubmissionStep('initial')}
+                                                               className="mt-2 px-4 py-2 bg-gold/10 hover:bg-gold/20 border border-gold/30 rounded-lg text-gold text-xs font-bold transition-all"
+                                                            >
+                                                               Create New Idea Instead
+                                                            </button>
                                                          </div>
                                                       ) : allIdeas.map(idea => (
                                                          <div
@@ -789,7 +906,7 @@ export default function HackathonDashboard({ params }: { params: { id: string } 
                                                          onClick={() => setSubmissionStep('details')}
                                                          className={`px-8 py-3 rounded-xl font-bold text-sm uppercase tracking-widest transition-all flex items-center gap-3 ${!selectedIdeaId ? 'bg-gray-800 text-gray-500 cursor-not-allowed' : 'bg-gold text-black hover:bg-gold/90 shadow-lg shadow-gold/10'}`}
                                                       >
-                                                         Finalize Details <ChevronRight className="w-4 h-4" />
+                                                         Continue <ChevronRight className="w-4 h-4" />
                                                       </button>
                                                    </div>
                                                 </div>
@@ -798,9 +915,9 @@ export default function HackathonDashboard({ params }: { params: { id: string } 
                                              {submissionStep === 'details' && (
                                                 <div className="space-y-6">
                                                    <div className="bg-surface border border-white/5 rounded-xl p-6">
-                                                      <button onClick={() => setSubmissionStep('select')} className="text-xs text-gray-500 hover:text-white mb-4 flex items-center gap-1"><ArrowLeft className="w-3 h-3" /> Back</button>
-                                                      <h2 className="text-xl font-bold text-white mb-2 font-quantico">Idea Submission Details</h2>
-                                                      <p className="text-gray-400 text-sm">Provide additional materials to help judges understand your vision.</p>
+                                                      <button onClick={() => selectedIdeaId ? setSubmissionStep('select') : setSubmissionStep('initial')} className="text-xs text-gray-500 hover:text-white mb-4 flex items-center gap-1"><ArrowLeft className="w-3 h-3" /> Back</button>
+                                                      <h2 className="text-xl font-bold text-white mb-2 font-quantico">Final Details</h2>
+                                                      <p className="text-gray-400 text-sm">Add a pitch video and any supporting materials to complete your submission.</p>
                                                    </div>
 
                                                    <div className="bg-surface border border-white/5 rounded-xl p-6 space-y-4">
@@ -857,21 +974,24 @@ export default function HackathonDashboard({ params }: { params: { id: string } 
                                              )}
 
                                              {submissionStep === 'completed' && (
-                                                <div className="h-full flex flex-col items-center justify-center text-center p-8">
-                                                   <div className="w-20 h-20 bg-green-500/20 rounded-full flex items-center justify-center mb-6">
-                                                      <CheckCircle2 className="w-10 h-10 text-green-500" />
-                                                   </div>
-                                                   <h2 className="text-3xl font-bold text-white mb-2 font-quantico">Submission Received!</h2>
-                                                   <p className="text-gray-400 max-w-md mb-8">
-                                                      Your project has been successfully submitted. You can update your submission until the deadline.
-                                                   </p>
-                                                   <div className="flex gap-4">
-                                                      <button onClick={() => setSubmissionStep('details')} className="px-6 py-2.5 bg-white/10 hover:bg-white/20 text-white rounded-lg text-sm font-bold transition-colors">
-                                                         Edit Submission
-                                                      </button>
-                                                      <Link href="/dashboard" className="px-6 py-2.5 bg-gold text-black hover:bg-gold/90 rounded-lg text-sm font-bold transition-colors">
-                                                         Back to Dashboard
-                                                      </Link>
+                                                <div className="h-full flex flex-col items-center justify-center text-center p-8 bg-surface border border-white/5 rounded-xl relative overflow-hidden">
+                                                   <div className="absolute inset-0 bg-gradient-to-b from-green-500/5 to-transparent pointer-events-none" />
+                                                   <div className="relative z-10">
+                                                      <div className="w-24 h-24 bg-green-500/20 rounded-full flex items-center justify-center mb-6 mx-auto border border-green-500/30">
+                                                         <CheckCircle2 className="w-12 h-12 text-green-500" />
+                                                      </div>
+                                                      <h2 className="text-2xl md:text-3xl font-bold text-white mb-3 font-quantico">Idea Submitted Successfully!</h2>
+                                                      <p className="text-gray-400 max-w-md mb-8 text-sm">
+                                                         🎉 Congratulations! Your idea has been submitted to the hackathon. You can edit your submission anytime before the deadline.
+                                                      </p>
+                                                      <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                                                         <button onClick={() => setSubmissionStep('details')} className="px-6 py-3 bg-white/10 hover:bg-white/20 text-white rounded-xl text-sm font-bold transition-colors flex items-center justify-center gap-2">
+                                                            <FileText className="w-4 h-4" /> Edit Submission
+                                                         </button>
+                                                         <button onClick={() => setActiveSection('overview')} className="px-6 py-3 bg-gold text-black hover:bg-gold/90 rounded-xl text-sm font-bold transition-colors flex items-center justify-center gap-2">
+                                                            <LayoutDashboard className="w-4 h-4" /> Back to Overview
+                                                         </button>
+                                                      </div>
                                                    </div>
                                                 </div>
                                              )}
