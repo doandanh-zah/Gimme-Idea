@@ -425,22 +425,17 @@ export default function HackathonDashboard({ params }: { params: { id: string } 
 
                                              {/* Terminal (Gold Theme) */}
                                              <div className="flex-1 flex flex-col bg-black border border-gold/30 rounded-xl p-4 md:p-6 font-mono text-xs shadow-[0_0_20px_rgba(255,215,0,0.1)] overflow-hidden min-h-[300px]">
-                                                <div className="flex gap-1.5 mb-2 shrink-0">
-                                                   <div className="w-2.5 h-2.5 rounded-full bg-red-500/50" />
-                                                   <div className="w-2.5 h-2.5 rounded-full bg-yellow-500/50" />
-                                                   <div className="w-2.5 h-2.5 rounded-full bg-gold/50" />
-                                                </div>
                                                 <div className="flex-1 flex flex-col space-y-2 overflow-hidden min-h-0">
                                                    <div className="border-b border-gold/20 pb-2 flex justify-between shrink-0">
                                                       <div><span className="text-gold">$</span> <span className="text-gold">cat system_announcements.log</span></div>
                                                       <div className="text-[10px] text-gold/80">SECURE_CONNECTION</div>
                                                    </div>
-                                                   <div className="flex-1 overflow-y-auto space-y-2 text-gold/80 pr-2 scrollbar-thin scrollbar-thumb-gold/20">
+                                                   <div className="flex-1 overflow-y-auto space-y-2 text-gray-300 pr-2 scrollbar-thin scrollbar-thumb-gold/20">
                                                       {hackathon.announcements?.map((log: any) => {
                                                          // Effect Logic - from Legacy
                                                          let effectClass = '';
-                                                         if (log.config?.effect === 'pulse') effectClass = 'animate-pulse font-bold';
-                                                         if (log.config?.effect === 'typewriter') effectClass = 'border-r-2 border-gold pr-1 animate-pulse'; // Cursor simulation
+                                                         if (log.config?.effect === 'pulse') effectClass = 'animate-pulse font-bold text-gold glow-text-gold';
+                                                         if (log.config?.effect === 'typewriter') effectClass = 'border-r-2 border-gold pr-1 animate-pulse text-gold'; // Cursor simulation
                                                          if (log.config?.effect === 'glitch') effectClass = 'text-shadow-glitch'; // Glitch effect
 
                                                          // Widget Logic (Countdown)
@@ -467,7 +462,7 @@ export default function HackathonDashboard({ params }: { params: { id: string } 
                                                                <span className="opacity-50 text-[10px] mr-2">[{format(new Date(log.date), 'HH:mm')}]</span>
                                                                <span
                                                                   className={`
-                                                                     ${log.type === 'warning' ? 'text-yellow-400' : log.type === 'success' ? 'text-green-400' : 'text-gold'}
+                                                                     ${log.type === 'warning' ? 'text-yellow-400' : log.type === 'success' ? 'text-green-400' : 'text-gray-300'}
                                                                      ${effectClass}
                                                                   `}
                                                                   style={log.config?.effect === 'glitch' ? { textShadow: '2px 0 red, -2px 0 blue' } : {}}
