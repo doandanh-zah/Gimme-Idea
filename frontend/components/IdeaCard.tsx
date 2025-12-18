@@ -2,10 +2,11 @@
 
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ThumbsUp, MessageSquare, User, Sparkles } from 'lucide-react';
+import { MessageSquare, User, Sparkles } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { Project } from '../lib/types';
 import { useAppStore } from '../lib/store';
+import { LikeButton } from './LikeButton';
 import toast from 'react-hot-toast';
 
 interface IdeaCardProps {
@@ -16,41 +17,23 @@ export const IdeaCard: React.FC<IdeaCardProps> = ({ project }) => {
   const router = useRouter();
   const [isHovered, setIsHovered] = useState(false);
   const { user, voteProject, openConnectReminder } = useAppStore();
-  const [isVoting, setIsVoting] = useState(false);
-  const [localVotes, setLocalVotes] = useState(project.votes);
-  const [hasVoted, setHasVoted] = useState(false);
-  const [showBurst, setShowBurst] = useState(false);
 
   const handleClick = () => {
     const slug = project.slug || project.id.substring(0, 8);
     router.push(`/idea/${slug}`);
   };
 
-  const handleVote = async (e: React.MouseEvent) => {
-    e.stopPropagation();
-    
+  const handleVote = async () => {
     if (!user) {
       openConnectReminder();
-      return;
+      throw new Error('Not logged in');
     }
-
-    if (isVoting) return;
-
-    setIsVoting(true);
+    
     try {
       await voteProject(project.id);
-      const newVoted = !hasVoted;
-      setHasVoted(newVoted);
-      setLocalVotes(prev => newVoted ? prev + 1 : prev - 1);
-      
-      if (newVoted) {
-        setShowBurst(true);
-        setTimeout(() => setShowBurst(false), 600);
-      }
     } catch (error) {
       toast.error('Failed to vote');
-    } finally {
-      setIsVoting(false);
+      throw error;
     }
   };
 
@@ -203,30 +186,12 @@ export const IdeaCard: React.FC<IdeaCardProps> = ({ project }) => {
           {/* Footer Stats */}
           <div className="flex items-center justify-between pt-3 border-t border-white/5">
             {/* Vote Button */}
-            <button
-              onClick={handleVote}
-              disabled={isVoting}
-              className={`relative flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold transition-all duration-300 ${
-                hasVoted 
-                  ? 'bg-[#FFD700]/20 text-[#FFD700] border border-[#FFD700]/30' 
-                  : 'bg-white/5 text-gray-400 hover:bg-[#FFD700]/10 hover:text-[#FFD700] border border-white/10 hover:border-[#FFD700]/30'
-              }`}
-            >
-              {/* Burst Effect */}
-              <AnimatePresence>
-                {showBurst && (
-                  <motion.div
-                    initial={{ scale: 0, opacity: 1 }}
-                    animate={{ scale: 2, opacity: 0 }}
-                    exit={{ opacity: 0 }}
-                    className="absolute inset-0 rounded-full bg-[#FFD700]/30"
-                  />
-                )}
-              </AnimatePresence>
-              
-              <ThumbsUp className={`w-3.5 h-3.5 ${hasVoted ? 'fill-[#FFD700]' : ''}`} />
-              <span>{localVotes}</span>
-            </button>
+            <LikeButton
+              initialCount={project.votes}
+              onLike={handleVote}
+              size="sm"
+              variant="thumbs"
+            />
 
             {/* Comments Count */}
             <div className="flex items-center gap-1.5 text-xs text-gray-500">

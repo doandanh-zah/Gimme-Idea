@@ -2,12 +2,13 @@
 
 import React, { useState } from 'react';
 import { Project } from '../lib/types';
-import { MessageSquare, ThumbsUp, Lightbulb, Rocket, Sparkles } from 'lucide-react';
+import { MessageSquare, Lightbulb, Rocket, Sparkles } from 'lucide-react';
 import { useAppStore } from '../lib/store';
 import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
 import { motion, AnimatePresence } from 'framer-motion';
 import { AuthorLink } from './AuthorLink';
+import { LikeButton } from './LikeButton';
 import { createUniqueSlug } from '../lib/slug-utils';
 
 interface ProjectCardProps {
@@ -17,30 +18,22 @@ interface ProjectCardProps {
 export const ProjectCard: React.FC<ProjectCardProps> = ({ project }) => {
   const { user, voteProject, openConnectReminder } = useAppStore();
   const router = useRouter();
-  const [isLiked, setIsLiked] = useState(false);
-  const [showBurst, setShowBurst] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
 
   const isIdea = project.type === 'idea';
 
-  const handleVote = async (e: React.MouseEvent) => {
-    e.stopPropagation();
-    
+  const handleVote = async () => {
     if (!user) {
       openConnectReminder();
-      return;
+      throw new Error('Not logged in');
     }
     
-    if (!isLiked) {
-      try {
-        await voteProject(project.id);
-        setIsLiked(true);
-        setShowBurst(true);
-        setTimeout(() => setShowBurst(false), 800);
-        toast.success(`Supported ${project.title}`);
-      } catch (error) {
-        toast.error('Failed to vote');
-      }
+    try {
+      await voteProject(project.id);
+      toast.success(`Supported ${project.title}`);
+    } catch (error) {
+      toast.error('Failed to vote');
+      throw error;
     }
   };
 
@@ -212,45 +205,14 @@ export const ProjectCard: React.FC<ProjectCardProps> = ({ project }) => {
 
         {/* Footer */}
         <div className="flex items-center justify-between pt-4 mt-auto border-t border-white/[0.06] group-hover:border-white/10 transition-colors duration-500">
-          <div className="flex gap-4">
+          <div className="flex gap-4 items-center">
             {/* Vote Button */}
-            <motion.button
-              onClick={handleVote}
-              className={`flex items-center gap-1.5 text-sm transition-colors duration-300 relative ${
-                isLiked ? 'text-[#FFD700]' : 'text-gray-500 hover:text-white'
-              }`}
-              whileTap={{ scale: 0.9 }}
-            >
-              <ThumbsUp className={`w-4 h-4 ${isLiked ? 'fill-current' : ''}`} />
-              <AnimatePresence mode="wait">
-                <motion.span 
-                  key={project.votes}
-                  initial={{ y: -10, opacity: 0 }}
-                  animate={{ y: 0, opacity: 1 }}
-                >
-                  {project.votes}
-                </motion.span>
-              </AnimatePresence>
-              
-              {/* Vote burst effect */}
-              {showBurst && (
-                <>
-                  {[...Array(8)].map((_, i) => (
-                    <motion.div
-                      key={`burst-${i}`}
-                      className="absolute top-1/2 left-2 w-1.5 h-1.5 rounded-full pointer-events-none bg-[#FFD700]"
-                      initial={{ scale: 0, x: 0, y: 0 }}
-                      animate={{
-                        scale: [1, 0],
-                        x: Math.cos(i * 45 * (Math.PI / 180)) * 25,
-                        y: Math.sin(i * 45 * (Math.PI / 180)) * 25,
-                      }}
-                      transition={{ duration: 0.5, ease: "easeOut" }}
-                    />
-                  ))}
-                </>
-              )}
-            </motion.button>
+            <LikeButton
+              initialCount={project.votes}
+              onLike={handleVote}
+              size="sm"
+              variant="thumbs"
+            />
             
             {/* Comments */}
             <div className="flex items-center gap-1.5 text-sm text-gray-500 group-hover:text-gray-400 transition-colors duration-500">

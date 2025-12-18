@@ -41,147 +41,28 @@ interface AIChatModalProps {
 
 const STORAGE_KEY = 'gimme_ai_chat_sessions';
 
-// Separate component for idea card to properly use hooks
+// Separate component for idea card - simplified version for chat
 const IdeaCard: React.FC<{ idea: Project; idx: number; onClick: () => void }> = ({ idea, idx, onClick }) => {
   return (
-    <motion.div
+    <div
       onClick={onClick}
-      className="p-3 sm:p-4 bg-[#12131a] border border-[#FFD700]/30 rounded-xl cursor-pointer group relative overflow-hidden"
-      whileHover={{ scale: 1.02 }}
-      animate={{
-        boxShadow: [
-          '0 0 20px rgba(255, 215, 0, 0.2), 0 0 40px rgba(153, 69, 255, 0.1)',
-          '0 0 30px rgba(255, 215, 0, 0.4), 0 0 50px rgba(153, 69, 255, 0.3)',
-          '0 0 20px rgba(255, 215, 0, 0.2), 0 0 40px rgba(153, 69, 255, 0.1)',
-        ],
-      }}
-      transition={{ duration: 2, repeat: Infinity }}
+      className="p-3 sm:p-4 bg-[#12131a] border border-white/10 hover:border-[#FFD700]/40 rounded-xl cursor-pointer transition-all duration-200 hover:bg-[#12131a]/80"
     >
-      {/* Animated scanline - Always running */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none rounded-xl">
-        <div className="absolute inset-0 bg-[repeating-linear-gradient(0deg,transparent,transparent_2px,rgba(255,215,0,0.03)_2px,rgba(255,215,0,0.03)_4px)]" />
-        <motion.div 
-          className="absolute left-0 right-0 h-16 bg-gradient-to-b from-[#FFD700]/15 to-transparent"
-          animate={{ top: ['-64px', '100%'] }}
-          transition={{ duration: 2.5, repeat: Infinity, ease: 'linear' }}
-        />
-      </div>
-      
-      {/* Glitch border effects - Yellow & Purple - Always running */}
-      <div className="absolute inset-0 rounded-xl">
-        <motion.div 
-          className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-[#FFD700] to-transparent"
-          animate={{ opacity: [0.5, 1, 0.5], x: [-10, 10, -10] }}
-          transition={{ duration: 0.5, repeat: Infinity }}
-        />
-        <motion.div 
-          className="absolute bottom-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-[#9945FF] to-transparent"
-          animate={{ opacity: [0.5, 1, 0.5], x: [10, -10, 10] }}
-          transition={{ duration: 0.5, repeat: Infinity, delay: 0.1 }}
-        />
-        <motion.div 
-          className="absolute top-0 bottom-0 left-0 w-[2px] bg-gradient-to-b from-[#FFD700] via-transparent to-[#9945FF]"
-          animate={{ opacity: [0.3, 0.8, 0.3] }}
-          transition={{ duration: 0.8, repeat: Infinity }}
-        />
-        <motion.div 
-          className="absolute top-0 bottom-0 right-0 w-[2px] bg-gradient-to-b from-[#9945FF] via-transparent to-[#FFD700]"
-          animate={{ opacity: [0.3, 0.8, 0.3] }}
-          transition={{ duration: 0.8, repeat: Infinity, delay: 0.15 }}
-        />
-      </div>
-      
-      {/* Glitch overlay layers - Always running */}
-      <motion.div
-        className="absolute inset-0 rounded-xl pointer-events-none"
-        animate={{
-          opacity: [0, 0.2, 0.05, 0.25, 0.1],
-          x: [-4, 4, -2, 3, 0],
-        }}
-        style={{ background: 'linear-gradient(45deg, rgba(255, 215, 0, 0.2), transparent)' }}
-        transition={{ duration: 0.3, repeat: Infinity }}
-      />
-      <motion.div
-        className="absolute inset-0 rounded-xl pointer-events-none"
-        animate={{
-          opacity: [0, 0.15, 0.05, 0.2, 0.08],
-          x: [4, -4, 2, -3, 0],
-        }}
-        style={{ background: 'linear-gradient(135deg, rgba(153, 69, 255, 0.2), transparent)' }}
-        transition={{ duration: 0.3, repeat: Infinity, delay: 0.08 }}
-      />
-      
-      {/* Random glitch slices */}
-      <motion.div
-        className="absolute left-0 right-0 h-[3px] bg-[#FFD700]/40 pointer-events-none"
-        style={{ top: '25%' }}
-        animate={{
-          opacity: [0, 0.8, 0, 0.6, 0],
-          x: [-100, 100, -50, 0],
-          scaleX: [0, 1.5, 0.5, 0],
-        }}
-        transition={{ duration: 0.4, repeat: Infinity, repeatDelay: 1 }}
-      />
-      <motion.div
-        className="absolute left-0 right-0 h-[3px] bg-[#9945FF]/40 pointer-events-none"
-        style={{ top: '75%' }}
-        animate={{
-          opacity: [0, 0.8, 0, 0.6, 0],
-          x: [100, -100, 50, 0],
-          scaleX: [0, 1.5, 0.5, 0],
-        }}
-        transition={{ duration: 0.4, repeat: Infinity, repeatDelay: 1.2, delay: 0.2 }}
-      />
-      
-      <div className="flex items-start gap-2 sm:gap-3 relative z-10">
-        <motion.div 
-          className="w-6 h-6 sm:w-8 sm:h-8 rounded-lg bg-[#FFD700]/20 flex items-center justify-center text-[#FFD700] font-bold text-xs sm:text-sm flex-shrink-0 ring-1 ring-[#FFD700]/30"
-          animate={{
-            boxShadow: [
-              '0 0 8px rgba(255, 215, 0, 0.4)',
-              '0 0 16px rgba(255, 215, 0, 0.7)',
-              '0 0 8px rgba(255, 215, 0, 0.4)',
-            ],
-          }}
-          transition={{ duration: 1.2, repeat: Infinity }}
-        >
+      <div className="flex items-start gap-2 sm:gap-3">
+        <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-lg bg-[#FFD700]/20 flex items-center justify-center text-[#FFD700] font-bold text-xs sm:text-sm flex-shrink-0">
           {idx + 1}
-        </motion.div>
+        </div>
         <div className="flex-1 min-w-0">
-          <motion.h4 
-            className="font-bold text-[#FFD700] line-clamp-1 text-sm relative"
-            animate={{
-              textShadow: [
-                '0 0 10px rgba(255, 215, 0, 0.8)',
-                '-3px 0 rgba(153, 69, 255, 0.9), 3px 0 rgba(255, 215, 0, 0.9)',
-                '3px 0 rgba(153, 69, 255, 0.9), -3px 0 rgba(255, 215, 0, 0.9)',
-                '0 0 10px rgba(255, 215, 0, 0.8)',
-              ],
-            }}
-            transition={{ duration: 0.2, repeat: Infinity }}
-          >
+          <h4 className="font-bold text-white hover:text-[#FFD700] transition-colors line-clamp-1 text-sm">
             {idea.title}
-          </motion.h4>
-          <motion.p 
-            className="text-[10px] sm:text-xs text-gray-400 mt-1 line-clamp-2 transition-colors"
-            animate={{
-              opacity: [0.8, 1, 0.8],
-            }}
-            transition={{ duration: 2, repeat: Infinity }}
-          >
+          </h4>
+          <p className="text-[10px] sm:text-xs text-gray-400 mt-1 line-clamp-2">
             {idea.problem || idea.description}
-          </motion.p>
+          </p>
           <div className="flex items-center gap-3 mt-2">
-            <motion.span 
-              className="text-[10px] px-2 py-0.5 bg-[#FFD700]/20 text-[#FFD700] rounded-full border border-[#FFD700]/30"
-              animate={{
-                backgroundColor: ['rgba(255, 215, 0, 0.15)', 'rgba(255, 215, 0, 0.3)', 'rgba(255, 215, 0, 0.15)'],
-                boxShadow: ['0 0 5px rgba(255, 215, 0, 0.2)', '0 0 10px rgba(255, 215, 0, 0.4)', '0 0 5px rgba(255, 215, 0, 0.2)'],
-              }}
-              transition={{ duration: 1.5, repeat: Infinity }}
-            >
+            <span className="text-[10px] px-2 py-0.5 bg-[#FFD700]/10 text-[#FFD700] rounded-full">
               {idea.category}
-            </motion.span>
+            </span>
             <div className="flex items-center gap-1 text-gray-500 text-xs">
               <ThumbsUp className="w-3 h-3" />
               {idea.votes || 0}
@@ -193,7 +74,7 @@ const IdeaCard: React.FC<{ idea: Project; idx: number; onClick: () => void }> = 
           </div>
         </div>
       </div>
-    </motion.div>
+    </div>
   );
 };
 
