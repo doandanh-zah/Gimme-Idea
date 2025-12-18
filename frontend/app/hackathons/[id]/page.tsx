@@ -17,6 +17,7 @@ import { useSearchParams } from 'next/navigation';
 import { format, isBefore, isSameDay } from 'date-fns';
 import { HACKATHONS_MOCK_DATA, MY_IDEAS } from '@/lib/mock-hackathons';
 import InviteMemberModal from '@/components/InviteMemberModal';
+import { useAppStore } from '@/lib/store';
 
 // Map icon names from mock data to Lucide React components
 const LucideIconMap: { [key: string]: React.ElementType } = {
@@ -63,6 +64,9 @@ export default function HackathonDashboard({ params }: { params: { id: string } 
   const searchParams = useSearchParams();
   const mockDate = searchParams.get('mockDate') || searchParams.get('mockdate');
   const now = mockDate ? new Date(mockDate) : new Date();
+
+  // App Store
+  const { openSubmitModal } = useAppStore();
 
   // Layout State
   const [activeSection, setActiveSection] = useState('overview');
@@ -373,20 +377,20 @@ export default function HackathonDashboard({ params }: { params: { id: string } 
                                    <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 h-full">
                                       
                                       {/* LEFT COLUMN: Title, Description, Terminal (Span 8) */}
-                                                                             <div className="lg:col-span-8 flex flex-col gap-4 h-full min-h-0">
-                                                                                {/* 1x6 Image Banner */}
-                                                                                {hackathon.image_url && (
-                                                                                   <div className="relative w-full aspect-[6/1] rounded-b-xl overflow-hidden shadow-2xl border-x border-b border-white/10 shrink-0 hidden md:block">
-                                                                                     <Image
-                                                                                       src={hackathon.image_url}
-                                                                                       alt={`${hackathon.title} Banner`}
-                                                                                       layout="fill"
-                                                                                       objectFit="cover"
-                                                                                       className="opacity-80 hover:opacity-100 transition-opacity duration-300"
-                                                                                     />
-                                                                                     <div className="absolute inset-0 bg-gradient-to-t from-background/90 via-transparent to-transparent" />
-                                                                                   </div>
-                                                                                )}                                         {/* Title and Description (Moved here from old header) */}
+                                      <div className="lg:col-span-8 flex flex-col gap-4 h-full min-h-0">
+                                         {/* ... existing image and title code ... */}
+                                         {hackathon.image_url && (
+                                            <div className="relative w-full aspect-[6/1] rounded-b-xl overflow-hidden shadow-2xl border-x border-b border-white/10 shrink-0 hidden md:block">
+                                              <Image
+                                                src={hackathon.image_url}
+                                                alt={`${hackathon.title} Banner`}
+                                                layout="fill"
+                                                objectFit="cover"
+                                                className="opacity-80 hover:opacity-100 transition-opacity duration-300"
+                                              />
+                                              <div className="absolute inset-0 bg-gradient-to-t from-background/90 via-transparent to-transparent" />
+                                            </div>
+                                         )}
                                          <div>
                                              <div className="flex items-center gap-3 mb-2">
                                                 <span className={`px-2 py-0.5 rounded text-[10px] uppercase font-bold border ${hackathon.status === 'active' ? 'bg-green-500/10 text-green-500 border-green-500/20' : 'bg-blue-500/10 text-blue-500 border-blue-500/20'}`}>
@@ -456,6 +460,20 @@ export default function HackathonDashboard({ params }: { params: { id: string } 
                                       {/* RIGHT COLUMN: Sidebar Widgets (Span 4) */}
                                       <div className="lg:col-span-4 flex flex-col gap-6 h-full overflow-y-auto pr-2 pb-20 md:pb-0">
                                          
+                                         {/* 0. Quick Action: Submit */}
+                                         <div className="bg-gradient-to-br from-gold/20 to-yellow-600/5 border border-gold/30 rounded-xl p-4 shrink-0 shadow-lg shadow-gold/5">
+                                            <h3 className="text-xs font-bold text-gold uppercase tracking-wider mb-2 flex items-center gap-2">
+                                               <Send className="w-3 h-3" /> Ready to ship?
+                                            </h3>
+                                            <p className="text-[10px] text-gray-400 mb-3">Submit your idea details and artifacts for judging.</p>
+                                            <button 
+                                               onClick={() => setActiveSection('submission')}
+                                               className="w-full py-2 bg-gold text-black font-bold rounded-lg text-xs hover:bg-gold/90 transition-transform active:scale-95 flex items-center justify-center gap-2"
+                                            >
+                                               Go to Submission <ChevronRight className="w-3 h-3" />
+                                            </button>
+                                         </div>
+
                                          {/* 1. Countdown Card */}
                                          <div className="bg-surface border border-white/5 rounded-xl p-4 shrink-0">
                                             <div className="space-y-1">
@@ -642,32 +660,51 @@ export default function HackathonDashboard({ params }: { params: { id: string } 
                                       <div className="lg:col-span-8 flex flex-col h-full overflow-y-auto pr-2 pb-20 md:pb-0">
                                          {submissionStep === 'select' && (
                                             <div className="space-y-6">
-                                               <div className="bg-surface border border-white/5 rounded-xl p-6">
-                                                  <h2 className="text-xl font-bold text-white mb-2 font-quantico">Select Idea</h2>
-                                                  <p className="text-gray-400 text-sm">Choose one of your existing ideas to submit to this hackathon.</p>
+                                               <div className="bg-surface border border-white/5 rounded-xl p-6 flex flex-col md:flex-row justify-between items-center gap-4">
+                                                  <div>
+                                                     <h2 className="text-xl font-bold text-white mb-1 font-quantico">Submit Your Idea</h2>
+                                                     <p className="text-gray-400 text-xs">Choose an existing idea or create a new one for this hackathon.</p>
+                                                  </div>
+                                                  <button 
+                                                     onClick={() => openSubmitModal('idea')}
+                                                     className="px-4 py-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg text-white text-xs font-bold transition-all flex items-center gap-2 shrink-0"
+                                                  >
+                                                     <Plus className="w-3 h-3" /> Create New Idea
+                                                  </button>
                                                </div>
+
                                                <div className="grid gap-4">
+                                                  <div className="text-[10px] font-bold text-gray-500 uppercase tracking-widest ml-1">Your Hackathon Ideas</div>
                                                   {MY_IDEAS.map(idea => (
-                                                     <div key={idea.id} className={`p-4 rounded-xl border cursor-pointer transition-all ${selectedIdeaId === idea.id ? 'bg-gold/10 border-gold' : 'bg-surface border-white/5 hover:border-white/20'}`} onClick={() => setSelectedIdeaId(idea.id)}>
-                                                        <div className="flex justify-between items-start mb-2">
-                                                           <span className="bg-white/10 px-2 py-0.5 rounded text-[10px] text-gray-300">{idea.category}</span>
-                                                           {selectedIdeaId === idea.id && <CheckCircle2 className="w-5 h-5 text-gold" />}
+                                                     <div 
+                                                        key={idea.id} 
+                                                        className={`group relative p-5 rounded-xl border transition-all cursor-pointer ${selectedIdeaId === idea.id ? 'bg-gold/10 border-gold shadow-lg shadow-gold/5' : 'bg-black/20 border-white/5 hover:border-white/20 hover:bg-white/5'}`} 
+                                                        onClick={() => setSelectedIdeaId(idea.id)}
+                                                     >
+                                                        <div className="flex justify-between items-start mb-3">
+                                                           <span className="bg-white/5 border border-white/10 px-2 py-0.5 rounded text-[10px] text-gray-400 font-mono">{idea.category}</span>
+                                                           <div className={`w-5 h-5 rounded-full border flex items-center justify-center transition-colors ${selectedIdeaId === idea.id ? 'bg-gold border-gold' : 'border-gray-600 group-hover:border-gray-400'}`}>
+                                                              {selectedIdeaId === idea.id && <CheckCircle2 className="w-3 h-3 text-black" />}
+                                                           </div>
                                                         </div>
-                                                        <h3 className="text-lg font-bold text-white mb-1">{idea.title}</h3>
-                                                        <p className="text-sm text-gray-400 mb-3">{idea.description}</p>
-                                                        <div className="flex items-center gap-2 text-xs text-gray-500">
-                                                           <ThumbsUp className="w-3 h-3" /> {idea.votes} Votes
+                                                        <h3 className="text-lg font-bold text-white mb-2 group-hover:text-gold transition-colors">{idea.title}</h3>
+                                                        <p className="text-sm text-gray-500 line-clamp-2 leading-relaxed mb-4">{idea.description}</p>
+                                                        <div className="flex items-center gap-4 text-[10px] font-bold text-gray-600 uppercase tracking-tighter">
+                                                           <span className="flex items-center gap-1"><ThumbsUp className="w-3 h-3" /> {idea.votes} Votes</span>
+                                                           <span className="text-gray-800">•</span>
+                                                           <span>Created 2 days ago</span>
                                                         </div>
                                                      </div>
                                                   ))}
                                                </div>
-                                               <div className="flex justify-end pt-4">
+                                               
+                                               <div className="flex justify-end pt-4 sticky bottom-0 bg-background/80 backdrop-blur-sm pb-4">
                                                   <button 
                                                      disabled={!selectedIdeaId}
                                                      onClick={() => setSubmissionStep('details')}
-                                                     className={`px-6 py-2.5 rounded-lg font-bold text-sm transition-colors flex items-center gap-2 ${!selectedIdeaId ? 'bg-gray-800 text-gray-500 cursor-not-allowed' : 'bg-gold text-black hover:bg-gold/90'}`}
+                                                     className={`px-8 py-3 rounded-xl font-bold text-sm uppercase tracking-widest transition-all flex items-center gap-3 ${!selectedIdeaId ? 'bg-gray-800 text-gray-500 cursor-not-allowed' : 'bg-gold text-black hover:bg-gold/90 shadow-lg shadow-gold/10'}`}
                                                   >
-                                                     Next Step <ChevronRight className="w-4 h-4" />
+                                                     Finalize Details <ChevronRight className="w-4 h-4" />
                                                   </button>
                                                </div>
                                             </div>
