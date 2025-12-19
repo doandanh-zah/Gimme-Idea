@@ -820,8 +820,8 @@ export default function AdminDashboard() {
           {[
             { id: 'overview', label: 'Overview', icon: BarChart3 },
             { id: 'users', label: 'Users', icon: Users },
-            { id: 'projects', label: 'Projects', icon: FileText },
             { id: 'ideas', label: 'Ideas', icon: Lightbulb },
+            { id: 'projects', label: 'Projects', icon: FileText },
             { id: 'hackathons', label: 'Hackathons', icon: Trophy },
             { id: 'challenges', label: 'Challenges', icon: Swords },
             { id: 'ai-tools', label: 'AI Tools', icon: Bot },
