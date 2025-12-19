@@ -82,8 +82,9 @@ export class AdminController {
    * Get all hackathons (admin view with more details)
    */
   @Get("hackathons")
-  async getAllHackathons() {
-    return this.adminService.getAllHackathons();
+  @UseGuards(AuthGuard)
+  async getAllHackathons(@CurrentUser("userId") userId: string) {
+    return this.adminService.getAllHackathons(userId);
   }
 
   /**
@@ -135,8 +136,12 @@ export class AdminController {
    * Get all submissions for a hackathon (for admin scoring)
    */
   @Get("hackathons/:id/submissions")
-  async getSubmissions(@Param("id") hackathonId: string) {
-    return this.adminService.getHackathonSubmissions(hackathonId);
+  @UseGuards(AuthGuard)
+  async getSubmissions(
+    @Param("id") hackathonId: string,
+    @CurrentUser("userId") userId: string
+  ) {
+    return this.adminService.getHackathonSubmissions(userId, hackathonId);
   }
 
   /**
@@ -198,8 +203,9 @@ export class AdminController {
    * Get all users
    */
   @Get("users")
-  async getAllUsers() {
-    return this.adminService.getAllUsers();
+  @UseGuards(AuthGuard)
+  async getAllUsers(@CurrentUser("userId") userId: string) {
+    return this.adminService.getAllUsers(userId);
   }
 
   /**
@@ -251,7 +257,8 @@ export class AdminController {
    * Get system-wide statistics
    */
   @Get("stats")
-  async getSystemStats() {
-    return this.adminService.getSystemStats();
+  @UseGuards(AuthGuard)
+  async getSystemStats(@CurrentUser("userId") userId: string) {
+    return this.adminService.getSystemStats(userId);
   }
 }

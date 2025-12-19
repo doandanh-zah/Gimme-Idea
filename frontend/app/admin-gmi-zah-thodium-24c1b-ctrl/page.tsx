@@ -273,6 +273,8 @@ export default function AdminDashboard() {
   const [activityLog, setActivityLog] = useState<ActivityLog[]>([]);
   const [hasAccess, setHasAccess] = useState(false);
   const [checkingAccess, setCheckingAccess] = useState(true);
+  const [isAdmin, setIsAdmin] = useState<boolean | null>(null);
+  const [checkingAdmin, setCheckingAdmin] = useState(true);
   const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'overview' | 'users' | 'ideas' | 'projects' | 'hackathons' | 'challenges' | 'ai-tools' | 'activity'>('overview');
   const [searchQuery, setSearchQuery] = useState('');
@@ -342,6 +344,36 @@ export default function AdminDashboard() {
     }
     setCheckingAccess(false);
   }, []);
+
+  // Check if user is admin in database
+  useEffect(() => {
+    const checkAdminStatus = async () => {
+      if (!user) {
+        setCheckingAdmin(false);
+        setIsAdmin(false);
+        return;
+      }
+
+      try {
+        const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+        const res = await fetch(`${API_URL}/admin/status`, {
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('auth_token') || ''}`
+          }
+        });
+        const data = await res.json();
+        setIsAdmin(data.success && data.data?.isAdmin === true);
+      } catch (error) {
+        console.error('Failed to check admin status:', error);
+        setIsAdmin(false);
+      }
+      setCheckingAdmin(false);
+    };
+
+    if (!authLoading) {
+      checkAdminStatus();
+    }
+  }, [user, authLoading]);
 
   // Fetch data
   useEffect(() => {
@@ -732,7 +764,7 @@ export default function AdminDashboard() {
     }
   };
 
-  if (checkingAccess) {
+  if (checkingAccess || checkingAdmin) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <Loader2 className="w-8 h-8 animate-spin text-purple-500" />
@@ -742,6 +774,68 @@ export default function AdminDashboard() {
 
   if (!hasAccess) {
     return <AccessCodeGate onSuccess={() => setHasAccess(true)} />;
+  }
+
+  // Must be logged in
+  if (!user) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[#0a0a0a]">
+        <motion.div
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="w-full max-w-sm mx-4"
+        >
+          <div className="bg-[#111] border border-red-500/20 rounded-2xl p-8 text-center">
+            <div className="flex justify-center mb-6">
+              <div className="p-4 rounded-full bg-red-500/10 border border-red-500/20">
+                <AlertTriangle className="w-8 h-8 text-red-400" />
+              </div>
+            </div>
+            <h1 className="text-xl font-bold text-white mb-2">Authentication Required</h1>
+            <p className="text-sm text-gray-500 mb-6">
+              You must be logged in to access the admin panel.
+            </p>
+            <button
+              onClick={() => router.push('/auth/login')}
+              className="w-full bg-purple-600 hover:bg-purple-700 text-white font-medium py-3 rounded-lg transition-colors"
+            >
+              Go to Login
+            </button>
+          </div>
+        </motion.div>
+      </div>
+    );
+  }
+
+  // Must be admin
+  if (!isAdmin) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[#0a0a0a]">
+        <motion.div
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="w-full max-w-sm mx-4"
+        >
+          <div className="bg-[#111] border border-red-500/20 rounded-2xl p-8 text-center">
+            <div className="flex justify-center mb-6">
+              <div className="p-4 rounded-full bg-red-500/10 border border-red-500/20">
+                <Ban className="w-8 h-8 text-red-400" />
+              </div>
+            </div>
+            <h1 className="text-xl font-bold text-white mb-2">Access Denied</h1>
+            <p className="text-sm text-gray-500 mb-6">
+              You do not have admin privileges to access this panel.
+            </p>
+            <button
+              onClick={() => router.push('/')}
+              className="w-full bg-gray-700 hover:bg-gray-600 text-white font-medium py-3 rounded-lg transition-colors"
+            >
+              Go Home
+            </button>
+          </div>
+        </motion.div>
+      </div>
+    );
   }
 
   if (authLoading || isLoading) {

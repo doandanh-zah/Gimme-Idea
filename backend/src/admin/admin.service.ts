@@ -365,7 +365,13 @@ export class AdminService {
   /**
    * Get all hackathons (with more details for admin)
    */
-  async getAllHackathons(): Promise<ApiResponse<Hackathon[]>> {
+  async getAllHackathons(adminId: string): Promise<ApiResponse<Hackathon[]>> {
+    // Verify admin access
+    const isAdminUser = await this.isAdmin(adminId);
+    if (!isAdminUser) {
+      throw new ForbiddenException("Admin access required");
+    }
+
     const supabase = this.supabaseService.getAdminClient();
 
     const { data: hackathons, error } = await supabase
@@ -452,8 +458,15 @@ export class AdminService {
    * Get submissions for a hackathon (for admin to score)
    */
   async getHackathonSubmissions(
+    adminId: string,
     hackathonId: string
   ): Promise<ApiResponse<HackathonSubmission[]>> {
+    // Verify admin access
+    const isAdminUser = await this.isAdmin(adminId);
+    if (!isAdminUser) {
+      throw new ForbiddenException("Admin access required");
+    }
+
     const supabase = this.supabaseService.getAdminClient();
 
     const { data: submissions, error } = await supabase
@@ -562,7 +575,13 @@ export class AdminService {
   /**
    * Get all users for admin panel
    */
-  async getAllUsers(): Promise<ApiResponse<any[]>> {
+  async getAllUsers(adminId: string): Promise<ApiResponse<any[]>> {
+    // Verify admin access
+    const isAdminUser = await this.isAdmin(adminId);
+    if (!isAdminUser) {
+      throw new ForbiddenException("Admin access required");
+    }
+
     const supabase = this.supabaseService.getAdminClient();
 
     const { data: users, error } = await supabase
@@ -720,7 +739,13 @@ export class AdminService {
   /**
    * Get system-wide statistics
    */
-  async getSystemStats(): Promise<ApiResponse<any>> {
+  async getSystemStats(adminId: string): Promise<ApiResponse<any>> {
+    // Verify admin access
+    const isAdminUser = await this.isAdmin(adminId);
+    if (!isAdminUser) {
+      throw new ForbiddenException("Admin access required");
+    }
+
     const supabase = this.supabaseService.getAdminClient();
 
     // Get total counts
