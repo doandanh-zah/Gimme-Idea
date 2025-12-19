@@ -416,4 +416,5 @@ BEGIN
   END IF;
 END $$;
 
-RAISE NOTICE 'Migration hackathon_v2 completed successfully!';
+-- Migration completed
+DO $$ BEGIN RAISE NOTICE 'Migration hackathon_v2 completed successfully!'; END $$;
