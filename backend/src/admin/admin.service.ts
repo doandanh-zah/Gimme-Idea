@@ -14,14 +14,22 @@ export interface Hackathon {
   id: string;
   slug: string;
   title: string;
+  tagline?: string;
   description?: string;
+  coverImage?: string;
+  mode?: "online" | "offline" | "hybrid";
+  maxParticipants?: number;
+  currency?: string;
   startDate: string;
   endDate: string;
+  registrationStart?: string;
+  registrationEnd?: string;
   prizePool?: string;
   status: "upcoming" | "active" | "voting" | "completed";
   imageUrl?: string;
   tags: string[];
   participantsCount: number;
+  judgingCriteria?: any;
   createdAt: string;
   createdBy?: string;
 }
@@ -284,12 +292,11 @@ export class AdminService {
 
     const supabase = this.supabaseService.getAdminClient();
 
-    // Determine start/end dates from rounds or legacy fields
-    const startDate =
-      dto.round1?.startDate || dto.startDate || dto.registrationStart;
-    const endDate = dto.round3?.endDate || dto.endDate || dto.registrationEnd;
-
-    // Build hackathon insert data - only include fields with values
+    // Build hackathon insert data - only include columns that exist in the database
+    // Based on current schema: id, slug, title, tagline, description, status, prize_pool, 
+    // max_participants, registration_start, registration_end, submission_start, submission_end,
+    // judging_start, judging_end, is_featured, created_by, created_at, updated_at,
+    // cover_image, mode, currency, judging_criteria, current_round, format, total_rounds
     const insertData: any = {
       slug: dto.slug,
       title: dto.title,
@@ -297,27 +304,33 @@ export class AdminService {
       created_by: adminId,
     };
 
-    // Add optional fields only if they have values
+    // Add optional fields only if they have values (only existing columns!)
     if (dto.tagline) insertData.tagline = dto.tagline;
     if (dto.description) insertData.description = dto.description;
     if (dto.coverImage) insertData.cover_image = dto.coverImage;
     if (dto.mode) insertData.mode = dto.mode;
     if (dto.maxParticipants) insertData.max_participants = dto.maxParticipants;
     if (dto.currency) insertData.currency = dto.currency;
-    if (startDate) insertData.start_date = startDate;
-    if (endDate) insertData.end_date = endDate;
-    if (dto.registrationStart || startDate) insertData.registration_start = dto.registrationStart || startDate;
-    if (dto.registrationEnd || dto.round1?.startDate) insertData.registration_end = dto.registrationEnd || dto.round1?.startDate;
     if (dto.prizePool) insertData.prize_pool = dto.prizePool;
-    if (dto.imageUrl || dto.coverImage) insertData.image_url = dto.imageUrl || dto.coverImage;
-    if (dto.tags && dto.tags.length > 0) insertData.tags = dto.tags;
+    
+    // Registration dates (these columns should exist)
+    if (dto.registrationStart) insertData.registration_start = dto.registrationStart;
+    if (dto.registrationEnd) insertData.registration_end = dto.registrationEnd;
+    
+    // Use round dates for submission/judging if available
+    if (dto.round1?.startDate) insertData.submission_start = dto.round1.startDate;
+    if (dto.round1?.endDate) insertData.submission_end = dto.round1.endDate;
+    if (dto.round3?.startDate) insertData.judging_start = dto.round3.startDate;
+    if (dto.round3?.endDate) insertData.judging_end = dto.round3.endDate;
 
     // Add judging criteria if provided
     if (dto.judgingCriteria) {
       insertData.judging_criteria = dto.judgingCriteria.judgeCategories;
     }
 
-    this.logger.log(`Creating hackathon with data: ${JSON.stringify(insertData)}`);
+    this.logger.log(
+      `Creating hackathon with data: ${JSON.stringify(insertData)}`
+    );
 
     const { data: hackathon, error } = await supabase
       .from("hackathons")
@@ -719,7 +732,7 @@ export class AdminService {
     const { data: hackathons, error } = await supabase
       .from("hackathons")
       .select("*")
-      .order("start_date", { ascending: false });
+      .order("created_at", { ascending: false });
 
     if (error) {
       throw new Error(`Failed to fetch hackathons: ${error.message}`);
@@ -1294,14 +1307,23 @@ export class AdminService {
       id: h.id,
       slug: h.slug,
       title: h.title,
+      tagline: h.tagline || "",
       description: h.description,
-      startDate: h.start_date,
-      endDate: h.end_date,
+      coverImage: h.cover_image || "",
+      mode: h.mode || "online",
+      maxParticipants: h.max_participants || 100,
+      currency: h.currency || "VND",
+      // Use submission_start/end as startDate/endDate fallback
+      startDate: h.submission_start || h.registration_start,
+      endDate: h.judging_end || h.submission_end,
+      registrationStart: h.registration_start,
+      registrationEnd: h.registration_end,
       prizePool: h.prize_pool,
       status: h.status,
-      imageUrl: h.image_url,
+      imageUrl: h.cover_image, // Use cover_image as imageUrl
       tags: h.tags || [],
       participantsCount: h.participants_count || 0,
+      judgingCriteria: h.judging_criteria,
       createdAt: h.created_at,
       createdBy: h.created_by,
     };

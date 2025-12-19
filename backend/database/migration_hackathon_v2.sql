@@ -232,30 +232,6 @@ CREATE UNIQUE INDEX IF NOT EXISTS idx_round_results_unique ON hackathon_round_re
 -- =============================================
 DO $$ 
 BEGIN
-  -- Add tagline
-  IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
-    WHERE table_name = 'hackathons' AND column_name = 'tagline') THEN
-    ALTER TABLE hackathons ADD COLUMN tagline VARCHAR(300);
-  END IF;
-
-  -- Add max participants
-  IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
-    WHERE table_name = 'hackathons' AND column_name = 'max_participants') THEN
-    ALTER TABLE hackathons ADD COLUMN max_participants INTEGER DEFAULT 100;
-  END IF;
-
-  -- Add registration start
-  IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
-    WHERE table_name = 'hackathons' AND column_name = 'registration_start') THEN
-    ALTER TABLE hackathons ADD COLUMN registration_start TIMESTAMP WITH TIME ZONE;
-  END IF;
-
-  -- Add registration end
-  IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
-    WHERE table_name = 'hackathons' AND column_name = 'registration_end') THEN
-    ALTER TABLE hackathons ADD COLUMN registration_end TIMESTAMP WITH TIME ZONE;
-  END IF;
-
   -- Add current round tracking
   IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
     WHERE table_name = 'hackathons' AND column_name = 'current_round') THEN
@@ -283,7 +259,7 @@ BEGIN
   -- Add mode (online/offline/hybrid)
   IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
     WHERE table_name = 'hackathons' AND column_name = 'mode') THEN
-    ALTER TABLE hackathons ADD COLUMN mode VARCHAR(20) DEFAULT 'online';
+    ALTER TABLE hackathons ADD COLUMN mode VARCHAR(20) DEFAULT 'online' CHECK (mode IN ('online', 'offline', 'hybrid'));
   END IF;
   
   -- Add currency (VND/USD)

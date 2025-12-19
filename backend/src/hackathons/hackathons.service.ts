@@ -65,26 +65,7 @@ export class HackathonsService {
 
     const { data, error } = await supabase
       .from("hackathons")
-      .select(
-        `
-                id,
-                slug,
-                title,
-                tagline,
-                description,
-                status,
-                prize_pool,
-                max_participants,
-                registration_start,
-                registration_end,
-                submission_start,
-                submission_end,
-                judging_start,
-                judging_end,
-                is_featured,
-                created_at
-            `
-      )
+      .select("*")
       .neq("status", "draft")
       .order("created_at", { ascending: false });
 
@@ -120,9 +101,16 @@ export class HackathonsService {
           title: h.title,
           tagline: h.tagline,
           description: h.description,
+          coverImage: h.cover_image,
+          imageUrl: h.cover_image, // Use cover_image as imageUrl
+          mode: h.mode || "online",
+          currency: h.currency || "VND",
           status: h.status,
           prizePool: h.prize_pool,
           maxParticipants: h.max_participants,
+          // Use submission dates as start/end fallback
+          startDate: h.submission_start || h.registration_start,
+          endDate: h.judging_end || h.submission_end,
           registrationStart: h.registration_start,
           registrationEnd: h.registration_end,
           submissionStart: h.submission_start,
@@ -130,6 +118,9 @@ export class HackathonsService {
           judgingStart: h.judging_start,
           judgingEnd: h.judging_end,
           isFeatured: h.is_featured,
+          judgingCriteria: h.judging_criteria,
+          currentRound: h.current_round,
+          totalRounds: h.total_rounds || 3,
           createdAt: h.created_at,
           participantsCount: count || 0,
           teamsCount: teamsCount || 0,
@@ -163,26 +154,7 @@ export class HackathonsService {
     // First try to find by slug
     let { data, error } = await supabase
       .from("hackathons")
-      .select(
-        `
-                id,
-                slug,
-                title,
-                tagline,
-                description,
-                status,
-                prize_pool,
-                max_participants,
-                registration_start,
-                registration_end,
-                submission_start,
-                submission_end,
-                judging_start,
-                judging_end,
-                is_featured,
-                created_at
-            `
-      )
+      .select("*")
       .eq("slug", idOrSlug)
       .single();
 
@@ -190,26 +162,7 @@ export class HackathonsService {
     if (error || !data) {
       const result = await supabase
         .from("hackathons")
-        .select(
-          `
-                    id,
-                    slug,
-                    title,
-                    tagline,
-                    description,
-                    status,
-                    prize_pool,
-                    max_participants,
-                    registration_start,
-                    registration_end,
-                    submission_start,
-                    submission_end,
-                    judging_start,
-                    judging_end,
-                    is_featured,
-                    created_at
-                `
-        )
+        .select("*")
         .eq("id", idOrSlug)
         .single();
 
@@ -261,9 +214,16 @@ export class HackathonsService {
       title: data.title,
       tagline: data.tagline,
       description: data.description,
+      coverImage: data.cover_image,
+      imageUrl: data.cover_image, // Use cover_image as imageUrl
+      mode: data.mode || "online",
+      currency: data.currency || "VND",
       status: data.status,
       prizePool: data.prize_pool,
       maxParticipants: data.max_participants,
+      // Use submission dates as start/end fallback
+      startDate: data.submission_start || data.registration_start,
+      endDate: data.judging_end || data.submission_end,
       registrationStart: data.registration_start,
       registrationEnd: data.registration_end,
       submissionStart: data.submission_start,
@@ -271,6 +231,9 @@ export class HackathonsService {
       judgingStart: data.judging_start,
       judgingEnd: data.judging_end,
       isFeatured: data.is_featured,
+      judgingCriteria: data.judging_criteria,
+      currentRound: data.current_round,
+      totalRounds: data.total_rounds || 3,
       createdAt: data.created_at,
       participantsCount: participantsCount || 0,
       submissionsCount: submissionsCount || 0,
