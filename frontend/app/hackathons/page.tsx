@@ -38,6 +38,7 @@ interface Hackathon {
   rounds?: HackathonRound[];
   coverImage?: string; // 1x3 banner from admin
   bannerImage?: string;
+  imageUrl?: string; // Alternative image field from API
   mode?: 'online' | 'offline' | 'hybrid';
   organizerName?: string;
   registrationStart?: string;
@@ -97,7 +98,8 @@ const FeaturedHackathonCard = ({ hackathon }: { hackathon: Hackathon }) => {
   
   const countdown = getCountdown();
   const currentRound = hackathon.rounds?.find(r => r.status === 'active') || hackathon.rounds?.[0];
-  const coverImage = hackathon.coverImage || hackathon.bannerImage;
+  // Use coverImage, imageUrl, or bannerImage (in priority order)
+  const coverImage = hackathon.coverImage || hackathon.imageUrl || hackathon.bannerImage;
   
   return (
     <motion.div
@@ -286,7 +288,8 @@ const FeaturedHackathonCard = ({ hackathon }: { hackathon: Hackathon }) => {
 
 // Partner/External Hackathon Card (smaller, simpler)
 const PartnerHackathonCard = ({ hackathon, index }: { hackathon: Hackathon; index: number }) => {
-  const coverImage = hackathon.coverImage || hackathon.bannerImage;
+  // Use coverImage, imageUrl, or bannerImage (in priority order)
+  const coverImage = hackathon.coverImage || hackathon.imageUrl || hackathon.bannerImage;
   
   return (
     <motion.div

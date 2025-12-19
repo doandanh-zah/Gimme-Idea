@@ -8,20 +8,21 @@ import {
    AlertCircle, MoreHorizontal, Github, Disc, Link as LinkIcon,
    Monitor, Mic, SwatchBook, Code, ShieldCheck, Smartphone, UserPlus,
    RefreshCw, Lock, Search, Plus, Settings, LogOut, UserMinus,
-   LayoutDashboard, Rocket, BookOpen, Menu as MenuIcon, X, Sparkles, Activity, Send, CheckSquare, Globe, Video, Youtube, ThumbsUp, ArrowLeft, FileUp, Lightbulb, Edit3, Trash2, Filter, SortDesc
+   LayoutDashboard, Rocket, BookOpen, Menu as MenuIcon, X, Sparkles, Activity, Send, CheckSquare, Globe, Video, Youtube, ThumbsUp, ArrowLeft, FileUp, Lightbulb, Edit3, Trash2, Filter, SortDesc,
+   Loader2, Zap, Award
 } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
 
 import { useSearchParams } from 'next/navigation';
 import { format, isBefore, isSameDay } from 'date-fns';
-import { HACKATHONS_MOCK_DATA } from '@/lib/mock-hackathons';
 import InviteMemberModal from '@/components/InviteMemberModal';
 import ImportIdeaModal from '@/components/ImportIdeaModal';
 import { EditProjectModal } from '@/components/EditProjectModal';
 import { useAppStore } from '@/lib/store';
 import { Project } from '@/lib/types';
 import { apiClient } from '@/lib/api-client';
+import ConstellationBackground from '@/components/ConstellationBackground';
 
 // Map icon names from mock data to Lucide React components
 const LucideIconMap: { [key: string]: React.ElementType } = {
@@ -64,10 +65,14 @@ const SidebarItem = ({ id, label, icon: Icon, activeSection, setActiveSection, s
 
 export default function HackathonDashboard({ params }: { params: { id: string } }) {
    const { id } = params;
-   const hackathon = HACKATHONS_MOCK_DATA.find(h => h.id === id);
    const searchParams = useSearchParams();
    const mockDate = searchParams.get('mockDate') || searchParams.get('mockdate');
    const now = mockDate ? new Date(mockDate) : new Date();
+
+   // Hackathon data from API
+   const [hackathon, setHackathon] = useState<any>(null);
+   const [isLoadingHackathon, setIsLoadingHackathon] = useState(true);
+   const [hackathonError, setHackathonError] = useState<string | null>(null);
 
    // App Store
    const { openSubmitModal } = useAppStore();
@@ -155,6 +160,83 @@ export default function HackathonDashboard({ params }: { params: { id: string } 
 
    // Get user from store
    const { user } = useAppStore();
+
+   // Fetch hackathon data from API
+   useEffect(() => {
+      const fetchHackathon = async () => {
+         setIsLoadingHackathon(true);
+         setHackathonError(null);
+         try {
+            const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+            const res = await fetch(`${API_URL}/hackathons/${id}`);
+            const data = await res.json();
+            
+            if (data.success && data.data) {
+               // Transform API data to match expected format
+               const h = data.data;
+               setHackathon({
+                  id: h.id,
+                  slug: h.slug,
+                  title: h.title,
+                  tagline: h.tagline,
+                  description: h.description,
+                  status: h.status,
+                  prizePool: h.prizePool,
+                  maxParticipants: h.maxParticipants,
+                  participantsCount: h.participantsCount || 0,
+                  teamsCount: h.teamsCount || 0,
+                  submissionsCount: h.submissionsCount || 0,
+                  image_url: h.coverImage || h.imageUrl,
+                  coverImage: h.coverImage || h.imageUrl,
+                  mode: h.mode || 'online',
+                  currency: h.currency || 'VND',
+                  currentRound: h.currentRound || 0,
+                  totalRounds: h.totalRounds || 3,
+                  judgingCriteria: h.judgingCriteria || [],
+                  // Round dates
+                  registrationStart: h.registrationStart,
+                  registrationEnd: h.registrationEnd,
+                  submissionStart: h.submissionStart,
+                  submissionEnd: h.submissionEnd,
+                  judgingStart: h.judgingStart,
+                  judgingEnd: h.judgingEnd,
+                  // Build timeline from rounds or dates
+                  timeline: h.rounds?.length > 0 ? h.rounds.map((r: any) => ({
+                     title: r.title,
+                     icon: r.roundType === 'idea' ? 'Lightbulb' : r.roundType === 'pitching' ? 'Mic' : 'Code',
+                     startDate: r.startDate,
+                     endDate: r.endDate,
+                     status: r.status,
+                     roundNumber: r.roundNumber,
+                     roundType: r.roundType,
+                     mode: r.mode,
+                     teamsAdvancing: r.teamsAdvancing,
+                  })) : [
+                     { title: 'Registration', icon: 'UserPlus', startDate: h.registrationStart, endDate: h.registrationEnd, status: 'active' },
+                     { title: 'Idea Submission', icon: 'Lightbulb', startDate: h.submissionStart, endDate: h.submissionEnd, status: 'pending' },
+                     { title: 'Judging', icon: 'Target', startDate: h.judgingStart, endDate: h.judgingEnd, status: 'pending' },
+                  ],
+                  rounds: h.rounds || [],
+                  prizes: h.prizes || [],
+                  tracks: [],
+                  announcements: [],
+                  resources: [],
+               });
+            } else {
+               setHackathonError(data.error || 'Hackathon not found');
+            }
+         } catch (error) {
+            console.error('Failed to fetch hackathon:', error);
+            setHackathonError('Failed to load hackathon');
+         } finally {
+            setIsLoadingHackathon(false);
+         }
+      };
+
+      if (id) {
+         fetchHackathon();
+      }
+   }, [id]);
 
    // Load registration status
    const loadRegistrationStatus = async () => {
@@ -669,7 +751,43 @@ export default function HackathonDashboard({ params }: { params: { id: string } 
       terminalEndRef.current?.scrollIntoView({ behavior: "smooth" });
    }, [terminalHistory, hackathon?.announcements]);
 
-   if (!hackathon) return <div className="min-h-screen pt-32 text-center text-white">Hackathon Not Found</div>;
+   // Loading state
+   if (isLoadingHackathon) {
+      return (
+         <div className="min-h-screen flex items-center justify-center bg-[#0a0a0a]">
+            <ConstellationBackground opacity={0.2} />
+            <div className="text-center">
+               <Loader2 className="w-8 h-8 animate-spin text-[#FFD700] mx-auto mb-4" />
+               <p className="text-gray-400">Loading hackathon...</p>
+            </div>
+         </div>
+      );
+   }
+
+   // Error/Not Found state
+   if (hackathonError || !hackathon) {
+      return (
+         <div className="min-h-screen flex items-center justify-center bg-[#0a0a0a]">
+            <ConstellationBackground opacity={0.2} />
+            <div className="text-center max-w-md mx-auto p-8">
+               <div className="w-16 h-16 rounded-full bg-red-500/10 flex items-center justify-center mx-auto mb-4">
+                  <AlertCircle className="w-8 h-8 text-red-400" />
+               </div>
+               <h1 className="text-2xl font-bold text-white mb-2">Hackathon Not Found</h1>
+               <p className="text-gray-400 mb-6">
+                  {hackathonError || "The hackathon you're looking for doesn't exist or has been removed."}
+               </p>
+               <Link 
+                  href="/hackathons"
+                  className="inline-flex items-center gap-2 px-6 py-3 bg-[#FFD700] text-black font-bold rounded-lg hover:bg-[#FFD700]/90 transition-colors"
+               >
+                  <ArrowLeft className="w-4 h-4" />
+                  Back to Hackathons
+               </Link>
+            </div>
+         </div>
+      );
+   }
 
    return (
       <div className="h-screen w-screen text-gray-300 font-sans text-sm relative selection:bg-gold/30 overflow-hidden flex flex-col">

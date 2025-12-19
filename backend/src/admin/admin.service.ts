@@ -293,7 +293,7 @@ export class AdminService {
     const supabase = this.supabaseService.getAdminClient();
 
     // Build hackathon insert data - only include columns that exist in the database
-    // Based on current schema: id, slug, title, tagline, description, status, prize_pool, 
+    // Based on current schema: id, slug, title, tagline, description, status, prize_pool,
     // max_participants, registration_start, registration_end, submission_start, submission_end,
     // judging_start, judging_end, is_featured, created_by, created_at, updated_at,
     // cover_image, mode, currency, judging_criteria, current_round, format, total_rounds
@@ -312,13 +312,15 @@ export class AdminService {
     if (dto.maxParticipants) insertData.max_participants = dto.maxParticipants;
     if (dto.currency) insertData.currency = dto.currency;
     if (dto.prizePool) insertData.prize_pool = dto.prizePool;
-    
+
     // Registration dates (these columns should exist)
-    if (dto.registrationStart) insertData.registration_start = dto.registrationStart;
+    if (dto.registrationStart)
+      insertData.registration_start = dto.registrationStart;
     if (dto.registrationEnd) insertData.registration_end = dto.registrationEnd;
-    
+
     // Use round dates for submission/judging if available
-    if (dto.round1?.startDate) insertData.submission_start = dto.round1.startDate;
+    if (dto.round1?.startDate)
+      insertData.submission_start = dto.round1.startDate;
     if (dto.round1?.endDate) insertData.submission_end = dto.round1.endDate;
     if (dto.round3?.startDate) insertData.judging_start = dto.round3.startDate;
     if (dto.round3?.endDate) insertData.judging_end = dto.round3.endDate;
