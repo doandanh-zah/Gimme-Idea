@@ -53,7 +53,7 @@ export interface CreateHackathonDto {
   tagline?: string;
   description?: string;
   coverImage?: string;
-  mode?: 'online' | 'offline' | 'hybrid';
+  mode?: "online" | "offline" | "hybrid";
   maxParticipants?: number;
   // Legacy fields (still supported)
   startDate?: string;
@@ -285,34 +285,39 @@ export class AdminService {
     const supabase = this.supabaseService.getAdminClient();
 
     // Determine start/end dates from rounds or legacy fields
-    const startDate = dto.round1?.startDate || dto.startDate || dto.registrationStart;
+    const startDate =
+      dto.round1?.startDate || dto.startDate || dto.registrationStart;
     const endDate = dto.round3?.endDate || dto.endDate || dto.registrationEnd;
 
-    // Build hackathon insert data
+    // Build hackathon insert data - only include fields with values
     const insertData: any = {
       slug: dto.slug,
       title: dto.title,
-      tagline: dto.tagline,
-      description: dto.description,
-      cover_image: dto.coverImage,
-      mode: dto.mode || 'online',
-      max_participants: dto.maxParticipants || 100,
-      currency: dto.currency || 'VND',
-      start_date: startDate,
-      end_date: endDate,
-      registration_start: dto.registrationStart || startDate,
-      registration_end: dto.registrationEnd || dto.round1?.startDate,
-      prize_pool: dto.prizePool,
-      image_url: dto.imageUrl || dto.coverImage,
-      tags: dto.tags || [],
       status: "upcoming",
       created_by: adminId,
     };
+
+    // Add optional fields only if they have values
+    if (dto.tagline) insertData.tagline = dto.tagline;
+    if (dto.description) insertData.description = dto.description;
+    if (dto.coverImage) insertData.cover_image = dto.coverImage;
+    if (dto.mode) insertData.mode = dto.mode;
+    if (dto.maxParticipants) insertData.max_participants = dto.maxParticipants;
+    if (dto.currency) insertData.currency = dto.currency;
+    if (startDate) insertData.start_date = startDate;
+    if (endDate) insertData.end_date = endDate;
+    if (dto.registrationStart || startDate) insertData.registration_start = dto.registrationStart || startDate;
+    if (dto.registrationEnd || dto.round1?.startDate) insertData.registration_end = dto.registrationEnd || dto.round1?.startDate;
+    if (dto.prizePool) insertData.prize_pool = dto.prizePool;
+    if (dto.imageUrl || dto.coverImage) insertData.image_url = dto.imageUrl || dto.coverImage;
+    if (dto.tags && dto.tags.length > 0) insertData.tags = dto.tags;
 
     // Add judging criteria if provided
     if (dto.judgingCriteria) {
       insertData.judging_criteria = dto.judgingCriteria.judgeCategories;
     }
+
+    this.logger.log(`Creating hackathon with data: ${JSON.stringify(insertData)}`);
 
     const { data: hackathon, error } = await supabase
       .from("hackathons")
@@ -321,59 +326,59 @@ export class AdminService {
       .single();
 
     if (error) {
-      this.logger.error(`Failed to create hackathon: ${error.message}`);
+      this.logger.error(`Failed to create hackathon: ${error.message}`, error);
       throw new Error(`Failed to create hackathon: ${error.message}`);
     }
 
     // Create rounds if provided
     if (dto.round1 || dto.round2 || dto.round3) {
       const roundsToInsert = [];
-      
+
       if (dto.round1) {
         roundsToInsert.push({
           hackathon_id: hackathon.id,
           round_number: 1,
-          title: 'Round 1: Idea Phase',
-          description: 'Submit your innovative ideas and get feedback',
-          round_type: 'idea',
-          mode: dto.round1.mode || 'online',
+          title: "Round 1: Idea Phase",
+          description: "Submit your innovative ideas and get feedback",
+          round_type: "idea",
+          mode: dto.round1.mode || "online",
           start_date: dto.round1.startDate,
           end_date: dto.round1.endDate,
           results_date: dto.round1.resultsDate,
           teams_advancing: dto.ideasAdvancing || 50,
-          status: 'upcoming'
+          status: "upcoming",
         });
       }
-      
+
       if (dto.round2) {
         roundsToInsert.push({
           hackathon_id: hackathon.id,
           round_number: 2,
-          title: 'Round 2: Pitching',
-          description: 'Pitch your solution to judges',
-          round_type: 'pitching',
-          mode: dto.round2.mode || 'online',
+          title: "Round 2: Pitching",
+          description: "Pitch your solution to judges",
+          round_type: "pitching",
+          mode: dto.round2.mode || "online",
           start_date: dto.round2.startDate,
           end_date: dto.round2.endDate,
           results_date: dto.round2.resultsDate,
           teams_advancing: dto.round2.teamsAdvancing || 20,
-          status: 'upcoming'
+          status: "upcoming",
         });
       }
-      
+
       if (dto.round3) {
         roundsToInsert.push({
           hackathon_id: hackathon.id,
           round_number: 3,
-          title: 'Round 3: Final Demo',
-          description: 'Demonstrate your MVP',
-          round_type: 'final',
-          mode: dto.round3.mode || 'offline',
+          title: "Round 3: Final Demo",
+          description: "Demonstrate your MVP",
+          round_type: "final",
+          mode: dto.round3.mode || "offline",
           start_date: dto.round3.startDate,
           end_date: dto.round3.endDate,
           results_date: dto.round3.resultsDate,
           teams_advancing: dto.round3.teamsAdvancing || 5,
-          status: 'upcoming'
+          status: "upcoming",
         });
       }
 
@@ -381,7 +386,7 @@ export class AdminService {
         const { error: roundsError } = await supabase
           .from("hackathon_rounds")
           .insert(roundsToInsert);
-        
+
         if (roundsError) {
           this.logger.warn(`Failed to create rounds: ${roundsError.message}`);
         }
@@ -390,12 +395,12 @@ export class AdminService {
 
     // Create prizes if provided
     if (dto.prizes && dto.prizes.length > 0) {
-      const prizesToInsert = dto.prizes.map(p => ({
+      const prizesToInsert = dto.prizes.map((p) => ({
         hackathon_id: hackathon.id,
         round_number: 3, // Final round prizes
         rank: p.rank,
         title: p.title,
-        prize_amount: p.amount
+        prize_amount: p.amount,
       }));
 
       const { error: prizesError } = await supabase
@@ -409,12 +414,12 @@ export class AdminService {
 
     // Create idea phase prizes if provided
     if (dto.ideaPrizes && dto.ideaPrizes.length > 0) {
-      const ideaPrizesToInsert = dto.ideaPrizes.map(p => ({
+      const ideaPrizesToInsert = dto.ideaPrizes.map((p) => ({
         hackathon_id: hackathon.id,
         round_number: 1, // Round 1 prizes
         rank: p.rank,
         title: p.title,
-        prize_amount: p.amount
+        prize_amount: p.amount,
       }));
 
       const { error: ideaPrizesError } = await supabase
@@ -422,18 +427,20 @@ export class AdminService {
         .insert(ideaPrizesToInsert);
 
       if (ideaPrizesError) {
-        this.logger.warn(`Failed to create idea prizes: ${ideaPrizesError.message}`);
+        this.logger.warn(
+          `Failed to create idea prizes: ${ideaPrizesError.message}`
+        );
       }
     }
 
     // Create schedule events if provided
     if (dto.schedule && dto.schedule.length > 0) {
-      const scheduleToInsert = dto.schedule.map(s => ({
+      const scheduleToInsert = dto.schedule.map((s) => ({
         hackathon_id: hackathon.id,
         title: s.title,
         event_date: s.date,
         link: s.link,
-        event_type: s.type || 'other'
+        event_type: s.type || "other",
       }));
 
       const { error: scheduleError } = await supabase
@@ -447,10 +454,10 @@ export class AdminService {
 
     // Create partner hackathons if provided
     if (dto.partnerHackathons && dto.partnerHackathons.length > 0) {
-      const partnersToInsert = dto.partnerHackathons.map(p => ({
+      const partnersToInsert = dto.partnerHackathons.map((p) => ({
         hackathon_id: hackathon.id,
         partner_name: p.name,
-        partner_link: p.link
+        partner_link: p.link,
       }));
 
       const { error: partnersError } = await supabase
@@ -498,12 +505,15 @@ export class AdminService {
     if (updates.description) updateData.description = updates.description;
     if (updates.coverImage) updateData.cover_image = updates.coverImage;
     if (updates.mode) updateData.mode = updates.mode;
-    if (updates.maxParticipants) updateData.max_participants = updates.maxParticipants;
+    if (updates.maxParticipants)
+      updateData.max_participants = updates.maxParticipants;
     if (updates.currency) updateData.currency = updates.currency;
     if (updates.startDate) updateData.start_date = updates.startDate;
     if (updates.endDate) updateData.end_date = updates.endDate;
-    if (updates.registrationStart) updateData.registration_start = updates.registrationStart;
-    if (updates.registrationEnd) updateData.registration_end = updates.registrationEnd;
+    if (updates.registrationStart)
+      updateData.registration_start = updates.registrationStart;
+    if (updates.registrationEnd)
+      updateData.registration_end = updates.registrationEnd;
     if (updates.prizePool) updateData.prize_pool = updates.prizePool;
     if (updates.imageUrl) updateData.image_url = updates.imageUrl;
     if (updates.tags) updateData.tags = updates.tags;
@@ -537,55 +547,58 @@ export class AdminService {
     // Update rounds if provided
     if (updates.round1 || updates.round2 || updates.round3) {
       // Delete existing rounds and recreate
-      await supabase.from("hackathon_rounds").delete().eq("hackathon_id", hackathonId);
-      
+      await supabase
+        .from("hackathon_rounds")
+        .delete()
+        .eq("hackathon_id", hackathonId);
+
       const roundsToInsert = [];
-      
+
       if (updates.round1) {
         roundsToInsert.push({
           hackathon_id: hackathonId,
           round_number: 1,
-          title: 'Round 1: Idea Phase',
-          description: 'Submit your innovative ideas and get feedback',
-          round_type: 'idea',
-          mode: updates.round1.mode || 'online',
+          title: "Round 1: Idea Phase",
+          description: "Submit your innovative ideas and get feedback",
+          round_type: "idea",
+          mode: updates.round1.mode || "online",
           start_date: updates.round1.startDate,
           end_date: updates.round1.endDate,
           results_date: updates.round1.resultsDate,
           teams_advancing: updates.ideasAdvancing || 50,
-          status: 'upcoming'
+          status: "upcoming",
         });
       }
-      
+
       if (updates.round2) {
         roundsToInsert.push({
           hackathon_id: hackathonId,
           round_number: 2,
-          title: 'Round 2: Pitching',
-          description: 'Pitch your solution to judges',
-          round_type: 'pitching',
-          mode: updates.round2.mode || 'online',
+          title: "Round 2: Pitching",
+          description: "Pitch your solution to judges",
+          round_type: "pitching",
+          mode: updates.round2.mode || "online",
           start_date: updates.round2.startDate,
           end_date: updates.round2.endDate,
           results_date: updates.round2.resultsDate,
           teams_advancing: updates.round2.teamsAdvancing || 20,
-          status: 'upcoming'
+          status: "upcoming",
         });
       }
-      
+
       if (updates.round3) {
         roundsToInsert.push({
           hackathon_id: hackathonId,
           round_number: 3,
-          title: 'Round 3: Final Demo',
-          description: 'Demonstrate your MVP',
-          round_type: 'final',
-          mode: updates.round3.mode || 'offline',
+          title: "Round 3: Final Demo",
+          description: "Demonstrate your MVP",
+          round_type: "final",
+          mode: updates.round3.mode || "offline",
           start_date: updates.round3.startDate,
           end_date: updates.round3.endDate,
           results_date: updates.round3.resultsDate,
           teams_advancing: updates.round3.teamsAdvancing || 5,
-          status: 'upcoming'
+          status: "upcoming",
         });
       }
 
@@ -596,14 +609,18 @@ export class AdminService {
 
     // Update prizes if provided
     if (updates.prizes && updates.prizes.length > 0) {
-      await supabase.from("hackathon_prizes").delete().eq("hackathon_id", hackathonId).eq("round_number", 3);
-      
-      const prizesToInsert = updates.prizes.map(p => ({
+      await supabase
+        .from("hackathon_prizes")
+        .delete()
+        .eq("hackathon_id", hackathonId)
+        .eq("round_number", 3);
+
+      const prizesToInsert = updates.prizes.map((p) => ({
         hackathon_id: hackathonId,
         round_number: 3,
         rank: p.rank,
         title: p.title,
-        prize_amount: p.amount
+        prize_amount: p.amount,
       }));
 
       await supabase.from("hackathon_prizes").insert(prizesToInsert);
@@ -611,14 +628,18 @@ export class AdminService {
 
     // Update idea prizes if provided
     if (updates.ideaPrizes && updates.ideaPrizes.length > 0) {
-      await supabase.from("hackathon_prizes").delete().eq("hackathon_id", hackathonId).eq("round_number", 1);
-      
-      const ideaPrizesToInsert = updates.ideaPrizes.map(p => ({
+      await supabase
+        .from("hackathon_prizes")
+        .delete()
+        .eq("hackathon_id", hackathonId)
+        .eq("round_number", 1);
+
+      const ideaPrizesToInsert = updates.ideaPrizes.map((p) => ({
         hackathon_id: hackathonId,
         round_number: 1,
         rank: p.rank,
         title: p.title,
-        prize_amount: p.amount
+        prize_amount: p.amount,
       }));
 
       await supabase.from("hackathon_prizes").insert(ideaPrizesToInsert);
