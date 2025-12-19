@@ -381,6 +381,13 @@ export default function AdminDashboard() {
       resultsDate: '',
       mode: 'online' as 'online' | 'offline' | 'hybrid',
       teamsAdvancing: 20,
+      // Submission requirements when online
+      submissions: {
+        pitchDeck: { required: true, link: '' }, // Google Drive
+        pitchingVideo: { required: false, link: '' }, // Loom
+        technicalDemo: { required: false, link: '' }, // YouTube
+        mvp: { required: false, link: '' }, // Product link
+      },
     },
     // Round 3 (Final) configuration
     round3: {
@@ -389,6 +396,13 @@ export default function AdminDashboard() {
       resultsDate: '',
       mode: 'offline' as 'online' | 'offline' | 'hybrid',
       teamsAdvancing: 5,
+      // Submission requirements when online
+      submissions: {
+        pitchDeck: { required: true, link: '' }, // Google Drive
+        pitchingVideo: { required: true, link: '' }, // Loom
+        technicalDemo: { required: false, link: '' }, // YouTube
+        mvp: { required: true, link: '' }, // Product link
+      },
     },
     // Idea Phase Prizes (Top 10)
     ideaPrizeCount: 10 as 5 | 10,
@@ -754,7 +768,10 @@ export default function AdminDashboard() {
       
       const res = await fetch(url, {
         method,
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('auth_token') || ''}`
+        },
         body: JSON.stringify(hackathonForm),
       });
       
@@ -779,7 +796,12 @@ export default function AdminDashboard() {
     
     try {
       const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
-      const res = await fetch(`${API_URL}/admin/hackathons/${id}`, { method: 'DELETE' });
+      const res = await fetch(`${API_URL}/admin/hackathons/${id}`, { 
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('auth_token') || ''}`
+        }
+      });
       const data = await res.json();
       
       if (data.success) {
@@ -890,6 +912,12 @@ export default function AdminDashboard() {
         resultsDate: '',
         mode: 'online',
         teamsAdvancing: 20,
+        submissions: {
+          pitchDeck: { required: true, link: '' },
+          pitchingVideo: { required: false, link: '' },
+          technicalDemo: { required: false, link: '' },
+          mvp: { required: false, link: '' },
+        },
       },
       round3: {
         startDate: '',
@@ -897,6 +925,12 @@ export default function AdminDashboard() {
         resultsDate: '',
         mode: 'offline',
         teamsAdvancing: 5,
+        submissions: {
+          pitchDeck: { required: true, link: '' },
+          pitchingVideo: { required: true, link: '' },
+          technicalDemo: { required: false, link: '' },
+          mvp: { required: true, link: '' },
+        },
       },
       ideaPrizeCount: 10,
       ideaPrizes: [
@@ -959,8 +993,24 @@ export default function AdminDashboard() {
         { rank: 3, amount: '', title: '3rd Place' },
       ],
       round1: h.round1 || { startDate: '', endDate: '', resultsDate: '', mode: 'online' },
-      round2: h.round2 || { startDate: '', endDate: '', resultsDate: '', mode: 'online', teamsAdvancing: 20 },
-      round3: h.round3 || { startDate: '', endDate: '', resultsDate: '', mode: 'offline', teamsAdvancing: 5 },
+      round2: h.round2 || { 
+        startDate: '', endDate: '', resultsDate: '', mode: 'online', teamsAdvancing: 20,
+        submissions: {
+          pitchDeck: { required: true, link: '' },
+          pitchingVideo: { required: false, link: '' },
+          technicalDemo: { required: false, link: '' },
+          mvp: { required: false, link: '' },
+        },
+      },
+      round3: h.round3 || { 
+        startDate: '', endDate: '', resultsDate: '', mode: 'offline', teamsAdvancing: 5,
+        submissions: {
+          pitchDeck: { required: true, link: '' },
+          pitchingVideo: { required: true, link: '' },
+          technicalDemo: { required: false, link: '' },
+          mvp: { required: true, link: '' },
+        },
+      },
       ideaPrizeCount: h.ideaPrizeCount || 10,
       ideaPrizes: h.ideaPrizes || [
         { rank: 1, amount: '', title: 'Best Idea #1' },
@@ -1000,23 +1050,34 @@ export default function AdminDashboard() {
       const formData = new FormData();
       formData.append('image', file);
       
-      // imgbb API - you need to get your own API key from imgbb.com
-      const IMGBB_API_KEY = 'aa9af3a48df8f3912e51bf37e6d56c0b'; // Free tier API key
+      // imgbb API key from environment variable
+      const IMGBB_API_KEY = process.env.NEXT_PUBLIC_IMGBB_API_KEY;
+      
+      if (!IMGBB_API_KEY) {
+        toast.error('imgbb API key not configured');
+        console.error('Missing NEXT_PUBLIC_IMGBB_API_KEY environment variable');
+        setIsUploadingImage(false);
+        return;
+      }
+      
       const res = await fetch(`https://api.imgbb.com/1/upload?key=${IMGBB_API_KEY}`, {
         method: 'POST',
         body: formData,
       });
       
       const data = await res.json();
-      if (data.success) {
+      console.log('imgbb response:', data); // Debug log
+      
+      if (data.success && data.data?.url) {
         setHackathonForm(prev => ({ ...prev, coverImage: data.data.url }));
         toast.success('Image uploaded successfully!');
       } else {
-        toast.error('Failed to upload image');
+        console.error('imgbb error:', data);
+        toast.error(data.error?.message || 'Failed to upload image');
       }
     } catch (error) {
       console.error('Upload error:', error);
-      toast.error('Failed to upload image');
+      toast.error('Failed to upload image. Check console for details.');
     } finally {
       setIsUploadingImage(false);
     }
@@ -2498,6 +2559,101 @@ export default function AdminDashboard() {
                         />
                       </div>
                     </div>
+                    
+                    {/* Submission Requirements for Round 2 (when online/hybrid) */}
+                    {(hackathonForm.round2.mode === 'online' || hackathonForm.round2.mode === 'hybrid') && (
+                      <div className="mt-4 p-4 bg-blue-500/10 rounded-lg border border-blue-500/20">
+                        <h5 className="text-sm font-medium text-blue-400 mb-3 flex items-center gap-2">
+                          📎 Submission Requirements
+                        </h5>
+                        <div className="grid grid-cols-2 gap-3">
+                          <label className="flex items-center gap-3 p-3 bg-white/5 rounded-lg cursor-pointer hover:bg-white/10 transition-colors">
+                            <input
+                              type="checkbox"
+                              checked={hackathonForm.round2.submissions.pitchDeck.required}
+                              onChange={(e) => setHackathonForm({
+                                ...hackathonForm,
+                                round2: {
+                                  ...hackathonForm.round2,
+                                  submissions: {
+                                    ...hackathonForm.round2.submissions,
+                                    pitchDeck: { ...hackathonForm.round2.submissions.pitchDeck, required: e.target.checked }
+                                  }
+                                }
+                              })}
+                              className="w-4 h-4 rounded border-white/20 bg-white/5 text-purple-500 focus:ring-purple-500"
+                            />
+                            <div className="flex-1">
+                              <span className="text-sm text-white">📄 Pitch Deck</span>
+                              <span className="text-xs text-gray-500 block">Google Drive link</span>
+                            </div>
+                          </label>
+                          <label className="flex items-center gap-3 p-3 bg-white/5 rounded-lg cursor-pointer hover:bg-white/10 transition-colors">
+                            <input
+                              type="checkbox"
+                              checked={hackathonForm.round2.submissions.pitchingVideo.required}
+                              onChange={(e) => setHackathonForm({
+                                ...hackathonForm,
+                                round2: {
+                                  ...hackathonForm.round2,
+                                  submissions: {
+                                    ...hackathonForm.round2.submissions,
+                                    pitchingVideo: { ...hackathonForm.round2.submissions.pitchingVideo, required: e.target.checked }
+                                  }
+                                }
+                              })}
+                              className="w-4 h-4 rounded border-white/20 bg-white/5 text-purple-500 focus:ring-purple-500"
+                            />
+                            <div className="flex-1">
+                              <span className="text-sm text-white">🎥 Pitching Video</span>
+                              <span className="text-xs text-gray-500 block">Loom link</span>
+                            </div>
+                          </label>
+                          <label className="flex items-center gap-3 p-3 bg-white/5 rounded-lg cursor-pointer hover:bg-white/10 transition-colors">
+                            <input
+                              type="checkbox"
+                              checked={hackathonForm.round2.submissions.technicalDemo.required}
+                              onChange={(e) => setHackathonForm({
+                                ...hackathonForm,
+                                round2: {
+                                  ...hackathonForm.round2,
+                                  submissions: {
+                                    ...hackathonForm.round2.submissions,
+                                    technicalDemo: { ...hackathonForm.round2.submissions.technicalDemo, required: e.target.checked }
+                                  }
+                                }
+                              })}
+                              className="w-4 h-4 rounded border-white/20 bg-white/5 text-purple-500 focus:ring-purple-500"
+                            />
+                            <div className="flex-1">
+                              <span className="text-sm text-white">💻 Technical Demo</span>
+                              <span className="text-xs text-gray-500 block">YouTube link</span>
+                            </div>
+                          </label>
+                          <label className="flex items-center gap-3 p-3 bg-white/5 rounded-lg cursor-pointer hover:bg-white/10 transition-colors">
+                            <input
+                              type="checkbox"
+                              checked={hackathonForm.round2.submissions.mvp.required}
+                              onChange={(e) => setHackathonForm({
+                                ...hackathonForm,
+                                round2: {
+                                  ...hackathonForm.round2,
+                                  submissions: {
+                                    ...hackathonForm.round2.submissions,
+                                    mvp: { ...hackathonForm.round2.submissions.mvp, required: e.target.checked }
+                                  }
+                                }
+                              })}
+                              className="w-4 h-4 rounded border-white/20 bg-white/5 text-purple-500 focus:ring-purple-500"
+                            />
+                            <div className="flex-1">
+                              <span className="text-sm text-white">🚀 MVP / Product</span>
+                              <span className="text-xs text-gray-500 block">Product link</span>
+                            </div>
+                          </label>
+                        </div>
+                      </div>
+                    )}
                   </div>
 
                   {/* Round 3: Final */}
@@ -2573,6 +2729,101 @@ export default function AdminDashboard() {
                         />
                       </div>
                     </div>
+                    
+                    {/* Submission Requirements for Round 3 (when online/hybrid) */}
+                    {(hackathonForm.round3.mode === 'online' || hackathonForm.round3.mode === 'hybrid') && (
+                      <div className="mt-4 p-4 bg-amber-500/10 rounded-lg border border-amber-500/20">
+                        <h5 className="text-sm font-medium text-amber-400 mb-3 flex items-center gap-2">
+                          📎 Submission Requirements
+                        </h5>
+                        <div className="grid grid-cols-2 gap-3">
+                          <label className="flex items-center gap-3 p-3 bg-white/5 rounded-lg cursor-pointer hover:bg-white/10 transition-colors">
+                            <input
+                              type="checkbox"
+                              checked={hackathonForm.round3.submissions.pitchDeck.required}
+                              onChange={(e) => setHackathonForm({
+                                ...hackathonForm,
+                                round3: {
+                                  ...hackathonForm.round3,
+                                  submissions: {
+                                    ...hackathonForm.round3.submissions,
+                                    pitchDeck: { ...hackathonForm.round3.submissions.pitchDeck, required: e.target.checked }
+                                  }
+                                }
+                              })}
+                              className="w-4 h-4 rounded border-white/20 bg-white/5 text-purple-500 focus:ring-purple-500"
+                            />
+                            <div className="flex-1">
+                              <span className="text-sm text-white">📄 Pitch Deck</span>
+                              <span className="text-xs text-gray-500 block">Google Drive link</span>
+                            </div>
+                          </label>
+                          <label className="flex items-center gap-3 p-3 bg-white/5 rounded-lg cursor-pointer hover:bg-white/10 transition-colors">
+                            <input
+                              type="checkbox"
+                              checked={hackathonForm.round3.submissions.pitchingVideo.required}
+                              onChange={(e) => setHackathonForm({
+                                ...hackathonForm,
+                                round3: {
+                                  ...hackathonForm.round3,
+                                  submissions: {
+                                    ...hackathonForm.round3.submissions,
+                                    pitchingVideo: { ...hackathonForm.round3.submissions.pitchingVideo, required: e.target.checked }
+                                  }
+                                }
+                              })}
+                              className="w-4 h-4 rounded border-white/20 bg-white/5 text-purple-500 focus:ring-purple-500"
+                            />
+                            <div className="flex-1">
+                              <span className="text-sm text-white">🎥 Pitching Video</span>
+                              <span className="text-xs text-gray-500 block">Loom link</span>
+                            </div>
+                          </label>
+                          <label className="flex items-center gap-3 p-3 bg-white/5 rounded-lg cursor-pointer hover:bg-white/10 transition-colors">
+                            <input
+                              type="checkbox"
+                              checked={hackathonForm.round3.submissions.technicalDemo.required}
+                              onChange={(e) => setHackathonForm({
+                                ...hackathonForm,
+                                round3: {
+                                  ...hackathonForm.round3,
+                                  submissions: {
+                                    ...hackathonForm.round3.submissions,
+                                    technicalDemo: { ...hackathonForm.round3.submissions.technicalDemo, required: e.target.checked }
+                                  }
+                                }
+                              })}
+                              className="w-4 h-4 rounded border-white/20 bg-white/5 text-purple-500 focus:ring-purple-500"
+                            />
+                            <div className="flex-1">
+                              <span className="text-sm text-white">💻 Technical Demo</span>
+                              <span className="text-xs text-gray-500 block">YouTube link</span>
+                            </div>
+                          </label>
+                          <label className="flex items-center gap-3 p-3 bg-white/5 rounded-lg cursor-pointer hover:bg-white/10 transition-colors">
+                            <input
+                              type="checkbox"
+                              checked={hackathonForm.round3.submissions.mvp.required}
+                              onChange={(e) => setHackathonForm({
+                                ...hackathonForm,
+                                round3: {
+                                  ...hackathonForm.round3,
+                                  submissions: {
+                                    ...hackathonForm.round3.submissions,
+                                    mvp: { ...hackathonForm.round3.submissions.mvp, required: e.target.checked }
+                                  }
+                                }
+                              })}
+                              className="w-4 h-4 rounded border-white/20 bg-white/5 text-purple-500 focus:ring-purple-500"
+                            />
+                            <div className="flex-1">
+                              <span className="text-sm text-white">🚀 MVP / Product</span>
+                              <span className="text-xs text-gray-500 block">Product link</span>
+                            </div>
+                          </label>
+                        </div>
+                      </div>
+                    )}
                   </div>
 
                   {/* Idea Phase Prizes - Top 10 */}
