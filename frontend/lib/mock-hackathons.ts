@@ -1,79 +1,274 @@
-export const HACKATHONS_MOCK_DATA = [
+export interface Hackathon {
+  id: string;
+  title: string;
+  date: string;
+  status: string;
+  prizePool: string;
+  description: string;
+  countdown?: string;
+  timeline?: any[];
+  prizes?: any[];
+  tasks?: any[];
+  tracks?: any[];
+  leaderboard?: any[];
+  resources?: any[];
+  tabs?: any[];
+  projectTicket?: any;
+  image_url?: string;
+  announcements?: any[];
+  teams?: any[];
+  participants?: any[];
+  participantsCount?: number;
+}
+
+export const HACKATHONS_MOCK_DATA: Hackathon[] = [
   {
-    id: 'dsuc-hackathon-solana-edu',
-    title: 'DSUC HACKATHON : Education Ecosystem using Solana blockchain',
-    date: 'Jan 15 - Feb 15, 2026',
-    status: 'upcoming',
-    prizePool: '17,000,000 VND',
-    description: 'Build innovative solutions for the education sector leveraging the power of Solana blockchain. Focus on decentralized learning, credentialing, and community building.',
-    countdown: '03M : 05D : 10H',
+    id: "dsuc-hackathon-solana-edu",
+    title: "DSUC HACKATHON : Education Ecosystem using Solana blockchain",
+    date: "Jan 15 - Feb 15, 2026",
+    status: "upcoming",
+    prizePool: "17,000,000 VND",
+    description:
+      "Build innovative solutions for the education sector leveraging the power of Solana blockchain. Focus on decentralized learning, credentialing, and community building.",
+    countdown: "03M : 05D : 10H",
     timeline: [
-      { id: '1', title: 'Registration Phase', startDate: '2026-01-15T00:00:00+07:00', endDate: '2026-02-01T17:00:00+07:00' },
-      { id: '2', title: 'Idea Submission', startDate: '2026-02-05T09:00:00+07:00', endDate: '2026-02-12T17:00:00+07:00' },
-      { id: '3', title: 'Pitching Event', startDate: '2026-03-08T09:00:00+07:00', endDate: '2026-03-08T23:59:59+07:00' },
-      { id: '4', title: 'Grand Final: MVP & Tech Demo', startDate: '2026-03-15T09:00:00+07:00', endDate: '2026-03-15T23:59:59+07:00' },
+      {
+        id: "1",
+        title: "Registration Phase",
+        startDate: "2026-01-15T00:00:00+07:00",
+        endDate: "2026-02-01T17:00:00+07:00",
+      },
+      {
+        id: "2",
+        title: "Idea Submission",
+        startDate: "2026-02-05T09:00:00+07:00",
+        endDate: "2026-02-12T17:00:00+07:00",
+      },
+      {
+        id: "3",
+        title: "Pitching Event",
+        startDate: "2026-03-08T09:00:00+07:00",
+        endDate: "2026-03-08T23:59:59+07:00",
+      },
+      {
+        id: "4",
+        title: "Grand Final: MVP & Tech Demo",
+        startDate: "2026-03-15T09:00:00+07:00",
+        endDate: "2026-03-15T23:59:59+07:00",
+      },
     ],
     prizes: [
-      { rank: '1st Place', reward: '10,000,000 VND' },
-      { rank: '2nd Place', reward: '5,000,000 VND' },
-      { rank: '3rd Place', reward: '2,000,000 VND' },
+      { rank: "1st Place", reward: "10,000,000 VND" },
+      { rank: "2nd Place", reward: "5,000,000 VND" },
+      { rank: "3rd Place", reward: "2,000,000 VND" },
     ],
     tasks: [
-      { id: '1.1', text: 'Register for the Hackathon', phaseId: '1', done: false },
-      { id: '1.2', text: 'Join DSUC Discord', phaseId: '1', done: false },
-      { id: '1.3', text: 'Form a Team', phaseId: '1', done: false },
-      { id: '2.1', text: 'Submit Idea Proposal', phaseId: '2', done: false },
-      { id: '2.2', text: 'Update Project Page', phaseId: '2', done: false },
-      { id: '3.1', text: 'Upload Pitch Deck', phaseId: '3', done: false },
-      { id: '3.2', text: 'Submit Demo Video', phaseId: '3', done: false },
-      { id: '4.1', text: 'Attend Closing Ceremony', phaseId: '4', done: false },
+      {
+        id: "1.1",
+        text: "Register for the Hackathon",
+        phaseId: "1",
+        done: false,
+      },
+      { id: "1.2", text: "Join DSUC Discord", phaseId: "1", done: false },
+      { id: "1.3", text: "Form a Team", phaseId: "1", done: false },
+      { id: "2.1", text: "Submit Idea Proposal", phaseId: "2", done: false },
+      { id: "2.2", text: "Update Project Page", phaseId: "2", done: false },
+      { id: "3.1", text: "Upload Pitch Deck", phaseId: "3", done: false },
+      { id: "3.2", text: "Submit Demo Video", phaseId: "3", done: false },
+      { id: "4.1", text: "Attend Closing Ceremony", phaseId: "4", done: false },
     ],
     tracks: [
-      { title: 'Decentralized Learning Platforms', icon: 'Book', color: 'text-blue-400', image: 'https://images.unsplash.com/photo-1546410531-bb4696068285?w=800&auto=format&fit=crop' },
-      { title: 'Blockchain-based Credentialing', icon: 'ShieldCheck', color: 'text-green-400', image: 'https://images.unsplash.com/photo-1621361284488-82ef10f7639d?w=800&auto=format&fit=crop' },
-      { title: 'Educational DAOs & Community Tools', icon: 'Users', color: 'text-purple-400', image: 'https://images.unsplash.com/photo-1552588329-a726715b561c?w=800&auto=format&fit=crop' },
+      {
+        title: "Decentralized Learning Platforms",
+        icon: "Book",
+        color: "text-blue-400",
+        image:
+          "https://images.unsplash.com/photo-1546410531-bb4696068285?w=800&auto=format&fit=crop",
+      },
+      {
+        title: "Blockchain-based Credentialing",
+        icon: "ShieldCheck",
+        color: "text-green-400",
+        image:
+          "https://images.unsplash.com/photo-1621361284488-82ef10f7639d?w=800&auto=format&fit=crop",
+      },
+      {
+        title: "Educational DAOs & Community Tools",
+        icon: "Users",
+        color: "text-purple-400",
+        image:
+          "https://images.unsplash.com/photo-1552588329-a726715b561c?w=800&auto=format&fit=crop",
+      },
     ],
     leaderboard: [],
     resources: [
-      { name: 'Solana Docs', icon: 'Code', link: 'https://docs.solana.com/' },
-      { name: 'DSUC Discord', icon: 'MessageSquare', link: 'https://discord.gg/dsuc' },
+      { name: "Solana Docs", icon: "Code", link: "https://docs.solana.com/" },
+      {
+        name: "DSUC Discord",
+        icon: "MessageSquare",
+        link: "https://discord.gg/dsuc",
+      },
     ],
     tabs: [
-      { id: 'announcement', label: 'Announcements', stepId: null },
-      { id: 'tracks', label: 'Tracks', stepId: null },
-      { id: 'register', label: 'Registration', stepId: '1', hideAfterEnd: true },
-      { id: 'team', label: 'Team', stepId: '1' },
-      { id: 'submission', label: 'Submission', stepId: '2' },
-      { id: 'awarding', label: 'Winner Announcement', stepId: '4' },
+      { id: "announcement", label: "Announcements", stepId: null },
+      { id: "tracks", label: "Tracks", stepId: null },
+      {
+        id: "register",
+        label: "Registration",
+        stepId: "1",
+        hideAfterEnd: true,
+      },
+      { id: "team", label: "Team", stepId: "1" },
+      { id: "submission", label: "Submission", stepId: "2" },
+      { id: "awarding", label: "Winner Announcement", stepId: "4" },
     ],
     projectTicket: null,
-    image_url: 'https://images.unsplash.com/photo-1596495578051-24750d42171f?q=80&w=2940&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D',
+    image_url:
+      "https://images.unsplash.com/photo-1596495578051-24750d42171f?q=80&w=2940&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
     announcements: [
-      { id: '1', date: '2026-01-15 09:00:00', message: 'System initialized. Welcome, builder!', type: 'info', config: { effect: 'typewriter' } },
-      { id: '2', date: '2026-01-16 10:00:00', message: 'New resource added: Solana Cookbook. Check the Resources tab.', type: 'info' },
-      { id: '3', date: '2026-01-20 14:30:00', message: 'Mentor @solana_dev_core joined the Discord server. Ask your questions!', type: 'info' },
-      { id: '4', date: '2026-01-25 00:00:00', message: 'WARNING: Registration closes in', type: 'warning', config: { effect: 'pulse', widget: { type: 'countdown', target: '2025-12-29T17:00:00+07:00' } } },
-      { id: '5', date: '2026-02-01 17:00:00', message: 'REGISTRATION PHASE CONCLUDED. GOOD LUCK!', type: 'success', config: { effect: 'glitch' } },
-      { id: '6', date: '2026-02-05 09:00:00', message: 'IDEA SUBMISSION PHASE ACTIVE!', type: 'success', config: { effect: 'typewriter' } },
-      { id: '7', date: '2026-02-10 12:00:00', message: 'Reminder: Submission deadline is in 2 days.', type: 'warning', config: { effect: 'pulse' } },
+      {
+        id: "1",
+        date: "2026-01-15 09:00:00",
+        message: "System initialized. Welcome, builder!",
+        type: "info",
+        config: { effect: "typewriter" },
+      },
+      {
+        id: "2",
+        date: "2026-01-16 10:00:00",
+        message:
+          "New resource added: Solana Cookbook. Check the Resources tab.",
+        type: "info",
+      },
+      {
+        id: "3",
+        date: "2026-01-20 14:30:00",
+        message:
+          "Mentor @solana_dev_core joined the Discord server. Ask your questions!",
+        type: "info",
+      },
+      {
+        id: "4",
+        date: "2026-01-25 00:00:00",
+        message: "WARNING: Registration closes in",
+        type: "warning",
+        config: {
+          effect: "pulse",
+          widget: { type: "countdown", target: "2025-12-29T17:00:00+07:00" },
+        },
+      },
+      {
+        id: "5",
+        date: "2026-02-01 17:00:00",
+        message: "REGISTRATION PHASE CONCLUDED. GOOD LUCK!",
+        type: "success",
+        config: { effect: "glitch" },
+      },
+      {
+        id: "6",
+        date: "2026-02-05 09:00:00",
+        message: "IDEA SUBMISSION PHASE ACTIVE!",
+        type: "success",
+        config: { effect: "typewriter" },
+      },
+      {
+        id: "7",
+        date: "2026-02-10 12:00:00",
+        message: "Reminder: Submission deadline is in 2 days.",
+        type: "warning",
+        config: { effect: "pulse" },
+      },
     ],
     teams: [
-      { id: 1, name: 'Solana Builders', members: 3, maxMembers: 5, tags: ['DeFi', 'Rust'], lookingFor: ['Frontend Dev', 'Designer'] },
-      { id: 2, name: 'EduChain', members: 2, maxMembers: 4, tags: ['Education', 'DAO'], lookingFor: ['Smart Contract Dev'] },
-      { id: 3, name: 'Alpha Squad', members: 4, maxMembers: 4, tags: ['NFT', 'Gaming'], lookingFor: [] },
-      { id: 4, name: 'Green Earth', members: 1, maxMembers: 3, tags: ['Eco', 'Social'], lookingFor: ['Full Stack', 'Marketing'] },
+      {
+        id: 1,
+        name: "Solana Builders",
+        members: 3,
+        maxMembers: 5,
+        tags: ["DeFi", "Rust"],
+        lookingFor: ["Frontend Dev", "Designer"],
+      },
+      {
+        id: 2,
+        name: "EduChain",
+        members: 2,
+        maxMembers: 4,
+        tags: ["Education", "DAO"],
+        lookingFor: ["Smart Contract Dev"],
+      },
+      {
+        id: 3,
+        name: "Alpha Squad",
+        members: 4,
+        maxMembers: 4,
+        tags: ["NFT", "Gaming"],
+        lookingFor: [],
+      },
+      {
+        id: 4,
+        name: "Green Earth",
+        members: 1,
+        maxMembers: 3,
+        tags: ["Eco", "Social"],
+        lookingFor: ["Full Stack", "Marketing"],
+      },
     ],
     participants: [
-      { id: 1, name: 'Alex Chen', role: 'Full Stack Dev', skills: ['React', 'Node.js', 'Solana'], bio: 'Looking for a serious team to build a DeFi protocol.' },
-      { id: 2, name: 'Sarah Jones', role: 'UI/UX Designer', skills: ['Figma', 'Tailwind'], bio: 'Passionate about education and accessible design.' },
-      { id: 3, name: 'Mike Ross', role: 'Smart Contract Dev', skills: ['Rust', 'Anchor'], bio: 'Experienced in Solana program development.' },
-      { id: 4, name: 'Emily White', role: 'Product Manager', skills: ['Strategy', 'Marketing'], bio: 'I have a great idea for a social dapp.' },
-    ]
+      {
+        id: 1,
+        name: "Alex Chen",
+        role: "Full Stack Dev",
+        skills: ["React", "Node.js", "Solana"],
+        bio: "Looking for a serious team to build a DeFi protocol.",
+      },
+      {
+        id: 2,
+        name: "Sarah Jones",
+        role: "UI/UX Designer",
+        skills: ["Figma", "Tailwind"],
+        bio: "Passionate about education and accessible design.",
+      },
+      {
+        id: 3,
+        name: "Mike Ross",
+        role: "Smart Contract Dev",
+        skills: ["Rust", "Anchor"],
+        bio: "Experienced in Solana program development.",
+      },
+      {
+        id: 4,
+        name: "Emily White",
+        role: "Product Manager",
+        skills: ["Strategy", "Marketing"],
+        bio: "I have a great idea for a social dapp.",
+      },
+    ],
   },
 ];
 
 export const MY_IDEAS = [
-    { id: 'idea-101', title: 'Solana Pay Vending', category: 'DeFi', description: 'NFC-enabled vending machines using Solana Pay for instant settlement.', votes: 45 },
-    { id: 'idea-102', title: 'Decentralized Identity Vault', category: 'Identity', description: 'Zero-knowledge proof identity verification system for on-chain KYC.', votes: 128 },
-    { id: 'idea-103', title: 'EcoTrack DAO', category: 'Social Impact', description: 'Supply chain transparency tool for sustainable coffee sourcing.', votes: 32 },
+  {
+    id: "idea-101",
+    title: "Solana Pay Vending",
+    category: "DeFi",
+    description:
+      "NFC-enabled vending machines using Solana Pay for instant settlement.",
+    votes: 45,
+  },
+  {
+    id: "idea-102",
+    title: "Decentralized Identity Vault",
+    category: "Identity",
+    description:
+      "Zero-knowledge proof identity verification system for on-chain KYC.",
+    votes: 128,
+  },
+  {
+    id: "idea-103",
+    title: "EcoTrack DAO",
+    category: "Social Impact",
+    description:
+      "Supply chain transparency tool for sustainable coffee sourcing.",
+    votes: 32,
+  },
 ];

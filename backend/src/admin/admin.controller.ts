@@ -188,4 +188,70 @@ export class AdminController {
   ) {
     return this.adminService.getAdminActivityLog(userId, limit || 50);
   }
+
+  // ============================================
+  // USER MANAGEMENT
+  // ============================================
+
+  /**
+   * GET /api/admin/users
+   * Get all users
+   */
+  @Get("users")
+  async getAllUsers() {
+    return this.adminService.getAllUsers();
+  }
+
+  /**
+   * POST /api/admin/users/:id/ban
+   * Ban a user
+   */
+  @Post("users/:id/ban")
+  @UseGuards(AuthGuard)
+  async banUser(
+    @Param("id") targetUserId: string,
+    @CurrentUser("userId") adminUserId: string
+  ) {
+    return this.adminService.banUser(adminUserId, targetUserId);
+  }
+
+  /**
+   * POST /api/admin/users/:id/unban
+   * Unban a user
+   */
+  @Post("users/:id/unban")
+  @UseGuards(AuthGuard)
+  async unbanUser(
+    @Param("id") targetUserId: string,
+    @CurrentUser("userId") adminUserId: string
+  ) {
+    return this.adminService.unbanUser(adminUserId, targetUserId);
+  }
+
+  /**
+   * POST /api/admin/users/:id/admin
+   * Toggle admin status
+   */
+  @Post("users/:id/admin")
+  @UseGuards(AuthGuard)
+  async toggleAdmin(
+    @Param("id") targetUserId: string,
+    @CurrentUser("userId") adminUserId: string,
+    @Body("isAdmin") isAdmin: boolean
+  ) {
+    return this.adminService.setUserAdmin(adminUserId, targetUserId, isAdmin);
+  }
+
+  // ============================================
+  // SYSTEM STATS
+  // ============================================
+
+  /**
+   * GET /api/admin/stats
+   * Get system-wide statistics
+   */
+  @Get("stats")
+  async getSystemStats() {
+    return this.adminService.getSystemStats();
+  }
 }

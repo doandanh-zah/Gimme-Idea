@@ -556,6 +556,228 @@ export class AdminService {
   }
 
   // ============================================
+  // USER MANAGEMENT
+  // ============================================
+
+  /**
+   * Get all users for admin panel
+   */
+  async getAllUsers(): Promise<ApiResponse<any[]>> {
+    const supabase = this.supabaseService.getAdminClient();
+
+    const { data: users, error } = await supabase
+      .from("users")
+      .select(
+        `
+        id,
+        wallet,
+        email,
+        username,
+        avatar,
+        bio,
+        role,
+        is_banned,
+        last_login_at,
+        created_at
+      `
+      )
+      .order("created_at", { ascending: false });
+
+    if (error) {
+      this.logger.error(`Failed to fetch users: ${error.message}`);
+      return { success: false, error: error.message };
+    }
+
+    // Get project counts for each user
+    const usersWithCounts = await Promise.all(
+      (users || []).map(async (u) => {
+        const { count: projectsCount } = await supabase
+          .from("projects")
+          .select("*", { count: "exact", head: true })
+          .eq("author_id", u.id);
+
+        const { count: ideasCount } = await supabase
+          .from("projects")
+          .select("*", { count: "exact", head: true })
+          .eq("author_id", u.id)
+          .eq("type", "idea");
+
+        return {
+          id: u.id,
+          wallet: u.wallet,
+          email: u.email,
+          username: u.username,
+          avatar: u.avatar,
+          bio: u.bio,
+          isAdmin: u.role === "admin",
+          isBanned: u.is_banned || false,
+          projectsCount: projectsCount || 0,
+          ideasCount: ideasCount || 0,
+          lastLoginAt: u.last_login_at,
+          createdAt: u.created_at,
+        };
+      })
+    );
+
+    return { success: true, data: usersWithCounts };
+  }
+
+  /**
+   * Ban a user
+   */
+  async banUser(
+    adminId: string,
+    targetUserId: string
+  ): Promise<ApiResponse<void>> {
+    if (!(await this.isAdmin(adminId))) {
+      throw new ForbiddenException("Only admins can ban users");
+    }
+
+    const supabase = this.supabaseService.getAdminClient();
+
+    const { error } = await supabase
+      .from("users")
+      .update({ is_banned: true })
+      .eq("id", targetUserId);
+
+    if (error) {
+      this.logger.error(`Failed to ban user: ${error.message}`);
+      return { success: false, error: error.message };
+    }
+
+    await this.logAdminAction(adminId, "ban_user", "user", targetUserId, {});
+
+    return { success: true, message: "User banned successfully" };
+  }
+
+  /**
+   * Unban a user
+   */
+  async unbanUser(
+    adminId: string,
+    targetUserId: string
+  ): Promise<ApiResponse<void>> {
+    if (!(await this.isAdmin(adminId))) {
+      throw new ForbiddenException("Only admins can unban users");
+    }
+
+    const supabase = this.supabaseService.getAdminClient();
+
+    const { error } = await supabase
+      .from("users")
+      .update({ is_banned: false })
+      .eq("id", targetUserId);
+
+    if (error) {
+      this.logger.error(`Failed to unban user: ${error.message}`);
+      return { success: false, error: error.message };
+    }
+
+    await this.logAdminAction(adminId, "unban_user", "user", targetUserId, {});
+
+    return { success: true, message: "User unbanned successfully" };
+  }
+
+  /**
+   * Set user admin status
+   */
+  async setUserAdmin(
+    adminId: string,
+    targetUserId: string,
+    isAdmin: boolean
+  ): Promise<ApiResponse<void>> {
+    if (!(await this.isAdmin(adminId))) {
+      throw new ForbiddenException("Only admins can change admin status");
+    }
+
+    const supabase = this.supabaseService.getAdminClient();
+
+    const { error } = await supabase
+      .from("users")
+      .update({ role: isAdmin ? "admin" : "user" })
+      .eq("id", targetUserId);
+
+    if (error) {
+      this.logger.error(`Failed to update admin status: ${error.message}`);
+      return { success: false, error: error.message };
+    }
+
+    await this.logAdminAction(
+      adminId,
+      isAdmin ? "grant_admin" : "revoke_admin",
+      "user",
+      targetUserId,
+      { isAdmin }
+    );
+
+    return { success: true, message: `User admin status updated` };
+  }
+
+  // ============================================
+  // SYSTEM STATS
+  // ============================================
+
+  /**
+   * Get system-wide statistics
+   */
+  async getSystemStats(): Promise<ApiResponse<any>> {
+    const supabase = this.supabaseService.getAdminClient();
+
+    // Get total counts
+    const [
+      { count: totalUsers },
+      { count: totalProjects },
+      { count: totalIdeas },
+      { count: totalHackathons },
+    ] = await Promise.all([
+      supabase.from("users").select("*", { count: "exact", head: true }),
+      supabase.from("projects").select("*", { count: "exact", head: true }),
+      supabase
+        .from("projects")
+        .select("*", { count: "exact", head: true })
+        .eq("type", "idea"),
+      supabase.from("hackathons").select("*", { count: "exact", head: true }),
+    ]);
+
+    // Get new users today
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const { count: newUsersToday } = await supabase
+      .from("users")
+      .select("*", { count: "exact", head: true })
+      .gte("created_at", today.toISOString());
+
+    // Get new users this week
+    const weekAgo = new Date();
+    weekAgo.setDate(weekAgo.getDate() - 7);
+    const { count: newUsersThisWeek } = await supabase
+      .from("users")
+      .select("*", { count: "exact", head: true })
+      .gte("created_at", weekAgo.toISOString());
+
+    // Get active users (logged in within last 7 days)
+    const { count: activeUsers } = await supabase
+      .from("users")
+      .select("*", { count: "exact", head: true })
+      .gte("last_login_at", weekAgo.toISOString());
+
+    return {
+      success: true,
+      data: {
+        totalUsers: totalUsers || 0,
+        totalProjects: totalProjects || 0,
+        totalIdeas: totalIdeas || 0,
+        totalHackathons: totalHackathons || 0,
+        totalChallenges: 0, // Will be added when challenges feature is complete
+        totalDonations: 0, // Could be added if tracking donations
+        newUsersToday: newUsersToday || 0,
+        newUsersThisWeek: newUsersThisWeek || 0,
+        activeUsers: activeUsers || 0,
+      },
+    };
+  }
+
+  // ============================================
   // PRIVATE HELPERS
   // ============================================
 

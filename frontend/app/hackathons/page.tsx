@@ -1,15 +1,58 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Calendar, Users, Trophy, ArrowRight, Zap } from 'lucide-react';
+import { Calendar, Users, Trophy, ArrowRight, Zap, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 import SponsorModal from '@/components/SponsorModal';
 import ConstellationBackground from '@/components/ConstellationBackground';
-import { HACKATHONS_MOCK_DATA } from '@/lib/mock-hackathons';
+import { HACKATHONS_MOCK_DATA, Hackathon } from '@/lib/mock-hackathons';
 
 export default function HackathonsList() {
   const [isSponsorModalOpen, setIsSponsorModalOpen] = useState(false);
+  const [hackathons, setHackathons] = useState<Hackathon[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchHackathons = async () => {
+      try {
+        const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+        const res = await fetch(`${API_URL}/hackathons`);
+        const data = await res.json();
+        
+        if (data.success && data.data && data.data.length > 0) {
+          // Transform API data to match expected format
+          const transformedData = data.data.map((h: any) => ({
+            id: h.slug || h.id,
+            title: h.title,
+            description: h.description || h.tagline,
+            status: h.status,
+            date: h.submissionStart 
+              ? new Date(h.submissionStart).toLocaleDateString('en-US', { day: 'numeric', month: 'short' })
+              : 'TBA',
+            prizePool: h.prizePool || 'TBA',
+            participants: [], // Will be populated from API
+            participantsCount: h.participantsCount || 0,
+          }));
+          setHackathons(transformedData);
+        } else {
+          // Fallback to mock data if API returns empty
+          setHackathons(HACKATHONS_MOCK_DATA);
+        }
+      } catch (error) {
+        console.error('Failed to fetch hackathons:', error);
+        // Fallback to mock data on error
+        setHackathons(HACKATHONS_MOCK_DATA);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchHackathons();
+  }, []);
+
+  // Filter to only show non-draft hackathons
+  const visibleHackathons = hackathons.filter(h => h.status !== 'draft');
 
   return (
     <div className="min-h-screen text-gray-300 pt-28 pb-10 px-4 font-sans text-sm relative">
@@ -36,7 +79,16 @@ export default function HackathonsList() {
 
         {/* List */}
         <div className="grid gap-4">
-          {HACKATHONS_MOCK_DATA.map((hackathon, i) => (
+          {isLoading ? (
+            <div className="flex justify-center py-12">
+              <Loader2 className="w-8 h-8 animate-spin text-[#FFD700]" />
+            </div>
+          ) : visibleHackathons.length === 0 ? (
+            <div className="text-center py-12 text-gray-500">
+              No hackathons available at the moment.
+            </div>
+          ) : (
+            visibleHackathons.map((hackathon, i) => (
             <motion.div
               key={hackathon.id}
               initial={{ opacity: 0, y: 10 }}
@@ -48,7 +100,11 @@ export default function HackathonsList() {
                   
                   {/* Status Badge */}
                   <div className={`absolute top-0 right-0 px-3 py-1 text-[10px] font-bold uppercase tracking-wider rounded-bl-xl
-                    ${hackathon.status === 'active' ? 'bg-[#FFD700] text-black' : 'bg-white/10 text-gray-500'}`}>
+                    ${hackathon.status === 'active' ? 'bg-[#FFD700] text-black' : 
+                      hackathon.status === 'upcoming' ? 'bg-blue-500/80 text-white' :
+                      hackathon.status === 'judging' ? 'bg-amber-500/80 text-black' :
+                      hackathon.status === 'completed' ? 'bg-purple-500/80 text-white' :
+                      'bg-white/10 text-gray-500'}`}>
                     {hackathon.status}
                   </div>
 
@@ -57,7 +113,7 @@ export default function HackathonsList() {
                     {/* Date Block */}
                     <div className="md:col-span-2 flex flex-col items-center justify-center border-r border-white/5 pr-4">
                         <div className="text-2xl font-bold text-white font-mono">{hackathon.date.split(' ')[0]}</div>
-                        <div className="text-xs text-gray-500 uppercase">{hackathon.date.split(' ')[1]}</div>
+                        <div className="text-xs text-gray-500 uppercase">{hackathon.date.split(' ')[1] || ''}</div>
                     </div>
 
                     {/* Main Info */}
@@ -78,7 +134,7 @@ export default function HackathonsList() {
                       <div className="flex items-center gap-4 text-xs text-gray-500 pt-2">
                          <div className="flex items-center gap-1">
                            <Users className="w-3.5 h-3.5" />
-                           {hackathon.participants?.length || 0} Builders
+                           {hackathon.participantsCount || hackathon.participants?.length || 0} Builders
                          </div>
                          <div className="flex items-center gap-1">
                            <Trophy className="w-3.5 h-3.5" />
@@ -100,7 +156,8 @@ export default function HackathonsList() {
                 </div>
               </Link>
             </motion.div>
-          ))}
+          ))
+          )}
         </div>
 
       </div>
