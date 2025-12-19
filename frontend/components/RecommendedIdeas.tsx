@@ -70,30 +70,15 @@ const RecommendedCard = ({
           {medal.watermark}
         </div>
 
-        {/* Scanline Effect - Only on hover */}
-        <AnimatePresence>
-          {isHovered && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="absolute inset-0 pointer-events-none z-10 overflow-hidden"
-            >
-              <div 
-                className="absolute inset-0 opacity-[0.03]"
-                style={{
-                  backgroundImage: 'repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(255,255,255,0.03) 2px, rgba(255,255,255,0.03) 4px)',
-                }}
-              />
-              <motion.div
-                className="absolute left-0 right-0 h-[2px]"
-                style={{ background: `linear-gradient(to right, transparent, ${medal.color}80, transparent)` }}
-                animate={{ top: ['0%', '100%'] }}
-                transition={{ duration: 2, repeat: Infinity, ease: 'linear' }}
-              />
-            </motion.div>
-          )}
-        </AnimatePresence>
+        {/* Static scanline stripes - Always visible, subtle CRT effect */}
+        <div 
+          className="absolute inset-0 pointer-events-none z-[1]"
+          style={{
+            backgroundImage: `repeating-linear-gradient(0deg, transparent, transparent 2px, ${medal.color}05 2px, ${medal.color}05 4px)`,
+            opacity: isHovered ? 0.8 : 0.4,
+            transition: 'opacity 0.3s ease'
+          }}
+        />
 
         {/* Glitch Border Effects - Only on hover */}
         <AnimatePresence>
@@ -105,7 +90,7 @@ const RecommendedCard = ({
                 animate={{ scaleX: 1, opacity: 1 }}
                 exit={{ scaleX: 0, opacity: 0 }}
                 transition={{ duration: 0.3 }}
-                className="absolute top-0 left-0 right-0 h-[2px] origin-left"
+                className="absolute top-0 left-0 right-0 h-[2px] origin-left z-20"
                 style={{ background: `linear-gradient(to right, transparent, ${medal.color}, transparent)` }}
               />
               {/* Bottom border */}
@@ -114,7 +99,7 @@ const RecommendedCard = ({
                 animate={{ scaleX: 1, opacity: 1 }}
                 exit={{ scaleX: 0, opacity: 0 }}
                 transition={{ duration: 0.3, delay: 0.1 }}
-                className="absolute bottom-0 left-0 right-0 h-[2px] origin-right"
+                className="absolute bottom-0 left-0 right-0 h-[2px] origin-right z-20"
                 style={{ background: `linear-gradient(to right, transparent, ${medal.color}, transparent)` }}
               />
               {/* Left border */}
@@ -123,7 +108,7 @@ const RecommendedCard = ({
                 animate={{ scaleY: 1, opacity: 1 }}
                 exit={{ scaleY: 0, opacity: 0 }}
                 transition={{ duration: 0.3, delay: 0.15 }}
-                className="absolute top-0 bottom-0 left-0 w-[2px] origin-top"
+                className="absolute top-0 bottom-0 left-0 w-[2px] origin-top z-20"
                 style={{ background: `linear-gradient(to bottom, ${medal.color}, transparent, ${medal.color})` }}
               />
               {/* Right border */}
@@ -132,7 +117,7 @@ const RecommendedCard = ({
                 animate={{ scaleY: 1, opacity: 1 }}
                 exit={{ scaleY: 0, opacity: 0 }}
                 transition={{ duration: 0.3, delay: 0.2 }}
-                className="absolute top-0 bottom-0 right-0 w-[2px] origin-bottom"
+                className="absolute top-0 bottom-0 right-0 w-[2px] origin-bottom z-20"
                 style={{ background: `linear-gradient(to bottom, ${medal.color}, transparent, ${medal.color})` }}
               />
             </>
