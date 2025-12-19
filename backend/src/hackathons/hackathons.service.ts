@@ -93,11 +93,24 @@ export class HackathonsService {
       return { success: false, error: error.message };
     }
 
-    // Get participant counts for each hackathon
+    // Get participant counts and rounds for each hackathon
     const hackathonsWithCounts = await Promise.all(
       (data || []).map(async (h) => {
         const { count } = await supabase
           .from("hackathon_participants")
+          .select("*", { count: "exact", head: true })
+          .eq("hackathon_id", h.id);
+
+        // Try to get rounds (new V2 format)
+        const { data: rounds } = await supabase
+          .from("hackathon_rounds")
+          .select("*")
+          .eq("hackathon_id", h.id)
+          .order("round_number", { ascending: true });
+
+        // Get teams count
+        const { count: teamsCount } = await supabase
+          .from("hackathon_teams")
           .select("*", { count: "exact", head: true })
           .eq("hackathon_id", h.id);
 
@@ -119,6 +132,20 @@ export class HackathonsService {
           isFeatured: h.is_featured,
           createdAt: h.created_at,
           participantsCount: count || 0,
+          teamsCount: teamsCount || 0,
+          rounds: rounds?.map((r: any) => ({
+            roundNumber: r.round_number,
+            title: r.title,
+            description: r.description,
+            roundType: r.round_type,
+            mode: r.mode,
+            teamsAdvancing: r.teams_advancing,
+            bonusTeams: r.bonus_teams,
+            startDate: r.start_date,
+            endDate: r.end_date,
+            resultsDate: r.results_date,
+            status: r.status,
+          })) || [],
         };
       })
     );
@@ -206,6 +233,27 @@ export class HackathonsService {
       .select("*", { count: "exact", head: true })
       .eq("hackathon_id", data.id);
 
+    // Get teams count
+    const { count: teamsCount } = await supabase
+      .from("hackathon_teams")
+      .select("*", { count: "exact", head: true })
+      .eq("hackathon_id", data.id);
+
+    // Get rounds (V2 format)
+    const { data: rounds } = await supabase
+      .from("hackathon_rounds")
+      .select("*")
+      .eq("hackathon_id", data.id)
+      .order("round_number", { ascending: true });
+
+    // Get prizes
+    const { data: prizes } = await supabase
+      .from("hackathon_prizes")
+      .select("*")
+      .eq("hackathon_id", data.id)
+      .order("round_number", { ascending: true })
+      .order("rank", { ascending: true });
+
     const hackathon = {
       id: data.id,
       slug: data.slug,
@@ -225,6 +273,37 @@ export class HackathonsService {
       createdAt: data.created_at,
       participantsCount: participantsCount || 0,
       submissionsCount: submissionsCount || 0,
+      teamsCount: teamsCount || 0,
+      rounds: rounds?.map((r: any) => ({
+        id: r.id,
+        roundNumber: r.round_number,
+        title: r.title,
+        description: r.description,
+        roundType: r.round_type,
+        mode: r.mode,
+        teamsAdvancing: r.teams_advancing,
+        bonusTeams: r.bonus_teams,
+        startDate: r.start_date,
+        endDate: r.end_date,
+        resultsDate: r.results_date,
+        weightQuality: r.weight_quality,
+        weightEngagement: r.weight_engagement,
+        weightVotes: r.weight_votes,
+        baseIdeaLimit: r.base_idea_limit,
+        unlockedIdeaLimit: r.unlocked_idea_limit,
+        engagementThreshold: r.engagement_threshold,
+        status: r.status,
+      })) || [],
+      prizes: prizes?.map((p: any) => ({
+        id: p.id,
+        roundNumber: p.round_number,
+        rank: p.rank,
+        title: p.title,
+        prizeAmount: p.prize_amount,
+        description: p.description,
+        winnerTeamId: p.winner_team_id,
+        announcedAt: p.announced_at,
+      })) || [],
     };
 
     return { success: true, data: hackathon };
