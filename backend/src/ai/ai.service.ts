@@ -316,7 +316,7 @@ Respond with valid JSON:
         paidCredits: data?.paidCredits ?? data?.paidcredits ?? 0,
         interactionsUsed: data?.interactionsUsed ?? data?.interactionsused ?? 0,
         maxFreeInteractions:
-          data?.maxFreeInteractions ?? data?.maxfreeinteractions ?? 3,
+          data?.maxFreeInteractions ?? data?.maxfreeinteractions ?? 10,
       };
 
       this.logger.log(
