@@ -295,15 +295,26 @@ Respond with valid JSON:
         p_project_id: projectId,
       });
 
-      if (error) throw error;
+      this.logger.log(`[AI Quota Check] userId: ${userId}, projectId: ${projectId}`);
+      this.logger.log(`[AI Quota Check] Raw data from RPC: ${JSON.stringify(data)}`);
 
-      return {
-        canUse: data.canUse,
-        freeRemaining: data.freeRemaining,
-        paidCredits: data.paidCredits,
-        interactionsUsed: data.interactionsUsed,
-        maxFreeInteractions: data.maxFreeInteractions,
+      if (error) {
+        this.logger.error(`[AI Quota Check] RPC error: ${JSON.stringify(error)}`);
+        throw error;
+      }
+
+      // Handle both camelCase and lowercase keys from PostgreSQL
+      const result = {
+        canUse: data?.canUse ?? data?.canuse ?? false,
+        freeRemaining: data?.freeRemaining ?? data?.freeremaining ?? 0,
+        paidCredits: data?.paidCredits ?? data?.paidcredits ?? 0,
+        interactionsUsed: data?.interactionsUsed ?? data?.interactionsused ?? 0,
+        maxFreeInteractions: data?.maxFreeInteractions ?? data?.maxfreeinteractions ?? 3,
       };
+
+      this.logger.log(`[AI Quota Check] Processed result: ${JSON.stringify(result)}`);
+
+      return result;
     } catch (error) {
       this.logger.error("Failed to check AI quota:", error);
       throw new Error("Failed to check AI quota");
