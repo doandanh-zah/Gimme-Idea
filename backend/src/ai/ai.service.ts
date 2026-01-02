@@ -295,11 +295,17 @@ Respond with valid JSON:
         p_project_id: projectId,
       });
 
-      this.logger.log(`[AI Quota Check] userId: ${userId}, projectId: ${projectId}`);
-      this.logger.log(`[AI Quota Check] Raw data from RPC: ${JSON.stringify(data)}`);
+      this.logger.log(
+        `[AI Quota Check] userId: ${userId}, projectId: ${projectId}`
+      );
+      this.logger.log(
+        `[AI Quota Check] Raw data from RPC: ${JSON.stringify(data)}`
+      );
 
       if (error) {
-        this.logger.error(`[AI Quota Check] RPC error: ${JSON.stringify(error)}`);
+        this.logger.error(
+          `[AI Quota Check] RPC error: ${JSON.stringify(error)}`
+        );
         throw error;
       }
 
@@ -309,10 +315,13 @@ Respond with valid JSON:
         freeRemaining: data?.freeRemaining ?? data?.freeremaining ?? 0,
         paidCredits: data?.paidCredits ?? data?.paidcredits ?? 0,
         interactionsUsed: data?.interactionsUsed ?? data?.interactionsused ?? 0,
-        maxFreeInteractions: data?.maxFreeInteractions ?? data?.maxfreeinteractions ?? 3,
+        maxFreeInteractions:
+          data?.maxFreeInteractions ?? data?.maxfreeinteractions ?? 3,
       };
 
-      this.logger.log(`[AI Quota Check] Processed result: ${JSON.stringify(result)}`);
+      this.logger.log(
+        `[AI Quota Check] Processed result: ${JSON.stringify(result)}`
+      );
 
       return result;
     } catch (error) {
