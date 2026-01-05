@@ -85,6 +85,19 @@ export default function RootLayout({
   return (
     <html lang="en">
       <head>
+        {/* Synchronous inline polyfill to ensure `global` exists before client bundles evaluate */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(function(){
+              if (typeof window !== 'undefined') {
+                window.global = window.global || window;
+                window.globalThis = window.globalThis || window;
+                window.process = window.process || { env: {} };
+              }
+            })();`,
+          }}
+        />
+
         <Script id="polyfill-global" strategy="beforeInteractive">
           {`(function(){
             if (typeof window !== 'undefined') {
