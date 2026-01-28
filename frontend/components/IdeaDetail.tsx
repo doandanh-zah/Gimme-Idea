@@ -1,7 +1,7 @@
 
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAppStore } from '../lib/store';
 import { useRouter } from 'next/navigation';
 import { ArrowLeft, ThumbsUp, ThumbsDown, MessageCircle, Send, EyeOff, User, DollarSign, Share2, Pencil, Trash2, X, Check, Loader2, Bookmark, ChevronDown, Sparkles } from 'lucide-react';
@@ -769,8 +769,30 @@ export const IdeaDetail = () => {
 
     // Related Projects Modal State
     const [showRelatedProjectsModal, setShowRelatedProjectsModal] = useState(false);
+    const [relatedProjectsCount, setRelatedProjectsCount] = useState(0);
 
     const project = selectedProject;
+
+    // Fetch related projects count on mount and when modal closes
+    useEffect(() => {
+        if (project?.id) {
+            fetchRelatedProjectsCount();
+        }
+    }, [project?.id, showRelatedProjectsModal]); // Refresh when modal closes
+
+    const fetchRelatedProjectsCount = async () => {
+        if (!project?.id) return;
+        try {
+            const response = await apiClient.getRelatedProjects(project.id);
+            if (response.success && response.data) {
+                const aiCount = response.data.aiDetected?.length || 0;
+                const userCount = response.data.userPinned?.length || 0;
+                setRelatedProjectsCount(aiCount + userCount);
+            }
+        } catch (error) {
+            console.error('Failed to fetch related projects count:', error);
+        }
+    };
 
     // Subscribe to realtime comment updates for this project
     useRealtimeComments({
@@ -940,9 +962,14 @@ export const IdeaDetail = () => {
                             {/* Related Projects Button */}
                             <button
                                 onClick={() => setShowRelatedProjectsModal(true)}
-                                className="bg-gradient-to-r from-purple-600 to-blue-600 text-white px-4 sm:px-5 py-2 rounded-full font-bold flex items-center gap-2 hover:scale-105 transition-transform shadow-[0_0_20px_rgba(147,51,234,0.3)] text-sm"
+                                className="bg-gradient-to-r from-purple-600 to-blue-600 text-white px-4 sm:px-5 py-2 rounded-full font-bold flex items-center gap-2 hover:scale-105 transition-transform shadow-[0_0_20px_rgba(147,51,234,0.3)] text-sm relative"
                             >
-                                <Sparkles className="w-4 h-4" /> Related
+                                <Sparkles className="w-4 h-4" /> Projects
+                                {relatedProjectsCount > 0 && (
+                                    <span className="absolute -top-1 -right-1 bg-[#FFD700] text-black text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center shadow-lg">
+                                        {relatedProjectsCount}
+                                    </span>
+                                )}
                             </button>
 
                             {/* Admin Delete Button */}
@@ -1067,6 +1094,8 @@ export const IdeaDetail = () => {
                 onClose={() => setShowRelatedProjectsModal(false)}
                 ideaId={project.id}
                 ideaTitle={project.title}
+                ideaProblem={project.problem || ''}
+                ideaSolution={project.solution || ''}
             />
         </motion.div>
     );

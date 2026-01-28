@@ -49,6 +49,8 @@ interface RelatedProjectsModalProps {
     onClose: () => void;
     ideaId: string;
     ideaTitle: string;
+    ideaProblem?: string;
+    ideaSolution?: string;
 }
 
 export const RelatedProjectsModal: React.FC<RelatedProjectsModalProps> = ({
@@ -56,6 +58,8 @@ export const RelatedProjectsModal: React.FC<RelatedProjectsModalProps> = ({
     onClose,
     ideaId,
     ideaTitle,
+    ideaProblem = '',
+    ideaSolution = '',
 }) => {
     const { user } = useAuth();
     const [isLoading, setIsLoading] = useState(true);
@@ -81,14 +85,55 @@ export const RelatedProjectsModal: React.FC<RelatedProjectsModalProps> = ({
         try {
             const response = await apiClient.getRelatedProjects(ideaId);
             if (response.success && response.data) {
-                setAiDetected(response.data.aiDetected || []);
-                setUserPinned(response.data.userPinned || []);
+                const aiResults = response.data.aiDetected || [];
+                const userResults = response.data.userPinned || [];
+
+                setAiDetected(aiResults);
+                setUserPinned(userResults);
+
+                // If no AI-detected results exist, trigger a search automatically
+                if (aiResults.length === 0 && ideaTitle && ideaProblem && ideaSolution) {
+                    console.log('No AI results found, triggering automatic search...');
+                    await searchForRelatedProjects();
+                }
             }
         } catch (error) {
             console.error('Failed to fetch related projects:', error);
             toast.error('Failed to load related projects');
         } finally {
             setIsLoading(false);
+        }
+    };
+
+    const searchForRelatedProjects = async () => {
+        try {
+            console.log('Searching for related projects...');
+            const searchResponse = await apiClient.searchRelatedProjects({
+                ideaId,
+                title: ideaTitle,
+                problem: ideaProblem,
+                solution: ideaSolution,
+            });
+
+            if (searchResponse.success && searchResponse.data) {
+                console.log(`Found ${searchResponse.data.results?.length || 0} results`);
+                setAiDetected(searchResponse.data.results || []);
+
+                if (searchResponse.data.quotaInfo) {
+                    const { remaining, used, max } = searchResponse.data.quotaInfo;
+                    console.log(`Search quota: ${used}/${max} used, ${remaining} remaining`);
+                }
+            } else {
+                console.error('Search failed:', searchResponse.error);
+                if (searchResponse.error?.includes('Daily search limit')) {
+                    toast.error('Daily search limit reached (5 searches per day)');
+                } else {
+                    toast.error(searchResponse.error || 'Failed to search for related projects');
+                }
+            }
+        } catch (error) {
+            console.error('Failed to search related projects:', error);
+            toast.error('Failed to search for related projects');
         }
     };
 
