@@ -21,14 +21,14 @@ import { useAuth } from '../contexts/AuthContext';
 import toast from 'react-hot-toast';
 
 interface RelatedProject {
-    id: string;
+    id?: string;
     title: string;
     url: string;
     snippet: string;
     source: string;
     score: number;
     isPinned?: boolean;
-    createdAt: string;
+    createdAt?: string;
 }
 
 interface UserPinnedProject {
