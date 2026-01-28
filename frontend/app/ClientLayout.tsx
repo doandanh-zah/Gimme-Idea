@@ -1,5 +1,8 @@
 'use client';
 
+// CRITICAL: Import polyfills FIRST before any other imports
+import '../polyfills';
+
 import { Inter, JetBrains_Mono, Space_Grotesk, Quantico } from 'next/font/google';
 import { Toaster } from 'react-hot-toast';
 import { WalletProvider } from '../components/WalletProvider';

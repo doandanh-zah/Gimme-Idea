@@ -15,6 +15,22 @@ const nextConfig = {
 
     // Fallback for browser - Add polyfills for Node.js modules
     if (!isServer) {
+      // CRITICAL: Inject polyfills FIRST before any other code
+      const originalEntry = config.entry;
+      config.entry = async () => {
+        const entries = await originalEntry();
+        
+        // Inject polyfills at the very beginning of every entry point
+        if (entries['main.app']) {
+          entries['main.app'] = [
+            './polyfills.js',
+            ...entries['main.app']
+          ];
+        }
+        
+        return entries;
+      };
+
       config.resolve.fallback = {
         ...config.resolve.fallback,
         buffer: require.resolve('buffer/'),
