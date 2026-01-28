@@ -1089,8 +1089,23 @@ Respond with JSON only:
           query: searchQuery,
           search_depth: "basic",
           max_results: 8,
-          include_domains: [],
-          exclude_domains: [],
+          include_domains: [
+            "github.com",
+            "producthunt.com",
+            "ycombinator.com",
+            "betalist.com",
+            "indiehackers.com",
+          ],
+          exclude_domains: [
+            "medium.com",
+            "dev.to",
+            "hackernoon.com",
+            "towardsdatascience.com",
+            "freecodecamp.org",
+            "reddit.com",
+            "quora.com",
+            "stackoverflow.com",
+          ],
         }),
       });
 
@@ -1182,8 +1197,28 @@ Respond with JSON only:
     const titleWords = title.slice(0, 60);
     const problemWords = problem.slice(0, 100);
 
-    // Create a focused query
-    return `${titleWords} ${problemWords} startup project similar`;
+    // Create a focused query that finds actual products/tools
+    // Extract key technical terms and product names
+    const extractKeyTerms = (text: string): string[] => {
+      // Remove common filler words
+      const stopWords = ['the', 'a', 'an', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for', 'of', 'with', 'by', 'from', 'that', 'this', 'is', 'are', 'was', 'were', 'be', 'been', 'being', 'have', 'has', 'had', 'do', 'does', 'did', 'will', 'would', 'should', 'could', 'may', 'might', 'can'];
+
+      const words = text.toLowerCase()
+        .replace(/[^\w\s]/g, ' ')
+        .split(/\s+/)
+        .filter(word => word.length > 3 && !stopWords.includes(word));
+
+      return words.slice(0, 5); // Top 5 keywords
+    };
+
+    const titleKeywords = extractKeyTerms(title);
+    const problemKeywords = extractKeyTerms(problem).slice(0, 3);
+
+    // Build query with product-finding intent
+    const keywords = [...new Set([...titleKeywords, ...problemKeywords])].join(' ');
+
+    // Add modifiers to find actual products/tools, not blog posts
+    return `${keywords} site:github.com OR site:producthunt.com OR platform tool app software -blog -"how to" -tutorial -guide`;
   }
 
   /**
