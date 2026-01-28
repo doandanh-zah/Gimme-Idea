@@ -1,19 +1,8 @@
 "use client";
 
-// Polyfill minimal Node globals expected by some third-party libs when running in the browser.
-// This file must be imported before other client code so `global` exists synchronously.
-if (typeof window !== "undefined") {
-  if (typeof (window as any).global === "undefined") {
-    (window as any).global = window;
-  }
-
-  // Attach a browser-friendly Buffer implementation if available.
-  // Use dynamic import so bundlers that provide a polyfill for 'buffer' will resolve it.
-  import("buffer")
-    .then(({ Buffer }) => {
-      (window as any).Buffer = (window as any).Buffer || Buffer;
-    })
-    .catch(() => {
-      // ignore if buffer polyfill isn't available
-    });
-}
+// Note: Global polyfills (global, Buffer, process) are now handled via:
+// 1. Webpack ProvidePlugin in next.config.js (automatically injects Buffer and process)
+// 2. Inline script in layout.tsx (sets window.global before any bundles load)
+// 
+// This file is kept for backward compatibility but is no longer required for polyfills.
+// If needed in the future, additional client-side polyfills can be added here.

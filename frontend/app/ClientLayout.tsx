@@ -28,23 +28,8 @@ function AuthStoreSync() {
   return null;
 }
 
-// Buffer polyfill for LazorKit
-if (typeof window !== 'undefined') {
-  // Some bundled libraries expect `global` to exist (Node environment). Ensure `global` points to window.
-  if (typeof (window as any).global === 'undefined') {
-    (window as any).global = window;
-  }
-
-  // Dynamically import the browser-friendly buffer implementation and attach to window
-  // Use dynamic import to avoid SSR/bundler issues and to keep this code only running in the client.
-  import('buffer')
-    .then(({ Buffer }) => {
-      (window as any).Buffer = (window as any).Buffer || Buffer;
-    })
-    .catch(() => {
-      // If buffer cannot be loaded, fail silently — most environments will not need it.
-    });
-}
+// Note: Global polyfills are now handled via webpack ProvidePlugin in next.config.js
+// and synchronous inline script in layout.tsx
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-inter' });
 const mono = JetBrains_Mono({ subsets: ['latin'], variable: '--font-mono' });
