@@ -1072,13 +1072,5 @@ export const apiClient = {
       used: number;
       max: number;
     }>("/ai/search-quota"),
-
-  // Clear all AI-detected related projects for an idea (TESTING MODE)
-  clearRelatedProjects: (ideaId: string) =>
-    apiFetch<{
-      deletedCount: number;
-    }>(`/ai/clear-related-projects/${ideaId}`, {
-      method: "DELETE",
-    }),
 };
 

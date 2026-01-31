@@ -15,7 +15,6 @@ import {
     Sparkles,
     Link as LinkIcon,
     AlertCircle,
-    Trash2,
 } from 'lucide-react';
 import { apiClient } from '../lib/api-client';
 import { useAuth } from '../contexts/AuthContext';
@@ -210,25 +209,6 @@ export const RelatedProjectsModal: React.FC<RelatedProjectsModalProps> = ({
         }
     };
 
-    const handleClearProjects = async () => {
-        if (!confirm('Are you sure you want to clear all AI-detected projects? This is for testing purposes.')) {
-            return;
-        }
-
-        try {
-            const response = await apiClient.clearRelatedProjects(ideaId);
-            if (response.success) {
-                toast.success(`Cleared ${response.data.deletedCount} projects`);
-                fetchRelatedProjects(); // Refresh the list
-            } else {
-                toast.error(response.error || 'Failed to clear projects');
-            }
-        } catch (error) {
-            console.error('Failed to clear projects:', error);
-            toast.error('Failed to clear projects');
-        }
-    };
-
     // Check if current user has already pinned a project
     const userHasPinned = userPinned.some((p) => p.pinnedBy === user?.id);
 
@@ -265,23 +245,12 @@ export const RelatedProjectsModal: React.FC<RelatedProjectsModalProps> = ({
                                     </p>
                                 </div>
                             </div>
-                            <div className="flex items-center gap-2">
-                                {/* Clear Projects Button (Testing Mode) */}
-                                <button
-                                    onClick={handleClearProjects}
-                                    className="px-3 py-1.5 bg-red-500/20 hover:bg-red-500/30 text-red-400 rounded-lg transition-colors flex items-center gap-1.5 text-sm font-medium"
-                                    title="Clear all AI-detected projects (Testing)"
-                                >
-                                    <Trash2 className="w-4 h-4" />
-                                    Clear
-                                </button>
-                                <button
-                                    onClick={onClose}
-                                    className="p-2 hover:bg-white/10 rounded-lg transition-colors"
-                                >
-                                    <X className="w-5 h-5 text-gray-400" />
-                                </button>
-                            </div>
+                            <button
+                                onClick={onClose}
+                                className="p-2 hover:bg-white/10 rounded-lg transition-colors"
+                            >
+                                <X className="w-5 h-5 text-gray-400" />
+                            </button>
                         </div>
                     </div>
 

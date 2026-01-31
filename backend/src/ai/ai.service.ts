@@ -1371,40 +1371,6 @@ Respond with JSON only:
       return { canSearch: false, remaining: 0, used: 0, max: 999 }; // TESTING MODE: Changed to 999
     }
   }
-
-  /**
-   * Clear all AI-detected related projects for an idea (TESTING MODE)
-   */
-  async clearRelatedProjects(ideaId: string): Promise<{
-    success: boolean;
-    deletedCount?: number;
-    error?: string;
-  }> {
-    const supabase = this.supabaseService.getAdminClient();
-
-    try {
-      this.logger.log(`Clearing AI-detected projects for idea: ${ideaId}`);
-
-      const { data, error } = await supabase
-        .from("related_projects")
-        .delete()
-        .eq("idea_id", ideaId)
-        .select();
-
-      if (error) {
-        this.logger.error("Failed to clear related projects:", error);
-        throw error;
-      }
-
-      const deletedCount = data ? data.length : 0;
-      this.logger.log(`Cleared ${deletedCount} related projects for idea ${ideaId}`);
-
-      return { success: true, deletedCount };
-    } catch (error: any) {
-      this.logger.error("Failed to clear related projects:", error);
-      return { success: false, error: error.message };
-    }
-  }
 }
 
 // =============================================

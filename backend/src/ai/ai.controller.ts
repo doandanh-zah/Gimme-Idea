@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Param, UseGuards, Delete } from "@nestjs/common";
+import { Controller, Get, Post, Body, Param, UseGuards } from "@nestjs/common";
 import { AIService } from "./ai.service";
 import { AuthGuard } from "../common/guards/auth.guard";
 import { CurrentUser } from "../common/decorators/user.decorator";
@@ -537,38 +537,6 @@ export class AIController {
       return {
         success: false,
         error: error.message || "Failed to get search quota",
-      };
-    }
-  }
-
-  /**
-   * DELETE /api/ai/clear-related-projects/:ideaId
-   * Clear all AI-detected related projects for an idea (TESTING MODE)
-   */
-  @Delete("clear-related-projects/:ideaId")
-  @UseGuards(AuthGuard)
-  async clearRelatedProjects(
-    @Param("ideaId") ideaId: string
-  ): Promise<ApiResponse<any>> {
-    try {
-      const result = await this.aiService.clearRelatedProjects(ideaId);
-
-      if (!result.success) {
-        return {
-          success: false,
-          error: result.error,
-        };
-      }
-
-      return {
-        success: true,
-        message: `Cleared ${result.deletedCount} related projects`,
-        data: { deletedCount: result.deletedCount },
-      };
-    } catch (error: any) {
-      return {
-        success: false,
-        error: error.message || "Failed to clear related projects",
       };
     }
   }
