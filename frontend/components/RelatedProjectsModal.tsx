@@ -15,6 +15,7 @@ import {
     Sparkles,
     Link as LinkIcon,
     AlertCircle,
+    Trash2,
 } from 'lucide-react';
 import { apiClient } from '../lib/api-client';
 import { useAuth } from '../contexts/AuthContext';
@@ -209,6 +210,25 @@ export const RelatedProjectsModal: React.FC<RelatedProjectsModalProps> = ({
         }
     };
 
+    const handleClearProjects = async () => {
+        if (!confirm('⚠️ Clear all AI-detected projects for this idea?\n\nThis will delete all search results but keep user-pinned projects.')) {
+            return;
+        }
+
+        try {
+            const response = await apiClient.clearRelatedProjects(ideaId);
+            if (response.success) {
+                toast.success(`🗑️ Cleared ${response.data.deletedCount} AI-detected projects`);
+                await fetchRelatedProjects(); // Refresh the list
+            } else {
+                toast.error(response.error || 'Failed to clear projects');
+            }
+        } catch (error) {
+            console.error('Failed to clear projects:', error);
+            toast.error('Failed to clear projects');
+        }
+    };
+
     // Check if current user has already pinned a project
     const userHasPinned = userPinned.some((p) => p.pinnedBy === user?.id);
 
@@ -245,12 +265,24 @@ export const RelatedProjectsModal: React.FC<RelatedProjectsModalProps> = ({
                                     </p>
                                 </div>
                             </div>
-                            <button
-                                onClick={onClose}
-                                className="p-2 hover:bg-white/10 rounded-lg transition-colors"
-                            >
-                                <X className="w-5 h-5 text-gray-400" />
-                            </button>
+                            <div className="flex items-center gap-2">
+                                {/* Clear AI Results Button */}
+                                <button
+                                    onClick={handleClearProjects}
+                                    disabled={aiDetected.length === 0}
+                                    className="px-3 py-1.5 bg-red-500/20 hover:bg-red-500/30 disabled:bg-gray-500/10 disabled:text-gray-600 disabled:cursor-not-allowed text-red-400 rounded-lg transition-colors flex items-center gap-1.5 text-sm font-medium"
+                                    title="Clear all AI-detected projects"
+                                >
+                                    <Trash2 className="w-4 h-4" />
+                                    Clear AI Results
+                                </button>
+                                <button
+                                    onClick={onClose}
+                                    className="p-2 hover:bg-white/10 rounded-lg transition-colors"
+                                >
+                                    <X className="w-5 h-5 text-gray-400" />
+                                </button>
+                            </div>
                         </div>
                     </div>
 
