@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Param, UseGuards, Delete } from "@nestjs/common";
+import { Controller, Get, Post, Body, Param, UseGuards } from "@nestjs/common";
 import { AIService } from "./ai.service";
 import { AuthGuard } from "../common/guards/auth.guard";
 import { CurrentUser } from "../common/decorators/user.decorator";
@@ -542,16 +542,16 @@ export class AIController {
   }
 
   /**
-   * DELETE /api/ai/clear-related-projects/:ideaId
+   * POST /api/ai/clear-related-projects
    * Clear all AI-detected related projects for an idea
    */
-  @Delete("clear-related-projects/:ideaId")
+  @Post("clear-related-projects")
   @UseGuards(AuthGuard)
   async clearRelatedProjects(
-    @Param("ideaId") ideaId: string
+    @Body() dto: { ideaId: string }
   ): Promise<ApiResponse<any>> {
     try {
-      const result = await this.aiService.clearRelatedProjects(ideaId);
+      const result = await this.aiService.clearRelatedProjects(dto.ideaId);
 
       if (!result.success) {
         return {

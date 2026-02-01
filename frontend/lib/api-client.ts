@@ -1077,8 +1077,9 @@ export const apiClient = {
   clearRelatedProjects: (ideaId: string) =>
     apiFetch<{
       deletedCount: number;
-    }>(`/ai/clear-related-projects/${ideaId}`, {
-      method: "DELETE",
+    }>("/ai/clear-related-projects", {
+      method: "POST",
+      body: JSON.stringify({ ideaId }),
     }),
 };
 
