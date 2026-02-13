@@ -9,12 +9,13 @@ import {
   Query,
   UseGuards,
   UseInterceptors,
+  Req,
 } from "@nestjs/common";
 import { ProjectsService } from "./projects.service";
 import { CreateProjectDto } from "./dto/create-project.dto";
 import { UpdateProjectDto } from "./dto/update-project.dto";
 import { QueryProjectsDto } from "./dto/query-projects.dto";
-import { AuthGuard } from "../common/guards/auth.guard";
+import { AnyAuthGuard } from "../common/guards/any-auth.guard";
 import { CurrentUser } from "../common/decorators/user.decorator";
 import { CacheControlInterceptor } from "../common/interceptors/cache-control.interceptor";
 import { ApiResponse, Project } from "../shared/types";
@@ -66,11 +67,13 @@ export class ProjectsController {
    * Create new project (requires authentication)
    */
   @Post()
-  @UseGuards(AuthGuard)
+  @UseGuards(AnyAuthGuard)
   async create(
+    @Req() req: any,
     @CurrentUser("userId") userId: string,
     @Body() createDto: CreateProjectDto
   ): Promise<ApiResponse<Project>> {
+    // TODO: add audit log for PAT once audit table is deployed
     return this.projectsService.create(userId, createDto);
   }
 
@@ -79,7 +82,7 @@ export class ProjectsController {
    * Update project (requires authentication)
    */
   @Patch(":id")
-  @UseGuards(AuthGuard)
+  @UseGuards(AnyAuthGuard)
   async update(
     @Param("id") id: string,
     @CurrentUser("userId") userId: string,
@@ -93,7 +96,7 @@ export class ProjectsController {
    * Delete project (requires authentication)
    */
   @Delete(":id")
-  @UseGuards(AuthGuard)
+  @UseGuards(AnyAuthGuard)
   async remove(
     @Param("id") id: string,
     @CurrentUser("userId") userId: string
@@ -106,7 +109,7 @@ export class ProjectsController {
    * Vote for project (requires authentication)
    */
   @Post(":id/vote")
-  @UseGuards(AuthGuard)
+  @UseGuards(AnyAuthGuard)
   async vote(
     @Param("id") id: string,
     @CurrentUser("userId") userId: string

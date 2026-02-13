@@ -15,6 +15,7 @@ import { AIModule } from "./ai/ai.module";
 import { FeedsModule } from "./feeds/feeds.module";
 import { AdminModule } from "./admin/admin.module";
 import { HackathonsModule } from "./hackathons/hackathons.module";
+import { ApiTokensModule } from "./api-tokens/api-tokens.module";
 
 @Module({
   imports: [
@@ -27,6 +28,7 @@ import { HackathonsModule } from "./hackathons/hackathons.module";
       },
     ]),
     AuthModule,
+    ApiTokensModule,
     UsersModule,
     ProjectsModule,
     CommentsModule,
