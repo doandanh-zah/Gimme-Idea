@@ -161,7 +161,7 @@ If you are unsure about enum values, ask me. Category must be one of: DeFi, NFT,
             {showGuide && (
               <div className="fixed inset-0 z-[100] flex items-center justify-center px-4">
                 <div className="absolute inset-0 bg-black/70" onClick={() => setShowGuide(false)} />
-                <div className="relative w-full max-w-2xl rounded-2xl border border-yellow-300/30 p-6 max-h-[85vh] overflow-auto bg-yellow-50/10 shadow-[0_0_0_1px_rgba(250,204,21,0.15),0_20px_80px_rgba(0,0,0,0.55)] backdrop-blur-xl">
+                <div className="relative w-full max-w-2xl rounded-2xl border border-yellow-300/30 p-4 sm:p-6 max-h-[85vh] overflow-auto bg-yellow-50/10 shadow-[0_0_0_1px_rgba(250,204,21,0.15),0_20px_80px_rgba(0,0,0,0.55)] backdrop-blur-xl">
                   <div className="flex items-start justify-between gap-4 mb-4">
                     <div>
                       <h2 className="text-xl font-bold text-yellow-50">PAT Guide</h2>
@@ -185,14 +185,12 @@ If you are unsure about enum values, ask me. Category must be one of: DeFi, NFT,
                           <b>Base URL</b>: the <b>Gimme Idea API</b> base URL.
                         </p>
                         <div className="p-3 rounded-xl bg-black/50 border border-yellow-300/20">
-                          <p className="text-xs text-yellow-100/60 font-mono">Example:</p>
+                          <p className="text-xs text-yellow-100/60 font-mono">Base URL:</p>
                           <code className="text-xs break-all text-yellow-50 leading-relaxed">
                             {apiBaseUrl}
                           </code>
                         </div>
-                        <p className="text-xs text-yellow-100/60">
-                          You do <b>not</b> need your own backend. Your agent calls <b>Gimme Idea’s</b> API directly using this base URL.
-                        </p>
+                        {/* Agent calls Gimme Idea API directly using the base URL above. */}
 
                         <p className="text-yellow-50/80"><b>Headers</b> (always send these):</p>
                         <div className="p-3 rounded-xl bg-black/50 border border-yellow-300/20">
@@ -214,9 +212,7 @@ If you are unsure about enum values, ask me. Category must be one of: DeFi, NFT,
                           <p className="text-yellow-50/85">
                             <b>1) Create an Idea</b> (Idea = a project record with <span className="font-mono">type=idea</span>)
                           </p>
-                          <p className="text-xs text-yellow-100/60 -mt-2">
-                            Required for ideas: <span className="font-mono">title</span>, <span className="font-mono">description</span>, <span className="font-mono">category</span>, <span className="font-mono">stage</span>, <span className="font-mono">tags</span>, <span className="font-mono">problem</span>, <span className="font-mono">solution</span>. (<span className="font-mono">opportunity</span> is optional)
-                          </p>
+                          {/* See payload template below for required fields. */}
                           <div className="p-3 rounded-xl bg-black/50 border border-yellow-300/20">
                             <code className="text-xs block text-yellow-50">POST /projects</code>
                             <code className="text-xs block text-yellow-100/70 mt-2">{"{\"type\":\"idea\",\"title\":\"…\",\"description\":\"…\",\"category\":\"Developer Tooling\",\"stage\":\"Idea\",\"tags\":[\"solana\"],\"problem\":\"…\",\"solution\":\"…\",\"opportunity\":\"…\"}"}</code>
@@ -398,22 +394,24 @@ If you are unsure about enum values, ask me. Category must be one of: DeFi, NFT,
               </div>
 
               <div className="mt-5 flex items-center gap-3">
-                <button
-                  disabled={creating || scopes.length === 0}
-                  onClick={() => { setShowCreateConfirm(true); setAcknowledgeRisk(false); }}
-                  className="px-4 py-2 bg-primary text-white rounded-full text-sm font-bold hover:bg-primary-dark transition-colors"
-                >
-                  Create Token
-                </button>
-                <button
-                  onClick={() => setShowGuide(true)}
-                  className="px-4 py-2 bg-gradient-to-r from-[#FFD700] to-[#FDB931] text-black rounded-full text-sm font-bold hover:shadow-lg transition-all"
-                >
-                  Guide
-                </button>
-                <p className="text-xs text-gray-400">
-                  The token value is shown <b>only once</b>. Store it safely.
-                </p>
+                <div className="flex flex-col sm:flex-row sm:items-center gap-3 w-full">
+                  <button
+                    disabled={creating || scopes.length === 0}
+                    onClick={() => { setShowCreateConfirm(true); setAcknowledgeRisk(false); }}
+                    className="px-4 py-2 bg-primary text-white rounded-full text-sm font-bold hover:bg-primary-dark transition-colors"
+                  >
+                    Create Token
+                  </button>
+                  <button
+                    onClick={() => setShowGuide(true)}
+                    className="px-4 py-2 bg-gradient-to-r from-[#FFD700] to-[#FDB931] text-black rounded-full text-sm font-bold hover:shadow-lg transition-all"
+                  >
+                    Guide
+                  </button>
+                  <p className="text-xs text-gray-400 sm:ml-auto">
+                    The token value is shown <b>only once</b>. Store it safely.
+                  </p>
+                </div>
               </div>
 
               {plainToken && (
