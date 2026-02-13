@@ -7,10 +7,11 @@ import {
   Body,
   Param,
   UseGuards,
+  Req,
 } from "@nestjs/common";
 import { CommentsService } from "./comments.service";
 import { CreateCommentDto } from "./dto/create-comment.dto";
-import { AuthGuard } from "../common/guards/auth.guard";
+import { AnyAuthGuard } from "../common/guards/any-auth.guard";
 import { CurrentUser } from "../common/decorators/user.decorator";
 import { ApiResponse, Comment } from "../shared/types";
 
@@ -34,7 +35,7 @@ export class CommentsController {
    * Create new comment (requires authentication)
    */
   @Post()
-  @UseGuards(AuthGuard)
+  @UseGuards(AnyAuthGuard)
   async create(
     @CurrentUser("userId") userId: string,
     @Body() createDto: CreateCommentDto
@@ -47,7 +48,7 @@ export class CommentsController {
    * Update a comment (owner only)
    */
   @Patch(":id")
-  @UseGuards(AuthGuard)
+  @UseGuards(AnyAuthGuard)
   async update(
     @Param("id") commentId: string,
     @CurrentUser("userId") userId: string,
@@ -61,7 +62,7 @@ export class CommentsController {
    * Delete a comment (owner only)
    */
   @Delete(":id")
-  @UseGuards(AuthGuard)
+  @UseGuards(AnyAuthGuard)
   async delete(
     @Param("id") commentId: string,
     @CurrentUser("userId") userId: string
@@ -74,7 +75,7 @@ export class CommentsController {
    * Like a comment (requires authentication)
    */
   @Post(":id/like")
-  @UseGuards(AuthGuard)
+  @UseGuards(AnyAuthGuard)
   async like(
     @Param("id") commentId: string,
     @CurrentUser("userId") userId: string
