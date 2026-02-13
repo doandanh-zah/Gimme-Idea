@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import Navbar from '../../../components/Navbar';
 import { useAppStore } from '../../../lib/store';
 import { apiClient } from '../../../lib/api-client';
@@ -25,6 +25,10 @@ export default function ApiTokensPage() {
   const [expiresAt, setExpiresAt] = useState<string>('');
 
   const [plainToken, setPlainToken] = useState<string>('');
+
+  const [showGuide, setShowGuide] = useState(false);
+  const [showCreateConfirm, setShowCreateConfirm] = useState(false);
+  const [acknowledgeRisk, setAcknowledgeRisk] = useState(false);
 
   const canUse = !!user;
 
@@ -102,6 +106,130 @@ export default function ApiTokensPage() {
 
         {canUse && (
           <>
+            {/* Guide Modal */}
+            {showGuide && (
+              <div className="fixed inset-0 z-[100] flex items-center justify-center px-4">
+                <div className="absolute inset-0 bg-black/70" onClick={() => setShowGuide(false)} />
+                <div className="relative w-full max-w-2xl glass rounded-2xl border border-white/10 p-6 max-h-[85vh] overflow-auto">
+                  <div className="flex items-start justify-between gap-4 mb-4">
+                    <div>
+                      <h2 className="text-xl font-bold text-white">PAT Guide</h2>
+                      <p className="text-sm text-gray-400 mt-1">
+                        Personal Access Tokens let trusted tools act as <b>you</b> via the API. Keep them secret.
+                      </p>
+                    </div>
+                    <button
+                      onClick={() => setShowGuide(false)}
+                      className="px-3 py-1.5 bg-white/10 border border-white/10 rounded-full text-xs hover:bg-white/15"
+                    >
+                      Close
+                    </button>
+                  </div>
+
+                  <div className="space-y-5 text-sm text-gray-200">
+                    <section>
+                      <h3 className="font-bold text-white mb-2">Quickstart (copy/paste)</h3>
+                      <div className="space-y-2">
+                        <p className="text-gray-300">
+                          <b>Base URL</b>: your backend domain + <span className="font-mono">/api</span>
+                        </p>
+                        <div className="p-3 rounded-xl bg-black/40 border border-white/10">
+                          <p className="text-xs text-gray-400 font-mono">Example:</p>
+                          <code className="text-xs break-all text-white">
+                            https://gimme-idea-production.up.railway.app/api
+                          </code>
+                        </div>
+
+                        <p className="text-gray-300"><b>Headers</b>:</p>
+                        <div className="p-3 rounded-xl bg-black/40 border border-white/10">
+                          <code className="text-xs block text-white">Authorization: Bearer gi_pat_…</code>
+                          <code className="text-xs block text-white">Content-Type: application/json</code>
+                        </div>
+                      </div>
+                    </section>
+
+                    <section>
+                      <h3 className="font-bold text-white mb-2">Most common actions</h3>
+                      <div className="space-y-3">
+                        <div>
+                          <p className="text-gray-300"><b>1) Create an Idea</b> (Ideas are stored in <span className="font-mono">/projects</span> with <span className="font-mono">type=idea</span>)</p>
+                          <div className="p-3 rounded-xl bg-black/40 border border-white/10">
+                            <code className="text-xs block text-white">POST /projects</code>
+                            <code className="text-xs block text-gray-300 mt-2">{"{\"type\":\"idea\",\"title\":\"…\",\"description\":\"…\",\"category\":\"Developer Tooling\",\"stage\":\"Idea\",\"tags\":[\"solana\"]}"}</code>
+                          </div>
+                        </div>
+
+                        <div>
+                          <p className="text-gray-300"><b>2) List comments for a project/idea</b></p>
+                          <div className="p-3 rounded-xl bg-black/40 border border-white/10">
+                            <code className="text-xs block text-white">GET /comments/project/&lt;PROJECT_ID&gt;</code>
+                          </div>
+                        </div>
+
+                        <div>
+                          <p className="text-gray-300"><b>3) Reply to a comment</b> (use <span className="font-mono">parentCommentId</span>)</p>
+                          <div className="p-3 rounded-xl bg-black/40 border border-white/10">
+                            <code className="text-xs block text-white">POST /comments</code>
+                            <code className="text-xs block text-gray-300 mt-2">{"{\"projectId\":\"…\",\"content\":\"…\",\"parentCommentId\":\"…\",\"isAnonymous\":false}"}</code>
+                          </div>
+                        </div>
+                      </div>
+                    </section>
+
+                    <section>
+                      <h3 className="font-bold text-white mb-2">Security & best practices</h3>
+                      <ul className="list-disc pl-5 space-y-1 text-gray-300">
+                        <li>PAT acts like a long-lived login for your account — treat it like a password.</li>
+                        <li>Store it in a password manager / secret manager (never paste into public chats).</li>
+                        <li>If leaked: revoke it immediately and create a new one.</li>
+                      </ul>
+                    </section>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Create Token Confirm */}
+            {showCreateConfirm && (
+              <div className="fixed inset-0 z-[110] flex items-center justify-center px-4">
+                <div className="absolute inset-0 bg-black/70" onClick={() => setShowCreateConfirm(false)} />
+                <div className="relative w-full max-w-lg glass rounded-2xl border border-white/10 p-6">
+                  <h2 className="text-lg font-bold text-white">Before you create a token</h2>
+                  <p className="text-sm text-gray-400 mt-2">
+                    This token will be shown <b>only once</b> and can be used to act as your user via the API.
+                    Please read the guide and keep it secret.
+                  </p>
+
+                  <label className="flex items-center gap-2 mt-4 text-sm text-gray-200">
+                    <input
+                      type="checkbox"
+                      checked={acknowledgeRisk}
+                      onChange={(e) => setAcknowledgeRisk(e.target.checked)}
+                    />
+                    <span>I understand and I will store this token securely.</span>
+                  </label>
+
+                  <div className="mt-5 flex items-center justify-end gap-2">
+                    <button
+                      onClick={() => setShowGuide(true)}
+                      className="px-4 py-2 bg-white/10 border border-white/10 rounded-full text-sm font-bold hover:bg-white/15"
+                    >
+                      Guide
+                    </button>
+                    <button
+                      disabled={!acknowledgeRisk || creating || scopes.length === 0}
+                      onClick={async () => {
+                        await onCreate();
+                        setShowCreateConfirm(false);
+                      }}
+                      className="px-4 py-2 bg-primary text-white rounded-full text-sm font-bold hover:bg-primary-dark disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {creating ? 'Creating…' : 'Create'}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
             <div className="glass p-6 rounded-xl border border-white/10 mb-8">
               <h2 className="text-lg font-bold mb-3">Create Token</h2>
 
@@ -141,10 +269,16 @@ export default function ApiTokensPage() {
               <div className="mt-5 flex items-center gap-3">
                 <button
                   disabled={creating || scopes.length === 0}
-                  onClick={onCreate}
+                  onClick={() => { setShowCreateConfirm(true); setAcknowledgeRisk(false); }}
                   className="px-4 py-2 bg-primary text-white rounded-full text-sm font-bold hover:bg-primary-dark transition-colors"
                 >
-                  {creating ? 'Creating…' : 'Create Token'}
+                  Create Token
+                </button>
+                <button
+                  onClick={() => setShowGuide(true)}
+                  className="px-4 py-2 bg-white/10 border border-white/10 rounded-full text-sm font-bold hover:bg-white/15 transition-colors"
+                >
+                  Guide
                 </button>
                 <p className="text-xs text-gray-400">
                   The token value is shown <b>only once</b>. Store it safely.
@@ -156,12 +290,20 @@ export default function ApiTokensPage() {
                   <p className="text-xs text-gray-400 font-mono mb-2">Your new token (copy now):</p>
                   <div className="flex flex-col md:flex-row gap-3 md:items-center">
                     <code className="break-all text-sm text-white">{plainToken}</code>
-                    <button
-                      onClick={() => navigator.clipboard.writeText(plainToken)}
-                      className="px-3 py-1.5 bg-white/10 border border-white/10 rounded-full text-xs hover:bg-white/15"
-                    >
-                      Copy
-                    </button>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => navigator.clipboard.writeText(plainToken)}
+                        className="px-3 py-1.5 bg-white/10 border border-white/10 rounded-full text-xs hover:bg-white/15"
+                      >
+                        Copy
+                      </button>
+                      <button
+                        onClick={() => setShowGuide(true)}
+                        className="px-3 py-1.5 bg-white/10 border border-white/10 rounded-full text-xs hover:bg-white/15"
+                      >
+                        Open Guide
+                      </button>
+                    </div>
                   </div>
                 </div>
               )}
