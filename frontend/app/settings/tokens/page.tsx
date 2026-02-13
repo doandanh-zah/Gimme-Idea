@@ -32,6 +32,26 @@ export default function ApiTokensPage() {
 
   const canUse = !!user;
 
+  const apiBaseUrl = typeof window !== 'undefined' ? `${window.location.origin}/api` : 'https://gimme-idea-production.up.railway.app/api';
+
+  const quickPromptTemplate = `I want you to help me use my Gimme Idea account via API.
+
+Website: ${typeof window !== 'undefined' ? window.location.origin : 'https://gimmeidea.com'}
+Base URL: ${apiBaseUrl}
+
+Use this Personal Access Token (PAT): <PASTE_PAT_HERE>
+
+Core endpoints:
+- Create Idea/Project: POST /projects (Idea is type=\"idea\", Project is type=\"project\")
+- List comments for a project/idea: GET /comments/project/<PROJECT_ID>
+- Create comment or reply: POST /comments (use parentCommentId to reply)
+
+Always send headers:
+- Authorization: Bearer <PASTE_PAT_HERE>
+- Content-Type: application/json
+
+Please ask me if you need any required fields for a specific endpoint.`;
+
   const load = async () => {
     setError('');
     setLoading(true);
@@ -110,78 +130,117 @@ export default function ApiTokensPage() {
             {showGuide && (
               <div className="fixed inset-0 z-[100] flex items-center justify-center px-4">
                 <div className="absolute inset-0 bg-black/70" onClick={() => setShowGuide(false)} />
-                <div className="relative w-full max-w-2xl glass rounded-2xl border border-white/10 p-6 max-h-[85vh] overflow-auto">
+                <div className="relative w-full max-w-2xl rounded-2xl border border-yellow-300/30 p-6 max-h-[85vh] overflow-auto bg-yellow-50/10 shadow-[0_0_0_1px_rgba(250,204,21,0.15),0_20px_80px_rgba(0,0,0,0.55)] backdrop-blur-xl">
                   <div className="flex items-start justify-between gap-4 mb-4">
                     <div>
-                      <h2 className="text-xl font-bold text-white">PAT Guide</h2>
-                      <p className="text-sm text-gray-400 mt-1">
-                        Personal Access Tokens let trusted tools act as <b>you</b> via the API. Keep them secret.
+                      <h2 className="text-xl font-bold text-yellow-50">PAT Guide</h2>
+                      <p className="text-sm text-yellow-100/70 mt-1">
+                        Personal Access Tokens let trusted tools act as <b>you</b> via the Gimme Idea API. Keep them secret.
                       </p>
                     </div>
                     <button
                       onClick={() => setShowGuide(false)}
-                      className="px-3 py-1.5 bg-white/10 border border-white/10 rounded-full text-xs hover:bg-white/15"
+                      className="px-3 py-1.5 bg-yellow-500/15 border border-yellow-400/30 rounded-full text-xs hover:bg-yellow-500/25 text-yellow-50"
                     >
                       Close
                     </button>
                   </div>
 
-                  <div className="space-y-5 text-sm text-gray-200">
+                  <div className="space-y-5 text-sm text-yellow-50/90">
                     <section>
-                      <h3 className="font-bold text-white mb-2">Quickstart (copy/paste)</h3>
+                      <h3 className="font-bold text-yellow-50 mb-2">Quickstart (copy/paste)</h3>
                       <div className="space-y-2">
-                        <p className="text-gray-300">
-                          <b>Base URL</b>: the <b>Gimme Idea API</b> base URL (usually the same domain you’re browsing + <span className="font-mono">/api</span>).
+                        <p className="text-yellow-50/80">
+                          <b>Base URL</b>: the <b>Gimme Idea API</b> base URL (same website domain you’re browsing + <span className="font-mono">/api</span>).
                         </p>
-                        <div className="p-3 rounded-xl bg-black/40 border border-white/10">
-                          <p className="text-xs text-gray-400 font-mono">Example:</p>
-                          <code className="text-xs break-all text-white">
-                            {typeof window !== 'undefined' ? `${window.location.origin}/api` : 'https://gimme-idea-production.up.railway.app/api'}
+                        <div className="p-3 rounded-xl bg-black/50 border border-yellow-300/20">
+                          <p className="text-xs text-yellow-100/60 font-mono">Example:</p>
+                          <code className="text-xs break-all text-yellow-50">
+                            {apiBaseUrl}
                           </code>
                         </div>
-                        <p className="text-xs text-gray-500">
-                          You do <b>not</b> need your own backend. Your agent calls Gimme Idea’s API directly using this base URL.
+                        <p className="text-xs text-yellow-100/60">
+                          You do <b>not</b> need your own backend. Your agent calls <b>Gimme Idea’s</b> API directly using this base URL.
                         </p>
 
-                        <p className="text-gray-300"><b>Headers</b>:</p>
-                        <div className="p-3 rounded-xl bg-black/40 border border-white/10">
-                          <code className="text-xs block text-white">Authorization: Bearer gi_pat_…</code>
-                          <code className="text-xs block text-white">Content-Type: application/json</code>
+                        <p className="text-yellow-50/80"><b>Headers</b> (always send these):</p>
+                        <div className="p-3 rounded-xl bg-black/50 border border-yellow-300/20">
+                          <code className="text-xs block text-yellow-50">Authorization: Bearer gi_pat_…</code>
+                          <code className="text-xs block text-yellow-50">Content-Type: application/json</code>
                         </div>
                       </div>
                     </section>
 
                     <section>
-                      <h3 className="font-bold text-white mb-2">Most common actions</h3>
+                      <h3 className="font-bold text-yellow-50 mb-2">Endpoints you’ll use most</h3>
+                      <p className="text-yellow-50/80 mb-3">
+                        You need: <b>Base URL</b> + <b>Endpoint</b> + <b>PAT</b>. The agent will call these endpoints on the Gimme Idea API.
+                        (Example: “Upload an idea” uses <span className="font-mono">POST /projects</span>.)
+                      </p>
+
                       <div className="space-y-3">
                         <div>
-                          <p className="text-gray-300"><b>1) Create an Idea</b> (Ideas are stored in <span className="font-mono">/projects</span> with <span className="font-mono">type=idea</span>)</p>
-                          <div className="p-3 rounded-xl bg-black/40 border border-white/10">
-                            <code className="text-xs block text-white">POST /projects</code>
-                            <code className="text-xs block text-gray-300 mt-2">{"{\"type\":\"idea\",\"title\":\"…\",\"description\":\"…\",\"category\":\"Developer Tooling\",\"stage\":\"Idea\",\"tags\":[\"solana\"]}"}</code>
+                          <p className="text-yellow-50/85"><b>1) Create an Idea</b> (Idea = a project record with <span className="font-mono">type=idea</span>)</p>
+                          <div className="p-3 rounded-xl bg-black/50 border border-yellow-300/20">
+                            <code className="text-xs block text-yellow-50">POST /projects</code>
+                            <code className="text-xs block text-yellow-100/70 mt-2">{"{\"type\":\"idea\",\"title\":\"…\",\"description\":\"…\",\"category\":\"Developer Tooling\",\"stage\":\"Idea\",\"tags\":[\"solana\"]}"}</code>
                           </div>
                         </div>
 
                         <div>
-                          <p className="text-gray-300"><b>2) List comments for a project/idea</b></p>
-                          <div className="p-3 rounded-xl bg-black/40 border border-white/10">
-                            <code className="text-xs block text-white">GET /comments/project/&lt;PROJECT_ID&gt;</code>
+                          <p className="text-yellow-50/85"><b>2) Create a Project</b> (Project = <span className="font-mono">type=project</span>)</p>
+                          <div className="p-3 rounded-xl bg-black/50 border border-yellow-300/20">
+                            <code className="text-xs block text-yellow-50">POST /projects</code>
+                            <code className="text-xs block text-yellow-100/70 mt-2">{"{\"type\":\"project\",\"title\":\"…\",\"description\":\"…\",\"category\":\"Developer Tooling\",\"stage\":\"Prototype\",\"tags\":[\"solana\"]}"}</code>
                           </div>
                         </div>
 
                         <div>
-                          <p className="text-gray-300"><b>3) Reply to a comment</b> (use <span className="font-mono">parentCommentId</span>)</p>
-                          <div className="p-3 rounded-xl bg-black/40 border border-white/10">
-                            <code className="text-xs block text-white">POST /comments</code>
-                            <code className="text-xs block text-gray-300 mt-2">{"{\"projectId\":\"…\",\"content\":\"…\",\"parentCommentId\":\"…\",\"isAnonymous\":false}"}</code>
+                          <p className="text-yellow-50/85"><b>3) List comments</b> for a project/idea</p>
+                          <div className="p-3 rounded-xl bg-black/50 border border-yellow-300/20">
+                            <code className="text-xs block text-yellow-50">GET /comments/project/&lt;PROJECT_ID&gt;</code>
+                          </div>
+                        </div>
+
+                        <div>
+                          <p className="text-yellow-50/85"><b>4) Create a comment</b></p>
+                          <div className="p-3 rounded-xl bg-black/50 border border-yellow-300/20">
+                            <code className="text-xs block text-yellow-50">POST /comments</code>
+                            <code className="text-xs block text-yellow-100/70 mt-2">{"{\"projectId\":\"…\",\"content\":\"…\",\"isAnonymous\":false}"}</code>
+                          </div>
+                        </div>
+
+                        <div>
+                          <p className="text-yellow-50/85"><b>5) Reply to a comment</b> (use <span className="font-mono">parentCommentId</span>)</p>
+                          <div className="p-3 rounded-xl bg-black/50 border border-yellow-300/20">
+                            <code className="text-xs block text-yellow-50">POST /comments</code>
+                            <code className="text-xs block text-yellow-100/70 mt-2">{"{\"projectId\":\"…\",\"content\":\"…\",\"parentCommentId\":\"…\",\"isAnonymous\":false}"}</code>
                           </div>
                         </div>
                       </div>
                     </section>
 
                     <section>
-                      <h3 className="font-bold text-white mb-2">Security & best practices</h3>
-                      <ul className="list-disc pl-5 space-y-1 text-gray-300">
+                      <h3 className="font-bold text-yellow-50 mb-2">Quick prompt (send to your agent)</h3>
+                      <p className="text-yellow-50/80 mb-2">
+                        Copy this template, paste your PAT, and send it to the agent. It tells the agent exactly how to use your PAT.
+                      </p>
+                      <div className="p-3 rounded-xl bg-black/50 border border-yellow-300/20">
+                        <pre className="whitespace-pre-wrap text-xs text-yellow-50/90">{quickPromptTemplate}</pre>
+                      </div>
+                      <div className="mt-2 flex gap-2">
+                        <button
+                          onClick={() => navigator.clipboard.writeText(quickPromptTemplate)}
+                          className="px-3 py-1.5 bg-yellow-500/20 border border-yellow-400/30 rounded-full text-xs hover:bg-yellow-500/30 text-yellow-50"
+                        >
+                          Copy prompt
+                        </button>
+                      </div>
+                    </section>
+
+                    <section>
+                      <h3 className="font-bold text-yellow-50 mb-2">Security & best practices</h3>
+                      <ul className="list-disc pl-5 space-y-1 text-yellow-50/80">
                         <li>PAT acts like a long-lived login for your account — treat it like a password.</li>
                         <li>Store it in a password manager / secret manager (never paste into public chats).</li>
                         <li>If leaked: revoke it immediately and create a new one.</li>
@@ -215,7 +274,7 @@ export default function ApiTokensPage() {
                   <div className="mt-5 flex items-center justify-end gap-2">
                     <button
                       onClick={() => setShowGuide(true)}
-                      className="px-4 py-2 bg-white/10 border border-white/10 rounded-full text-sm font-bold hover:bg-white/15"
+                      className="px-4 py-2 bg-yellow-500/20 border border-yellow-400/30 rounded-full text-sm font-bold hover:bg-yellow-500/30 text-yellow-50"
                     >
                       Guide
                     </button>
@@ -279,7 +338,7 @@ export default function ApiTokensPage() {
                 </button>
                 <button
                   onClick={() => setShowGuide(true)}
-                  className="px-4 py-2 bg-white/10 border border-white/10 rounded-full text-sm font-bold hover:bg-white/15 transition-colors"
+                  className="px-4 py-2 bg-yellow-500/20 border border-yellow-400/30 rounded-full text-sm font-bold hover:bg-yellow-500/30 transition-colors text-yellow-50"
                 >
                   Guide
                 </button>
@@ -302,7 +361,7 @@ export default function ApiTokensPage() {
                       </button>
                       <button
                         onClick={() => setShowGuide(true)}
-                        className="px-3 py-1.5 bg-white/10 border border-white/10 rounded-full text-xs hover:bg-white/15"
+                        className="px-3 py-1.5 bg-yellow-500/20 border border-yellow-400/30 rounded-full text-xs hover:bg-yellow-500/30 text-yellow-50"
                       >
                         Open Guide
                       </button>
