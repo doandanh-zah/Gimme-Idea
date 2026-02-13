@@ -86,7 +86,7 @@ const content = {
       { title: 'Reputation', desc: 'Build credibility through quality contributions' },
       { title: 'Follow System', desc: 'Follow creators and get updates on new ideas' },
       { title: 'Hackathons', desc: 'Compete in themed challenges and win prizes' },
-      { title: 'Anonymous Mode', desc: 'Post ideas anonymously when needed' },
+      { title: 'Anonymous Comments', desc: 'Comment anonymously when needed (anonymous posting for ideas/projects is disabled)' },
     ],
 
     // User Guide
@@ -131,7 +131,8 @@ const content = {
       { q: 'How does the reputation system work?', a: 'You earn reputation points by submitting quality ideas, receiving upvotes, getting tips, and engaging positively with the community. Higher reputation unlocks features and increases visibility.' },
       { q: 'What are Hackathons?', a: 'Hackathons are themed challenges where you can submit ideas for specific topics. They often have prize pools and deadlines. Check the Hackathons page for active events.' },
       { q: 'How do I connect my wallet on mobile?', a: 'On mobile browsers, click "Connect Wallet" and select "Mobile Wallet". This opens your wallet app (Phantom/Solflare) via deep link, sign the message, and you\'ll be redirected back.' },
-      { q: 'Is my data secure?', a: 'Yes! We only store your public wallet address (no private keys), email for authentication, and the content you choose to share. See our Privacy Policy for details.' },
+      { q: 'What are API Tokens / PAT?', a: 'API Tokens (Personal Access Tokens / PAT) let trusted tools or agents act as your account via the Gimme Idea API. The token is shown only once when created — store it securely and revoke it if leaked.' },
+      { q: 'Is my data secure?', a: 'Yes! We only store your public wallet address (no private keys), email for authentication, and the content you choose to share. If you create API Tokens (PAT), we store a hashed version and metadata (we do not store the plaintext token after creation). See our Privacy Policy for details.' },
       { q: 'Can I edit or delete my idea?', a: 'Yes, you can edit your ideas anytime from your profile. Deleting is also possible, but tips already received are non-refundable.' },
       { q: 'How do I report inappropriate content?', a: 'Click the three dots menu on any idea or comment and select "Report". Our moderation team reviews all reports within 24 hours.' },
     ],

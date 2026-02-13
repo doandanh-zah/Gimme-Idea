@@ -30,7 +30,7 @@ export default function PrivacyPage() {
           </div>
           <div>
             <h1 className="text-3xl font-bold">Privacy Policy</h1>
-            <p className="text-gray-400">Last updated: December 2025</p>
+            <p className="text-gray-400">Last updated: February 2026</p>
           </div>
         </div>
 
@@ -44,6 +44,7 @@ export default function PrivacyPage() {
               <li><strong>Account Information:</strong> Email address (via Google Sign-In), username, and profile picture</li>
               <li><strong>Wallet Information:</strong> Your Solana wallet public address (if you choose to connect)</li>
               <li><strong>Content:</strong> Ideas, projects, comments, and feedback you submit</li>
+              <li><strong>API Tokens (optional):</strong> If you create Personal Access Tokens (PAT), we store a hashed version of the token and metadata (name, scopes, expiry, last-used time). We do not store the plaintext token after creation.</li>
               <li><strong>Usage Data:</strong> How you interact with our platform</li>
             </ul>
           </section>
@@ -56,6 +57,7 @@ export default function PrivacyPage() {
               <li>To display your profile and content to other users</li>
               <li>To send you notifications about activity on your content</li>
               <li>To improve our platform and user experience</li>
+              <li>To authenticate API requests when you use API Tokens / PAT (and to help prevent fraud/abuse)</li>
             </ul>
           </section>
 

@@ -30,7 +30,7 @@ export default function TermsPage() {
           </div>
           <div>
             <h1 className="text-3xl font-bold">Terms of Service</h1>
-            <p className="text-gray-400">Last updated: December 2025</p>
+            <p className="text-gray-400">Last updated: February 2026</p>
           </div>
         </div>
 
@@ -60,6 +60,9 @@ export default function TermsPage() {
               <li>You must be at least 18 years old to use this service</li>
               <li>One person may not maintain more than one account</li>
             </ul>
+            <p className="text-gray-300 leading-relaxed mt-4">
+              If you create API Tokens / Personal Access Tokens (PAT), you are responsible for keeping them secret. Anyone with your token may be able to act as your account.
+            </p>
           </section>
 
           <section>
@@ -99,11 +102,14 @@ export default function TermsPage() {
             <h2 className="text-xl font-bold text-white mb-4">6. Prohibited Activities</h2>
             <ul className="list-disc list-inside text-gray-300 space-y-2">
               <li>Attempting to hack or exploit the platform</li>
-              <li>Using bots or automated tools without permission</li>
               <li>Manipulating votes or engagement metrics</li>
               <li>Harassing other users</li>
               <li>Using the platform for money laundering or illegal activities</li>
+              <li>Using automation in a way that degrades the service (spam, scraping, excessive requests)</li>
             </ul>
+            <p className="text-gray-300 leading-relaxed mt-4">
+              Note: limited automation is allowed when you use our official API authentication methods (e.g. Personal Access Tokens / API Tokens) and comply with these Terms.
+            </p>
           </section>
 
           <section>
