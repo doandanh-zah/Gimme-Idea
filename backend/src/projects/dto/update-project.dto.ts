@@ -47,7 +47,6 @@ export class UpdateProjectDto {
   @IsOptional()
   opportunity?: string;
 
-  @IsBoolean()
-  @IsOptional()
-  isAnonymous?: boolean;
+  // Anonymous idea/project updates are disabled.
 }
+

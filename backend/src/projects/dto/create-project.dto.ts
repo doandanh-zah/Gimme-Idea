@@ -48,7 +48,6 @@ export class CreateProjectDto {
   @IsOptional()
   opportunity?: string;
 
-  @IsBoolean()
-  @IsOptional()
-  isAnonymous?: boolean = false;
+  // Anonymous idea/project submission is disabled (comments can still be anonymous).
 }
+

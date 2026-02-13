@@ -186,7 +186,8 @@ export const SubmissionModal = () => {
             problem: sanitizedProblem,
             opportunity: sanitizedOpportunity,
             solution: sanitizedSolution,
-            isAnonymous: formData.isAnonymous
+            // Anonymous idea/project submission is disabled (anonymous comments still supported)
+            isAnonymous: false
         };
 
         await addProject(projectData);
@@ -508,20 +509,7 @@ export const SubmissionModal = () => {
                                     />
                                 </div>
 
-                                {/* Anonymous Toggle */}
-                                <div className="flex items-center gap-4 bg-[#1A1A1A] p-4 rounded-xl border border-white/5">
-                                    <div className={`p-3 rounded-xl ${formData.isAnonymous ? 'bg-purple-500 text-white shadow-lg shadow-purple-500/20' : 'bg-white/5 text-gray-400'}`}>
-                                        {formData.isAnonymous ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-                                    </div>
-                                    <div className="flex-grow">
-                                        <h4 className="font-bold text-sm text-white">Post Anonymously</h4>
-                                        <p className="text-xs text-gray-500 mt-0.5">Hide your identity on this post.</p>
-                                    </div>
-                                    <label className="relative inline-flex items-center cursor-pointer">
-                                        <input type="checkbox" checked={formData.isAnonymous} onChange={e => setFormData({...formData, isAnonymous: e.target.checked})} className="sr-only peer" />
-                                        <div className="w-12 h-7 bg-black/50 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-purple-600 border border-white/10"></div>
-                                    </label>
-                                </div>
+                                {/* Anonymous posting for ideas is disabled. (Anonymous comments are still supported.) */}
                             </div>
                         )}
 

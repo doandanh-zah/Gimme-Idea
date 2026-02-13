@@ -154,7 +154,8 @@ export const EditProjectModal = ({ project, isOpen, onClose, onSave }: EditProje
         problem: formData.problem,
         opportunity: formData.opportunity,
         solution: formData.solution,
-        isAnonymous: formData.isAnonymous
+        // Anonymous idea/project submission is disabled (anonymous comments still supported)
+        isAnonymous: false
       };
 
       onSave(updateData);
@@ -297,19 +298,7 @@ export const EditProjectModal = ({ project, isOpen, onClose, onSave }: EditProje
                     />
                   </div>
 
-                  <div className="flex items-center gap-3 p-4 bg-[#141419] rounded-xl border border-white/10">
-                    <button
-                      type="button"
-                      onClick={() => setFormData({ ...formData, isAnonymous: !formData.isAnonymous })}
-                      className={`w-12 h-6 rounded-full relative transition-all ${formData.isAnonymous ? 'bg-[#FFD700]' : 'bg-white/20'}`}
-                    >
-                      <div className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-all ${formData.isAnonymous ? 'right-1' : 'left-1'}`} />
-                    </button>
-                    <div className="flex items-center gap-2">
-                      {formData.isAnonymous ? <EyeOff className="w-4 h-4 text-[#FFD700]" /> : <Eye className="w-4 h-4 text-gray-400" />}
-                      <span className="text-sm text-gray-300">Post Anonymously</span>
-                    </div>
-                  </div>
+                  {/* Anonymous idea/project submission is disabled (anonymous comments still supported). */}
                 </>
               )}
 

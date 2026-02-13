@@ -427,7 +427,8 @@ export class ProjectsService {
       problem: createDto.problem,
       solution: createDto.solution,
       opportunity: createDto.opportunity,
-      is_anonymous: createDto.isAnonymous || false,
+      // Anonymous idea/project submission is disabled (comments can still be anonymous)
+      is_anonymous: false,
       votes: 0,
       feedback_count: 0,
       created_at: new Date().toISOString(),
@@ -683,8 +684,8 @@ export class ProjectsService {
       updateData.solution = updateDto.solution;
     if (updateDto.opportunity !== undefined)
       updateData.opportunity = updateDto.opportunity;
-    if (updateDto.isAnonymous !== undefined)
-      updateData.is_anonymous = updateDto.isAnonymous;
+    // Anonymous idea/project submission is disabled; ignore updates to anonymity.
+    // (Anonymous comments are still supported.)
 
     const { data: updated, error } = await supabase
       .from("projects")
