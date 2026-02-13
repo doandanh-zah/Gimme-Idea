@@ -1008,12 +1008,13 @@ export const apiClient = {
   // =============================================
 
   // Search for related projects on the internet (Tavily API)
-  // Called during idea submission
   searchRelatedProjects: (data: {
     ideaId: string;
     title: string;
     problem: string;
     solution: string;
+    category?: string;
+    tags?: string[];
   }) =>
     apiFetch<{
       results: Array<{
@@ -1028,6 +1029,12 @@ export const apiClient = {
         remaining: number;
         used: number;
         max: number;
+      };
+      aiSummary?: string;
+      searchMeta?: {
+        query: string;
+        fallbackUsed: boolean;
+        rawCount: number;
       };
     }>("/ai/search-related-projects", {
       method: "POST",

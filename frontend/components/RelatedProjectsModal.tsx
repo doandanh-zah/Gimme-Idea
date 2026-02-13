@@ -52,6 +52,8 @@ interface RelatedProjectsModalProps {
     ideaTitle: string;
     ideaProblem?: string;
     ideaSolution?: string;
+    ideaCategory?: string;
+    ideaTags?: string[];
 }
 
 export const RelatedProjectsModal: React.FC<RelatedProjectsModalProps> = ({
@@ -61,6 +63,8 @@ export const RelatedProjectsModal: React.FC<RelatedProjectsModalProps> = ({
     ideaTitle,
     ideaProblem = '',
     ideaSolution = '',
+    ideaCategory,
+    ideaTags,
 }) => {
     const { user } = useAuth();
     const [isLoading, setIsLoading] = useState(true);
@@ -74,6 +78,7 @@ export const RelatedProjectsModal: React.FC<RelatedProjectsModalProps> = ({
         description: '',
     });
     const [isPinning, setIsPinning] = useState(false);
+    const [aiSummary, setAiSummary] = useState<string>('');
 
     // Fetch related projects on mount
     useEffect(() => {
@@ -92,6 +97,12 @@ export const RelatedProjectsModal: React.FC<RelatedProjectsModalProps> = ({
 
                 setAiDetected(aiResults);
                 setUserPinned(userResults);
+
+                // Restore cached AI summary if available
+                try {
+                    const cached = localStorage.getItem(`aiSummary_${ideaId}`);
+                    if (cached) setAiSummary(cached);
+                } catch { /* ignore */ }
 
                 // If no AI-detected results exist, trigger a search automatically
                 if (aiResults.length === 0 && ideaTitle && ideaProblem && ideaSolution) {
@@ -122,6 +133,8 @@ export const RelatedProjectsModal: React.FC<RelatedProjectsModalProps> = ({
                 title: ideaTitle,
                 problem: ideaProblem,
                 solution: ideaSolution,
+                category: ideaCategory,
+                tags: ideaTags,
             });
 
             console.log('API Response:', searchResponse);
@@ -131,6 +144,17 @@ export const RelatedProjectsModal: React.FC<RelatedProjectsModalProps> = ({
                 console.log(`✅ Found ${results.length} results`);
                 console.log('Results:', results);
                 setAiDetected(results);
+
+                // Store AI summary
+                if (searchResponse.data.aiSummary) {
+                    setAiSummary(searchResponse.data.aiSummary);
+                    try { localStorage.setItem(`aiSummary_${ideaId}`, searchResponse.data.aiSummary); } catch { /* ignore */ }
+                }
+
+                if (searchResponse.data.searchMeta) {
+                    const meta = searchResponse.data.searchMeta;
+                    console.log(`📊 Search meta: query="${meta.query}", fallback=${meta.fallbackUsed}, raw=${meta.rawCount}`);
+                }
 
                 if (searchResponse.data.quotaInfo) {
                     const { remaining, used, max } = searchResponse.data.quotaInfo;
@@ -309,7 +333,7 @@ export const RelatedProjectsModal: React.FC<RelatedProjectsModalProps> = ({
                                             <Loader2 className="w-8 h-8 text-purple-400 animate-spin mb-3" />
                                             <p className="text-purple-300 font-semibold">Searching the internet...</p>
                                             <p className="text-xs text-gray-500 mt-1">
-                                                Using AI to find similar projects
+                                                Using AI to find similar products &amp; startups
                                             </p>
                                         </div>
                                     ) : aiDetected.length === 0 ? (
@@ -317,11 +341,21 @@ export const RelatedProjectsModal: React.FC<RelatedProjectsModalProps> = ({
                                             <Globe className="w-8 h-8 text-gray-600 mx-auto mb-2" />
                                             <p className="text-gray-500">No related projects found</p>
                                             <p className="text-xs text-gray-600 mt-1">
-                                                AI couldn't find similar projects on the internet
+                                                AI couldn't find similar products on the internet
                                             </p>
                                         </div>
                                     ) : (
                                         <div className="space-y-3">
+                                            {/* AI Summary */}
+                                            {aiSummary && (
+                                                <div className="p-3 bg-purple-500/10 rounded-xl border border-purple-500/20 mb-4">
+                                                    <p className="text-xs font-semibold text-purple-400 mb-1 flex items-center gap-1.5">
+                                                        <Sparkles className="w-3.5 h-3.5" />
+                                                        AI Summary
+                                                    </p>
+                                                    <p className="text-sm text-gray-300 leading-relaxed">{aiSummary}</p>
+                                                </div>
+                                            )}
                                             {aiDetected.map((project, index) => (
                                                 <motion.a
                                                     key={project.id || index}
@@ -345,7 +379,12 @@ export const RelatedProjectsModal: React.FC<RelatedProjectsModalProps> = ({
                                                                 {project.snippet}
                                                             </p>
                                                             <div className="flex items-center gap-3 mt-2">
-                                                                <span className="text-xs text-gray-500 flex items-center gap-1">
+                                                                <span className={`text-xs flex items-center gap-1 px-1.5 py-0.5 rounded ${['producthunt.com', 'crunchbase.com', 'g2.com', 'ycombinator.com', 'betalist.com'].includes(project.source)
+                                                                        ? 'bg-green-500/15 text-green-400'
+                                                                        : project.source === 'github.com'
+                                                                            ? 'bg-gray-500/15 text-gray-300'
+                                                                            : 'bg-blue-500/15 text-blue-400'
+                                                                    }`}>
                                                                     <Globe className="w-3 h-3" />
                                                                     {project.source}
                                                                 </span>

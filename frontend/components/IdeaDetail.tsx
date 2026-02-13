@@ -959,11 +959,11 @@ export const IdeaDetail = () => {
                                 <Bookmark className="w-4 h-4" /> Save
                             </button>
 
-                            {/* Related Projects Button - HIDDEN (Prototype Testing) */}
+                            {/* Related Projects Button */}
                             <button
                                 onClick={() => setShowRelatedProjectsModal(true)}
-                                className="opacity-0 bg-gradient-to-r from-purple-600 to-blue-600 text-white px-4 sm:px-5 py-2 rounded-full font-bold flex items-center gap-2 hover:scale-105 transition-transform shadow-[0_0_20px_rgba(147,51,234,0.3)] text-sm relative cursor-pointer"
-                                title="Related Projects (Testing)"
+                                className="bg-gradient-to-r from-purple-600 to-blue-600 text-white px-4 sm:px-5 py-2 rounded-full font-bold flex items-center gap-2 hover:scale-105 transition-transform shadow-[0_0_20px_rgba(147,51,234,0.3)] text-sm relative cursor-pointer"
+                                title="Find similar projects on the internet"
                             >
                                 <Archive className="w-4 h-4" /> Projects
                                 {relatedProjectsCount > 0 && (
@@ -1097,6 +1097,8 @@ export const IdeaDetail = () => {
                 ideaTitle={project.title}
                 ideaProblem={project.problem || ''}
                 ideaSolution={project.solution || ''}
+                ideaCategory={project.category}
+                ideaTags={project.tags}
             />
         </motion.div>
     );

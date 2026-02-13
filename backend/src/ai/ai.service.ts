@@ -1012,21 +1012,67 @@ Respond with JSON only:
   // RELATED PROJECTS DETECTION (Tavily API)
   // =============================================
 
+  /** Noise domains to exclude — blogs, tutorials, forums, news, social, video, reference */
+  private static readonly TAVILY_EXCLUDE_DOMAINS = [
+    // Blog / Content platforms
+    'medium.com', 'dev.to', 'hackernoon.com', 'substack.com', 'mirror.xyz',
+    'hashnode.dev', 'wordpress.com', 'blogger.com', 'ghost.org', 'beehiiv.com',
+    // Tutorial / Course sites
+    'towardsdatascience.com', 'freecodecamp.org', 'w3schools.com',
+    'tutorialspoint.com', 'geeksforgeeks.org', 'coursera.org', 'udemy.com',
+    'codecademy.com', 'baeldung.com', 'digitalocean.com',
+    // Q&A / Forums
+    'reddit.com', 'quora.com', 'stackoverflow.com', 'stackexchange.com',
+    // Social media
+    'twitter.com', 'x.com', 'facebook.com', 'instagram.com',
+    'linkedin.com', 'tiktok.com', 'threads.net',
+    // Video
+    'youtube.com', 'vimeo.com', 'twitch.tv',
+    // Reference
+    'wikipedia.org', 'investopedia.com', 'britannica.com',
+    // Docs / Collaboration
+    'docs.google.com', 'notion.so', 'gitbook.io',
+    // Crypto news (articles *about* projects, not the projects themselves)
+    'coindesk.com', 'cointelegraph.com', 'decrypt.co', 'theblock.co',
+    // Generic news
+    'forbes.com', 'businessinsider.com', 'techcrunch.com',
+    // Price trackers
+    'coingecko.com', 'coinmarketcap.com',
+  ];
+
+  /** Map idea categories to search-friendly context phrases */
+  private static readonly CATEGORY_CONTEXT: Record<string, string> = {
+    DeFi: 'decentralized finance fintech',
+    NFT: 'NFT digital collectibles',
+    Gaming: 'gaming',
+    Infrastructure: 'developer tools infrastructure',
+    DAO: 'DAO governance',
+    DePIN: 'IoT physical infrastructure network',
+    Social: 'social platform',
+    Mobile: 'mobile app',
+    Security: 'security cybersecurity',
+  };
+
   /**
-   * Search for related projects on the internet using Tavily API
-   * Called during idea submission
+   * Search for related projects on the internet using Tavily API.
+   * Uses a two-query strategy (primary + fallback) with post-filtering
+   * to find actual products/startups rather than blog posts.
    */
   async searchRelatedProjects(
     ideaId: string,
     ideaTitle: string,
     ideaProblem: string,
     ideaSolution: string,
-    userId: string
+    userId: string,
+    category?: string,
+    tags?: string[],
   ): Promise<{
     success: boolean;
     results?: RelatedProjectResult[];
+    aiSummary?: string;
     error?: string;
     quotaInfo?: { remaining: number; used: number; max: number };
+    searchMeta?: { query: string; fallbackUsed: boolean; rawCount: number };
   }> {
     this.logger.log(`Searching related projects for idea: ${ideaTitle}`);
 
@@ -1034,20 +1080,20 @@ Respond with JSON only:
     const tavilyApiKey = process.env.TAVILY_API_KEY;
 
     if (!tavilyApiKey) {
-      this.logger.warn("TAVILY_API_KEY not configured");
-      return { success: false, error: "Search service not configured" };
+      this.logger.warn('TAVILY_API_KEY not configured');
+      return { success: false, error: 'Search service not configured' };
     }
 
     try {
-      // Check user's daily quota
+      // ---- Quota check ----
       const { data: quotaData, error: quotaError } = await supabase.rpc(
-        "can_user_search_projects",
-        { p_user_id: userId }
+        'can_user_search_projects',
+        { p_user_id: userId },
       );
 
       if (quotaError) {
-        this.logger.error("Failed to check quota:", quotaError);
-        throw new Error("Failed to check search quota");
+        this.logger.error('Failed to check quota:', quotaError);
+        throw new Error('Failed to check search quota');
       }
 
       const quota = {
@@ -1060,178 +1106,316 @@ Respond with JSON only:
       if (!quota.canSearch) {
         return {
           success: false,
-          error: "Daily search limit reached (5 ideas per day)",
-          quotaInfo: {
-            remaining: quota.remaining,
-            used: quota.used,
-            max: quota.max,
-          },
+          error: 'Daily search limit reached (5 ideas per day)',
+          quotaInfo: { remaining: quota.remaining, used: quota.used, max: quota.max },
         };
       }
 
-      // Build search query from idea content
-      const searchQuery = this.buildSearchQuery(
-        ideaTitle,
-        ideaProblem,
-        ideaSolution
+      // ---- Build queries ----
+      const { primary, fallback } = this.buildSearchQueries(
+        ideaTitle, ideaProblem, ideaSolution, category, tags,
       );
+      this.logger.log(`Primary query: ${primary}`);
+      this.logger.log(`Fallback query: ${fallback}`);
 
-      this.logger.log(`Tavily search query: ${searchQuery}`);
+      // ---- Execute primary search ----
+      let allResults: RelatedProjectResult[] = [];
+      let aiSummary: string | undefined;
+      let fallbackUsed = false;
+      let rawCount = 0;
 
-      // Call Tavily API (basic mode, max 8 results)
-      const tavilyResponse = await fetch("https://api.tavily.com/search", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          api_key: tavilyApiKey,
-          query: searchQuery,
-          search_depth: "basic",
-          max_results: 8,
-          include_domains: [
-            "github.com",
-            "producthunt.com",
-            "ycombinator.com",
-            "betalist.com",
-            "indiehackers.com",
-          ],
-          exclude_domains: [
-            "medium.com",
-            "dev.to",
-            "hackernoon.com",
-            "towardsdatascience.com",
-            "freecodecamp.org",
-            "reddit.com",
-            "quora.com",
-            "stackoverflow.com",
-          ],
-        }),
-      });
+      const primaryData = await this.callTavilySearch(tavilyApiKey, primary);
+      aiSummary = primaryData.answer || undefined;
+      rawCount += primaryData.results?.length || 0;
 
-      if (!tavilyResponse.ok) {
-        const errorText = await tavilyResponse.text();
-        this.logger.error(`Tavily API error: ${errorText}`);
-        throw new Error("Search API request failed");
+      if (primaryData.results?.length) {
+        const transformed = this.transformTavilyResults(primaryData.results);
+        allResults = this.postFilterResults(transformed);
+        this.logger.log(`Primary: ${primaryData.results.length} raw → ${allResults.length} filtered`);
       }
 
-      const tavilyData = await tavilyResponse.json();
+      // ---- Fallback if too few quality results ----
+      if (allResults.length < 2 && fallback !== primary) {
+        this.logger.log('Too few results, executing fallback query…');
+        fallbackUsed = true;
+        const fallbackData = await this.callTavilySearch(tavilyApiKey, fallback);
+        rawCount += fallbackData.results?.length || 0;
 
-      if (!tavilyData.results || tavilyData.results.length === 0) {
-        // No results found, but still count as a search
-        await supabase.rpc("increment_search_usage", { p_user_id: userId });
-        return {
-          success: true,
-          results: [],
-          quotaInfo: {
-            remaining: quota.remaining - 1,
-            used: quota.used + 1,
-            max: quota.max,
-          },
-        };
+        if (!aiSummary && fallbackData.answer) {
+          aiSummary = fallbackData.answer;
+        }
+
+        if (fallbackData.results?.length) {
+          const fallbackTransformed = this.transformTavilyResults(fallbackData.results);
+          const fallbackFiltered = this.postFilterResults(fallbackTransformed);
+          this.logger.log(`Fallback: ${fallbackData.results.length} raw → ${fallbackFiltered.length} filtered`);
+
+          // Merge & deduplicate by domain
+          const seenDomains = new Set(allResults.map(r => r.source));
+          for (const r of fallbackFiltered) {
+            if (!seenDomains.has(r.source)) {
+              allResults.push(r);
+              seenDomains.add(r.source);
+            }
+          }
+        }
       }
 
-      // Transform and store results
-      const results: RelatedProjectResult[] = tavilyData.results
-        .map((result: any) => ({
-          title: result.title || "Untitled",
-          url: result.url,
-          snippet: result.content?.substring(0, 500) || "",
-          source: this.extractDomain(result.url),
-          score: result.score || 0,
-        }))
-        // Filter out low-quality results (score < 20%)
-        .filter((result) => result.score >= 0.2);
+      // ---- Final sort & cap at 6 ----
+      allResults.sort((a, b) => b.score - a.score);
+      allResults = allResults.slice(0, 6);
 
-      this.logger.log(`Filtered to ${results.length} high-quality results (score >= 20%)`);
+      // ---- Persist to DB ----
+      if (allResults.length > 0) {
+        const insertData = allResults.map((r) => ({
+          idea_id: ideaId,
+          title: r.title,
+          url: r.url,
+          snippet: r.snippet,
+          source: r.source,
+          score: r.score,
+          search_query: primary,
+        }));
 
-      // Store results in database
-      const insertData = results.map((r) => ({
-        idea_id: ideaId,
-        title: r.title,
-        url: r.url,
-        snippet: r.snippet,
-        source: r.source,
-        score: r.score,
-        search_query: searchQuery,
-      }));
+        const { error: insertError } = await supabase
+          .from('related_projects')
+          .insert(insertData);
 
-      const { error: insertError } = await supabase
-        .from("related_projects")
-        .insert(insertData);
-
-      if (insertError) {
-        this.logger.error("Failed to store search results:", insertError);
-        // Don't throw - still return results even if storage fails
+        if (insertError) {
+          this.logger.error('Failed to store search results:', insertError);
+        }
       }
 
-      // Increment search usage
-      await supabase.rpc("increment_search_usage", { p_user_id: userId });
+      // ---- Increment quota ----
+      await supabase.rpc('increment_search_usage', { p_user_id: userId });
 
-      this.logger.log(
-        `Found ${results.length} related projects for idea ${ideaId}`
-      );
+      this.logger.log(`Found ${allResults.length} related projects for idea ${ideaId}`);
 
       return {
         success: true,
-        results,
+        results: allResults,
+        aiSummary,
         quotaInfo: {
           remaining: quota.remaining - 1,
           used: quota.used + 1,
           max: quota.max,
         },
+        searchMeta: { query: primary, fallbackUsed, rawCount },
       };
     } catch (error: any) {
-      this.logger.error("Failed to search related projects:", error);
-      return { success: false, error: error.message || "Search failed" };
+      this.logger.error('Failed to search related projects:', error);
+      return { success: false, error: error.message || 'Search failed' };
     }
   }
 
+  // ---- Private helpers for Related Projects ----
+
   /**
-   * Build an optimized search query from idea content
-   * Creates a natural language query to find real-world projects/products
+   * Call Tavily Search API.
+   * Uses basic depth (1 credit), 15 max results, include_answer for free LLM summary,
+   * NO include_domains (open web), broad exclude_domains to block noise.
    */
-  private buildSearchQuery(
-    title: string,
-    problem: string,
-    solution: string
-  ): string {
-    // Extract key concepts from the idea
-    const extractKeyTerms = (text: string): string[] => {
-      // Remove common filler words
-      const stopWords = ['the', 'a', 'an', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for', 'of', 'with', 'by', 'from', 'that', 'this', 'is', 'are', 'was', 'were', 'be', 'been', 'being', 'have', 'has', 'had', 'do', 'does', 'did', 'will', 'would', 'should', 'could', 'may', 'might', 'can', 'using', 'uses', 'use'];
+  private async callTavilySearch(
+    apiKey: string,
+    query: string,
+  ): Promise<{ results: any[]; answer?: string }> {
+    const response = await fetch('https://api.tavily.com/search', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        api_key: apiKey,
+        query,
+        search_depth: 'basic',
+        max_results: 15,
+        include_answer: true,
+        exclude_domains: AiService.TAVILY_EXCLUDE_DOMAINS,
+      }),
+    });
 
-      const words = text.toLowerCase()
-        .replace(/[^\w\s]/g, ' ')
-        .split(/\s+/)
-        .filter(word => word.length > 3 && !stopWords.includes(word));
+    if (!response.ok) {
+      const errorText = await response.text();
+      this.logger.error(`Tavily API error: ${errorText}`);
+      throw new Error('Search API request failed');
+    }
 
-      return words.slice(0, 6); // Top 6 keywords
-    };
-
-    const titleKeywords = extractKeyTerms(title);
-    const problemKeywords = extractKeyTerms(problem).slice(0, 4);
-    const solutionKeywords = extractKeyTerms(solution).slice(0, 2);
-
-    // Combine unique keywords
-    const allKeywords = [...new Set([...titleKeywords, ...problemKeywords, ...solutionKeywords])];
-    const primaryKeywords = allKeywords.slice(0, 5).join(' ');
-
-    // Create a natural language query that finds actual implementations
-    // Tavily handles domain filtering through include_domains/exclude_domains, 
-    // so we use clean natural language here
-    return `projects using ${primaryKeywords} real-world implementation product platform`;
+    const data = await response.json();
+    return { results: data.results || [], answer: data.answer };
   }
 
   /**
-   * Extract domain name from URL
+   * Build two search queries: a primary product-focused query and
+   * a fallback problem-focused query.
    */
+  private buildSearchQueries(
+    title: string,
+    problem: string,
+    solution: string,
+    category?: string,
+    tags?: string[],
+  ): { primary: string; fallback: string } {
+    const cleanedTitle = this.cleanIdeaTitle(title);
+    const categoryCtx = category
+      ? AiService.CATEGORY_CONTEXT[category] || category.toLowerCase()
+      : '';
+
+    // Primary: find existing products/startups with a similar concept
+    const primary = `existing startups products companies similar to "${cleanedTitle}"${categoryCtx ? ` ${categoryCtx}` : ''
+      }`.trim();
+
+    // Fallback: problem-oriented with specific tags
+    const problemSentence = this.extractFirstSentence(problem);
+    const tagStr = (tags || []).slice(0, 3).join(' ');
+    const fallback = `products solving ${problemSentence}${tagStr ? ` ${tagStr}` : ''
+      }`.trim();
+
+    return { primary, fallback };
+  }
+
+  /**
+   * Strip blockchain buzzwords from the title that add noise to
+   * product searches ("on Solana", "decentralized", "web3", etc.)
+   * while keeping the core concept intact.
+   */
+  private cleanIdeaTitle(title: string): string {
+    const noisePatterns = [
+      /\bon\s+(solana|ethereum|polygon|avalanche|arbitrum|base|sui|aptos|near)\b/gi,
+      /\b(blockchain[- ]?based|web3|web 3|dapp|d-app|on[- ]?chain|smart[- ]?contract)\b/gi,
+      /\b(decentralized|decentralised|defi|nft)\b/gi,
+    ];
+    let cleaned = title;
+    for (const pattern of noisePatterns) {
+      cleaned = cleaned.replace(pattern, '');
+    }
+    // Collapse whitespace
+    cleaned = cleaned.replace(/\s{2,}/g, ' ').trim();
+    // If we stripped too much, fall back to original
+    return cleaned.length >= 3 ? cleaned : title;
+  }
+
+  /** Extract the first sentence (up to 120 chars) from a block of text. */
+  private extractFirstSentence(text: string): string {
+    if (!text) return '';
+    const match = text.match(/^[^.!?]+[.!?]?/);
+    const sentence = match ? match[0].trim() : text.substring(0, 120).trim();
+    return sentence.length > 120 ? sentence.substring(0, 120) + '…' : sentence;
+  }
+
+  /** Transform raw Tavily results into our result shape. */
+  private transformTavilyResults(raw: any[]): RelatedProjectResult[] {
+    return raw.map((r) => ({
+      title: r.title || 'Untitled',
+      url: r.url,
+      snippet: r.content?.substring(0, 500) || '',
+      source: this.extractDomain(r.url),
+      score: r.score || 0,
+    }));
+  }
+
+  /**
+   * Post-filter pipeline: apply multiplicative scoring adjustments
+   * based on URL patterns, content signals, and source reputation
+   * to separate real products from blog posts / tutorials.
+   */
+  private postFilterResults(results: RelatedProjectResult[]): RelatedProjectResult[] {
+    const PRODUCT_DIRECTORIES = new Set([
+      'producthunt.com', 'crunchbase.com', 'g2.com', 'capterra.com',
+      'alternativeto.com', 'ycombinator.com', 'betalist.com',
+      'indiehackers.com', 'angel.co', 'wellfound.com',
+    ]);
+
+    const NEGATIVE_URL_PATTERNS = [
+      /\/blog\//i, /\/article\//i, /\/post\//i, /\/tag\//i,
+      /\/category\//i, /\/news\//i, /\/guide\//i, /\/tutorial\//i,
+      /\/\d{4}\/\d{2}\//,  // Date-based URL paths (blog posts)
+    ];
+
+    const TUTORIAL_WORDS = [
+      'tutorial', 'how to', 'step by step', 'beginner', 'learn',
+      'course', 'lesson', 'introduction to', 'getting started',
+      'a guide to', 'explained', 'cheat sheet',
+    ];
+
+    const LISTICLE_PATTERN = /^(\d+|top|best|ultimate|complete)\s/i;
+
+    const PRODUCT_WORDS = [
+      'platform', 'startup', 'founded', 'users', 'pricing',
+      'launched', 'customers', 'enterprise', 'saas', 'app',
+      'dashboard', 'sign up', 'get started', 'free trial',
+    ];
+
+    const filtered = results.map((result) => {
+      let multiplier = 1.0;
+      const textToCheck = `${result.title} ${result.snippet}`.toLowerCase();
+      const urlLower = result.url.toLowerCase();
+
+      // --- Negative signals ---
+      // Blog URL patterns
+      if (NEGATIVE_URL_PATTERNS.some((p) => p.test(urlLower))) {
+        multiplier *= 0.5;
+      }
+      // Tutorial / how-to content
+      if (TUTORIAL_WORDS.some((w) => textToCheck.includes(w))) {
+        multiplier *= 0.4;
+      }
+      // Listicle title ("10 Best...", "Top 5...")
+      if (LISTICLE_PATTERN.test(result.title)) {
+        multiplier *= 0.6;
+      }
+      // Academic / research content
+      if (/\b(research|paper|study|arxiv|journal|thesis)\b/i.test(textToCheck)) {
+        multiplier *= 0.5;
+      }
+
+      // --- Positive signals ---
+      // Product directory
+      if (PRODUCT_DIRECTORIES.has(result.source)) {
+        multiplier *= 1.4;
+      }
+      // GitHub repo (valid org/repo path, not blog or docs)
+      if (result.source === 'github.com') {
+        const pathSegments = new URL(result.url).pathname.split('/').filter(Boolean);
+        if (pathSegments.length >= 2 && pathSegments.length <= 3
+          && !['blog', 'docs', 'wiki', 'issues', 'discussions'].includes(pathSegments[pathSegments.length - 1])) {
+          multiplier *= 1.2;
+        } else {
+          multiplier *= 0.7; // GitHub but not a proper repo page
+        }
+      }
+      // Product language in content
+      const productWordHits = PRODUCT_WORDS.filter((w) => textToCheck.includes(w)).length;
+      if (productWordHits >= 2) {
+        multiplier *= 1.0 + productWordHits * 0.05;
+      }
+      // Likely product's own domain (short domain, shallow path)
+      if (!PRODUCT_DIRECTORIES.has(result.source) && result.source !== 'github.com') {
+        const pathDepth = new URL(result.url).pathname.split('/').filter(Boolean).length;
+        if (pathDepth <= 2) {
+          multiplier *= 1.3; // Likely a product homepage or about page
+        }
+      }
+
+      return { ...result, score: result.score * multiplier };
+    });
+
+    // Filter out very low adjusted scores & deduplicate by domain
+    const seenDomains = new Set<string>();
+    return filtered
+      .filter((r) => r.score >= 0.1)
+      .sort((a, b) => b.score - a.score)
+      .filter((r) => {
+        if (seenDomains.has(r.source)) return false;
+        seenDomains.add(r.source);
+        return true;
+      });
+  }
+
+  /** Extract domain name from URL */
   private extractDomain(url: string): string {
     try {
       const urlObj = new URL(url);
-      return urlObj.hostname.replace("www.", "");
+      return urlObj.hostname.replace('www.', '');
     } catch {
-      return "unknown";
+      return 'unknown';
     }
   }
 

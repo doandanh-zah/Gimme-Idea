@@ -376,6 +376,8 @@ export class AIController {
       title: string;
       problem: string;
       solution: string;
+      category?: string;
+      tags?: string[];
     }
   ): Promise<ApiResponse<any>> {
     try {
@@ -384,7 +386,9 @@ export class AIController {
         dto.title,
         dto.problem,
         dto.solution,
-        userId
+        userId,
+        dto.category,
+        dto.tags,
       );
 
       if (!result.success) {
@@ -400,6 +404,8 @@ export class AIController {
         data: {
           results: result.results,
           quotaInfo: result.quotaInfo,
+          aiSummary: result.aiSummary,
+          searchMeta: result.searchMeta,
         },
         message: `Found ${result.results?.length || 0} related projects`,
       };
