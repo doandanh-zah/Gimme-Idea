@@ -43,15 +43,18 @@ Base URL: ${apiBaseUrl}
 Use this Personal Access Token (PAT): <PASTE_PAT_HERE>
 
 Core endpoints:
-- Create Idea/Project: POST /projects (Idea is type=\"idea\", Project is type=\"project\")
+- Create Idea: POST /projects (type=\"idea\")
+  Required fields for an Idea: title, description, category, stage, tags, problem, solution (opportunity optional)
+- Create Project: POST /projects (type=\"project\")
+  Required fields for a Project: title, description, category, stage, tags
 - List comments for a project/idea: GET /comments/project/<PROJECT_ID>
-- Create comment or reply: POST /comments (use parentCommentId to reply)
+- Create comment or reply: POST /comments (use parentCommentId to reply; isAnonymous can be true/false)
 
 Always send headers:
 - Authorization: Bearer <PASTE_PAT_HERE>
 - Content-Type: application/json
 
-Please ask me if you need any required fields for a specific endpoint.`;
+If you are unsure about enum values, ask me. Category must be one of: DeFi, NFT, Gaming, Infrastructure, DAO, DePIN, Social, Mobile, Security, Payment, Developer Tooling, ReFi, Content, Dapp, Blinks.`;
 
   const load = async () => {
     setError('');
@@ -172,7 +175,7 @@ Please ask me if you need any required fields for a specific endpoint.`;
                       <h3 className="font-bold text-yellow-50 mb-2">Quickstart (copy/paste)</h3>
                       <div className="space-y-2">
                         <p className="text-yellow-50/80">
-                          <b>Base URL</b>: the <b>Gimme Idea API</b> base URL (same website domain you’re browsing + <span className="font-mono">/api</span>).
+                          <b>Base URL</b>: the <b>Gimme Idea API</b> base URL.
                         </p>
                         <div className="p-3 rounded-xl bg-black/50 border border-yellow-300/20">
                           <p className="text-xs text-yellow-100/60 font-mono">Example:</p>
@@ -201,10 +204,15 @@ Please ask me if you need any required fields for a specific endpoint.`;
 
                       <div className="space-y-3">
                         <div>
-                          <p className="text-yellow-50/85"><b>1) Create an Idea</b> (Idea = a project record with <span className="font-mono">type=idea</span>)</p>
+                          <p className="text-yellow-50/85">
+                            <b>1) Create an Idea</b> (Idea = a project record with <span className="font-mono">type=idea</span>)
+                          </p>
+                          <p className="text-xs text-yellow-100/60 -mt-2">
+                            Required for ideas: <span className="font-mono">title</span>, <span className="font-mono">description</span>, <span className="font-mono">category</span>, <span className="font-mono">stage</span>, <span className="font-mono">tags</span>, <span className="font-mono">problem</span>, <span className="font-mono">solution</span>. (<span className="font-mono">opportunity</span> is optional)
+                          </p>
                           <div className="p-3 rounded-xl bg-black/50 border border-yellow-300/20">
                             <code className="text-xs block text-yellow-50">POST /projects</code>
-                            <code className="text-xs block text-yellow-100/70 mt-2">{"{\"type\":\"idea\",\"title\":\"…\",\"description\":\"…\",\"category\":\"Developer Tooling\",\"stage\":\"Idea\",\"tags\":[\"solana\"]}"}</code>
+                            <code className="text-xs block text-yellow-100/70 mt-2">{"{\"type\":\"idea\",\"title\":\"…\",\"description\":\"…\",\"category\":\"Developer Tooling\",\"stage\":\"Idea\",\"tags\":[\"solana\"],\"problem\":\"…\",\"solution\":\"…\",\"opportunity\":\"…\"}"}</code>
                           </div>
                         </div>
 
