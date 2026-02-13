@@ -264,7 +264,7 @@ export const RelatedProjectsModal: React.FC<RelatedProjectsModalProps> = ({
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
-                className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm"
+                className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm"
                 onClick={onClose}
             >
                 <motion.div
@@ -272,20 +272,23 @@ export const RelatedProjectsModal: React.FC<RelatedProjectsModalProps> = ({
                     animate={{ opacity: 1, scale: 1, y: 0 }}
                     exit={{ opacity: 0, scale: 0.95, y: 20 }}
                     transition={{ duration: 0.2 }}
-                    className="w-full max-w-2xl max-h-[85vh] bg-gradient-to-b from-[#1a1a2e] to-[#12131a] rounded-2xl border border-white/10 overflow-hidden shadow-2xl"
+                    className="w-full max-w-3xl max-h-[90vh] bg-[#0D0D12] rounded-2xl border border-white/10 overflow-hidden shadow-2xl"
+                    style={{ boxShadow: '0 20px 60px rgba(153, 69, 255, 0.15)' }}
                     onClick={(e) => e.stopPropagation()}
                 >
                     {/* Header */}
-                    <div className="p-6 border-b border-white/10 bg-gradient-to-r from-purple-500/10 to-blue-500/10">
-                        <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-3">
-                                <div className="p-2 bg-purple-500/20 rounded-lg">
-                                    <Sparkles className="w-5 h-5 text-purple-400" />
+                    <div className="relative px-6 py-5 border-b border-white/10 bg-gradient-to-r from-purple-500/10 via-blue-500/10 to-purple-500/10">
+                        {/* Glow effect */}
+                        <div className="absolute inset-0 bg-gradient-to-r from-purple-500/5 to-blue-500/5 blur-xl" />
+                        <div className="relative z-10 flex items-center justify-between">
+                            <div className="flex items-center gap-4">
+                                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-purple-500/20 to-blue-500/20 border border-purple-500/30 flex items-center justify-center">
+                                    <Sparkles className="w-6 h-6 text-purple-400" />
                                 </div>
                                 <div>
                                     <h2 className="text-xl font-bold text-white">Related Projects</h2>
                                     <p className="text-sm text-gray-400 mt-0.5">
-                                        Similar projects discovered for "{ideaTitle}"
+                                        AI-powered discovery for <span className="text-purple-300">"{ideaTitle}"</span>
                                     </p>
                                 </div>
                             </div>
@@ -294,7 +297,7 @@ export const RelatedProjectsModal: React.FC<RelatedProjectsModalProps> = ({
                                 <button
                                     onClick={handleClearProjects}
                                     disabled={aiDetected.length === 0}
-                                    className="px-3 py-1.5 bg-red-500/20 hover:bg-red-500/30 disabled:bg-gray-500/10 disabled:text-gray-600 disabled:cursor-not-allowed text-red-400 rounded-lg transition-colors flex items-center gap-1.5 text-sm font-medium"
+                                    className="px-3 py-2 bg-red-500/15 hover:bg-red-500/25 disabled:bg-white/5 disabled:text-gray-600 disabled:cursor-not-allowed text-red-400 rounded-lg transition-all border border-red-500/20 hover:border-red-500/40 disabled:border-transparent flex items-center gap-1.5 text-sm font-medium"
                                     title="Clear all AI-detected projects"
                                 >
                                     <Trash2 className="w-4 h-4" />
@@ -304,14 +307,17 @@ export const RelatedProjectsModal: React.FC<RelatedProjectsModalProps> = ({
                                     onClick={onClose}
                                     className="p-2 hover:bg-white/10 rounded-lg transition-colors"
                                 >
-                                    <X className="w-5 h-5 text-gray-400" />
+                                    <X className="w-5 h-5 text-gray-400 hover:text-white" />
                                 </button>
                             </div>
                         </div>
                     </div>
 
                     {/* Content */}
-                    <div className="p-6 overflow-y-auto max-h-[calc(85vh-120px)] custom-scrollbar">
+                    <div className="p-6 overflow-y-auto max-h-[calc(90vh-100px)]" style={{
+                        scrollbarWidth: 'thin',
+                        scrollbarColor: '#9945FF40 transparent'
+                    }}>
                         {isLoading ? (
                             <div className="flex flex-col items-center justify-center py-12 gap-3">
                                 <Loader2 className="w-8 h-8 text-purple-400 animate-spin" />
@@ -320,27 +326,35 @@ export const RelatedProjectsModal: React.FC<RelatedProjectsModalProps> = ({
                         ) : (
                             <>
                                 {/* AI Detected Projects Section */}
-                                <div className="mb-6">
+                                <div className="mb-8">
                                     <div className="flex items-center gap-2 mb-4">
-                                        <Search className="w-4 h-4 text-purple-400" />
-                                        <h3 className="text-sm font-semibold text-gray-300 uppercase tracking-wider">
-                                            AI Detected ({aiDetected.length})
+                                        <div className="w-6 h-6 rounded-lg bg-purple-500/20 border border-purple-500/30 flex items-center justify-center">
+                                            <Search className="w-3.5 h-3.5 text-purple-400" />
+                                        </div>
+                                        <h3 className="text-sm font-bold text-gray-200 uppercase tracking-wider">
+                                            AI Detected
                                         </h3>
+                                        <span className="px-2 py-0.5 bg-purple-500/20 text-purple-300 rounded-full text-xs font-bold">
+                                            {aiDetected.length}
+                                        </span>
                                     </div>
 
                                     {isSearching ? (
-                                        <div className="flex flex-col items-center justify-center py-8 bg-purple-500/5 rounded-xl border border-purple-500/20">
-                                            <Loader2 className="w-8 h-8 text-purple-400 animate-spin mb-3" />
-                                            <p className="text-purple-300 font-semibold">Searching the internet...</p>
-                                            <p className="text-xs text-gray-500 mt-1">
-                                                Using AI to find similar products &amp; startups
-                                            </p>
+                                        <div className="relative flex flex-col items-center justify-center py-12 bg-gradient-to-br from-purple-500/5 to-blue-500/5 rounded-xl border border-purple-500/20 overflow-hidden">
+                                            <div className="absolute inset-0 bg-gradient-to-r from-purple-500/5 to-blue-500/5 blur-2xl" />
+                                            <div className="relative z-10 flex flex-col items-center">
+                                                <Loader2 className="w-10 h-10 text-purple-400 animate-spin mb-4" />
+                                                <p className="text-purple-300 font-semibold text-lg">Searching the internet...</p>
+                                                <p className="text-sm text-gray-400 mt-2 max-w-xs text-center">
+                                                    Using AI to discover similar products &amp; startups
+                                                </p>
+                                            </div>
                                         </div>
                                     ) : aiDetected.length === 0 ? (
-                                        <div className="text-center py-8 bg-white/5 rounded-xl border border-white/5">
-                                            <Globe className="w-8 h-8 text-gray-600 mx-auto mb-2" />
-                                            <p className="text-gray-500">No related projects found</p>
-                                            <p className="text-xs text-gray-600 mt-1">
+                                        <div className="text-center py-12 bg-white/5 rounded-xl border border-white/10">
+                                            <Globe className="w-12 h-12 text-gray-600 mx-auto mb-3" />
+                                            <p className="text-gray-400 font-medium">No related projects found</p>
+                                            <p className="text-sm text-gray-500 mt-1.5">
                                                 AI couldn't find similar products on the internet
                                             </p>
                                         </div>
@@ -348,13 +362,20 @@ export const RelatedProjectsModal: React.FC<RelatedProjectsModalProps> = ({
                                         <div className="space-y-3">
                                             {/* AI Summary */}
                                             {aiSummary && (
-                                                <div className="p-3 bg-purple-500/10 rounded-xl border border-purple-500/20 mb-4">
-                                                    <p className="text-xs font-semibold text-purple-400 mb-1 flex items-center gap-1.5">
-                                                        <Sparkles className="w-3.5 h-3.5" />
-                                                        AI Summary
-                                                    </p>
-                                                    <p className="text-sm text-gray-300 leading-relaxed">{aiSummary}</p>
-                                                </div>
+                                                <motion.div 
+                                                    initial={{ opacity: 0, y: -10 }}
+                                                    animate={{ opacity: 1, y: 0 }}
+                                                    className="relative p-4 bg-gradient-to-br from-purple-500/10 to-blue-500/10 rounded-xl border border-purple-500/30 mb-5 overflow-hidden"
+                                                >
+                                                    <div className="absolute top-0 right-0 w-32 h-32 bg-purple-500/10 rounded-full blur-3xl" />
+                                                    <div className="relative z-10">
+                                                        <p className="text-xs font-bold text-purple-400 mb-2 flex items-center gap-1.5 uppercase tracking-wider">
+                                                            <Sparkles className="w-3.5 h-3.5" />
+                                                            AI Summary
+                                                        </p>
+                                                        <p className="text-sm text-gray-200 leading-relaxed">{aiSummary}</p>
+                                                    </div>
+                                                </motion.div>
                                             )}
                                             {aiDetected.map((project, index) => (
                                                 <motion.a
@@ -365,31 +386,34 @@ export const RelatedProjectsModal: React.FC<RelatedProjectsModalProps> = ({
                                                     initial={{ opacity: 0, y: 10 }}
                                                     animate={{ opacity: 1, y: 0 }}
                                                     transition={{ delay: index * 0.05 }}
-                                                    className="block p-4 bg-white/5 hover:bg-white/10 rounded-xl border border-white/5 hover:border-purple-500/30 transition-all group"
+                                                    className="block p-4 bg-white/5 hover:bg-white/10 rounded-xl border border-white/10 hover:border-purple-500/40 transition-all group relative overflow-hidden"
+                                                    whileHover={{ scale: 1.01 }}
                                                 >
-                                                    <div className="flex items-start justify-between gap-3">
+                                                    {/* Hover glow effect */}
+                                                    <div className="absolute inset-0 bg-gradient-to-r from-purple-500/0 via-purple-500/5 to-purple-500/0 opacity-0 group-hover:opacity-100 transition-opacity" />
+                                                    <div className="flex items-start justify-between gap-3 relative z-10">
                                                         <div className="flex-grow min-w-0">
-                                                            <div className="flex items-center gap-2">
-                                                                <h4 className="font-semibold text-white truncate group-hover:text-purple-300 transition-colors">
+                                                            <div className="flex items-center gap-2 mb-1">
+                                                                <h4 className="font-bold text-white truncate group-hover:text-purple-300 transition-colors">
                                                                     {project.title}
                                                                 </h4>
                                                                 <ExternalLink className="w-3.5 h-3.5 text-gray-500 group-hover:text-purple-400 flex-shrink-0 transition-colors" />
                                                             </div>
-                                                            <p className="text-sm text-gray-400 mt-1 line-clamp-2">
+                                                            <p className="text-sm text-gray-400 mt-1.5 line-clamp-2 leading-relaxed">
                                                                 {project.snippet}
                                                             </p>
-                                                            <div className="flex items-center gap-3 mt-2">
-                                                                <span className={`text-xs flex items-center gap-1 px-1.5 py-0.5 rounded ${['producthunt.com', 'crunchbase.com', 'g2.com', 'ycombinator.com', 'betalist.com'].includes(project.source)
-                                                                        ? 'bg-green-500/15 text-green-400'
+                                                            <div className="flex items-center gap-2 mt-3">
+                                                                <span className={`text-xs flex items-center gap-1.5 px-2 py-1 rounded-lg font-medium border ${['producthunt.com', 'crunchbase.com', 'g2.com', 'ycombinator.com', 'betalist.com'].includes(project.source)
+                                                                        ? 'bg-green-500/15 text-green-400 border-green-500/30'
                                                                         : project.source === 'github.com'
-                                                                            ? 'bg-gray-500/15 text-gray-300'
-                                                                            : 'bg-blue-500/15 text-blue-400'
+                                                                            ? 'bg-gray-500/15 text-gray-300 border-gray-500/30'
+                                                                            : 'bg-blue-500/15 text-blue-400 border-blue-500/30'
                                                                     }`}>
                                                                     <Globe className="w-3 h-3" />
                                                                     {project.source}
                                                                 </span>
                                                                 {project.score > 0 && (
-                                                                    <span className="text-xs px-2 py-0.5 bg-purple-500/20 text-purple-300 rounded-full">
+                                                                    <span className="text-xs px-2.5 py-1 bg-purple-500/20 text-purple-300 rounded-lg font-semibold border border-purple-500/30">
                                                                         {Math.round(project.score * 100)}% match
                                                                     </span>
                                                                 )}
@@ -406,15 +430,20 @@ export const RelatedProjectsModal: React.FC<RelatedProjectsModalProps> = ({
                                 <div>
                                     <div className="flex items-center justify-between mb-4">
                                         <div className="flex items-center gap-2">
-                                            <Pin className="w-4 h-4 text-[#FFD700]" />
-                                            <h3 className="text-sm font-semibold text-gray-300 uppercase tracking-wider">
-                                                Community Pinned ({userPinned.length})
+                                            <div className="w-6 h-6 rounded-lg bg-[#FFD700]/20 border border-[#FFD700]/30 flex items-center justify-center">
+                                                <Pin className="w-3.5 h-3.5 text-[#FFD700]" />
+                                            </div>
+                                            <h3 className="text-sm font-bold text-gray-200 uppercase tracking-wider">
+                                                Community Pinned
                                             </h3>
+                                            <span className="px-2 py-0.5 bg-[#FFD700]/20 text-[#FFD700] rounded-full text-xs font-bold">
+                                                {userPinned.length}
+                                            </span>
                                         </div>
                                         {user && !userHasPinned && !showPinForm && (
                                             <button
                                                 onClick={() => setShowPinForm(true)}
-                                                className="flex items-center gap-1.5 text-xs text-[#FFD700] hover:text-[#FFD700]/80 transition-colors"
+                                                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-[#FFD700] bg-[#FFD700]/10 hover:bg-[#FFD700]/20 border border-[#FFD700]/30 rounded-lg transition-all"
                                             >
                                                 <Plus className="w-3.5 h-3.5" />
                                                 Pin Your Project
@@ -507,13 +536,13 @@ export const RelatedProjectsModal: React.FC<RelatedProjectsModalProps> = ({
                                     </AnimatePresence>
 
                                     {userPinned.length === 0 && !showPinForm ? (
-                                        <div className="text-center py-8 bg-white/5 rounded-xl border border-white/5">
-                                            <Pin className="w-8 h-8 text-gray-600 mx-auto mb-2" />
-                                            <p className="text-gray-500">No community projects pinned yet</p>
+                                        <div className="text-center py-12 bg-white/5 rounded-xl border border-white/10">
+                                            <Pin className="w-12 h-12 text-gray-600 mx-auto mb-3" />
+                                            <p className="text-gray-400 font-medium">No community projects pinned yet</p>
                                             {user && (
                                                 <button
                                                     onClick={() => setShowPinForm(true)}
-                                                    className="mt-3 text-xs text-[#FFD700] hover:underline"
+                                                    className="mt-4 px-4 py-2 text-sm font-semibold text-[#FFD700] bg-[#FFD700]/10 hover:bg-[#FFD700]/20 border border-[#FFD700]/30 rounded-lg transition-all"
                                                 >
                                                     Be the first to pin your project
                                                 </button>

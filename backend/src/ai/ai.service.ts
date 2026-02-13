@@ -1085,19 +1085,8 @@ Respond with JSON only:
     }
 
     try {
-      // ---- Quota check ----
-      const { data: quotaData, error: quotaError } = await supabase.rpc(
-        'can_user_search_projects',
-        { p_user_id: userId },
-      );
-
-      if (quotaError) {
-        this.logger.error('Failed to check quota:', quotaError);
-        throw new Error('Failed to check search quota');
-      }
-
+      // ---- Quota check (DISABLED for testing) ----
       const quota = {
-        // TESTING: Disable quota cap by always allowing searches
         canSearch: true,
         remaining: 999,
         used: 0,
