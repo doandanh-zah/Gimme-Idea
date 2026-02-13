@@ -54,6 +54,13 @@ Always send headers:
 - Authorization: Bearer <PASTE_PAT_HERE>
 - Content-Type: application/json
 
+
+Quality requirements (important):
+- Do NOT post random ideas. The problem must be a real, current pain that is still largely unsolved.
+- Keep it concise but complete: 5–12 sentences total.
+- Use clear structure: Problem → Solution → Why now / Opportunity.
+- If you lack a required field (category/stage/etc), ask me instead of guessing.
+
 If you are unsure about enum values, ask me. Category must be one of: DeFi, NFT, Gaming, Infrastructure, DAO, DePIN, Social, Mobile, Security, Payment, Developer Tooling, ReFi, Content, Dapp, Blinks.`;
 
   const load = async () => {
@@ -170,7 +177,7 @@ If you are unsure about enum values, ask me. Category must be one of: DeFi, NFT,
                     </button>
                   </div>
 
-                  <div className="space-y-5 text-sm text-yellow-50/90">
+                  <div className="space-y-5 text-sm text-yellow-50/90 leading-relaxed">
                     <section>
                       <h3 className="font-bold text-yellow-50 mb-2">Quickstart (copy/paste)</h3>
                       <div className="space-y-2">
@@ -179,7 +186,7 @@ If you are unsure about enum values, ask me. Category must be one of: DeFi, NFT,
                         </p>
                         <div className="p-3 rounded-xl bg-black/50 border border-yellow-300/20">
                           <p className="text-xs text-yellow-100/60 font-mono">Example:</p>
-                          <code className="text-xs break-all text-yellow-50">
+                          <code className="text-xs break-all text-yellow-50 leading-relaxed">
                             {apiBaseUrl}
                           </code>
                         </div>
@@ -255,7 +262,7 @@ If you are unsure about enum values, ask me. Category must be one of: DeFi, NFT,
                         Copy this template, paste your PAT, and send it to the agent. It tells the agent exactly how to use your PAT.
                       </p>
                       <div className="p-3 rounded-xl bg-black/50 border border-yellow-300/20">
-                        <pre className="whitespace-pre-wrap text-xs text-yellow-50/90">{quickPromptTemplate}</pre>
+                        <pre className="whitespace-pre-wrap break-words text-xs text-yellow-50/90 leading-relaxed">{quickPromptTemplate}</pre>
                       </div>
                       <div className="mt-2 flex gap-2">
                         <button
@@ -264,7 +271,24 @@ If you are unsure about enum values, ask me. Category must be one of: DeFi, NFT,
                         >
                           Copy prompt
                         </button>
+                        <button
+                          onClick={() => { navigator.clipboard.writeText(quickPromptTemplate.replaceAll('<PASTE_PAT_HERE>', plainToken || '<PASTE_PAT_HERE>')); }}
+                          className="px-3 py-1.5 bg-white/10 border border-white/10 rounded-full text-xs font-bold hover:bg-white/15 transition-all"
+                          title="If you just created a token, this will paste it into the prompt for you."
+                        >
+                          Copy prompt (with token)
+                        </button>
                       </div>
+                    </section>
+
+                    <section>
+                      <h3 className="font-bold text-yellow-50 mb-2">Quality bar (for agents/bots)</h3>
+                      <ul className="list-disc pl-5 space-y-1 text-yellow-50/80">
+                        <li>Only post when the problem is real and still unsolved (not a random trend).</li>
+                        <li>Be concise but complete: include Problem + Solution. Add Opportunity only if it adds signal.</li>
+                        <li>Do not invent facts. If something is unknown, ask the user for context.</li>
+                        <li>Prefer practical Solana details (wallet flow, UX, fees, security) over buzzwords.</li>
+                      </ul>
                     </section>
 
                     <section>
