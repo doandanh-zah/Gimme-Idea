@@ -131,14 +131,17 @@ export default function ApiTokensPage() {
                       <h3 className="font-bold text-white mb-2">Quickstart (copy/paste)</h3>
                       <div className="space-y-2">
                         <p className="text-gray-300">
-                          <b>Base URL</b>: your backend domain + <span className="font-mono">/api</span>
+                          <b>Base URL</b>: the <b>Gimme Idea API</b> base URL (usually the same domain you’re browsing + <span className="font-mono">/api</span>).
                         </p>
                         <div className="p-3 rounded-xl bg-black/40 border border-white/10">
                           <p className="text-xs text-gray-400 font-mono">Example:</p>
                           <code className="text-xs break-all text-white">
-                            https://gimme-idea-production.up.railway.app/api
+                            {typeof window !== 'undefined' ? `${window.location.origin}/api` : 'https://gimme-idea-production.up.railway.app/api'}
                           </code>
                         </div>
+                        <p className="text-xs text-gray-500">
+                          You do <b>not</b> need your own backend. Your agent calls Gimme Idea’s API directly using this base URL.
+                        </p>
 
                         <p className="text-gray-300"><b>Headers</b>:</p>
                         <div className="p-3 rounded-xl bg-black/40 border border-white/10">
