@@ -1097,19 +1097,12 @@ Respond with JSON only:
       }
 
       const quota = {
-        canSearch: quotaData?.canSearch ?? quotaData?.cansearch ?? false,
-        remaining: quotaData?.remaining ?? 0,
-        used: quotaData?.used ?? 0,
-        max: quotaData?.max ?? 5,
+        // TESTING: Disable quota cap by always allowing searches
+        canSearch: true,
+        remaining: 999,
+        used: 0,
+        max: 999,
       };
-
-      if (!quota.canSearch) {
-        return {
-          success: false,
-          error: 'Daily search limit reached (5 ideas per day)',
-          quotaInfo: { remaining: quota.remaining, used: quota.used, max: quota.max },
-        };
-      }
 
       // ---- Build queries ----
       const { primary, fallback } = this.buildSearchQueries(
@@ -1186,8 +1179,8 @@ Respond with JSON only:
         }
       }
 
-      // ---- Increment quota ----
-      await supabase.rpc('increment_search_usage', { p_user_id: userId });
+      // ---- Increment quota (disabled for testing) ----
+      // await supabase.rpc('increment_search_usage', { p_user_id: userId });
 
       this.logger.log(`Found ${allResults.length} related projects for idea ${ideaId}`);
 
@@ -1538,25 +1531,13 @@ Respond with JSON only:
     used: number;
     max: number;
   }> {
-    const supabase = this.supabaseService.getAdminClient();
-
-    try {
-      const { data, error } = await supabase.rpc("can_user_search_projects", {
-        p_user_id: userId,
-      });
-
-      if (error) throw error;
-
-      return {
-        canSearch: data?.canSearch ?? data?.cansearch ?? false,
-        remaining: data?.remaining ?? 0,
-        used: data?.used ?? 0,
-        max: data?.max ?? 5,
-      };
-    } catch (error) {
-      this.logger.error("Failed to get search quota:", error);
-      return { canSearch: false, remaining: 0, used: 0, max: 999 }; // TESTING MODE: Changed to 999
-    }
+    // TESTING: Return unlimited quota
+    return {
+      canSearch: true,
+      remaining: 999,
+      used: 0,
+      max: 999,
+    };
   }
 
   /**
