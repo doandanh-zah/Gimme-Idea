@@ -85,7 +85,7 @@ export default function ApiTokensPage() {
   };
 
   return (
-    <main className="min-h-screen bg-background pb-20">
+    <main className="min-h-screen pb-20">
       <Navbar />
 
       <div className="pt-28 px-6 max-w-4xl mx-auto">

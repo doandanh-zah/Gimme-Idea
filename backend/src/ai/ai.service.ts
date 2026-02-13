@@ -1132,15 +1132,18 @@ Respond with JSON only:
       }
 
       // Transform and store results
-      const results: RelatedProjectResult[] = tavilyData.results.map(
-        (result: any) => ({
+      const results: RelatedProjectResult[] = tavilyData.results
+        .map((result: any) => ({
           title: result.title || "Untitled",
           url: result.url,
           snippet: result.content?.substring(0, 500) || "",
           source: this.extractDomain(result.url),
           score: result.score || 0,
-        })
-      );
+        }))
+        // Filter out low-quality results (score < 20%)
+        .filter((result) => result.score >= 0.2);
+
+      this.logger.log(`Filtered to ${results.length} high-quality results (score >= 20%)`);
 
       // Store results in database
       const insertData = results.map((r) => ({
