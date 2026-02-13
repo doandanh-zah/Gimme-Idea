@@ -22,7 +22,8 @@ export default function ApiTokensPage() {
 
   const [name, setName] = useState('Agent Token');
   const [scopes, setScopes] = useState<string[]>(['post:read', 'post:write', 'comment:write', 'comment:reply']);
-  const [expiresAt, setExpiresAt] = useState<string>('');
+  const [expiresPreset, setExpiresPreset] = useState<string>('30d');
+  const [customExpiresAt, setCustomExpiresAt] = useState<string>('');
 
   const [plainToken, setPlainToken] = useState<string>('');
 
@@ -32,11 +33,11 @@ export default function ApiTokensPage() {
 
   const canUse = !!user;
 
-  const apiBaseUrl = typeof window !== 'undefined' ? `${window.location.origin}/api` : 'https://gimme-idea-production.up.railway.app/api';
+  const apiBaseUrl = 'https://api.gimmeidea.com/api';
 
   const quickPromptTemplate = `I want you to help me use my Gimme Idea account via API.
 
-Website: ${typeof window !== 'undefined' ? window.location.origin : 'https://gimmeidea.com'}
+Website: https://gimmeidea.com
 Base URL: ${apiBaseUrl}
 
 Use this Personal Access Token (PAT): <PASTE_PAT_HERE>
@@ -79,10 +80,30 @@ Please ask me if you need any required fields for a specific endpoint.`;
     setPlainToken('');
     setCreating(true);
     try {
+      const now = Date.now();
+      const presetToMs: Record<string, number | null> = {
+        '1d': 1 * 24 * 60 * 60 * 1000,
+        '7d': 7 * 24 * 60 * 60 * 1000,
+        '30d': 30 * 24 * 60 * 60 * 1000,
+        '60d': 60 * 24 * 60 * 60 * 1000,
+        '90d': 90 * 24 * 60 * 60 * 1000,
+        '1y': 365 * 24 * 60 * 60 * 1000,
+        'custom': null,
+        'never': null,
+      };
+
+      const ms = presetToMs[expiresPreset] ?? null;
+      const computedExpiresAt =
+        expiresPreset === 'never'
+          ? null
+          : expiresPreset === 'custom'
+            ? (customExpiresAt ? new Date(customExpiresAt).toISOString() : null)
+            : new Date(now + (ms || 0)).toISOString();
+
       const res = await apiClient.createApiToken({
         name,
         scopes,
-        expiresAt: expiresAt ? new Date(expiresAt).toISOString() : null,
+        expiresAt: computedExpiresAt,
       });
       if (!res.success || !res.data?.token) throw new Error(res.error || 'Failed to create token');
 
@@ -231,7 +252,7 @@ Please ask me if you need any required fields for a specific endpoint.`;
                       <div className="mt-2 flex gap-2">
                         <button
                           onClick={() => navigator.clipboard.writeText(quickPromptTemplate)}
-                          className="px-3 py-1.5 bg-yellow-500/20 border border-yellow-400/30 rounded-full text-xs hover:bg-yellow-500/30 text-yellow-50"
+                          className="px-3 py-1.5 bg-gradient-to-r from-[#FFD700] to-[#FDB931] text-black rounded-full text-xs font-bold hover:shadow-lg transition-all"
                         >
                           Copy prompt
                         </button>
@@ -274,7 +295,7 @@ Please ask me if you need any required fields for a specific endpoint.`;
                   <div className="mt-5 flex items-center justify-end gap-2">
                     <button
                       onClick={() => setShowGuide(true)}
-                      className="px-4 py-2 bg-yellow-500/20 border border-yellow-400/30 rounded-full text-sm font-bold hover:bg-yellow-500/30 text-yellow-50"
+                      className="px-4 py-2 bg-gradient-to-r from-[#FFD700] to-[#FDB931] text-black rounded-full text-sm font-bold hover:shadow-lg transition-all"
                     >
                       Guide
                     </button>
@@ -305,13 +326,29 @@ Please ask me if you need any required fields for a specific endpoint.`;
                   />
                 </div>
                 <div>
-                  <label className="text-xs text-gray-400 font-mono">Expires (optional)</label>
-                  <input
-                    type="datetime-local"
+                  <label className="text-xs text-gray-400 font-mono">Expires</label>
+                  <select
                     className="w-full mt-1 px-4 py-2 bg-white/5 border border-white/10 rounded-xl"
-                    value={expiresAt}
-                    onChange={(e) => setExpiresAt(e.target.value)}
-                  />
+                    value={expiresPreset}
+                    onChange={(e) => setExpiresPreset(e.target.value)}
+                  >
+                    <option value="1d">1 day</option>
+                    <option value="7d">7 days</option>
+                    <option value="30d">30 days</option>
+                    <option value="60d">60 days</option>
+                    <option value="90d">90 days</option>
+                    <option value="1y">1 year</option>
+                    <option value="custom">Custom…</option>
+                  </select>
+                  {expiresPreset === 'custom' && (
+                    <input
+                      type="datetime-local"
+                      className="w-full mt-2 px-4 py-2 bg-white/5 border border-white/10 rounded-xl"
+                      value={customExpiresAt}
+                      onChange={(e) => setCustomExpiresAt(e.target.value)}
+                      placeholder="Pick a date"
+                    />
+                  )}
                 </div>
               </div>
 
@@ -338,7 +375,7 @@ Please ask me if you need any required fields for a specific endpoint.`;
                 </button>
                 <button
                   onClick={() => setShowGuide(true)}
-                  className="px-4 py-2 bg-yellow-500/20 border border-yellow-400/30 rounded-full text-sm font-bold hover:bg-yellow-500/30 transition-colors text-yellow-50"
+                  className="px-4 py-2 bg-gradient-to-r from-[#FFD700] to-[#FDB931] text-black rounded-full text-sm font-bold hover:shadow-lg transition-all"
                 >
                   Guide
                 </button>
@@ -361,7 +398,7 @@ Please ask me if you need any required fields for a specific endpoint.`;
                       </button>
                       <button
                         onClick={() => setShowGuide(true)}
-                        className="px-3 py-1.5 bg-yellow-500/20 border border-yellow-400/30 rounded-full text-xs hover:bg-yellow-500/30 text-yellow-50"
+                        className="px-3 py-1.5 bg-gradient-to-r from-[#FFD700] to-[#FDB931] text-black rounded-full text-xs font-bold hover:shadow-lg transition-all"
                       >
                         Open Guide
                       </button>
@@ -397,12 +434,21 @@ Please ask me if you need any required fields for a specific endpoint.`;
                           <p className="text-xs text-gray-400 font-mono break-all">id: {t.id}</p>
                         </div>
                         <div className="flex gap-2">
-                          <button
-                            onClick={() => onRevoke(t.id)}
-                            className="px-3 py-1.5 bg-red-500/15 border border-red-500/30 text-red-200 rounded-full text-xs hover:bg-red-500/25"
-                          >
-                            Revoke
-                          </button>
+                          {t.revoked_at ? (
+                            <button
+                              disabled
+                              className="px-3 py-1.5 bg-gradient-to-r from-[#FFD700] to-[#FDB931] text-black rounded-full text-xs font-bold opacity-80 cursor-not-allowed"
+                            >
+                              Revoked
+                            </button>
+                          ) : (
+                            <button
+                              onClick={() => onRevoke(t.id)}
+                              className="px-3 py-1.5 bg-red-500/15 border border-red-500/30 text-red-200 rounded-full text-xs hover:bg-red-500/25"
+                            >
+                              Revoke
+                            </button>
+                          )}
                         </div>
                       </div>
 
@@ -410,7 +456,10 @@ Please ask me if you need any required fields for a specific endpoint.`;
                         <div>Scopes: <span className="font-mono">{(t.scopes || []).join(', ') || '-'}</span></div>
                         <div>Last used: <span className="font-mono">{t.last_used_at || '-'}</span></div>
                         <div>Expires: <span className="font-mono">{t.expires_at || '-'}</span></div>
-                        <div>Revoked: <span className="font-mono">{t.revoked_at || '-'}</span></div>
+                        <div>
+                          <span className="text-red-300">Revoked:</span>{' '}
+                          <span className={t.revoked_at ? 'font-mono text-red-200' : 'font-mono'}>{t.revoked_at || '-'}</span>
+                        </div>
                       </div>
                     </div>
                   ))}
