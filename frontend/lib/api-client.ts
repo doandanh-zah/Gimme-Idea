@@ -374,6 +374,22 @@ export const apiClient = {
   getMenuConfig: () => apiFetch<any[]>("/settings/menu-config"),
 
   // =====================================
+  // API Tokens (PAT)
+  // =====================================
+  createApiToken: (data: { name: string; scopes: string[]; expiresAt?: string | null }) =>
+    apiFetch<{ token: string; tokenMeta: any }>("/v1/tokens", {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
+
+  listApiTokens: () => apiFetch<any[]>("/v1/tokens"),
+
+  revokeApiToken: (id: string) =>
+    apiFetch<{ revoked: boolean }>(`/v1/tokens/${id}`, {
+      method: "DELETE",
+    }),
+
+  // =====================================
   // FOLLOW API
   // =====================================
 
