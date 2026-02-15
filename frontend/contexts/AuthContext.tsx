@@ -173,24 +173,32 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     // Handle hash fragment from OAuth redirect (when Supabase redirects to root with hash)
     const handleHashFragment = async () => {
-      if (typeof window !== 'undefined' && window.location.hash) {
+      if (typeof window === 'undefined') return;
+      if (!window.location.hash) return;
+
+      try {
         const hashParams = new URLSearchParams(window.location.hash.substring(1));
         const accessToken = hashParams.get('access_token');
         const refreshToken = hashParams.get('refresh_token');
-        
+
         if (accessToken && refreshToken) {
           const { data, error } = await supabase.auth.setSession({
             access_token: accessToken,
             refresh_token: refreshToken,
           });
-          
+
           if (error) {
             console.error('Error setting session from hash:', error);
-          } else if (data.session) {
-            // Clean up URL
+          }
+
+          if (data?.session) {
+            // Clean up URL after successful session set
             window.history.replaceState(null, '', window.location.pathname);
           }
         }
+      } catch (err) {
+        // Avoid "Uncaught (in promise) undefined" which can stall the app
+        console.error('Error handling auth hash fragment:', err);
       }
     };
 
