@@ -1210,7 +1210,7 @@ Respond with JSON only:
         search_depth: 'basic',
         max_results: 15,
         include_answer: true,
-        exclude_domains: AiService.TAVILY_EXCLUDE_DOMAINS,
+        exclude_domains: AIService.TAVILY_EXCLUDE_DOMAINS,
       }),
     });
 
@@ -1237,7 +1237,7 @@ Respond with JSON only:
   ): { primary: string; fallback: string } {
     const cleanedTitle = this.cleanIdeaTitle(title);
     const categoryCtx = category
-      ? AiService.CATEGORY_CONTEXT[category] || category.toLowerCase()
+      ? AIService.CATEGORY_CONTEXT[category] || category.toLowerCase()
       : '';
 
     // Primary: find existing products/startups with a similar concept

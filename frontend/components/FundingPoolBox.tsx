@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { DollarSign, ExternalLink, Info } from 'lucide-react';
 import { Project } from '../lib/types';
@@ -14,18 +14,7 @@ function formatUsdc(n?: number | null) {
   return new Intl.NumberFormat(undefined, { maximumFractionDigits: 2 }).format(n);
 }
 
-function formatBps(bps?: number | null) {
-  if (bps === null || bps === undefined) return '—';
-  return `${(bps / 100).toFixed(2)}%`;
-}
-
 export function FundingPoolBox({ project, onSupport }: { project: Project; onSupport?: () => void }) {
-  const fee = useMemo(() => {
-    const bps = project.supportFeeBps ?? 50;
-    const cap = project.supportFeeCapUsdc ?? 20;
-    const recipient = project.supportFeeRecipient ?? DEV_WALLET_DEFAULT;
-    return { bps, cap, recipient };
-  }, [project.supportFeeBps, project.supportFeeCapUsdc, project.supportFeeRecipient]);
 
   const { connection } = useConnection();
   const [totalRaisedUsdc, setTotalRaisedUsdc] = useState<number | null>(null);
@@ -73,7 +62,7 @@ export function FundingPoolBox({ project, onSupport }: { project: Project; onSup
             <h3 className="text-sm font-bold text-white uppercase tracking-wider font-mono">Funding Pool</h3>
           </div>
           <p className="text-xs text-gray-400 mt-1">
-            Support this idea, then vote to select a builder and unlock milestone payouts (SPL Governance).
+            Support this idea, then vote to select a builder and unlock milestone payouts (MetaDAO).
           </p>
         </div>
         <span className={`text-xs px-2.5 py-1 rounded-full border ${isOpen ? 'border-green-500/30 text-green-300 bg-green-500/10' : 'border-white/10 text-gray-300 bg-white/5'}`}>
@@ -107,14 +96,13 @@ export function FundingPoolBox({ project, onSupport }: { project: Project; onSup
         </div>
 
         <div className="rounded-xl border border-white/10 bg-black/30 p-3">
-          <div className="text-[11px] text-gray-500">Support fee</div>
+          <div className="text-[11px] text-gray-500">Support</div>
           <div className="mt-1 text-xs text-gray-200">
-            {formatBps(fee.bps)} (cap {formatUsdc(fee.cap)} USDC) →{' '}
-            <code className="text-gray-300">{fee.recipient.slice(0, 4)}…{fee.recipient.slice(-4)}</code>
+            100% of your USDC goes to the idea treasury.
           </div>
           <div className="mt-1 flex items-center gap-1 text-[11px] text-gray-500">
             <Info className="w-3 h-3" />
-            Fees are disclosed before you sign.
+            After you support, you can optionally donate SOL to help maintain Gimme Idea.
           </div>
         </div>
       </div>
