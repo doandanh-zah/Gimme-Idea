@@ -6,6 +6,7 @@ import { Notification } from "../lib/types";
 import { useAppStore } from "../lib/store";
 import { supabase } from "../lib/supabase";
 import { useAuth } from "../contexts/AuthContext";
+import { featureFlags } from "../lib/featureFlags";
 
 export function useNotifications() {
   const user = useAppStore((state) => state.user);
@@ -14,7 +15,6 @@ export function useNotifications() {
   const [unreadCount, setUnreadCount] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
   const subscriptionRef = useRef<any>(null);
-  const pollingRef = useRef<NodeJS.Timeout | null>(null);
 
   // Fetch notifications from API
   const fetchNotifications = useCallback(
@@ -146,6 +146,13 @@ export function useNotifications() {
 
   // Setup realtime subscription
   useEffect(() => {
+    if (featureFlags.disableRealtime) {
+      // No realtime + no polling: just do a one-time fetch.
+      fetchNotifications();
+      fetchUnreadCount();
+      return;
+    }
+
     // Need both user (for API calls) and session (for realtime auth)
     if (!user?.id) {
       setNotifications([]);
@@ -227,18 +234,9 @@ export function useNotifications() {
 
     subscriptionRef.current = channel;
 
-    // Fallback polling every 30 seconds in case realtime fails
-    pollingRef.current = setInterval(() => {
-      console.log("[Notifications] Polling fallback...");
-      fetchUnreadCount();
-    }, 30000);
-
     return () => {
       if (subscriptionRef.current) {
         supabase.removeChannel(subscriptionRef.current);
-      }
-      if (pollingRef.current) {
-        clearInterval(pollingRef.current);
       }
     };
   }, [user?.id, session?.user?.id, fetchNotifications, fetchUnreadCount]);

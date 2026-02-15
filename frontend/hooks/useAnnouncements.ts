@@ -5,6 +5,7 @@ import { apiClient } from "../lib/api-client";
 import { useAppStore } from "../lib/store";
 import { supabase } from "../lib/supabase";
 import { useAuth } from "../contexts/AuthContext";
+import { featureFlags } from "../lib/featureFlags";
 
 export interface Announcement {
   id: string;
@@ -28,7 +29,6 @@ export function useAnnouncements() {
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const subscriptionRef = useRef<any>(null);
-  const pollingRef = useRef<NodeJS.Timeout | null>(null);
 
   // Fetch announcements
   const fetchAnnouncements = useCallback(async () => {
@@ -79,6 +79,10 @@ export function useAnnouncements() {
 
   // Setup realtime subscription
   useEffect(() => {
+    if (featureFlags.disableRealtime) {
+      fetchAnnouncements();
+      return;
+    }
     if (!user?.id) {
       setAnnouncements([]);
       return;
@@ -149,18 +153,9 @@ export function useAnnouncements() {
 
     subscriptionRef.current = channel;
 
-    // Fallback polling every 30 seconds in case realtime fails
-    pollingRef.current = setInterval(() => {
-      console.log("[Announcements] Polling fallback...");
-      fetchAnnouncements();
-    }, 30000);
-
     return () => {
       if (subscriptionRef.current) {
         supabase.removeChannel(subscriptionRef.current);
-      }
-      if (pollingRef.current) {
-        clearInterval(pollingRef.current);
       }
     };
   }, [user?.id, session?.user?.id, fetchAnnouncements]);

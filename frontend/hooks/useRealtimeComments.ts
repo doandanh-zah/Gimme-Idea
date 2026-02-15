@@ -1,6 +1,7 @@
 import { useEffect, useRef } from "react";
 import { supabase } from "../lib/supabase";
 import { RealtimeChannel } from "@supabase/supabase-js";
+import { featureFlags } from "../lib/featureFlags";
 
 interface UseRealtimeCommentsProps {
   projectId: string;
@@ -32,6 +33,7 @@ export function useRealtimeComments({
   }, [onNewComment, onUpdateComment, onDeleteComment]);
 
   useEffect(() => {
+    if (featureFlags.disableRealtime) return;
     if (!projectId) return;
 
     let channel: RealtimeChannel;

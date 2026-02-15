@@ -1,6 +1,7 @@
 import { useEffect, useRef } from "react";
 import { supabase } from "../lib/supabase";
 import { RealtimeChannel } from "@supabase/supabase-js";
+import { featureFlags } from "../lib/featureFlags";
 
 interface UseRealtimeProjectsProps {
   onNewProject?: (project: any) => void;
@@ -30,6 +31,8 @@ export function useRealtimeProjects({
   }, [onNewProject, onUpdateProject, onDeleteProject]);
 
   useEffect(() => {
+    if (featureFlags.disableRealtime) return;
+
     let channel: RealtimeChannel;
 
     const setupRealtimeSubscription = async () => {
