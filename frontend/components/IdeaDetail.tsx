@@ -4,7 +4,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAppStore } from '../lib/store';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, ThumbsUp, ThumbsDown, MessageCircle, Send, EyeOff, User, DollarSign, Share2, Pencil, Trash2, X, Check, Loader2, Bookmark, ChevronDown, Archive } from 'lucide-react';
+import { ArrowLeft, ThumbsUp, ThumbsDown, MessageCircle, Send, EyeOff, User, DollarSign, Share2, Pencil, Trash2, X, Check, Loader2, Bookmark, ChevronDown, Archive, Globe } from 'lucide-react';
 import { BookmarkModal } from './BookmarkModal';
 import { motion, AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';
@@ -15,6 +15,10 @@ import { MarkdownContent } from './MarkdownContent';
 import { MarkdownGuide } from './MarkdownGuide';
 import { AuthorLink, AuthorAvatar } from './AuthorLink';
 import { useAuth } from '../contexts/AuthContext';
+import { useWallet, useConnection } from '@solana/wallet-adapter-react';
+import BN from 'bn.js';
+import { makeFutarchyClient } from '@/lib/metadao/client';
+import { META_MINT, MAINNET_USDC, PriceMath, getDaoAddr } from '@metadaoproject/futarchy/v0.7';
 import { apiClient } from '../lib/api-client';
 import { sanitizeText, hasDangerousContent } from '../lib/sanitize';
 import { createUniqueSlug } from '../lib/slug-utils';
@@ -749,13 +753,17 @@ export const IdeaDetail = () => {
         handleRealtimeNewComment,
         handleRealtimeUpdateComment,
         handleRealtimeDeleteComment,
+        fetchProjectById,
     } = useAppStore();
     const { isAdmin } = useAuth();
+    const wallet = useWallet();
+    const { connection } = useConnection();
     const router = useRouter();
     const [commentText, setCommentText] = useState('');
     const [isAnonComment, setIsAnonComment] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [hasVoted, setHasVoted] = useState(false);
+    const [creatingDao, setCreatingDao] = useState(false);
 
     // Reply form state - only one reply form can be open at a time
     const [activeReplyId, setActiveReplyId] = useState<string | null>(null);
@@ -820,6 +828,81 @@ export const IdeaDetail = () => {
     });
 
     if (!project) return null;
+
+    const handleCreateDao = async () => {
+        if (!isAdmin) return;
+        if (!project?.id) return;
+        if (!wallet.publicKey) {
+            toast.error('Connect wallet to create DAO');
+            return;
+        }
+
+        try {
+            setCreatingDao(true);
+
+            const futarchy = makeFutarchyClient(connection as any, wallet as any);
+            const nonce = new BN(Date.now());
+            const oneBuck = PriceMath.getAmmPrice(1, 6, 6);
+
+            const ixBuilder = futarchy.initializeDaoIx({
+                baseMint: META_MINT,
+                quoteMint: MAINNET_USDC,
+                params: {
+                    secondsPerProposal: 60 * 60 * 24 * 3,
+                    twapStartDelaySeconds: 60 * 60 * 24,
+                    twapInitialObservation: oneBuck,
+                    twapMaxObservationChangePerUpdate: oneBuck.divn(100),
+                    minQuoteFutarchicLiquidity: new BN(10_000),
+                    minBaseFutarchicLiquidity: new BN(10_000),
+                    passThresholdBps: 300,
+                    nonce,
+                    initialSpendingLimit: null,
+                    baseToStake: new BN(0),
+                    teamSponsoredPassThresholdBps: 300,
+                    teamAddress: wallet.publicKey,
+                },
+                provideLiquidity: false,
+            });
+
+            const tx = await (ixBuilder as any).transaction();
+            tx.feePayer = wallet.publicKey;
+            const { blockhash, lastValidBlockHeight } = await (connection as any).getLatestBlockhash('confirmed');
+            tx.recentBlockhash = blockhash;
+
+            const sig = await (wallet as any).sendTransaction(tx, connection as any);
+            await (connection as any).confirmTransaction({ signature: sig, blockhash, lastValidBlockHeight }, 'confirmed');
+
+            const [dao] = getDaoAddr({ nonce, daoCreator: wallet.publicKey });
+
+            const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+            const res = await fetch(`${API_URL}/admin/projects/${project.id}/funding-pool`, {
+                method: 'PATCH',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${localStorage.getItem('auth_token') || ''}`,
+                },
+                body: JSON.stringify({
+                    poolStatus: 'pool_open',
+                    governanceRealmAddress: dao.toBase58(),
+                    governanceTreasuryAddress: dao.toBase58(),
+                    supportFeeBps: 0,
+                    supportFeeCapUsdc: 0,
+                }),
+            });
+            const data = await res.json();
+            if (!data.success) {
+                toast.error(data.error || 'DAO created but failed to save to DB');
+            } else {
+                toast.success('DAO created + pool opened');
+                await fetchProjectById(project.id);
+            }
+        } catch (e: any) {
+            console.error(e);
+            toast.error(e?.message || 'Failed to create DAO');
+        } finally {
+            setCreatingDao(false);
+        }
+    };
 
     const handleVote = async () => {
         if (!user) {
@@ -978,14 +1061,25 @@ export const IdeaDetail = () => {
                                 )}
                             </button>
 
-                            {/* Admin Delete Button */}
+                            {/* Admin Actions */}
                             {isAdmin && (
-                                <AdminDeleteButton
-                                    projectId={project.id}
-                                    projectTitle={project.title}
-                                    onDeleted={() => router.push('/idea')}
-                                    variant="button"
-                                />
+                                <>
+                                    <button
+                                        onClick={handleCreateDao}
+                                        disabled={creatingDao}
+                                        className="bg-white/10 text-white px-4 sm:px-5 py-2 rounded-full font-bold flex items-center gap-2 hover:bg-white/15 transition-colors text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                                        title="Create MetaDAO DAO + open pool for this idea"
+                                    >
+                                        <Globe className="w-4 h-4" /> {creatingDao ? 'Creating DAO…' : 'Create DAO'}
+                                    </button>
+
+                                    <AdminDeleteButton
+                                        projectId={project.id}
+                                        projectTitle={project.title}
+                                        onDeleted={() => router.push('/idea')}
+                                        variant="button"
+                                    />
+                                </>
                             )}
                         </div>
                     </div>
