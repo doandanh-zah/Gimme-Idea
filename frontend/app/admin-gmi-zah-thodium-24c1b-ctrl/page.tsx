@@ -51,6 +51,11 @@ import {
   Globe
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
+import { useWallet, useConnection } from '@solana/wallet-adapter-react';
+import { PublicKey, Transaction } from '@solana/web3.js';
+import BN from 'bn.js';
+import { makeFutarchyClient } from '@/lib/metadao/client';
+import { META_MINT, MAINNET_USDC, PriceMath } from '@metadaoproject/futarchy/v0.7';
 import { apiClient } from '@/lib/api-client';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
@@ -288,6 +293,8 @@ function AccessCodeGate({ onSuccess }: { onSuccess: () => void }) {
 
 export default function AdminDashboard() {
   const { user, isLoading: authLoading } = useAuth();
+  const wallet = useWallet();
+  const { connection } = useConnection();
   const router = useRouter();
   const [ideas, setIdeas] = useState<Idea[]>([]);
   const [activityLog, setActivityLog] = useState<ActivityLog[]>([]);
@@ -297,6 +304,9 @@ export default function AdminDashboard() {
   const [checkingAdmin, setCheckingAdmin] = useState(true);
   const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'overview' | 'users' | 'ideas' | 'projects' | 'hackathons' | 'challenges' | 'ai-tools' | 'activity'>('overview');
+
+  // MetaDAO per-idea DAO creation
+  const [creatingDaoIdeaId, setCreatingDaoIdeaId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [backfillResult, setBackfillResult] = useState<any>(null);
   const [isBackfilling, setIsBackfilling] = useState(false);
@@ -1099,6 +1109,91 @@ export default function AdminDashboard() {
     setShowScoreModal(true);
   };
 
+  const updateIdeaFundingPool = async (ideaId: string, patch: any) => {
+    const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+    const res = await fetch(`${API_URL}/admin/projects/${ideaId}/funding-pool`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${localStorage.getItem('auth_token') || ''}`,
+      },
+      body: JSON.stringify(patch),
+    });
+    return res.json();
+  };
+
+  const handleCreateMetaDaoForIdea = async (ideaId: string) => {
+    if (!wallet.publicKey) {
+      toast.error('Connect wallet to create DAO');
+      return;
+    }
+
+    try {
+      setCreatingDaoIdeaId(ideaId);
+
+      const futarchy = makeFutarchyClient(connection as any, wallet);
+
+      // Default params (aligned with MetaDAO tests; no liquidity provision in MVP)
+      const nonce = new BN(Date.now());
+      const oneBuck = PriceMath.getAmmPrice(1, 6, 6);
+
+      const ixBuilder = futarchy.initializeDaoIx({
+        baseMint: META_MINT,
+        quoteMint: MAINNET_USDC,
+        params: {
+          secondsPerProposal: 60 * 60 * 24 * 3,
+          twapStartDelaySeconds: 60 * 60 * 24,
+          twapInitialObservation: oneBuck,
+          twapMaxObservationChangePerUpdate: oneBuck.divn(100),
+          minQuoteFutarchicLiquidity: new BN(10_000),
+          minBaseFutarchicLiquidity: new BN(10_000),
+          passThresholdBps: 300,
+          nonce,
+          initialSpendingLimit: null,
+          baseToStake: new BN(0),
+          teamSponsoredPassThresholdBps: 300,
+          teamAddress: wallet.publicKey,
+        },
+        provideLiquidity: false,
+      });
+
+      const tx: Transaction = await (ixBuilder as any).transaction();
+      tx.feePayer = wallet.publicKey;
+      const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash('confirmed');
+      tx.recentBlockhash = blockhash;
+
+      const sig = await wallet.sendTransaction(tx, connection as any);
+      await connection.confirmTransaction({ signature: sig, blockhash, lastValidBlockHeight }, 'confirmed');
+
+      // Derive DAO PDA (matches SDK derivation)
+      const { getDaoAddr } = await import('@metadaoproject/futarchy/v0.7');
+      const [dao] = getDaoAddr({ nonce, daoCreator: wallet.publicKey });
+
+      // Persist: reuse existing governance fields for MetaDAO
+      const save = await updateIdeaFundingPool(ideaId, {
+        poolStatus: 'pool_open',
+        governanceRealmAddress: dao.toBase58(), // MetaDAO DAO address
+        governanceTreasuryAddress: dao.toBase58(), // treasury owner (derive USDC ATA)
+        supportFeeBps: 0,
+        supportFeeCapUsdc: 0,
+      });
+
+      if (!save.success) {
+        toast.error(save.error || 'DAO created but failed to save to DB');
+      } else {
+        toast.success('MetaDAO DAO created + pool opened');
+        // Refresh ideas list (simple re-fetch)
+        const ideasRes = await apiClient.getProjects({ type: 'idea', limit: 100 });
+        if (ideasRes.success && ideasRes.data) setIdeas(ideasRes.data as any);
+      }
+    } catch (e: any) {
+      console.error(e);
+      toast.error(e?.message || 'Failed to create MetaDAO DAO');
+    } finally {
+      setCreatingDaoIdeaId(null);
+    }
+  };
+
   const handleDeleteIdea = async (id: string) => {
     if (!confirm('Are you sure you want to delete this idea?')) return;
     
@@ -1501,6 +1596,14 @@ export default function AdminDashboard() {
                       <td className="px-6 py-4 text-sm text-gray-400">{idea.feedbackCount}</td>
                       <td className="px-6 py-4">
                         <div className="flex items-center justify-end gap-2">
+                          <button
+                            onClick={() => handleCreateMetaDaoForIdea(idea.id)}
+                            disabled={creatingDaoIdeaId === idea.id}
+                            className="px-3 py-2 text-xs font-bold rounded-lg bg-[#FFD700] text-black hover:bg-[#FFD700]/90 disabled:opacity-50 disabled:cursor-not-allowed"
+                            title="Create MetaDAO DAO + open pool"
+                          >
+                            {creatingDaoIdeaId === idea.id ? 'Creating…' : 'Create DAO'}
+                          </button>
                           <Link href={`/idea/${idea.id}`} className="p-2 text-gray-400 hover:text-white hover:bg-white/10 rounded-lg">
                             <Eye className="w-4 h-4" />
                           </Link>
