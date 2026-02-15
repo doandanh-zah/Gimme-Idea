@@ -66,6 +66,19 @@ export interface Project {
     wallet: string;
     avatar?: string;
   } | null; // Null for anonymous projects/ideas
+
+  // ============================================
+  // Commit-to-Build (Phase 1) - Governance/Pool metadata
+  // ============================================
+  poolStatus?: 'draft' | 'reviewing' | 'approved_for_pool' | 'pool_open' | 'rejected' | string;
+  governanceRealmAddress?: string;
+  governanceTreasuryAddress?: string;
+  governanceReceiptMint?: string;
+  supportFeeBps?: number; // e.g. 50 = 0.5%
+  supportFeeCapUsdc?: number; // e.g. 20
+  supportFeeRecipient?: string; // dev wallet
+  poolCreatedAt?: string;
+  poolCreatedBy?: string;
 }
 
 export interface User {

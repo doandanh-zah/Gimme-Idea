@@ -367,6 +367,18 @@ export class ProjectsService {
           },
       bounty: project.bounty,
       imageUrl: project.image_url,
+
+      // Commit-to-Build governance metadata (optional)
+      poolStatus: project.pool_status,
+      governanceRealmAddress: project.governance_realm_address,
+      governanceTreasuryAddress: project.governance_treasury_address,
+      governanceReceiptMint: project.governance_receipt_mint,
+      supportFeeBps: project.support_fee_bps,
+      supportFeeCapUsdc: project.support_fee_cap_usdc,
+      supportFeeRecipient: project.support_fee_recipient,
+      poolCreatedAt: project.pool_created_at,
+      poolCreatedBy: project.pool_created_by,
+
       // Idea-specific fields
       problem: project.problem,
       solution: project.solution,

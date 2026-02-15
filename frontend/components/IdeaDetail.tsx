@@ -21,6 +21,7 @@ import { createUniqueSlug } from '../lib/slug-utils';
 import AdminDeleteButton from './AdminDeleteButton';
 import AdminBadge, { GimmeSenseiBadge } from './AdminBadge';
 import { RelatedProjectsModal } from './RelatedProjectsModal';
+import { FundingPoolBox } from './FundingPoolBox';
 
 // AI Bot display name
 const AI_BOT_NAME = 'Gimme Sensei';
@@ -997,6 +998,11 @@ export const IdeaDetail = () => {
                         <span>{project.category}</span>
                         <span>•</span>
                         <span>{new Date(project.createdAt).toLocaleDateString()}</span>
+                    </div>
+
+                    {/* Funding Pool */}
+                    <div className="mb-10">
+                        <FundingPoolBox project={project} />
                     </div>
 
                     {/* Content Blocks */}

@@ -37,6 +37,20 @@ export interface Project {
   isAnonymous?: boolean;
   createdAt: string;
   comments?: Comment[];
+
+  // ============================================
+  // Commit-to-Build (Phase 1) - Governance/Pool metadata
+  // These fields are added via migration_add_commit_to_build_spl_governance.sql
+  // ============================================
+  poolStatus?: 'draft' | 'reviewing' | 'approved_for_pool' | 'pool_open' | 'rejected' | string;
+  governanceRealmAddress?: string;
+  governanceTreasuryAddress?: string;
+  governanceReceiptMint?: string;
+  supportFeeBps?: number; // e.g. 50 = 0.5%
+  supportFeeCapUsdc?: number; // e.g. 20
+  supportFeeRecipient?: string; // dev wallet
+  poolCreatedAt?: string;
+  poolCreatedBy?: string;
 }
 
 export interface Comment {
