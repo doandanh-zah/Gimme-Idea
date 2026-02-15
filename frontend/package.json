@@ -19,6 +19,7 @@
     "@solana/wallet-adapter-react-ui": "latest",
     "@solana/wallet-adapter-wallets": "latest",
     "@solana/web3.js": "latest",
+    "@metadaoproject/futarchy": "^0.7.0-alpha.12",
     "@supabase/supabase-js": "^2.39.0",
     "@tanstack/react-query": "latest",
     "assert": "^2.1.0",
