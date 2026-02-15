@@ -16,6 +16,7 @@ import {
 import { useAuth } from '../contexts/AuthContext';
 import { WalletRequiredModal } from './WalletRequiredModal';
 import { getUsdcMintPubkey } from '../lib/solana/usdc';
+import { showDonateToast } from '../lib/donate-toast';
 
 const DEV_WALLET_DEFAULT = 'FzcnaZMYcoAYpLgr7Wym2b8hrKYk3VXsRxWSLuvZKLJm';
 const USDC_DECIMALS = 6;
@@ -234,6 +235,7 @@ export function SupportDepositModal({
 
       setTxHash(signature);
       toast.success('Support sent');
+      showDonateToast('support');
     } catch (e: any) {
       console.error(e);
       const msg = e?.message?.includes('User rejected') ? 'Transaction cancelled' : 'Transaction failed';
