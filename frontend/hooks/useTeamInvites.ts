@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { apiClient } from "../lib/api-client";
 import { useAppStore } from "../lib/store";
 import { supabase } from "../lib/supabase";
+import { featureFlags } from "../lib/featureFlags";
 
 export interface TeamInvite {
     id: string;
@@ -80,8 +81,13 @@ export function useTeamInvites() {
             return;
         }
 
-        // Initial fetch
+        // Always do a one-time fetch.
         fetchInvites();
+
+        // Egress optimization: disable realtime entirely when flagged.
+        if (featureFlags.disableRealtime) {
+            return;
+        }
 
         // Subscribe to realtime updates
         const channel = supabase

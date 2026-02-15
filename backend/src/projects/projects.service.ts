@@ -10,12 +10,19 @@ import { UpdateProjectDto } from "./dto/update-project.dto";
 import { QueryProjectsDto } from "./dto/query-projects.dto";
 import { ApiResponse, Project } from "../shared/types";
 import { AIService } from "../ai/ai.service";
+import { TTLCache } from "../shared/ttl-cache";
 
 @Injectable()
 export class ProjectsService {
   private readonly logger = new Logger(ProjectsService.name);
   private readonly AI_BOT_WALLET =
     "FzcnaZMYcoAYpLgr7Wym2b8hrKYk3VXsRxWSLuvZKLJm";
+
+  // Egress control: cache hot list/detail responses for a short TTL.
+  // This reduces repeated Supabase reads from FE (refresh/retries, multi-tab).
+  // Per-instance only (no cross-replica sharing).
+  private readonly listCache = new TTLCache<ApiResponse<Project[]>>(30_000);
+  private readonly oneCache = new TTLCache<ApiResponse<Project>>(30_000);
 
   constructor(
     private supabaseService: SupabaseService,
@@ -26,6 +33,20 @@ export class ProjectsService {
    * Get all projects with filters
    */
   async findAll(query: QueryProjectsDto): Promise<ApiResponse<Project[]>> {
+    // Cache key includes all query params that affect output.
+    const cacheKey = JSON.stringify({
+      type: query.type,
+      category: query.category,
+      stage: query.stage,
+      search: query.search,
+      sortBy: query.sortBy,
+      sortOrder: query.sortOrder,
+      limit: query.limit,
+      offset: query.offset,
+    });
+    const cached = this.listCache.get(cacheKey);
+    if (cached) return cached;
+
     const supabase = this.supabaseService.getAdminClient();
 
     // OPTIMIZATION: Only select columns needed for list view to reduce egress
@@ -150,10 +171,14 @@ export class ProjectsService {
       };
     });
 
-    return {
+    const res: ApiResponse<Project[]> = {
       success: true,
       data: projects,
     };
+
+    this.listCache.set(cacheKey, res);
+
+    return res;
   }
 
   /**
