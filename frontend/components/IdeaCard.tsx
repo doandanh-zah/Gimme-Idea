@@ -123,10 +123,31 @@ export const IdeaCard: React.FC<IdeaCardProps> = ({ project }) => {
         <div className="p-4 relative z-[5] flex flex-col flex-1">
           {/* Header Row */}
           <div className="flex items-start justify-between gap-3 mb-3">
-            {/* Category Badge */}
-            <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-gradient-to-r ${categoryColor}`}>
-              {project.category}
-            </span>
+            <div className="flex items-center gap-2 flex-wrap">
+              {/* Category Badge */}
+              <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-gradient-to-r ${categoryColor}`}>
+                {project.category}
+              </span>
+
+              {/* Pool Status Badge (Commit-to-Build) */}
+              {project.poolStatus && (
+                <span
+                  className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider border ${
+                    project.poolStatus === 'pool_open'
+                      ? 'border-green-500/30 bg-green-500/10 text-green-300'
+                      : project.poolStatus === 'reviewing' || project.poolStatus === 'approved_for_pool'
+                        ? 'border-[#FFD700]/30 bg-[#FFD700]/10 text-[#FFD700]'
+                        : 'border-white/10 bg-white/5 text-gray-300'
+                  }`}
+                >
+                  {project.poolStatus === 'pool_open'
+                    ? 'POOL OPEN'
+                    : project.poolStatus === 'approved_for_pool'
+                      ? 'POOL READY'
+                      : project.poolStatus.toUpperCase()}
+                </span>
+              )}
+            </div>
             
             {/* AI Score if available */}
             {(project as any).aiScore && (

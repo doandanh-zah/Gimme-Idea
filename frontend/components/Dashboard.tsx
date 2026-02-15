@@ -38,6 +38,7 @@ export default function Dashboard({ mode }: DashboardProps) {
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
   const [showComingSoon, setShowComingSoon] = useState(false);
   const [showAIChat, setShowAIChat] = useState(false);
+  const [showOpenPoolsOnly, setShowOpenPoolsOnly] = useState(false);
 
   // Show coming soon modal for projects mode
   useEffect(() => {
@@ -76,8 +77,12 @@ export default function Dashboard({ mode }: DashboardProps) {
       const matchesCategory = categoryFilter === 'All' ||
         project.category === categoryFilter ||
         project.tags.some(tag => tag === categoryFilter);
+
+      const matchesPoolFilter = !showOpenPoolsOnly || (
+        project.poolStatus === 'pool_open' && !!project.governanceTreasuryAddress
+      );
       
-      if (searchQuery === '') return matchesType && matchesCategory;
+      if (searchQuery === '') return matchesType && matchesCategory && matchesPoolFilter;
       
       const query = searchQuery.toLowerCase();
       const matchesTitle = project.title.toLowerCase().includes(query);
@@ -87,7 +92,7 @@ export default function Dashboard({ mode }: DashboardProps) {
       
       const matchesSearch = matchesTitle || matchesDescription || matchesAuthor || matchesTags;
       
-      return matchesType && matchesCategory && matchesSearch;
+      return matchesType && matchesCategory && matchesPoolFilter && matchesSearch;
     })
     .sort((a, b) => {
       // If no search query, keep original order
@@ -144,12 +149,26 @@ export default function Dashboard({ mode }: DashboardProps) {
           
           <div className="flex gap-2 sm:gap-3 flex-wrap">
              {mode === 'idea' && (
-               <button
-                 onClick={() => setShowAIChat(true)}
-                 className="px-3 sm:px-4 py-2 border border-[#FFD700]/30 bg-[#FFD700]/10 rounded-full text-xs sm:text-sm font-mono transition-colors flex items-center gap-2 hover:bg-[#FFD700]/20 text-white"
-               >
-                 Find by AI
-               </button>
+               <>
+                 <button
+                   onClick={() => setShowAIChat(true)}
+                   className="px-3 sm:px-4 py-2 border border-[#FFD700]/30 bg-[#FFD700]/10 rounded-full text-xs sm:text-sm font-mono transition-colors flex items-center gap-2 hover:bg-[#FFD700]/20 text-white"
+                 >
+                   Find by AI
+                 </button>
+                 <button
+                   onClick={() => setShowOpenPoolsOnly((v) => !v)}
+                   className={`px-3 sm:px-4 py-2 border rounded-full text-xs sm:text-sm font-mono transition-colors flex items-center gap-2 ${
+                     showOpenPoolsOnly
+                       ? 'border-green-500/40 bg-green-500/15 text-white'
+                       : 'border-white/15 bg-white/5 text-white hover:bg-white/10'
+                   }`}
+                   title="Show only ideas with an open funding pool"
+                 >
+                   <Activity className="w-4 h-4" />
+                   Pool Open
+                 </button>
+               </>
              )}
              <button
                onClick={() => openSubmitModal(mode)}

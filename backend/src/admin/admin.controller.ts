@@ -74,6 +74,35 @@ export class AdminController {
     return this.adminService.verifyProject(userId, projectId, verified ?? true);
   }
 
+  /**
+   * PATCH /api/admin/projects/:id/funding-pool
+   * Admin set pool status + governance addresses for Commit-to-Build (Phase 1)
+   */
+  @Patch("projects/:id/funding-pool")
+  @UseGuards(AuthGuard)
+  async updateFundingPool(
+    @Param("id") projectId: string,
+    @CurrentUser("userId") userId: string,
+    @Body()
+    body: {
+      poolStatus?:
+        | "draft"
+        | "reviewing"
+        | "approved_for_pool"
+        | "pool_open"
+        | "rejected"
+        | string;
+      governanceRealmAddress?: string | null;
+      governanceTreasuryAddress?: string | null;
+      governanceReceiptMint?: string | null;
+      supportFeeBps?: number | null;
+      supportFeeCapUsdc?: number | null;
+      supportFeeRecipient?: string | null;
+    }
+  ): Promise<ApiResponse<void>> {
+    return this.adminService.updateProjectFundingPool(userId, projectId, body);
+  }
+
   // ============================================
   // HACKATHON MANAGEMENT
   // ============================================

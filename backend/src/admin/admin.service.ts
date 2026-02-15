@@ -274,6 +274,115 @@ export class AdminService {
     };
   }
 
+  /**
+   * Commit-to-Build (Phase 1): update funding pool/governance metadata for a project
+   */
+  async updateProjectFundingPool(
+    adminId: string,
+    projectId: string,
+    updates: {
+      poolStatus?:
+        | "draft"
+        | "reviewing"
+        | "approved_for_pool"
+        | "pool_open"
+        | "rejected"
+        | string;
+      governanceRealmAddress?: string | null;
+      governanceTreasuryAddress?: string | null;
+      governanceReceiptMint?: string | null;
+      supportFeeBps?: number | null;
+      supportFeeCapUsdc?: number | null;
+      supportFeeRecipient?: string | null;
+    }
+  ): Promise<ApiResponse<void>> {
+    const isAdmin = await this.isAdmin(adminId);
+    if (!isAdmin) {
+      throw new ForbiddenException("Admin access required");
+    }
+
+    const supabase = this.supabaseService.getAdminClient();
+
+    const { data: project, error: projectErr } = await supabase
+      .from("projects")
+      .select(
+        "id, type, pool_status, pool_created_at, support_fee_bps, support_fee_cap_usdc, support_fee_recipient"
+      )
+      .eq("id", projectId)
+      .single();
+
+    if (projectErr || !project) {
+      throw new NotFoundException("Project not found");
+    }
+
+    const nextStatus = updates.poolStatus ?? project.pool_status;
+
+    const patch: any = {
+      ...(updates.poolStatus !== undefined ? { pool_status: updates.poolStatus } : {}),
+      ...(updates.governanceRealmAddress !== undefined
+        ? { governance_realm_address: updates.governanceRealmAddress }
+        : {}),
+      ...(updates.governanceTreasuryAddress !== undefined
+        ? { governance_treasury_address: updates.governanceTreasuryAddress }
+        : {}),
+      ...(updates.governanceReceiptMint !== undefined
+        ? { governance_receipt_mint: updates.governanceReceiptMint }
+        : {}),
+      ...(updates.supportFeeBps !== undefined
+        ? { support_fee_bps: updates.supportFeeBps }
+        : {}),
+      ...(updates.supportFeeCapUsdc !== undefined
+        ? { support_fee_cap_usdc: updates.supportFeeCapUsdc }
+        : {}),
+      ...(updates.supportFeeRecipient !== undefined
+        ? { support_fee_recipient: updates.supportFeeRecipient }
+        : {}),
+    };
+
+    // Default fee config if missing (especially important when opening pool)
+    const defaultFeeBps = 50;
+    const defaultFeeCapUsdc = 20;
+    const defaultFeeRecipient = ADMIN_BOT_WALLET;
+
+    const willOpenPool = nextStatus === "pool_open";
+
+    if (willOpenPool) {
+      if (patch.support_fee_bps === undefined && project.support_fee_bps == null) {
+        patch.support_fee_bps = defaultFeeBps;
+      }
+      if (
+        patch.support_fee_cap_usdc === undefined &&
+        project.support_fee_cap_usdc == null
+      ) {
+        patch.support_fee_cap_usdc = defaultFeeCapUsdc;
+      }
+      if (
+        patch.support_fee_recipient === undefined &&
+        project.support_fee_recipient == null
+      ) {
+        patch.support_fee_recipient = defaultFeeRecipient;
+      }
+
+      // Mark pool created metadata once when pool first opens
+      if (!project.pool_created_at) {
+        patch.pool_created_at = new Date().toISOString();
+        patch.pool_created_by = adminId;
+      }
+    }
+
+    const { error } = await supabase.from("projects").update(patch).eq("id", projectId);
+
+    if (error) {
+      throw new Error(`Failed to update funding pool: ${error.message}`);
+    }
+
+    await this.logAdminAction(adminId, "update_funding_pool", "project", projectId, {
+      updates,
+    });
+
+    return { success: true, message: "Funding pool updated" };
+  }
+
   // ============================================
   // HACKATHON MANAGEMENT
   // ============================================

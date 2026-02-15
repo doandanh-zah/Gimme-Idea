@@ -22,6 +22,7 @@ import AdminDeleteButton from './AdminDeleteButton';
 import AdminBadge, { GimmeSenseiBadge } from './AdminBadge';
 import { RelatedProjectsModal } from './RelatedProjectsModal';
 import { FundingPoolBox } from './FundingPoolBox';
+import { SupportDepositModal } from './SupportDepositModal';
 
 // AI Bot display name
 const AI_BOT_NAME = 'Gimme Sensei';
@@ -762,6 +763,9 @@ export const IdeaDetail = () => {
     // Payment Modal State
     const [showPayment, setShowPayment] = useState(false);
     const [paymentRecipient, setPaymentRecipient] = useState('');
+
+    // Support/Deposit (Commit-to-Build)
+    const [showSupportDeposit, setShowSupportDeposit] = useState(false);
     const [recipientWallet, setRecipientWallet] = useState('');
     const [selectedCommentId, setSelectedCommentId] = useState<string | null>(null);
 
@@ -1002,7 +1006,7 @@ export const IdeaDetail = () => {
 
                     {/* Funding Pool */}
                     <div className="mb-10">
-                        <FundingPoolBox project={project} />
+                        <FundingPoolBox project={project} onSupport={() => setShowSupportDeposit(true)} />
                     </div>
 
                     {/* Content Blocks */}
@@ -1079,6 +1083,16 @@ export const IdeaDetail = () => {
                     </div>
                 </div>
             </div>
+
+            <SupportDepositModal
+                isOpen={showSupportDeposit}
+                onClose={() => setShowSupportDeposit(false)}
+                treasuryAddress={project.governanceTreasuryAddress}
+                ideaTitle={project.title}
+                feeBps={project.supportFeeBps ?? 50}
+                feeCapUsdc={project.supportFeeCapUsdc ?? 20}
+                feeRecipient={project.supportFeeRecipient ?? 'FzcnaZMYcoAYpLgr7Wym2b8hrKYk3VXsRxWSLuvZKLJm'}
+            />
 
             <PaymentModal
                 isOpen={showPayment}

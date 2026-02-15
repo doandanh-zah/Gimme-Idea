@@ -47,6 +47,10 @@ export class ProjectsService {
         is_anonymous,
         created_at,
         ai_score,
+
+        pool_status,
+        governance_treasury_address,
+
         author:users!projects_author_id_fkey(
           username,
           wallet,
@@ -139,6 +143,10 @@ export class ProjectsService {
         // They are fetched in findOne for detail view
         isAnonymous: p.is_anonymous,
         createdAt: p.created_at,
+
+        // Commit-to-Build (Phase 1)
+        poolStatus: p.pool_status,
+        governanceTreasuryAddress: p.governance_treasury_address,
       };
     });
 
@@ -179,6 +187,10 @@ export class ProjectsService {
         is_anonymous,
         created_at,
         ai_score,
+
+        pool_status,
+        governance_treasury_address,
+
         problem,
         solution,
         author:users!projects_author_id_fkey(
@@ -232,6 +244,10 @@ export class ProjectsService {
         solution: p.solution, // Include for recommended cards preview
         isAnonymous: p.is_anonymous,
         createdAt: p.created_at,
+
+        // Commit-to-Build (Phase 1)
+        poolStatus: p.pool_status,
+        governanceTreasuryAddress: p.governance_treasury_address,
       };
     });
 
