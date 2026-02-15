@@ -3,10 +3,10 @@ seeds = false
 skip-lint = false
 
 [programs.mainnet]
-gimme_idea = "GiMxxx..."  # Replace with your program ID after deployment
+gimme_idea = "11111111111111111111111111111111" # placeholder; replace after deployment
 
 [programs.devnet]
-gimme_idea = "GiMxxx..."  # Replace with your program ID for devnet
+gimme_idea = "11111111111111111111111111111111" # placeholder; replace after deployment
 
 [registry]
 url = "https://api.apr.dev"
