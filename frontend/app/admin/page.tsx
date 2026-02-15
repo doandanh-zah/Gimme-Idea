@@ -1174,10 +1174,9 @@ export default function AdminDashboard() {
         throw new Error('Wallet does not support signTransaction');
       }
       const signed = await wallet.signTransaction(tx);
-      const sim = await connection.simulateTransaction(signed, {
-        sigVerify: false,
-        commitment: 'confirmed',
-      } as any);
+      // web3.js v1.98: for legacy Transaction, simulateTransaction only accepts (tx, signers?, includeAccounts?)
+      // Passing a config object throws "Invalid arguments".
+      const sim = await connection.simulateTransaction(signed as any);
       if (sim.value.err) {
         console.error('[Create DAO] Simulation error:', sim.value.err);
         console.error('[Create DAO] Simulation logs:', sim.value.logs);

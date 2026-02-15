@@ -880,10 +880,7 @@ export const IdeaDetail = () => {
             }
 
             const signed = await (wallet as any).signTransaction(tx);
-            const sim = await (connection as any).simulateTransaction(signed, {
-                sigVerify: false,
-                commitment: 'confirmed',
-            });
+            const sim = await (connection as any).simulateTransaction(signed);
             if (sim.value.err) {
                 console.error('[Create DAO] Simulation error:', sim.value.err);
                 console.error('[Create DAO] Simulation logs:', sim.value.logs);
