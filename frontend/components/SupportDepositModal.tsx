@@ -48,8 +48,8 @@ export function SupportDepositModal({
   onClose,
   treasuryAddress,
   ideaTitle,
-  feeBps = 50,
-  feeCapUsdc = 20,
+  feeBps = 0,
+  feeCapUsdc = 0,
   feeRecipient = DEV_WALLET_DEFAULT,
 }: SupportDepositModalProps) {
   const { publicKey, sendTransaction, connected } = useWallet();
@@ -137,28 +137,62 @@ export function SupportDepositModal({
       const treasury = new PublicKey(treasuryAddress);
       const feeRecipientPk = new PublicKey(feeRecipient);
 
-      // NOTE: This assumes `treasuryAddress` is a USDC token account.
-      // If it is a wallet address, we would need to derive its USDC ATA instead.
-      const treasuryTokenAccount = treasury;
+      // Treat treasuryAddress as an *owner* wallet/PDA and derive its USDC ATA
+      const treasuryTokenAccount = await getAssociatedTokenAddress(
+        mint,
+        treasury,
+        true,
+        TOKEN_PROGRAM_ID,
+        ASSOCIATED_TOKEN_PROGRAM_ID
+      );
 
-      const payerUsdcAta = await getAssociatedTokenAddress(mint, publicKey, false, TOKEN_PROGRAM_ID, ASSOCIATED_TOKEN_PROGRAM_ID);
-      const feeRecipientAta = await getAssociatedTokenAddress(mint, feeRecipientPk, false, TOKEN_PROGRAM_ID, ASSOCIATED_TOKEN_PROGRAM_ID);
+      const payerUsdcAta = await getAssociatedTokenAddress(
+        mint,
+        publicKey,
+        false,
+        TOKEN_PROGRAM_ID,
+        ASSOCIATED_TOKEN_PROGRAM_ID
+      );
+      const feeRecipientAta = await getAssociatedTokenAddress(
+        mint,
+        feeRecipientPk,
+        false,
+        TOKEN_PROGRAM_ID,
+        ASSOCIATED_TOKEN_PROGRAM_ID
+      );
 
       const ixs = [];
 
-      // Create fee recipient ATA if missing
-      const feeAtaInfo = await connection.getAccountInfo(feeRecipientAta);
-      if (!feeAtaInfo) {
+      // Create treasury ATA if missing
+      const treasuryAtaInfo = await connection.getAccountInfo(treasuryTokenAccount);
+      if (!treasuryAtaInfo) {
         ixs.push(
           createAssociatedTokenAccountInstruction(
             publicKey,
-            feeRecipientAta,
-            feeRecipientPk,
+            treasuryTokenAccount,
+            treasury,
             mint,
             TOKEN_PROGRAM_ID,
             ASSOCIATED_TOKEN_PROGRAM_ID
           )
         );
+      }
+
+      // Create fee recipient ATA if missing (only if fee enabled)
+      if (feeBps > 0 && feeCapUsdc > 0) {
+        const feeAtaInfo = await connection.getAccountInfo(feeRecipientAta);
+        if (!feeAtaInfo) {
+          ixs.push(
+            createAssociatedTokenAccountInstruction(
+              publicKey,
+              feeRecipientAta,
+              feeRecipientPk,
+              mint,
+              TOKEN_PROGRAM_ID,
+              ASSOCIATED_TOKEN_PROGRAM_ID
+            )
+          );
+        }
       }
 
       const amountBase = toBaseUnits(parsedAmount, USDC_DECIMALS);
@@ -177,8 +211,8 @@ export function SupportDepositModal({
         )
       );
 
-      // Transfer fee to dev
-      if (feeBase > 0n) {
+      // No fee split by default. If enabled (future), transfer fee to dev.
+      if (feeBase > 0n && feeBps > 0 && feeCapUsdc > 0) {
         ixs.push(
           createTransferInstruction(
             payerUsdcAta,

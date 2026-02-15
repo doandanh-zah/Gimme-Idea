@@ -339,9 +339,9 @@ export class AdminService {
         : {}),
     };
 
-    // Default fee config if missing (especially important when opening pool)
-    const defaultFeeBps = 50;
-    const defaultFeeCapUsdc = 20;
+    // Default fee config: Zah requested no fee split (user receives 100% support)
+    const defaultFeeBps = 0;
+    const defaultFeeCapUsdc = 0;
     const defaultFeeRecipient = ADMIN_BOT_WALLET;
 
     const willOpenPool = nextStatus === "pool_open";

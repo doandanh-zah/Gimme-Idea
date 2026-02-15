@@ -42,8 +42,14 @@ export function FundingPoolBox({ project, onSupport }: { project: Project; onSup
       }
 
       try {
-        const pk = new PublicKey(project.governanceTreasuryAddress);
-        const bal = await connection.getTokenAccountBalance(pk);
+        const owner = new PublicKey(project.governanceTreasuryAddress);
+        // Derive and read USDC ATA balance for the owner
+        // If this address is actually a token account, this will fail and we'll show "—".
+        const { getUsdcMintPubkey } = await import('../lib/solana/usdc');
+        const { getAssociatedTokenAddress } = await import('@solana/spl-token');
+        const mint = getUsdcMintPubkey();
+        const ata = await getAssociatedTokenAddress(mint, owner, true);
+        const bal = await connection.getTokenAccountBalance(ata);
         const ui = bal?.value?.uiAmount;
         if (!cancelled) setTotalRaisedUsdc(ui ?? 0);
       } catch (e) {
