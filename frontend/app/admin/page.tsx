@@ -1128,6 +1128,13 @@ export default function AdminDashboard() {
       return;
     }
 
+    // MetaDAO futarchy program is mainnet-first. Prevent confusing devnet failures.
+    const solanaNetwork = process.env.NEXT_PUBLIC_SOLANA_NETWORK || 'mainnet-beta';
+    if (solanaNetwork !== 'mainnet-beta') {
+      toast.error('Create DAO is only supported on mainnet-beta right now');
+      return;
+    }
+
     try {
       setCreatingDaoIdeaId(ideaId);
 
@@ -1162,8 +1169,30 @@ export default function AdminDashboard() {
       const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash('confirmed');
       tx.recentBlockhash = blockhash;
 
-      const sig = await wallet.sendTransaction(tx, connection as any);
-      await connection.confirmTransaction({ signature: sig, blockhash, lastValidBlockHeight }, 'confirmed');
+      // Simulate first to surface logs (wallet-adapter often throws "Unexpected error" without details)
+      if (!wallet.signTransaction) {
+        throw new Error('Wallet does not support signTransaction');
+      }
+      const signed = await wallet.signTransaction(tx);
+      const sim = await connection.simulateTransaction(signed, {
+        sigVerify: false,
+        commitment: 'confirmed',
+      } as any);
+      if (sim.value.err) {
+        console.error('[Create DAO] Simulation error:', sim.value.err);
+        console.error('[Create DAO] Simulation logs:', sim.value.logs);
+        toast.error('Create DAO failed (simulation). Check console for logs.');
+        return;
+      }
+
+      const sig = await connection.sendRawTransaction(signed.serialize(), {
+        skipPreflight: true,
+        maxRetries: 3,
+      });
+      await connection.confirmTransaction(
+        { signature: sig, blockhash, lastValidBlockHeight },
+        'confirmed'
+      );
 
       // Derive DAO PDA (matches SDK derivation)
       const { getDaoAddr } = await import('@metadaoproject/futarchy/v0.7');
@@ -1187,8 +1216,14 @@ export default function AdminDashboard() {
         if (ideasRes.success && ideasRes.data) setIdeas(ideasRes.data as any);
       }
     } catch (e: any) {
-      console.error(e);
-      toast.error(e?.message || 'Failed to create MetaDAO DAO');
+      console.error('[Create DAO] Error:', e);
+      // Try to surface extra info from common Solana errors
+      const msg =
+        e?.message ||
+        e?.error?.message ||
+        (typeof e === 'string' ? e : 'Failed to create MetaDAO DAO');
+      if (e?.logs) console.error('[Create DAO] logs:', e.logs);
+      toast.error(msg);
     } finally {
       setCreatingDaoIdeaId(null);
     }

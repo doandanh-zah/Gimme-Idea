@@ -837,6 +837,12 @@ export const IdeaDetail = () => {
             return;
         }
 
+        const solanaNetwork = process.env.NEXT_PUBLIC_SOLANA_NETWORK || 'mainnet-beta';
+        if (solanaNetwork !== 'mainnet-beta') {
+            toast.error('Create DAO is only supported on mainnet-beta right now');
+            return;
+        }
+
         try {
             setCreatingDao(true);
 
@@ -869,7 +875,26 @@ export const IdeaDetail = () => {
             const { blockhash, lastValidBlockHeight } = await (connection as any).getLatestBlockhash('confirmed');
             tx.recentBlockhash = blockhash;
 
-            const sig = await (wallet as any).sendTransaction(tx, connection as any);
+            if (!(wallet as any).signTransaction) {
+                throw new Error('Wallet does not support signTransaction');
+            }
+
+            const signed = await (wallet as any).signTransaction(tx);
+            const sim = await (connection as any).simulateTransaction(signed, {
+                sigVerify: false,
+                commitment: 'confirmed',
+            });
+            if (sim.value.err) {
+                console.error('[Create DAO] Simulation error:', sim.value.err);
+                console.error('[Create DAO] Simulation logs:', sim.value.logs);
+                toast.error('Create DAO failed (simulation). Check console for logs.');
+                return;
+            }
+
+            const sig = await (connection as any).sendRawTransaction(signed.serialize(), {
+                skipPreflight: true,
+                maxRetries: 3,
+            });
             await (connection as any).confirmTransaction({ signature: sig, blockhash, lastValidBlockHeight }, 'confirmed');
 
             const [dao] = getDaoAddr({ nonce, daoCreator: wallet.publicKey });
@@ -897,8 +922,13 @@ export const IdeaDetail = () => {
                 await fetchProjectById(project.id);
             }
         } catch (e: any) {
-            console.error(e);
-            toast.error(e?.message || 'Failed to create DAO');
+            console.error('[Create DAO] Error:', e);
+            const msg =
+                e?.message ||
+                e?.error?.message ||
+                (typeof e === 'string' ? e : 'Failed to create DAO');
+            if (e?.logs) console.error('[Create DAO] logs:', e.logs);
+            toast.error(msg);
         } finally {
             setCreatingDao(false);
         }
