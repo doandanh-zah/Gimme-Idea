@@ -44,18 +44,14 @@ export const LoginButton = () => {
         whileTap={{ scale: 0.95 }}
         onClick={handleWalletLogin}
         disabled={loadingWallet}
-        className="flex items-center gap-2 px-4 py-2.5 bg-white/10 text-white rounded-full font-bold text-sm hover:bg-white/20 transition-all duration-300 border border-white/15 whitespace-nowrap disabled:opacity-70 disabled:cursor-not-allowed"
+        aria-label="Sign in with wallet"
+        title="Sign in with wallet"
+        className="flex items-center justify-center w-10 h-10 bg-white/10 text-white rounded-full hover:bg-white/20 transition-all duration-300 border border-white/15 disabled:opacity-70 disabled:cursor-not-allowed"
       >
         {loadingWallet ? (
-          <>
-            <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-            <span>Wallet...</span>
-          </>
+          <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
         ) : (
-          <>
-            <Wallet className="w-4 h-4" />
-            <span>Wallet</span>
-          </>
+          <Wallet className="w-4 h-4" />
         )}
       </motion.button>
 
