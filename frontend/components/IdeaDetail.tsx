@@ -1254,7 +1254,17 @@ export const IdeaDetail = () => {
                                 <div key={p.id} className="rounded-xl border border-white/10 bg-black/30 p-3">
                                     <div className="flex items-center justify-between gap-3">
                                         <div className="text-sm font-semibold text-white">{p.title}</div>
-                                        <span className="text-[11px] px-2 py-1 rounded-full border border-white/15 text-gray-300">{p.status}</span>
+                                        <span className={`text-[11px] px-2 py-1 rounded-full border ${
+                                            p.status === 'executed'
+                                                ? 'border-green-500/30 text-green-300 bg-green-500/10'
+                                                : p.status === 'passed'
+                                                    ? 'border-emerald-500/30 text-emerald-300 bg-emerald-500/10'
+                                                    : p.status === 'voting'
+                                                        ? 'border-yellow-500/30 text-yellow-300 bg-yellow-500/10'
+                                                        : p.status === 'rejected'
+                                                            ? 'border-red-500/30 text-red-300 bg-red-500/10'
+                                                            : 'border-white/15 text-gray-300 bg-white/5'
+                                        }`}>{p.status}</span>
                                     </div>
                                     <p className="text-xs text-gray-400 mt-1 whitespace-pre-wrap">{p.description}</p>
                                     {p.onchain_tx ? (

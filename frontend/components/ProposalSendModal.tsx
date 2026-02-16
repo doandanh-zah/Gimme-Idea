@@ -69,6 +69,9 @@ export function ProposalSendModal({
           <p className="text-xs text-gray-400 mt-1">
             Fill proposal info here, or use MetaDAO official interface.
           </p>
+          <div className="mt-2 text-[11px] text-gray-500">
+            Flow: <span className="text-gray-300">pending</span> → <span className="text-yellow-300">voting</span> → <span className="text-emerald-300">passed / rejected</span> → <span className="text-green-300">executed</span>
+          </div>
 
           <a
             href="https://www.metadao.fi/"
