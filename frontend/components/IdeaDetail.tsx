@@ -16,7 +16,7 @@ import { MarkdownGuide } from './MarkdownGuide';
 import { AuthorLink, AuthorAvatar } from './AuthorLink';
 import { useAuth } from '../contexts/AuthContext';
 import { useWallet, useConnection } from '@solana/wallet-adapter-react';
-import { LAMPORTS_PER_SOL } from '@solana/web3.js';
+import { Connection, LAMPORTS_PER_SOL, clusterApiUrl } from '@solana/web3.js';
 import BN from 'bn.js';
 // removed ATA auto-create helpers (caused token program mismatch in simulation)
 import { makeFutarchyClient } from '@/lib/metadao/client';
@@ -848,10 +848,18 @@ export const IdeaDetail = () => {
         try {
             setCreatingDao(true);
 
-            const futarchy = makeFutarchyClient(connection as any, wallet as any);
+            const mainnetRpc =
+                process.env.NEXT_PUBLIC_MAINNET_RPC_URL ||
+                ((process.env.NEXT_PUBLIC_SOLANA_NETWORK || 'mainnet-beta') === 'mainnet-beta'
+                    ? process.env.NEXT_PUBLIC_SOLANA_RPC_URL
+                    : undefined) ||
+                clusterApiUrl('mainnet-beta');
+            const mainnetConnection = new Connection(mainnetRpc, 'confirmed');
+
+            const futarchy = makeFutarchyClient(mainnetConnection as any, wallet as any);
 
             // Quick pre-check: Create DAO needs SOL for account rent + tx fee.
-            const balanceLamports = await (connection as any).getBalance(wallet.publicKey, 'confirmed');
+            const balanceLamports = await (mainnetConnection as any).getBalance(wallet.publicKey, 'confirmed');
             const balanceSol = balanceLamports / LAMPORTS_PER_SOL;
             if (balanceSol < 0.05) {
                 toast.error(`Insufficient SOL to create DAO (need ~0.05+ SOL, current ${balanceSol.toFixed(4)} SOL)`);
@@ -886,8 +894,8 @@ export const IdeaDetail = () => {
 
             // Ensure creator has ATA for quote/base mints (prevents common AccountNotInitialized errors).
             const [usdcMintInfo, metaMintInfo] = await Promise.all([
-                (connection as any).getAccountInfo(MAINNET_USDC, 'confirmed'),
-                (connection as any).getAccountInfo(META_MINT, 'confirmed'),
+                (mainnetConnection as any).getAccountInfo(MAINNET_USDC, 'confirmed'),
+                (mainnetConnection as any).getAccountInfo(META_MINT, 'confirmed'),
             ]);
 
             // Guardrail: if mint cannot be fetched, the connected RPC likely isn't mainnet.
@@ -903,7 +911,7 @@ export const IdeaDetail = () => {
                 metaOwner: metaMintInfo.owner.toBase58(),
             });
 
-            const { blockhash, lastValidBlockHeight } = await (connection as any).getLatestBlockhash('confirmed');
+            const { blockhash, lastValidBlockHeight } = await (mainnetConnection as any).getLatestBlockhash('confirmed');
             tx.recentBlockhash = blockhash;
 
             if (!(wallet as any).signTransaction) {
@@ -911,7 +919,7 @@ export const IdeaDetail = () => {
             }
 
             const signed = await (wallet as any).signTransaction(tx);
-            const sim = await (connection as any).simulateTransaction(signed);
+            const sim = await (mainnetConnection as any).simulateTransaction(signed);
             if (sim.value.err) {
                 console.error('[Create DAO] Simulation error:', sim.value.err);
                 console.error('[Create DAO] Simulation logs:', sim.value.logs);
@@ -925,11 +933,11 @@ export const IdeaDetail = () => {
                 return;
             }
 
-            const sig = await (connection as any).sendRawTransaction(signed.serialize(), {
+            const sig = await (mainnetConnection as any).sendRawTransaction(signed.serialize(), {
                 skipPreflight: true,
                 maxRetries: 3,
             });
-            await (connection as any).confirmTransaction({ signature: sig, blockhash, lastValidBlockHeight }, 'confirmed');
+            await (mainnetConnection as any).confirmTransaction({ signature: sig, blockhash, lastValidBlockHeight }, 'confirmed');
 
             const [dao] = getDaoAddr({ nonce, daoCreator: wallet.publicKey });
 

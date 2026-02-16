@@ -52,7 +52,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useWallet, useConnection } from '@solana/wallet-adapter-react';
-import { LAMPORTS_PER_SOL, PublicKey, Transaction } from '@solana/web3.js';
+import { Connection, LAMPORTS_PER_SOL, PublicKey, Transaction, clusterApiUrl } from '@solana/web3.js';
 import BN from 'bn.js';
 // removed ATA auto-create helpers (caused token program mismatch in simulation)
 import { makeFutarchyClient } from '@/lib/metadao/client';
@@ -1139,10 +1139,18 @@ export default function AdminDashboard() {
     try {
       setCreatingDaoIdeaId(ideaId);
 
-      const futarchy = makeFutarchyClient(connection as any, wallet);
+      const mainnetRpc =
+        process.env.NEXT_PUBLIC_MAINNET_RPC_URL ||
+        ((process.env.NEXT_PUBLIC_SOLANA_NETWORK || 'mainnet-beta') === 'mainnet-beta'
+          ? process.env.NEXT_PUBLIC_SOLANA_RPC_URL
+          : undefined) ||
+        clusterApiUrl('mainnet-beta');
+      const mainnetConnection = new Connection(mainnetRpc, 'confirmed');
+
+      const futarchy = makeFutarchyClient(mainnetConnection as any, wallet);
 
       // Quick pre-check: Create DAO needs SOL for account rent + tx fee.
-      const balanceLamports = await connection.getBalance(wallet.publicKey, 'confirmed');
+      const balanceLamports = await mainnetConnection.getBalance(wallet.publicKey, 'confirmed');
       const balanceSol = balanceLamports / LAMPORTS_PER_SOL;
       if (balanceSol < 0.05) {
         toast.error(`Insufficient SOL to create DAO (need ~0.05+ SOL, current ${balanceSol.toFixed(4)} SOL)`);
@@ -1178,8 +1186,8 @@ export default function AdminDashboard() {
 
       // Ensure creator has ATA for quote/base mints (prevents common AccountNotInitialized errors).
       const [usdcMintInfo, metaMintInfo] = await Promise.all([
-        connection.getAccountInfo(MAINNET_USDC, 'confirmed'),
-        connection.getAccountInfo(META_MINT, 'confirmed'),
+        mainnetConnection.getAccountInfo(MAINNET_USDC, 'confirmed'),
+        mainnetConnection.getAccountInfo(META_MINT, 'confirmed'),
       ]);
 
       // Guardrail: if mint cannot be fetched, the connected RPC likely isn't mainnet.
@@ -1195,7 +1203,7 @@ export default function AdminDashboard() {
         metaOwner: metaMintInfo.owner.toBase58(),
       });
 
-      const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash('confirmed');
+      const { blockhash, lastValidBlockHeight } = await mainnetConnection.getLatestBlockhash('confirmed');
       tx.recentBlockhash = blockhash;
 
       // Simulate first to surface logs (wallet-adapter often throws "Unexpected error" without details)
@@ -1205,7 +1213,7 @@ export default function AdminDashboard() {
       const signed = await wallet.signTransaction(tx);
       // web3.js v1.98: for legacy Transaction, simulateTransaction only accepts (tx, signers?, includeAccounts?)
       // Passing a config object throws "Invalid arguments".
-      const sim = await connection.simulateTransaction(signed as any);
+      const sim = await mainnetConnection.simulateTransaction(signed as any);
       if (sim.value.err) {
         console.error('[Create DAO] Simulation error:', sim.value.err);
         console.error('[Create DAO] Simulation logs:', sim.value.logs);
@@ -1219,11 +1227,11 @@ export default function AdminDashboard() {
         return;
       }
 
-      const sig = await connection.sendRawTransaction(signed.serialize(), {
+      const sig = await mainnetConnection.sendRawTransaction(signed.serialize(), {
         skipPreflight: true,
         maxRetries: 3,
       });
-      await connection.confirmTransaction(
+      await mainnetConnection.confirmTransaction(
         { signature: sig, blockhash, lastValidBlockHeight },
         'confirmed'
       );
