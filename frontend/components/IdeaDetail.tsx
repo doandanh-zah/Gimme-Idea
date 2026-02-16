@@ -30,6 +30,7 @@ import { RelatedProjectsModal } from './RelatedProjectsModal';
 import { FundingPoolBox } from './FundingPoolBox';
 import { SupportDepositModal } from './SupportDepositModal';
 import { DaoRequestModal } from './DaoRequestModal';
+import { ProposalSendModal } from './ProposalSendModal';
 
 // AI Bot display name
 const AI_BOT_NAME = 'Gimme Sensei';
@@ -779,9 +780,7 @@ export const IdeaDetail = () => {
     const [showSupportDeposit, setShowSupportDeposit] = useState(false);
     const [showDaoRequestModal, setShowDaoRequestModal] = useState(false);
     const [proposals, setProposals] = useState<any[]>([]);
-    const [proposalTitle, setProposalTitle] = useState('');
-    const [proposalDescription, setProposalDescription] = useState('');
-    const [submittingProposal, setSubmittingProposal] = useState(false);
+    const [showProposalModal, setShowProposalModal] = useState(false);
     const [recipientWallet, setRecipientWallet] = useState('');
     const [selectedCommentId, setSelectedCommentId] = useState<string | null>(null);
 
@@ -996,39 +995,6 @@ export const IdeaDetail = () => {
             setCreatingDao(false);
         }
     };
-
-    const handleCreateProposal = async () => {
-        if (!user) {
-            openConnectReminder();
-            return;
-        }
-        if (!project?.id) return;
-        if (!proposalTitle.trim() || !proposalDescription.trim()) {
-            toast.error('Please fill proposal title and description');
-            return;
-        }
-        try {
-            setSubmittingProposal(true);
-            const res = await apiClient.createProposal(project.id, {
-                title: proposalTitle.trim(),
-                description: proposalDescription.trim(),
-            });
-            if (!res.success) {
-                toast.error(res.error || 'Failed to create proposal');
-                return;
-            }
-            toast.success('Proposal submitted');
-            setProposalTitle('');
-            setProposalDescription('');
-            const list = await apiClient.listProposals(project.id);
-            if (list.success && list.data) setProposals(list.data);
-        } catch (e: any) {
-            toast.error(e?.message || 'Failed to create proposal');
-        } finally {
-            setSubmittingProposal(false);
-        }
-    };
-
     const handleVote = async () => {
         if (!user) {
             openConnectReminder();
@@ -1273,28 +1239,12 @@ export const IdeaDetail = () => {
                         </div>
 
                         {project.poolStatus === 'pool_open' ? (
-                            <div className="space-y-3">
-                                <input
-                                    value={proposalTitle}
-                                    onChange={(e) => setProposalTitle(e.target.value)}
-                                    placeholder="Proposal title"
-                                    className="w-full rounded-xl bg-white/5 border border-white/10 px-3 py-2 text-sm text-white"
-                                />
-                                <textarea
-                                    value={proposalDescription}
-                                    onChange={(e) => setProposalDescription(e.target.value)}
-                                    rows={3}
-                                    placeholder="Describe what to execute / payout conditions"
-                                    className="w-full rounded-xl bg-white/5 border border-white/10 px-3 py-2 text-sm text-white"
-                                />
-                                <button
-                                    onClick={handleCreateProposal}
-                                    disabled={submittingProposal}
-                                    className="px-4 py-2 rounded-full bg-[#FFD700] text-black text-sm font-bold disabled:opacity-60"
-                                >
-                                    {submittingProposal ? 'Submitting...' : 'Create Proposal'}
-                                </button>
-                            </div>
+                            <button
+                                onClick={() => setShowProposalModal(true)}
+                                className="px-4 py-2 rounded-full bg-[#FFD700] text-black text-sm font-bold"
+                            >
+                                Send Proposal
+                            </button>
                         ) : (
                             <p className="text-xs text-gray-500">Open pool first to enable proposals.</p>
                         )}
@@ -1382,6 +1332,12 @@ export const IdeaDetail = () => {
                 feeBps={project.supportFeeBps ?? 50}
                 feeCapUsdc={project.supportFeeCapUsdc ?? 0}
                 feeRecipient={project.supportFeeRecipient ?? 'FzcnaZMYcoAYpLgr7Wym2b8hrKYk3VXsRxWSLuvZKLJm'}
+            />
+
+            <ProposalSendModal
+                isOpen={showProposalModal}
+                onClose={() => setShowProposalModal(false)}
+                projectId={project.id}
             />
 
             <DaoRequestModal
