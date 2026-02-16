@@ -412,9 +412,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         await connect();
       }
 
-      const activeWallet = publicKey ? { publicKey, signMessage } : wallets.find((w) => w.adapter.connected)?.adapter;
-      const activePublicKey = activeWallet?.publicKey || publicKey;
-      const activeSignMessage = activeWallet?.signMessage || signMessage;
+      let activePublicKey = publicKey;
+      let activeSignMessage = signMessage;
+
+      // After connect(), hook state may still be catching up in the same tick.
+      if ((!activePublicKey || !activeSignMessage) && connected) {
+        const connectedAdapter = wallets.find((w) => w.adapter.connected)?.adapter as any;
+        activePublicKey = connectedAdapter?.publicKey || activePublicKey;
+        activeSignMessage = connectedAdapter?.signMessage || activeSignMessage;
+      }
 
       if (!activePublicKey || !activeSignMessage) {
         throw new Error('Wallet not ready for signing. Please try again.');
