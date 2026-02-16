@@ -893,22 +893,12 @@ export const IdeaDetail = () => {
             tx.feePayer = wallet.publicKey;
 
             // Ensure creator has ATA for quote/base mints (prevents common AccountNotInitialized errors).
-            const [usdcMintInfo, metaMintInfo] = await Promise.all([
-                (mainnetConnection as any).getAccountInfo(MAINNET_USDC, 'confirmed'),
-                (mainnetConnection as any).getAccountInfo(META_MINT, 'confirmed'),
-            ]);
-
-            // Guardrail: if mint cannot be fetched, the connected RPC likely isn't mainnet.
-            if (!usdcMintInfo || !metaMintInfo) {
-                toast.error('RPC mismatch: required mainnet mints are unavailable. Please switch RPC/network to mainnet-beta.');
-                return;
-            }
-
-            console.log('[Create DAO] Mint owners', {
+            // Removed hard RPC-mismatch guard because some RPC providers may intermittently
+            // return null on getAccountInfo for these mints. Let simulation decide the real error.
+            console.log('[Create DAO] RPC endpoint', mainnetRpc.replace(/api-key=[^&]+/i, 'api-key=***'));
+            console.log('[Create DAO] Mints', {
                 usdcMint: MAINNET_USDC.toBase58(),
-                usdcOwner: usdcMintInfo.owner.toBase58(),
                 metaMint: META_MINT.toBase58(),
-                metaOwner: metaMintInfo.owner.toBase58(),
             });
 
             const { blockhash, lastValidBlockHeight } = await (mainnetConnection as any).getLatestBlockhash('confirmed');
