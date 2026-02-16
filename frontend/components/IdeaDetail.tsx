@@ -1233,8 +1233,35 @@ export const IdeaDetail = () => {
                         <span>{new Date(project.createdAt).toLocaleDateString()}</span>
                     </div>
 
+                    {/* Content Blocks */}
+                    <div className="space-y-12">
+                        <section>
+                            <h3 className="text-xl font-bold text-[#FFD700] mb-4 font-mono uppercase tracking-wider">The Problem</h3>
+                            <div className="text-lg text-gray-200 leading-relaxed">
+                                <MarkdownContent content={project.problem} />
+                            </div>
+                        </section>
+
+                        <section>
+                            <h3 className="text-xl font-bold text-[#FFD700] mb-4 font-mono uppercase tracking-wider">The Solution</h3>
+                            <div className="p-6 bg-white/5 border-l-4 border-[#FFD700] rounded-r-xl">
+                                <div className="text-lg text-white leading-relaxed">
+                                    <MarkdownContent content={project.solution} />
+                                </div>
+                            </div>
+                        </section>
+
+                        <section>
+                            <h3 className="text-sm font-bold text-gray-500 mb-2 font-mono uppercase">Opportunity</h3>
+                            <div className="text-gray-300">
+                                {project.opportunity ? <MarkdownContent content={project.opportunity} /> : "Not specified."}
+                            </div>
+                        </section>
+                    </div>
+                </div>
+
                     {/* Funding Pool */}
-                    <div className="mb-10">
+                    <div className="mt-10 mb-10">
                         <FundingPoolBox project={project} onSupport={() => setShowSupportDeposit(true)} />
                     </div>
 
@@ -1298,32 +1325,6 @@ export const IdeaDetail = () => {
                         </div>
                     </div>
 
-                    {/* Content Blocks */}
-                    <div className="space-y-12">
-                        <section>
-                            <h3 className="text-xl font-bold text-[#FFD700] mb-4 font-mono uppercase tracking-wider">The Problem</h3>
-                            <div className="text-lg text-gray-200 leading-relaxed">
-                                <MarkdownContent content={project.problem} />
-                            </div>
-                        </section>
-
-                        <section>
-                            <h3 className="text-xl font-bold text-[#FFD700] mb-4 font-mono uppercase tracking-wider">The Solution</h3>
-                            <div className="p-6 bg-white/5 border-l-4 border-[#FFD700] rounded-r-xl">
-                                <div className="text-lg text-white leading-relaxed">
-                                    <MarkdownContent content={project.solution} />
-                                </div>
-                            </div>
-                        </section>
-
-                        <section>
-                            <h3 className="text-sm font-bold text-gray-500 mb-2 font-mono uppercase">Opportunity</h3>
-                            <div className="text-gray-300">
-                                {project.opportunity ? <MarkdownContent content={project.opportunity} /> : "Not specified."}
-                            </div>
-                        </section>
-                    </div>
-                </div>
 
                 {/* Comments */}
                 <div className="border-t border-white/10 pt-12">
