@@ -16,7 +16,7 @@ import { MarkdownGuide } from './MarkdownGuide';
 import { AuthorLink, AuthorAvatar } from './AuthorLink';
 import { useAuth } from '../contexts/AuthContext';
 import { useWallet, useConnection } from '@solana/wallet-adapter-react';
-import { Connection, LAMPORTS_PER_SOL, clusterApiUrl } from '@solana/web3.js';
+import { Connection, LAMPORTS_PER_SOL, PublicKey, clusterApiUrl } from '@solana/web3.js';
 import BN from 'bn.js';
 // removed ATA auto-create helpers (caused token program mismatch in simulation)
 import { makeFutarchyClient } from '@/lib/metadao/client';
@@ -866,11 +866,26 @@ export const IdeaDetail = () => {
                 return;
             }
 
+            const baseMintAddress = process.env.NEXT_PUBLIC_FUTARCHY_BASE_MINT || META_MINT.toBase58();
+            let baseMint: PublicKey;
+            try {
+                baseMint = new PublicKey(baseMintAddress);
+            } catch {
+                toast.error('Invalid NEXT_PUBLIC_FUTARCHY_BASE_MINT config');
+                return;
+            }
+
+            const baseMintInfo = await (mainnetConnection as any).getAccountInfo(baseMint, 'confirmed');
+            if (!baseMintInfo) {
+                toast.error(`Base mint not found on mainnet: ${baseMint.toBase58()}`);
+                return;
+            }
+
             const nonce = new BN(Date.now());
             const oneBuck = PriceMath.getAmmPrice(1, 6, 6);
 
             const ixBuilder = futarchy.initializeDaoIx({
-                baseMint: META_MINT,
+                baseMint,
                 quoteMint: MAINNET_USDC,
                 params: {
                     secondsPerProposal: 60 * 60 * 24 * 3,
@@ -898,7 +913,7 @@ export const IdeaDetail = () => {
             console.log('[Create DAO] RPC endpoint', mainnetRpc.replace(/api-key=[^&]+/i, 'api-key=***'));
             console.log('[Create DAO] Mints', {
                 usdcMint: MAINNET_USDC.toBase58(),
-                metaMint: META_MINT.toBase58(),
+                baseMint: baseMint.toBase58(),
             });
 
             const { blockhash, lastValidBlockHeight } = await (mainnetConnection as any).getLatestBlockhash('confirmed');
