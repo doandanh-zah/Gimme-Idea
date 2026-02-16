@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useEffect, useMemo, useState } from 'react';
+import { motion } from 'framer-motion';
 import Link from 'next/link';
 import { Trophy, ExternalLink, Loader2, Sparkles, Users, Flame } from 'lucide-react';
 import { apiClient } from '@/lib/api-client';
@@ -60,7 +61,7 @@ export default function ProjectsPage() {
       <ConstellationBackground opacity={0.22} showShootingStars showGradientOrbs />
 
       <div className="relative z-10 max-w-6xl mx-auto space-y-6">
-        <div className="rounded-3xl border border-white/10 bg-[#0F0F0F]/80 backdrop-blur-md p-6">
+        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="rounded-3xl border border-white/10 bg-[#0F0F0F]/80 backdrop-blur-md p-6 shadow-[0_0_30px_rgba(147,51,234,0.12)]">
           <div className="flex items-center gap-3">
             <Trophy className="w-7 h-7 text-[#FFD700]" />
             <div>
@@ -68,7 +69,7 @@ export default function ProjectsPage() {
               <p className="text-sm text-gray-400">Open pools only · transparent links to Solscan</p>
             </div>
           </div>
-        </div>
+        </motion.div>
 
         {loading ? (
           <div className="py-24 flex items-center justify-center text-gray-400 gap-2 rounded-2xl border border-white/10 bg-[#0F0F0F]/70">
@@ -80,7 +81,7 @@ export default function ProjectsPage() {
             <section className="xl:col-span-2 rounded-2xl border border-white/10 bg-[#0F0F0F]/80 backdrop-blur-md p-4">
               <div className="flex items-center gap-2 mb-3">
                 <Sparkles className="w-4 h-4 text-[#FFD700]" />
-                <h2 className="text-sm font-bold uppercase tracking-wider text-[#FFD700]">Open Pools</h2>
+                <h2 className="text-sm font-bold uppercase tracking-wider text-[#FFD700] font-mono">Open Pools</h2>
               </div>
               <div className="space-y-2">
                 {openPools.length === 0 ? (
@@ -116,7 +117,7 @@ export default function ProjectsPage() {
             <section className="rounded-2xl border border-white/10 bg-[#0F0F0F]/80 backdrop-blur-md p-4">
               <div className="flex items-center gap-2 mb-3">
                 <Users className="w-4 h-4 text-purple-300" />
-                <h2 className="text-sm font-bold uppercase tracking-wider">Donors Ranking</h2>
+                <h2 className="text-sm font-bold uppercase tracking-wider font-mono text-[#FFD700]">Donors Ranking</h2>
               </div>
               <div className="space-y-2">
                 {topDonors.length === 0 ? (
@@ -142,7 +143,7 @@ export default function ProjectsPage() {
             <section className="xl:col-span-3 rounded-2xl border border-white/10 bg-[#0F0F0F]/80 backdrop-blur-md p-4">
               <div className="flex items-center gap-2 mb-3">
                 <Flame className="w-4 h-4 text-orange-300" />
-                <h2 className="text-sm font-bold uppercase tracking-wider">Trending Open Pools</h2>
+                <h2 className="text-sm font-bold uppercase tracking-wider font-mono text-[#FFD700]">Trending Open Pools</h2>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-2">
                 {trendingPools.slice(0, 12).map((idea: any, idx: number) => (
