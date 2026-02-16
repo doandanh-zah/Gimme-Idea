@@ -3,6 +3,7 @@ import {
   NotFoundException,
   ForbiddenException,
   Logger,
+  BadRequestException,
 } from "@nestjs/common";
 import { SupabaseService } from "../shared/supabase.service";
 import { CreateProjectDto } from "./dto/create-project.dto";
@@ -11,6 +12,8 @@ import { QueryProjectsDto } from "./dto/query-projects.dto";
 import { ApiResponse, Project } from "../shared/types";
 import { AIService } from "../ai/ai.service";
 import { TTLCache } from "../shared/ttl-cache";
+import { Connection, PublicKey } from "@solana/web3.js";
+import { CreateDaoRequestDto } from "./dto/create-dao-request.dto";
 
 @Injectable()
 export class ProjectsService {
@@ -848,6 +851,163 @@ export class ProjectsService {
       success: true,
       message: "Project deleted successfully",
     };
+  }
+
+  /**
+   * Idea owner submits request to create DAO by proving SOL payment.
+   * Required fee: $3 equivalent in SOL to admin/dev wallet.
+   */
+  async createDaoRequest(
+    projectId: string,
+    userId: string,
+    dto: CreateDaoRequestDto
+  ): Promise<ApiResponse<any>> {
+    const supabase = this.supabaseService.getAdminClient();
+    const devWallet = this.AI_BOT_WALLET;
+    const requiredUsd = 3;
+
+    const { data: project } = await supabase
+      .from("projects")
+      .select("id, author_id, title")
+      .eq("id", projectId)
+      .single();
+
+    if (!project) {
+      throw new NotFoundException("Project not found");
+    }
+
+    if (project.author_id !== userId) {
+      throw new ForbiddenException("Only idea owner can request DAO creation");
+    }
+
+    const { data: requester } = await supabase
+      .from("users")
+      .select("wallet")
+      .eq("id", userId)
+      .single();
+
+    if (!requester?.wallet) {
+      throw new BadRequestException("Requester wallet not found");
+    }
+
+    const txProof = await this.verifyDaoRequestPayment(
+      dto.txSignature,
+      requester.wallet,
+      devWallet,
+      requiredUsd
+    );
+
+    const { data: inserted, error } = await supabase
+      .from("dao_requests")
+      .insert({
+        project_id: projectId,
+        requester_id: userId,
+        tx_signature: dto.txSignature,
+        from_wallet: txProof.fromWallet,
+        to_wallet: txProof.toWallet,
+        amount_sol: txProof.amountSol,
+        amount_usd: txProof.amountUsd,
+        required_usd: requiredUsd,
+        status: "pending",
+        note: dto.note || null,
+      })
+      .select("*")
+      .single();
+
+    if (error) {
+      if ((error as any)?.message?.toLowerCase?.().includes("duplicate")) {
+        throw new BadRequestException("This transaction was already used");
+      }
+      throw new Error(`Failed to create DAO request: ${error.message}`);
+    }
+
+    return {
+      success: true,
+      data: inserted,
+      message: "DAO request submitted and pending admin approval",
+    };
+  }
+
+  private async verifyDaoRequestPayment(
+    txSignature: string,
+    expectedFromWallet: string,
+    expectedToWallet: string,
+    requiredUsd: number
+  ): Promise<{
+    fromWallet: string;
+    toWallet: string;
+    amountSol: number;
+    amountUsd: number;
+  }> {
+    const rpc =
+      process.env.SOLANA_RPC_URL ||
+      process.env.NEXT_PUBLIC_SOLANA_RPC_URL ||
+      "https://api.mainnet-beta.solana.com";
+
+    const connection = new Connection(rpc, "confirmed");
+    const tx = await connection.getParsedTransaction(txSignature, {
+      commitment: "confirmed",
+      maxSupportedTransactionVersion: 0,
+    });
+
+    if (!tx) {
+      throw new BadRequestException("Transaction not found on mainnet");
+    }
+
+    const expectedTo = new PublicKey(expectedToWallet).toBase58();
+    const expectedFrom = new PublicKey(expectedFromWallet).toBase58();
+
+    let lamports = 0;
+    let fromWallet = "";
+
+    for (const ix of tx.transaction.message.instructions as any[]) {
+      if (ix?.program === "system" && ix?.parsed?.type === "transfer") {
+        const info = ix.parsed.info;
+        if (info?.destination === expectedTo && info?.source === expectedFrom) {
+          lamports += Number(info.lamports || 0);
+          fromWallet = info.source;
+        }
+      }
+    }
+
+    if (lamports <= 0) {
+      throw new BadRequestException(
+        `No valid SOL transfer from requester to ${expectedToWallet} found in tx`
+      );
+    }
+
+    const amountSol = lamports / 1_000_000_000;
+    const solPrice = await this.getSolUsdPrice();
+    const amountUsd = amountSol * solPrice;
+
+    if (amountUsd < requiredUsd) {
+      throw new BadRequestException(
+        `Transferred ${amountSol.toFixed(6)} SOL (~$${amountUsd.toFixed(
+          2
+        )}) which is below required $${requiredUsd}`
+      );
+    }
+
+    return {
+      fromWallet,
+      toWallet: expectedTo,
+      amountSol,
+      amountUsd,
+    };
+  }
+
+  private async getSolUsdPrice(): Promise<number> {
+    const url = "https://api.coingecko.com/api/v3/simple/price?ids=solana&vs_currencies=usd";
+    const res = await fetch(url, { method: "GET" });
+    if (!res.ok) {
+      throw new BadRequestException("Failed to fetch SOL/USD price");
+    }
+    const json = (await res.json()) as any;
+    const price = Number(json?.solana?.usd);
+    if (!Number.isFinite(price) || price <= 0) {
+      throw new BadRequestException("Invalid SOL/USD price feed");
+    }
+    return price;
   }
 
   /**

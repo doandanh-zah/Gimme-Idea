@@ -16,6 +16,7 @@ import {
   ScoreSubmissionDto,
 } from "./admin.service";
 import { AuthGuard } from "../common/guards/auth.guard";
+import { ReviewDaoRequestDto } from "./dto/review-dao-request.dto";
 import { CurrentUser } from "../common/decorators/user.decorator";
 import { ApiResponse } from "../shared/types";
 
@@ -101,6 +102,31 @@ export class AdminController {
     }
   ): Promise<ApiResponse<void>> {
     return this.adminService.updateProjectFundingPool(userId, projectId, body);
+  }
+
+  /**
+   * GET /api/admin/dao-requests
+   */
+  @Get("dao-requests")
+  @UseGuards(AuthGuard)
+  async listDaoRequests(
+    @CurrentUser("userId") userId: string,
+    @Query("status") status?: "pending" | "approved" | "rejected"
+  ): Promise<ApiResponse<any[]>> {
+    return this.adminService.listDaoRequests(userId, status);
+  }
+
+  /**
+   * PATCH /api/admin/dao-requests/:id/review
+   */
+  @Patch("dao-requests/:id/review")
+  @UseGuards(AuthGuard)
+  async reviewDaoRequest(
+    @Param("id") requestId: string,
+    @CurrentUser("userId") userId: string,
+    @Body() body: ReviewDaoRequestDto
+  ): Promise<ApiResponse<any>> {
+    return this.adminService.reviewDaoRequest(userId, requestId, body);
   }
 
   // ============================================

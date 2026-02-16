@@ -170,6 +170,12 @@ export const apiClient = {
       method: "POST",
     }),
 
+  createDaoRequest: (projectId: string, data: { txSignature: string; note?: string }) =>
+    apiFetch<any>(`/projects/${projectId}/dao-request`, {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
+
   // Comments
   getProjectComments: (projectId: string) =>
     apiFetch<any[]>(`/comments/project/${projectId}`),
@@ -641,6 +647,18 @@ export const apiClient = {
     apiFetch<void>(`/admin/projects/${projectId}/verify`, {
       method: "POST",
       body: JSON.stringify({ verified }),
+    }),
+
+  listDaoRequests: (status?: "pending" | "approved" | "rejected") =>
+    apiFetch<any[]>(`/admin/dao-requests${status ? `?status=${status}` : ""}`),
+
+  reviewDaoRequest: (
+    requestId: string,
+    data: { status: "approved" | "rejected"; note?: string }
+  ) =>
+    apiFetch<any>(`/admin/dao-requests/${requestId}/review`, {
+      method: "PATCH",
+      body: JSON.stringify(data),
     }),
 
   // Get all hackathons (admin view)

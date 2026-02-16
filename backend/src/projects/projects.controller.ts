@@ -15,6 +15,7 @@ import { ProjectsService } from "./projects.service";
 import { CreateProjectDto } from "./dto/create-project.dto";
 import { UpdateProjectDto } from "./dto/update-project.dto";
 import { QueryProjectsDto } from "./dto/query-projects.dto";
+import { CreateDaoRequestDto } from "./dto/create-dao-request.dto";
 import { AnyAuthGuard } from "../common/guards/any-auth.guard";
 import { CurrentUser } from "../common/decorators/user.decorator";
 import { CacheControlInterceptor } from "../common/interceptors/cache-control.interceptor";
@@ -115,5 +116,19 @@ export class ProjectsController {
     @CurrentUser("userId") userId: string
   ): Promise<ApiResponse<{ votes: number }>> {
     return this.projectsService.vote(id, userId);
+  }
+
+  /**
+   * POST /api/projects/:id/dao-request
+   * Idea owner submits Create-DAO request with tx proof
+   */
+  @Post(":id/dao-request")
+  @UseGuards(AnyAuthGuard)
+  async createDaoRequest(
+    @Param("id") id: string,
+    @CurrentUser("userId") userId: string,
+    @Body() dto: CreateDaoRequestDto
+  ): Promise<ApiResponse<any>> {
+    return this.projectsService.createDaoRequest(id, userId, dto);
   }
 }

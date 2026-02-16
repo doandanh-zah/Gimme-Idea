@@ -3,6 +3,7 @@ import {
   Logger,
   NotFoundException,
   ForbiddenException,
+  BadRequestException,
 } from "@nestjs/common";
 import { SupabaseService } from "../shared/supabase.service";
 import { ApiResponse } from "../shared/types";
@@ -381,6 +382,96 @@ export class AdminService {
     });
 
     return { success: true, message: "Funding pool updated" };
+  }
+
+  async listDaoRequests(
+    adminId: string,
+    status?: "pending" | "approved" | "rejected"
+  ): Promise<ApiResponse<any[]>> {
+    if (!(await this.isAdmin(adminId))) {
+      throw new ForbiddenException("Admin access required");
+    }
+
+    const supabase = this.supabaseService.getAdminClient();
+    let q = supabase
+      .from("dao_requests")
+      .select(
+        `id, project_id, requester_id, tx_signature, from_wallet, to_wallet, amount_sol, amount_usd, required_usd, status, note, reviewed_by, reviewed_at, created_at,
+         project:projects!dao_requests_project_id_fkey(id, title),
+         requester:users!dao_requests_requester_id_fkey(id, username, wallet)`
+      )
+      .order("created_at", { ascending: false });
+
+    if (status) q = q.eq("status", status);
+
+    const { data, error } = await q;
+    if (error) {
+      throw new Error(`Failed to list DAO requests: ${error.message}`);
+    }
+
+    return { success: true, data: data || [] };
+  }
+
+  async reviewDaoRequest(
+    adminId: string,
+    requestId: string,
+    body: { status: "approved" | "rejected"; note?: string }
+  ): Promise<ApiResponse<any>> {
+    if (!(await this.isAdmin(adminId))) {
+      throw new ForbiddenException("Admin access required");
+    }
+
+    const supabase = this.supabaseService.getAdminClient();
+
+    const { data: reqRow, error: fetchErr } = await supabase
+      .from("dao_requests")
+      .select("id, project_id, status")
+      .eq("id", requestId)
+      .single();
+
+    if (fetchErr || !reqRow) {
+      throw new NotFoundException("DAO request not found");
+    }
+
+    if (reqRow.status !== "pending") {
+      throw new BadRequestException("Request already reviewed");
+    }
+
+    const patch: any = {
+      status: body.status,
+      note: body.note ?? null,
+      reviewed_by: adminId,
+      reviewed_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    };
+
+    const { data: updated, error } = await supabase
+      .from("dao_requests")
+      .update(patch)
+      .eq("id", requestId)
+      .select("*")
+      .single();
+
+    if (error) {
+      throw new Error(`Failed to review DAO request: ${error.message}`);
+    }
+
+    if (body.status === "approved") {
+      await supabase
+        .from("projects")
+        .update({ pool_status: "approved_for_pool" })
+        .eq("id", reqRow.project_id);
+    }
+
+    await this.logAdminAction(adminId, "review_dao_request", "dao_request", requestId, {
+      status: body.status,
+    });
+
+    return {
+      success: true,
+      data: updated,
+      message: `DAO request ${body.status}`,
+    };
   }
 
   // ============================================

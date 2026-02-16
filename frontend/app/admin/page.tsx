@@ -308,6 +308,8 @@ export default function AdminDashboard() {
 
   // MetaDAO per-idea DAO creation
   const [creatingDaoIdeaId, setCreatingDaoIdeaId] = useState<string | null>(null);
+  const [daoRequests, setDaoRequests] = useState<any[]>([]);
+  const [reviewingDaoRequestId, setReviewingDaoRequestId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [backfillResult, setBackfillResult] = useState<any>(null);
   const [isBackfilling, setIsBackfilling] = useState(false);
@@ -509,11 +511,12 @@ export default function AdminDashboard() {
       
       setIsLoading(true);
       try {
-        const [ideasRes, activityRes, hackathonsRes, statsRes] = await Promise.all([
+        const [ideasRes, activityRes, hackathonsRes, statsRes, daoReqRes] = await Promise.all([
           apiClient.getProjects({ type: 'idea', limit: 100 }),
           apiClient.getAdminActivityLog(20),
           fetchAdminHackathons(),
           fetchSystemStats(),
+          apiClient.listDaoRequests('pending'),
         ]);
 
         if (ideasRes.success && ideasRes.data) {
@@ -521,6 +524,9 @@ export default function AdminDashboard() {
         }
         if (activityRes.success && activityRes.data) {
           setActivityLog(activityRes.data);
+        }
+        if (daoReqRes.success && daoReqRes.data) {
+          setDaoRequests(daoReqRes.data);
         }
       } catch (error) {
         console.error('Failed to fetch admin data:', error);
@@ -1290,6 +1296,24 @@ export default function AdminDashboard() {
     }
   };
 
+  const handleReviewDaoRequest = async (requestId: string, status: 'approved' | 'rejected') => {
+    try {
+      setReviewingDaoRequestId(requestId);
+      const res = await apiClient.reviewDaoRequest(requestId, { status });
+      if (!res.success) {
+        toast.error(res.error || 'Failed to review request');
+        return;
+      }
+      toast.success(`Request ${status}`);
+      const refreshed = await apiClient.listDaoRequests('pending');
+      if (refreshed.success && refreshed.data) setDaoRequests(refreshed.data);
+    } catch (e: any) {
+      toast.error(e?.message || 'Failed to review request');
+    } finally {
+      setReviewingDaoRequestId(null);
+    }
+  };
+
   const handleBackfillAI = async () => {
     setIsBackfilling(true);
     setBackfillResult(null);
@@ -1645,7 +1669,44 @@ export default function AdminDashboard() {
         {/* Ideas Tab */}
         {activeTab === 'ideas' && (
           <div className="bg-[#111] border border-white/5 rounded-xl overflow-hidden">
-            <div className="p-4 border-b border-white/10">
+            <div className="p-4 border-b border-white/10 space-y-4">
+              <div>
+                <h3 className="text-sm font-semibold text-white">Pending DAO Requests</h3>
+                {daoRequests.length === 0 ? (
+                  <p className="text-xs text-gray-500 mt-1">No pending requests</p>
+                ) : (
+                  <div className="mt-2 space-y-2">
+                    {daoRequests.slice(0, 10).map((r) => (
+                      <div key={r.id} className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 p-3 rounded-lg bg-white/5 border border-white/10">
+                        <div className="text-xs text-gray-300">
+                          <div className="font-medium text-white">{r.project?.title || r.project_id}</div>
+                          <div>
+                            by {r.requester?.username || r.requester_id} • {Number(r.amount_sol || 0).toFixed(4)} SOL (~${Number(r.amount_usd || 0).toFixed(2)})
+                          </div>
+                          <div className="text-gray-500 break-all">tx: {r.tx_signature}</div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <button
+                            disabled={reviewingDaoRequestId === r.id}
+                            onClick={() => handleReviewDaoRequest(r.id, 'approved')}
+                            className="px-3 py-1.5 text-xs rounded-md bg-green-600 text-white disabled:opacity-50"
+                          >
+                            Approve
+                          </button>
+                          <button
+                            disabled={reviewingDaoRequestId === r.id}
+                            onClick={() => handleReviewDaoRequest(r.id, 'rejected')}
+                            className="px-3 py-1.5 text-xs rounded-md bg-red-600 text-white disabled:opacity-50"
+                          >
+                            Reject
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500" />
                 <input

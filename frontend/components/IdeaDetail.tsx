@@ -29,6 +29,7 @@ import AdminBadge, { GimmeSenseiBadge } from './AdminBadge';
 import { RelatedProjectsModal } from './RelatedProjectsModal';
 import { FundingPoolBox } from './FundingPoolBox';
 import { SupportDepositModal } from './SupportDepositModal';
+import { DaoRequestModal } from './DaoRequestModal';
 
 // AI Bot display name
 const AI_BOT_NAME = 'Gimme Sensei';
@@ -776,6 +777,7 @@ export const IdeaDetail = () => {
 
     // Support/Deposit (Commit-to-Build)
     const [showSupportDeposit, setShowSupportDeposit] = useState(false);
+    const [showDaoRequestModal, setShowDaoRequestModal] = useState(false);
     const [recipientWallet, setRecipientWallet] = useState('');
     const [selectedCommentId, setSelectedCommentId] = useState<string | null>(null);
 
@@ -830,6 +832,8 @@ export const IdeaDetail = () => {
     });
 
     if (!project) return null;
+
+    const isIdeaOwner = !!user?.wallet && !!project.author?.wallet && user.wallet === project.author.wallet;
 
     const handleCreateDao = async () => {
         if (!isAdmin) return;
@@ -1139,6 +1143,16 @@ export const IdeaDetail = () => {
                                 )}
                             </button>
 
+                            {isIdeaOwner && project.poolStatus !== 'pool_open' && (
+                                <button
+                                    onClick={() => setShowDaoRequestModal(true)}
+                                    className="bg-white/10 text-white px-4 sm:px-5 py-2 rounded-full font-bold flex items-center gap-2 hover:bg-white/15 transition-colors text-sm"
+                                    title="Request admin approval to create DAO"
+                                >
+                                    <Globe className="w-4 h-4" /> Request DAO ($3)
+                                </button>
+                            )}
+
                             {/* Admin Actions */}
                             {isAdmin && (
                                 <>
@@ -1262,8 +1276,16 @@ export const IdeaDetail = () => {
                 treasuryAddress={project.governanceTreasuryAddress}
                 ideaTitle={project.title}
                 feeBps={project.supportFeeBps ?? 50}
-                feeCapUsdc={project.supportFeeCapUsdc ?? 20}
+                feeCapUsdc={project.supportFeeCapUsdc ?? 0}
                 feeRecipient={project.supportFeeRecipient ?? 'FzcnaZMYcoAYpLgr7Wym2b8hrKYk3VXsRxWSLuvZKLJm'}
+            />
+
+            <DaoRequestModal
+                isOpen={showDaoRequestModal}
+                onClose={() => setShowDaoRequestModal(false)}
+                projectId={project.id}
+                minUsd={3}
+                recipientWallet={'FzcnaZMYcoAYpLgr7Wym2b8hrKYk3VXsRxWSLuvZKLJm'}
             />
 
             <PaymentModal
