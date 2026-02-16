@@ -67,6 +67,7 @@ export default function ProjectsPage() {
             <div>
               <h1 className="text-2xl md:text-3xl font-bold">Leaderboard</h1>
               <p className="text-sm text-gray-400">Open pools only · transparent links to Solscan</p>
+              <p className="text-[11px] text-gray-500 mt-1">Ranking = votes + feedback momentum. Donors from canonical pool_supports ledger.</p>
             </div>
           </div>
         </motion.div>

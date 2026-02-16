@@ -1234,9 +1234,12 @@ export const IdeaDetail = () => {
                     {/* Proposals */}
                     <div className="mb-10 rounded-2xl border border-white/10 bg-white/[0.03] p-5">
                         <div className="flex items-center justify-between mb-3">
-                            <h3 className="text-sm font-bold text-white uppercase tracking-wider font-mono">Proposals</h3>
+                            <h3 className="text-sm font-bold text-white uppercase tracking-wider font-mono">Governance Proposals</h3>
                             <span className="text-xs text-gray-400">{proposals.length} total</span>
                         </div>
+                        <p className="text-[11px] text-gray-500 mb-3">
+                            Submit via <span className="text-gray-300">Send Proposal</span>, then track status here. If executed on-chain, tx link appears in the row.
+                        </p>
 
                         {project.poolStatus === 'pool_open' ? (
                             <button

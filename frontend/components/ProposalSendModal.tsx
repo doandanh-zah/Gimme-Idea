@@ -67,10 +67,15 @@ export function ProposalSendModal({
 
           <h3 className="text-lg font-bold text-white">Send Proposal</h3>
           <p className="text-xs text-gray-400 mt-1">
-            Fill proposal info here, or use MetaDAO official interface.
+            Send a proposal to governance. You can submit here or use MetaDAO official interface.
           </p>
-          <div className="mt-2 text-[11px] text-gray-500">
-            Flow: <span className="text-gray-300">pending</span> → <span className="text-yellow-300">voting</span> → <span className="text-emerald-300">passed / rejected</span> → <span className="text-green-300">executed</span>
+          <div className="mt-2 text-[11px] text-gray-500 space-y-1">
+            <div>
+              Lifecycle: <span className="text-gray-300">pending</span> → <span className="text-yellow-300">voting</span> → <span className="text-emerald-300">passed / rejected</span> → <span className="text-green-300">executed</span>
+            </div>
+            <div>
+              Where to track: <span className="text-gray-300">Idea page → Proposals list</span> (status + execution tx link when available)
+            </div>
           </div>
 
           <a
