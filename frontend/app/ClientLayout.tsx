@@ -12,6 +12,7 @@ import Navbar from '../components/Navbar';
 import { ConnectReminderModal } from '../components/ConnectReminderModal';
 import { ConnectWalletPopup } from '../components/ConnectWalletPopup';
 import { SubmissionModal } from '../components/SubmissionModal';
+import { WalletEmailPopup } from '../components/WalletEmailPopup';
 import ErrorBoundary from '../components/ErrorBoundary';
 import ConstellationBackground from '../components/ConstellationBackground';
 import Script from 'next/script';
@@ -70,6 +71,7 @@ export default function ClientLayout({ children }: ClientLayoutProps) {
               <Navbar />
               <ConnectReminderModal />
               <ConnectWalletPopup />
+              <WalletEmailPopup />
               <SubmissionModal />
               {children}
               <Toaster

@@ -2,6 +2,9 @@
 
 import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
 import { User as SupabaseUser, Session } from '@supabase/supabase-js';
+import { useWallet } from '@solana/wallet-adapter-react';
+import { WalletReadyState } from '@solana/wallet-adapter-base';
+import bs58 from 'bs58';
 import { supabase } from '@/lib/supabase';
 import { apiClient } from '@/lib/api-client';
 import { User } from '@/lib/types';
@@ -15,8 +18,12 @@ interface AuthContextType {
   showWalletPopup: boolean;
   isAdmin: boolean;
   signInWithGoogle: () => Promise<void>;
+  signInWithWallet: () => Promise<void>;
   signOut: () => Promise<void>;
   setShowWalletPopup: (value: boolean) => void;
+  showWalletEmailPopup: boolean;
+  setShowWalletEmailPopup: (value: boolean) => void;
+  updateWalletEmail: (email?: string) => Promise<boolean>;
   setIsNewUser: (value: boolean) => void;
   setUser: (user: User | null) => void;
   refreshUser: () => Promise<void>;
@@ -31,7 +38,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
   const [isNewUser, setIsNewUser] = useState(false);
   const [showWalletPopup, setShowWalletPopup] = useState(false);
+  const [showWalletEmailPopup, setShowWalletEmailPopup] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
+
+  const {
+    wallets,
+    select,
+    connect,
+    connected,
+    publicKey,
+    signMessage,
+  } = useWallet();
 
   // Check if current user is admin
   const checkAdminStatus = useCallback(async () => {
@@ -95,6 +112,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         if (isNewLogin && (response.data.isNewUser || response.data.user.needsWalletConnect)) {
           setShowWalletPopup(true);
         }
+        // Google flow does not need wallet-email prompt.
+        setShowWalletEmailPopup(false);
 
         return userData;
       } else {
@@ -153,6 +172,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setUser(null);
       setIsNewUser(false);
       setShowWalletPopup(false);
+      setShowWalletEmailPopup(false);
       setIsAdmin(false);
       localStorage.removeItem('auth_token');
       
@@ -279,12 +299,43 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             console.log('[Auth] Login successful, token saved:', !!localStorage.getItem('auth_token'));
           }
         } else {
-          // No session, make sure everything is cleared
+          // No Supabase session. Keep supporting wallet-first login via backend JWT.
           console.log('[Auth] No Supabase session found');
-          setUser(null);
           setSupabaseUser(null);
           setSession(null);
-          localStorage.removeItem('auth_token');
+
+          const existingToken = localStorage.getItem('auth_token');
+          if (existingToken) {
+            const userResponse = await apiClient.getCurrentUser();
+            if (userResponse.success && userResponse.data) {
+              const walletUser: User = {
+                id: userResponse.data.id,
+                wallet: userResponse.data.wallet || '',
+                username: userResponse.data.username,
+                reputation: userResponse.data.reputationScore || 0,
+                balance: userResponse.data.balance || 0,
+                projects: [],
+                avatar: userResponse.data.avatar,
+                coverImage: userResponse.data.coverImage,
+                bio: userResponse.data.bio,
+                socials: userResponse.data.socialLinks,
+                email: userResponse.data.email,
+                authProvider: userResponse.data.authProvider || 'wallet',
+                authId: userResponse.data.authId,
+                needsWalletConnect: userResponse.data.needsWalletConnect,
+              };
+              setUser(walletUser);
+              checkAdminStatus();
+              if ((walletUser.authProvider || 'wallet') === 'wallet' && !walletUser.email) {
+                setShowWalletEmailPopup(true);
+              }
+            } else {
+              localStorage.removeItem('auth_token');
+              setUser(null);
+            }
+          } else {
+            setUser(null);
+          }
         }
       } catch (error) {
         console.error('[Auth] Auth initialization error:', error);
@@ -313,6 +364,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           setUser(null);
           setIsNewUser(false);
           setShowWalletPopup(false);
+          setShowWalletEmailPopup(false);
           setIsAdmin(false);
           localStorage.removeItem('auth_token');
         }
@@ -340,6 +392,116 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (error) throw error;
   };
 
+  const signInWithWallet = async () => {
+    try {
+      setIsLoading(true);
+
+      // Ensure wallet connected
+      if (!connected || !publicKey) {
+        const preferredWallet = wallets.find((w) =>
+          w.adapter.name.toLowerCase().includes('phantom')
+        ) || wallets.find((w) =>
+          w.readyState === WalletReadyState.Installed || w.readyState === WalletReadyState.Loadable
+        );
+
+        if (!preferredWallet) {
+          throw new Error('No Solana wallet found. Please install Phantom or Solflare.');
+        }
+
+        select(preferredWallet.adapter.name);
+        await connect();
+      }
+
+      const activeWallet = publicKey ? { publicKey, signMessage } : wallets.find((w) => w.adapter.connected)?.adapter;
+      const activePublicKey = activeWallet?.publicKey || publicKey;
+      const activeSignMessage = activeWallet?.signMessage || signMessage;
+
+      if (!activePublicKey || !activeSignMessage) {
+        throw new Error('Wallet not ready for signing. Please try again.');
+      }
+
+      const timestamp = new Date().toISOString();
+      const walletAddress = activePublicKey.toBase58();
+      const message = `Sign in to GimmeIdea\n\nTimestamp: ${timestamp}\nWallet: ${walletAddress}`;
+      const encoded = new TextEncoder().encode(message);
+      const signatureBytes = await activeSignMessage(encoded);
+      const signature = bs58.encode(signatureBytes);
+
+      const response = await apiClient.login({
+        publicKey: walletAddress,
+        signature,
+        message,
+      });
+
+      if (!response.success || !response.data) {
+        throw new Error(response.error || 'Wallet login failed');
+      }
+
+      localStorage.setItem('auth_token', response.data.token);
+
+      const userData: User = {
+        id: response.data.user.id,
+        wallet: response.data.user.wallet || walletAddress,
+        username: response.data.user.username,
+        reputation: response.data.user.reputationScore || 0,
+        balance: response.data.user.balance || 0,
+        projects: [],
+        avatar: response.data.user.avatar,
+        coverImage: response.data.user.coverImage,
+        bio: response.data.user.bio,
+        socials: response.data.user.socialLinks,
+        email: response.data.user.email,
+        authProvider: response.data.user.authProvider || 'wallet',
+        authId: response.data.user.authId,
+        needsWalletConnect: response.data.user.needsWalletConnect || false,
+      };
+
+      setUser(userData);
+      setIsNewUser((response.data.user.loginCount || 0) <= 1);
+      setShowWalletPopup(false);
+      setShowWalletEmailPopup((userData.authProvider || 'wallet') === 'wallet' && !userData.email);
+      checkAdminStatus();
+    } catch (error) {
+      console.error('[Auth] Wallet login error:', error);
+      throw error;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const updateWalletEmail = async (email?: string): Promise<boolean> => {
+    try {
+      const response = await apiClient.updateWalletEmail({ email });
+      if (!response.success || !response.data) {
+        return false;
+      }
+
+      const updatedUser: User = {
+        id: response.data.id,
+        wallet: response.data.wallet || '',
+        username: response.data.username,
+        reputation: response.data.reputationScore || 0,
+        balance: response.data.balance || 0,
+        projects: [],
+        avatar: response.data.avatar,
+        coverImage: response.data.coverImage,
+        bio: response.data.bio,
+        socials: response.data.socialLinks,
+        email: response.data.email,
+        authProvider: response.data.authProvider || 'wallet',
+        authId: response.data.authId,
+        needsWalletConnect: response.data.needsWalletConnect,
+      };
+
+      setUser(updatedUser);
+      setShowWalletEmailPopup((updatedUser.authProvider || 'wallet') === 'wallet' && !updatedUser.email);
+      return true;
+    } catch (error) {
+      console.error('[Auth] updateWalletEmail error:', error);
+      return false;
+    }
+  };
+
   const signOut = async () => {
     try {
       await supabase.auth.signOut();
@@ -352,6 +514,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setSession(null);
     setIsNewUser(false);
     setShowWalletPopup(false);
+    setShowWalletEmailPopup(false);
     setIsAdmin(false);
     localStorage.removeItem('auth_token');
     // Clear any other cached data
@@ -367,10 +530,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         isLoading,
         isNewUser,
         showWalletPopup,
+        showWalletEmailPopup,
         isAdmin,
         signInWithGoogle,
+        signInWithWallet,
         signOut,
         setShowWalletPopup,
+        setShowWalletEmailPopup,
+        updateWalletEmail,
         setIsNewUser,
         setUser,
         refreshUser,

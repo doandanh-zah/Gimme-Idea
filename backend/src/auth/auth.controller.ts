@@ -3,6 +3,7 @@ import { AuthService } from "./auth.service";
 import { LoginDto } from "./dto/login.dto";
 import { EmailLoginDto } from "./dto/email-login.dto";
 import { LinkWalletDto } from "./dto/link-wallet.dto";
+import { UpdateWalletEmailDto } from "./dto/update-wallet-email.dto";
 import { AuthGuard } from "../common/guards/auth.guard";
 import { CurrentUser } from "../common/decorators/user.decorator";
 import { ApiResponse, User } from "../shared/types";
@@ -45,6 +46,19 @@ export class AuthController {
     @Body() linkWalletDto: LinkWalletDto
   ): Promise<ApiResponse<{ user: User; merged: boolean }>> {
     return this.authService.linkWallet(userId, linkWalletDto);
+  }
+
+  /**
+   * POST /api/auth/wallet-email
+   * Optional email enrichment for wallet-first accounts
+   */
+  @Post("wallet-email")
+  @UseGuards(AuthGuard)
+  async updateWalletEmail(
+    @CurrentUser("userId") userId: string,
+    @Body() dto: UpdateWalletEmailDto
+  ): Promise<ApiResponse<User>> {
+    return this.authService.updateWalletEmail(userId, dto);
   }
 
   /**

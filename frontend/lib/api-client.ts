@@ -370,6 +370,12 @@ export const apiClient = {
       `/auth/check-wallet/${walletAddress}`
     ),
 
+  updateWalletEmail: (params: { email?: string }) =>
+    apiFetch<any>("/auth/wallet-email", {
+      method: "POST",
+      body: JSON.stringify(params),
+    }),
+
   // Settings
   getMenuConfig: () => apiFetch<any[]>("/settings/menu-config"),
 

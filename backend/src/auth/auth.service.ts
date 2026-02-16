@@ -1,4 +1,4 @@
-import { Injectable, UnauthorizedException } from "@nestjs/common";
+import { BadRequestException, Injectable, UnauthorizedException } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import * as jwt from "jsonwebtoken";
 import { SolanaService } from "../shared/solana.service";
@@ -6,6 +6,7 @@ import { SupabaseService } from "../shared/supabase.service";
 import { LoginDto } from "./dto/login.dto";
 import { EmailLoginDto } from "./dto/email-login.dto";
 import { LinkWalletDto } from "./dto/link-wallet.dto";
+import { UpdateWalletEmailDto } from "./dto/update-wallet-email.dto";
 import { ApiResponse, User } from "../shared/types";
 
 @Injectable()
@@ -325,6 +326,107 @@ export class AuthService {
         merged: merged_from_wallet,
       },
       message: resultMessage,
+    };
+  }
+
+  /**
+   * Optional email enrichment for wallet-first login.
+   */
+  async updateWalletEmail(
+    userId: string,
+    dto: UpdateWalletEmailDto
+  ): Promise<ApiResponse<User>> {
+    const supabase = this.supabaseService.getAdminClient();
+    const email = (dto.email || '').trim().toLowerCase();
+
+    const { data: currentUser, error: fetchError } = await supabase
+      .from('users')
+      .select('*')
+      .eq('id', userId)
+      .single();
+
+    if (fetchError || !currentUser) {
+      throw new UnauthorizedException('User not found');
+    }
+
+    // Optional means user can skip for now
+    if (!email) {
+      const userResponse: User = {
+        id: currentUser.id,
+        wallet: currentUser.wallet,
+        username: currentUser.username,
+        bio: currentUser.bio,
+        avatar: currentUser.avatar,
+        coverImage: currentUser.cover_image,
+        reputationScore: currentUser.reputation_score || 0,
+        socialLinks: currentUser.social_links,
+        lastLoginAt: currentUser.last_login_at,
+        loginCount: currentUser.login_count || 0,
+        createdAt: currentUser.created_at,
+        email: currentUser.email,
+        authProvider: currentUser.auth_provider || 'wallet',
+        authId: currentUser.auth_id,
+        needsWalletConnect: currentUser.needs_wallet_connect || false,
+        followersCount: currentUser.followers_count || 0,
+        followingCount: currentUser.following_count || 0,
+      };
+
+      return {
+        success: true,
+        data: userResponse,
+        message: 'Skipped email update',
+      };
+    }
+
+    const { data: emailTaken } = await supabase
+      .from('users')
+      .select('id')
+      .eq('email', email)
+      .neq('id', userId)
+      .maybeSingle();
+
+    if (emailTaken) {
+      throw new BadRequestException('Email is already used by another account');
+    }
+
+    const { data: updatedUser, error: updateError } = await supabase
+      .from('users')
+      .update({
+        email,
+        auth_provider: currentUser.auth_provider || 'wallet',
+      })
+      .eq('id', userId)
+      .select('*')
+      .single();
+
+    if (updateError || !updatedUser) {
+      throw new Error(`Failed to update email: ${updateError?.message || 'Unknown error'}`);
+    }
+
+    const userResponse: User = {
+      id: updatedUser.id,
+      wallet: updatedUser.wallet,
+      username: updatedUser.username,
+      bio: updatedUser.bio,
+      avatar: updatedUser.avatar,
+      coverImage: updatedUser.cover_image,
+      reputationScore: updatedUser.reputation_score || 0,
+      socialLinks: updatedUser.social_links,
+      lastLoginAt: updatedUser.last_login_at,
+      loginCount: updatedUser.login_count || 0,
+      createdAt: updatedUser.created_at,
+      email: updatedUser.email,
+      authProvider: updatedUser.auth_provider || 'wallet',
+      authId: updatedUser.auth_id,
+      needsWalletConnect: updatedUser.needs_wallet_connect || false,
+      followersCount: updatedUser.followers_count || 0,
+      followingCount: updatedUser.following_count || 0,
+    };
+
+    return {
+      success: true,
+      data: userResponse,
+      message: 'Email updated successfully',
     };
   }
 
