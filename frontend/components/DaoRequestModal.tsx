@@ -4,6 +4,8 @@ import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Send } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { useConnection, useWallet } from '@solana/wallet-adapter-react';
+import { LAMPORTS_PER_SOL, PublicKey, SystemProgram, Transaction } from '@solana/web3.js';
 import { apiClient } from '@/lib/api-client';
 
 export function DaoRequestModal({
@@ -19,22 +21,47 @@ export function DaoRequestModal({
   minUsd?: number;
   recipientWallet: string;
 }) {
-  const [txSignature, setTxSignature] = useState('');
   const [note, setNote] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [estimatedSol, setEstimatedSol] = useState<number | null>(null);
+  const { connection } = useConnection();
+  const { publicKey, sendTransaction } = useWallet();
 
   if (!isOpen) return null;
 
   const submit = async () => {
-    if (!txSignature.trim()) {
-      toast.error('Please enter transfer tx signature');
+    if (!publicKey) {
+      toast.error('Please connect wallet first');
       return;
     }
 
     try {
       setSubmitting(true);
+
+      const priceRes = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=solana&vs_currencies=usd');
+      const json = await priceRes.json();
+      const solUsd = Number(json?.solana?.usd);
+      if (!Number.isFinite(solUsd) || solUsd <= 0) {
+        throw new Error('Cannot fetch SOL price');
+      }
+
+      const requiredSol = (minUsd / solUsd) * 1.03; // 3% buffer for price drift
+      setEstimatedSol(requiredSol);
+
+      const lamports = Math.ceil(requiredSol * LAMPORTS_PER_SOL);
+      const tx = new Transaction().add(
+        SystemProgram.transfer({
+          fromPubkey: publicKey,
+          toPubkey: new PublicKey(recipientWallet),
+          lamports,
+        })
+      );
+
+      const sig = await sendTransaction(tx, connection);
+      await connection.confirmTransaction(sig, 'confirmed');
+
       const res = await apiClient.createDaoRequest(projectId, {
-        txSignature: txSignature.trim(),
+        txSignature: sig,
         note: note.trim() || undefined,
       });
 
@@ -45,10 +72,9 @@ export function DaoRequestModal({
 
       toast.success('DAO request submitted. Waiting for admin approval.');
       onClose();
-      setTxSignature('');
       setNote('');
     } catch (e: any) {
-      toast.error(e?.message || 'Failed to submit request');
+      toast.error(e?.message || 'Request failed');
     } finally {
       setSubmitting(false);
     }
@@ -78,14 +104,9 @@ export function DaoRequestModal({
           </code>
 
           <div className="mt-4 space-y-3">
-            <div>
-              <label className="text-xs text-gray-400">Transfer tx signature</label>
-              <input
-                value={txSignature}
-                onChange={(e) => setTxSignature(e.target.value)}
-                placeholder="5Y..."
-                className="mt-1 w-full rounded-xl bg-white/5 border border-white/10 px-3 py-2 text-sm text-white"
-              />
+            <div className="text-xs text-gray-400">
+              App will open your wallet to transfer ~${minUsd} (SOL equivalent), then submit request automatically.
+              {estimatedSol ? <span className="block mt-1 text-gray-500">Last estimate: {estimatedSol.toFixed(4)} SOL</span> : null}
             </div>
             <div>
               <label className="text-xs text-gray-400">Note (optional)</label>

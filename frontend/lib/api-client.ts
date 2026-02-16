@@ -176,6 +176,14 @@ export const apiClient = {
       body: JSON.stringify(data),
     }),
 
+  listProposals: (projectId: string) => apiFetch<any[]>(`/projects/${projectId}/proposals`),
+
+  createProposal: (projectId: string, data: { title: string; description: string }) =>
+    apiFetch<any>(`/projects/${projectId}/proposals`, {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
+
   // Comments
   getProjectComments: (projectId: string) =>
     apiFetch<any[]>(`/comments/project/${projectId}`),
@@ -657,6 +665,18 @@ export const apiClient = {
     data: { status: "approved" | "rejected"; note?: string }
   ) =>
     apiFetch<any>(`/admin/dao-requests/${requestId}/review`, {
+      method: "PATCH",
+      body: JSON.stringify(data),
+    }),
+
+  reviewProposal: (
+    proposalId: string,
+    data: {
+      status: "pending" | "voting" | "passed" | "rejected" | "executed";
+      onchainTx?: string;
+    }
+  ) =>
+    apiFetch<any>(`/admin/proposals/${proposalId}/review`, {
       method: "PATCH",
       body: JSON.stringify(data),
     }),

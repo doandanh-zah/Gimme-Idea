@@ -17,6 +17,7 @@ import {
 } from "./admin.service";
 import { AuthGuard } from "../common/guards/auth.guard";
 import { ReviewDaoRequestDto } from "./dto/review-dao-request.dto";
+import { ReviewProposalDto } from "./dto/review-proposal.dto";
 import { CurrentUser } from "../common/decorators/user.decorator";
 import { ApiResponse } from "../shared/types";
 
@@ -127,6 +128,16 @@ export class AdminController {
     @Body() body: ReviewDaoRequestDto
   ): Promise<ApiResponse<any>> {
     return this.adminService.reviewDaoRequest(userId, requestId, body);
+  }
+
+  @Patch("proposals/:id/review")
+  @UseGuards(AuthGuard)
+  async reviewProposal(
+    @Param("id") proposalId: string,
+    @CurrentUser("userId") userId: string,
+    @Body() body: ReviewProposalDto
+  ): Promise<ApiResponse<any>> {
+    return this.adminService.reviewProposal(userId, proposalId, body);
   }
 
   // ============================================

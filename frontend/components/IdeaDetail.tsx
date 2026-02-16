@@ -778,6 +778,10 @@ export const IdeaDetail = () => {
     // Support/Deposit (Commit-to-Build)
     const [showSupportDeposit, setShowSupportDeposit] = useState(false);
     const [showDaoRequestModal, setShowDaoRequestModal] = useState(false);
+    const [proposals, setProposals] = useState<any[]>([]);
+    const [proposalTitle, setProposalTitle] = useState('');
+    const [proposalDescription, setProposalDescription] = useState('');
+    const [submittingProposal, setSubmittingProposal] = useState(false);
     const [recipientWallet, setRecipientWallet] = useState('');
     const [selectedCommentId, setSelectedCommentId] = useState<string | null>(null);
 
@@ -830,6 +834,13 @@ export const IdeaDetail = () => {
             }
         },
     });
+
+    useEffect(() => {
+        if (!project?.id) return;
+        apiClient.listProposals(project.id).then((res: any) => {
+            if (res?.success && res?.data) setProposals(res.data);
+        }).catch(() => undefined);
+    }, [project?.id]);
 
     if (!project) return null;
 
@@ -983,6 +994,38 @@ export const IdeaDetail = () => {
             toast.error(msg);
         } finally {
             setCreatingDao(false);
+        }
+    };
+
+    const handleCreateProposal = async () => {
+        if (!user) {
+            openConnectReminder();
+            return;
+        }
+        if (!project?.id) return;
+        if (!proposalTitle.trim() || !proposalDescription.trim()) {
+            toast.error('Please fill proposal title and description');
+            return;
+        }
+        try {
+            setSubmittingProposal(true);
+            const res = await apiClient.createProposal(project.id, {
+                title: proposalTitle.trim(),
+                description: proposalDescription.trim(),
+            });
+            if (!res.success) {
+                toast.error(res.error || 'Failed to create proposal');
+                return;
+            }
+            toast.success('Proposal submitted');
+            setProposalTitle('');
+            setProposalDescription('');
+            const list = await apiClient.listProposals(project.id);
+            if (list.success && list.data) setProposals(list.data);
+        } catch (e: any) {
+            toast.error(e?.message || 'Failed to create proposal');
+        } finally {
+            setSubmittingProposal(false);
         }
     };
 
@@ -1193,6 +1236,66 @@ export const IdeaDetail = () => {
                     {/* Funding Pool */}
                     <div className="mb-10">
                         <FundingPoolBox project={project} onSupport={() => setShowSupportDeposit(true)} />
+                    </div>
+
+                    {/* Proposals */}
+                    <div className="mb-10 rounded-2xl border border-white/10 bg-white/[0.03] p-5">
+                        <div className="flex items-center justify-between mb-3">
+                            <h3 className="text-sm font-bold text-white uppercase tracking-wider font-mono">Proposals</h3>
+                            <span className="text-xs text-gray-400">{proposals.length} total</span>
+                        </div>
+
+                        {project.poolStatus === 'pool_open' ? (
+                            <div className="space-y-3">
+                                <input
+                                    value={proposalTitle}
+                                    onChange={(e) => setProposalTitle(e.target.value)}
+                                    placeholder="Proposal title"
+                                    className="w-full rounded-xl bg-white/5 border border-white/10 px-3 py-2 text-sm text-white"
+                                />
+                                <textarea
+                                    value={proposalDescription}
+                                    onChange={(e) => setProposalDescription(e.target.value)}
+                                    rows={3}
+                                    placeholder="Describe what to execute / payout conditions"
+                                    className="w-full rounded-xl bg-white/5 border border-white/10 px-3 py-2 text-sm text-white"
+                                />
+                                <button
+                                    onClick={handleCreateProposal}
+                                    disabled={submittingProposal}
+                                    className="px-4 py-2 rounded-full bg-[#FFD700] text-black text-sm font-bold disabled:opacity-60"
+                                >
+                                    {submittingProposal ? 'Submitting...' : 'Create Proposal'}
+                                </button>
+                            </div>
+                        ) : (
+                            <p className="text-xs text-gray-500">Open pool first to enable proposals.</p>
+                        )}
+
+                        <div className="mt-4 space-y-2">
+                            {proposals.map((p) => (
+                                <div key={p.id} className="rounded-xl border border-white/10 bg-black/30 p-3">
+                                    <div className="flex items-center justify-between gap-3">
+                                        <div className="text-sm font-semibold text-white">{p.title}</div>
+                                        <span className="text-[11px] px-2 py-1 rounded-full border border-white/15 text-gray-300">{p.status}</span>
+                                    </div>
+                                    <p className="text-xs text-gray-400 mt-1 whitespace-pre-wrap">{p.description}</p>
+                                    {p.onchain_tx ? (
+                                        <a
+                                            href={`https://solscan.io/tx/${p.onchain_tx}`}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="text-xs text-blue-300 hover:underline mt-2 inline-block"
+                                        >
+                                            View execution tx
+                                        </a>
+                                    ) : null}
+                                </div>
+                            ))}
+                            {proposals.length === 0 ? (
+                                <p className="text-xs text-gray-500">No proposals yet.</p>
+                            ) : null}
+                        </div>
                     </div>
 
                     {/* Content Blocks */}

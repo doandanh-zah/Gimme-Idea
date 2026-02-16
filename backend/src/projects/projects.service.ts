@@ -14,6 +14,7 @@ import { AIService } from "../ai/ai.service";
 import { TTLCache } from "../shared/ttl-cache";
 import { Connection, PublicKey } from "@solana/web3.js";
 import { CreateDaoRequestDto } from "./dto/create-dao-request.dto";
+import { CreateProposalDto } from "./dto/create-proposal.dto";
 
 @Injectable()
 export class ProjectsService {
@@ -851,6 +852,62 @@ export class ProjectsService {
       success: true,
       message: "Project deleted successfully",
     };
+  }
+
+  async listProposals(projectId: string): Promise<ApiResponse<any[]>> {
+    const supabase = this.supabaseService.getAdminClient();
+    const { data, error } = await supabase
+      .from("proposals")
+      .select(
+        `id, project_id, proposer_id, title, description, status, onchain_tx, created_at,
+         proposer:users!proposals_proposer_id_fkey(id, username, wallet)`
+      )
+      .eq("project_id", projectId)
+      .order("created_at", { ascending: false });
+
+    if (error) {
+      throw new Error(`Failed to list proposals: ${error.message}`);
+    }
+
+    return { success: true, data: data || [] };
+  }
+
+  async createProposal(
+    projectId: string,
+    userId: string,
+    dto: CreateProposalDto
+  ): Promise<ApiResponse<any>> {
+    const supabase = this.supabaseService.getAdminClient();
+
+    const { data: project } = await supabase
+      .from("projects")
+      .select("id, pool_status")
+      .eq("id", projectId)
+      .single();
+
+    if (!project) throw new NotFoundException("Project not found");
+
+    if (project.pool_status !== "pool_open") {
+      throw new BadRequestException("Pool is not open yet");
+    }
+
+    const { data, error } = await supabase
+      .from("proposals")
+      .insert({
+        project_id: projectId,
+        proposer_id: userId,
+        title: dto.title,
+        description: dto.description,
+        status: "pending",
+      })
+      .select("*")
+      .single();
+
+    if (error) {
+      throw new Error(`Failed to create proposal: ${error.message}`);
+    }
+
+    return { success: true, data, message: "Proposal created" };
   }
 
   /**

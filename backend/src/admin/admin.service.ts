@@ -474,6 +474,44 @@ export class AdminService {
     };
   }
 
+  async reviewProposal(
+    adminId: string,
+    proposalId: string,
+    body: {
+      status: "pending" | "voting" | "passed" | "rejected" | "executed";
+      onchainTx?: string;
+    }
+  ): Promise<ApiResponse<any>> {
+    if (!(await this.isAdmin(adminId))) {
+      throw new ForbiddenException("Admin access required");
+    }
+
+    const supabase = this.supabaseService.getAdminClient();
+    const patch: any = {
+      status: body.status,
+      updated_at: new Date().toISOString(),
+    };
+    if (body.onchainTx !== undefined) patch.onchain_tx = body.onchainTx || null;
+
+    const { data, error } = await supabase
+      .from("proposals")
+      .update(patch)
+      .eq("id", proposalId)
+      .select("*")
+      .single();
+
+    if (error || !data) {
+      throw new NotFoundException("Proposal not found or update failed");
+    }
+
+    await this.logAdminAction(adminId, "review_proposal", "proposal", proposalId, {
+      status: body.status,
+      onchainTx: body.onchainTx,
+    });
+
+    return { success: true, data, message: `Proposal marked ${body.status}` };
+  }
+
   // ============================================
   // HACKATHON MANAGEMENT
   // ============================================

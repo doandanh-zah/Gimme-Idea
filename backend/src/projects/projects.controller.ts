@@ -16,6 +16,7 @@ import { CreateProjectDto } from "./dto/create-project.dto";
 import { UpdateProjectDto } from "./dto/update-project.dto";
 import { QueryProjectsDto } from "./dto/query-projects.dto";
 import { CreateDaoRequestDto } from "./dto/create-dao-request.dto";
+import { CreateProposalDto } from "./dto/create-proposal.dto";
 import { AnyAuthGuard } from "../common/guards/any-auth.guard";
 import { CurrentUser } from "../common/decorators/user.decorator";
 import { CacheControlInterceptor } from "../common/interceptors/cache-control.interceptor";
@@ -130,5 +131,20 @@ export class ProjectsController {
     @Body() dto: CreateDaoRequestDto
   ): Promise<ApiResponse<any>> {
     return this.projectsService.createDaoRequest(id, userId, dto);
+  }
+
+  @Get(":id/proposals")
+  async listProposals(@Param("id") id: string): Promise<ApiResponse<any[]>> {
+    return this.projectsService.listProposals(id);
+  }
+
+  @Post(":id/proposals")
+  @UseGuards(AnyAuthGuard)
+  async createProposal(
+    @Param("id") id: string,
+    @CurrentUser("userId") userId: string,
+    @Body() dto: CreateProposalDto
+  ): Promise<ApiResponse<any>> {
+    return this.projectsService.createProposal(id, userId, dto);
   }
 }
