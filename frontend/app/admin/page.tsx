@@ -54,7 +54,13 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useWallet, useConnection } from '@solana/wallet-adapter-react';
 import { LAMPORTS_PER_SOL, PublicKey, Transaction } from '@solana/web3.js';
 import BN from 'bn.js';
-import { getAssociatedTokenAddressSync, createAssociatedTokenAccountInstruction } from '@solana/spl-token';
+import {
+  getAssociatedTokenAddressSync,
+  createAssociatedTokenAccountInstruction,
+  ASSOCIATED_TOKEN_PROGRAM_ID,
+  TOKEN_PROGRAM_ID,
+  TOKEN_2022_PROGRAM_ID,
+} from '@solana/spl-token';
 import { makeFutarchyClient } from '@/lib/metadao/client';
 import { META_MINT, MAINNET_USDC, PriceMath } from '@metadaoproject/futarchy/v0.7';
 import { apiClient } from '@/lib/api-client';
@@ -1177,19 +1183,52 @@ export default function AdminDashboard() {
       tx.feePayer = wallet.publicKey;
 
       // Ensure creator has ATA for quote/base mints (prevents common AccountNotInitialized errors).
-      const usdcAta = getAssociatedTokenAddressSync(MAINNET_USDC, wallet.publicKey, true);
-      const metaAta = getAssociatedTokenAddressSync(META_MINT, wallet.publicKey, true);
+      const [usdcMintInfo, metaMintInfo] = await Promise.all([
+        connection.getAccountInfo(MAINNET_USDC, 'confirmed'),
+        connection.getAccountInfo(META_MINT, 'confirmed'),
+      ]);
+
+      const usdcTokenProgram = usdcMintInfo?.owner?.equals(TOKEN_2022_PROGRAM_ID)
+        ? TOKEN_2022_PROGRAM_ID
+        : TOKEN_PROGRAM_ID;
+      const metaTokenProgram = metaMintInfo?.owner?.equals(TOKEN_2022_PROGRAM_ID)
+        ? TOKEN_2022_PROGRAM_ID
+        : TOKEN_PROGRAM_ID;
+
+      const usdcAta = getAssociatedTokenAddressSync(MAINNET_USDC, wallet.publicKey, true, usdcTokenProgram, ASSOCIATED_TOKEN_PROGRAM_ID);
+      const metaAta = getAssociatedTokenAddressSync(META_MINT, wallet.publicKey, true, metaTokenProgram, ASSOCIATED_TOKEN_PROGRAM_ID);
+
       const [usdcInfo, metaInfo] = await Promise.all([
         connection.getAccountInfo(usdcAta, 'confirmed'),
         connection.getAccountInfo(metaAta, 'confirmed'),
       ]);
+
       const ataIxs: any[] = [];
       if (!usdcInfo) {
-        ataIxs.push(createAssociatedTokenAccountInstruction(wallet.publicKey, usdcAta, wallet.publicKey, MAINNET_USDC));
+        ataIxs.push(
+          createAssociatedTokenAccountInstruction(
+            wallet.publicKey,
+            usdcAta,
+            wallet.publicKey,
+            MAINNET_USDC,
+            usdcTokenProgram,
+            ASSOCIATED_TOKEN_PROGRAM_ID
+          )
+        );
       }
       if (!metaInfo) {
-        ataIxs.push(createAssociatedTokenAccountInstruction(wallet.publicKey, metaAta, wallet.publicKey, META_MINT));
+        ataIxs.push(
+          createAssociatedTokenAccountInstruction(
+            wallet.publicKey,
+            metaAta,
+            wallet.publicKey,
+            META_MINT,
+            metaTokenProgram,
+            ASSOCIATED_TOKEN_PROGRAM_ID
+          )
+        );
       }
+
       if (ataIxs.length > 0) {
         tx.instructions = [...ataIxs, ...tx.instructions];
       }
