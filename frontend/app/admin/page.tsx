@@ -52,7 +52,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useWallet, useConnection } from '@solana/wallet-adapter-react';
-import { PublicKey, Transaction } from '@solana/web3.js';
+import { LAMPORTS_PER_SOL, PublicKey, Transaction } from '@solana/web3.js';
 import BN from 'bn.js';
 import { makeFutarchyClient } from '@/lib/metadao/client';
 import { META_MINT, MAINNET_USDC, PriceMath } from '@metadaoproject/futarchy/v0.7';
@@ -1140,6 +1140,14 @@ export default function AdminDashboard() {
 
       const futarchy = makeFutarchyClient(connection as any, wallet);
 
+      // Quick pre-check: Create DAO needs SOL for account rent + tx fee.
+      const balanceLamports = await connection.getBalance(wallet.publicKey, 'confirmed');
+      const balanceSol = balanceLamports / LAMPORTS_PER_SOL;
+      if (balanceSol < 0.05) {
+        toast.error(`Insufficient SOL to create DAO (need ~0.05+ SOL, current ${balanceSol.toFixed(4)} SOL)`);
+        return;
+      }
+
       // Default params (aligned with MetaDAO tests; no liquidity provision in MVP)
       const nonce = new BN(Date.now());
       const oneBuck = PriceMath.getAmmPrice(1, 6, 6);
@@ -1180,7 +1188,13 @@ export default function AdminDashboard() {
       if (sim.value.err) {
         console.error('[Create DAO] Simulation error:', sim.value.err);
         console.error('[Create DAO] Simulation logs:', sim.value.logs);
-        toast.error('Create DAO failed (simulation). Check console for logs.');
+
+        const logs = sim.value.logs || [];
+        const compactReason =
+          logs.find((l: string) => /insufficient|custom program error|failed/i.test(l)) ||
+          logs.find((l: string) => /Error|error/i.test(l));
+
+        toast.error(compactReason ? `Create DAO failed: ${compactReason}` : 'Create DAO failed (simulation). Check console for logs.');
         return;
       }
 
