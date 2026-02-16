@@ -60,13 +60,13 @@ export default function ProjectsPage() {
     <div className="min-h-screen bg-[#0A0A0A] text-white pt-28 px-4 pb-16 relative overflow-hidden">
       <ConstellationBackground opacity={0.22} showShootingStars showGradientOrbs />
 
-      <div className="relative z-10 max-w-5xl mx-auto space-y-8">
+      <div className="relative z-10 max-w-6xl mx-auto space-y-8">
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="rounded-3xl border border-white/10 bg-white/[0.03] backdrop-blur-xl p-6 shadow-[0_0_30px_rgba(147,51,234,0.12)]">
           <div className="flex items-center gap-3">
             <Trophy className="w-7 h-7 text-[#FFD700]" />
             <div>
-              <h1 className="text-2xl md:text-3xl font-bold">Leaderboard</h1>
-              <p className="text-sm text-gray-400">Open pools only · transparent links to Solscan</p>
+              <h1 className="text-2xl md:text-3xl font-bold tracking-tight">Leaderboard</h1>
+              <p className="text-sm text-gray-300">Open pools only · transparent links to Solscan</p>
               <p className="text-[11px] text-gray-500 mt-1">Ranking = votes + feedback momentum. Donors from canonical pool_supports ledger.</p>
             </div>
           </div>
@@ -79,7 +79,7 @@ export default function ProjectsPage() {
         ) : (
           <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
             {/* Open pools */}
-            <section className="xl:col-span-2 rounded-2xl border border-white/10 bg-white/[0.03] backdrop-blur-xl p-4">
+            <motion.section initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.25 }} className="xl:col-span-2 rounded-2xl border border-white/10 bg-gradient-to-br from-white/[0.08] to-white/[0.02] backdrop-blur-xl p-4">
               <div className="flex items-center gap-2 mb-3">
                 <Sparkles className="w-4 h-4 text-[#FFD700]" />
                 <h2 className="text-sm font-bold uppercase tracking-wider text-[#FFD700] font-mono">Open Pools</h2>
@@ -89,7 +89,7 @@ export default function ProjectsPage() {
                   <p className="text-sm text-gray-500">No open pools yet.</p>
                 ) : (
                   openPools.map((idea, idx) => (
-                    <div key={idea.id} className="rounded-xl border border-white/10 bg-black/30 p-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                    <div key={idea.id} className="rounded-xl border border-white/10 bg-black/25 p-3.5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 transition-all hover:border-[#FFD700]/30 hover:bg-black/35">
                       <div className="min-w-0">
                         <div className="text-xs text-gray-500">#{idx + 1}</div>
                         <div className="text-sm font-semibold truncate">{idea.title} Pool</div>
@@ -112,10 +112,10 @@ export default function ProjectsPage() {
                   ))
                 )}
               </div>
-            </section>
+            </motion.section>
 
             {/* Donors */}
-            <section className="rounded-2xl border border-white/10 bg-white/[0.03] backdrop-blur-xl p-4">
+            <motion.section initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.28 }} className="rounded-2xl border border-white/10 bg-gradient-to-br from-white/[0.08] to-white/[0.02] backdrop-blur-xl p-4">
               <div className="flex items-center gap-2 mb-3">
                 <Users className="w-4 h-4 text-purple-300" />
                 <h2 className="text-sm font-bold uppercase tracking-wider font-mono text-[#FFD700]">Donors Ranking</h2>
@@ -125,7 +125,7 @@ export default function ProjectsPage() {
                   <p className="text-sm text-gray-500">No donor data yet.</p>
                 ) : (
                   topDonors.slice(0, 12).map((d: any, idx: number) => (
-                    <div key={`${d.wallet}-${idx}`} className="rounded-lg border border-white/10 bg-black/30 px-3 py-2 text-xs flex items-center justify-between gap-2">
+                    <div key={`${d.wallet}-${idx}`} className="rounded-lg border border-white/10 bg-black/25 px-3 py-2 text-xs flex items-center justify-between gap-2 transition-all hover:border-purple-300/40 hover:bg-black/35">
                       <div className="min-w-0">
                         <div className="text-white truncate">#{idx + 1} {d.username || shorten(d.wallet)}</div>
                         <div className="text-gray-500 truncate">{shorten(d.wallet)}</div>
@@ -138,17 +138,17 @@ export default function ProjectsPage() {
                   ))
                 )}
               </div>
-            </section>
+            </motion.section>
 
             {/* trending among open pools */}
-            <section className="xl:col-span-3 rounded-2xl border border-white/10 bg-white/[0.03] backdrop-blur-xl p-4">
+            <motion.section initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }} className="xl:col-span-3 rounded-2xl border border-white/10 bg-gradient-to-br from-white/[0.08] to-white/[0.02] backdrop-blur-xl p-4">
               <div className="flex items-center gap-2 mb-3">
                 <Flame className="w-4 h-4 text-orange-300" />
                 <h2 className="text-sm font-bold uppercase tracking-wider font-mono text-[#FFD700]">Trending Open Pools</h2>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-2">
                 {trendingPools.slice(0, 12).map((idea: any, idx: number) => (
-                  <div key={idea.id} className="rounded-lg border border-white/10 bg-black/30 p-3 text-xs">
+                  <div key={idea.id} className="rounded-lg border border-white/10 bg-black/25 p-3 text-xs transition-all hover:border-orange-300/40 hover:bg-black/35">
                     <div className="text-gray-500">#{idx + 1}</div>
                     <div className="text-sm font-semibold mt-1 line-clamp-2">{idea.title}</div>
                     <div className="mt-1 text-gray-500">Votes: {idea.votes || 0} • Feedback: {idea.feedbackCount || 0}</div>
@@ -161,7 +161,7 @@ export default function ProjectsPage() {
                   </div>
                 ))}
               </div>
-            </section>
+            </motion.section>
           </div>
         )}
 
