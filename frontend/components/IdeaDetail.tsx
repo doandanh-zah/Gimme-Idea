@@ -957,8 +957,9 @@ export const IdeaDetail = () => {
                     poolStatus: 'pool_open',
                     governanceRealmAddress: dao.toBase58(),
                     governanceTreasuryAddress: dao.toBase58(),
-                    supportFeeBps: 0,
+                    supportFeeBps: 50,
                     supportFeeCapUsdc: 0,
+                    supportFeeRecipient: 'FzcnaZMYcoAYpLgr7Wym2b8hrKYk3VXsRxWSLuvZKLJm',
                 }),
             });
             const data = await res.json();

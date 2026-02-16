@@ -49,7 +49,7 @@ export function SupportDepositModal({
   onClose,
   treasuryAddress,
   ideaTitle,
-  feeBps = 0,
+  feeBps = 50,
   feeCapUsdc = 0,
   feeRecipient = DEV_WALLET_DEFAULT,
 }: SupportDepositModalProps) {

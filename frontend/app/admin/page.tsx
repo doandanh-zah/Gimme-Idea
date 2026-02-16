@@ -1250,8 +1250,9 @@ export default function AdminDashboard() {
         poolStatus: 'pool_open',
         governanceRealmAddress: dao.toBase58(), // MetaDAO DAO address
         governanceTreasuryAddress: dao.toBase58(), // treasury owner (derive USDC ATA)
-        supportFeeBps: 0,
+        supportFeeBps: 50,
         supportFeeCapUsdc: 0,
+        supportFeeRecipient: 'FzcnaZMYcoAYpLgr7Wym2b8hrKYk3VXsRxWSLuvZKLJm',
       });
 
       if (!save.success) {

@@ -339,8 +339,8 @@ export class AdminService {
         : {}),
     };
 
-    // Default fee config: Zah requested no fee split (user receives 100% support)
-    const defaultFeeBps = 0;
+    // Default fee config: 0.5% support fee to dev wallet, no cap.
+    const defaultFeeBps = 50;
     const defaultFeeCapUsdc = 0;
     const defaultFeeRecipient = ADMIN_BOT_WALLET;
 
