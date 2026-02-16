@@ -68,4 +68,8 @@ export class QueryProjectsDto {
   @IsEnum(["asc", "desc"])
   @IsOptional()
   sortOrder?: "asc" | "desc" = "desc";
+
+  @IsOptional()
+  @IsString()
+  poolStatus?: "draft" | "reviewing" | "approved_for_pool" | "pool_open" | "rejected" | string;
 }

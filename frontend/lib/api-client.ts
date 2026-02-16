@@ -123,6 +123,7 @@ export const apiClient = {
     category?: string;
     stage?: string;
     search?: string;
+    poolStatus?: string;
     limit?: number;
     offset?: number;
   }) => {

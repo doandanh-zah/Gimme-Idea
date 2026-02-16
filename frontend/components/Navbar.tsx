@@ -137,7 +137,7 @@ const Navbar = () => {
   const navLinks = [
     { name: 'HOME', route: '/home', icon: LayoutGrid },
     { name: 'IDEA', route: '/idea', icon: Lightbulb },
-    { name: 'PROJECT', route: '/projects', icon: Rocket },
+    { name: 'LEADERBOARD', route: '/projects', icon: Rocket },
     { name: 'GmiFeeds', route: '/feeds', icon: Rss },
     { name: 'More', isDropdown: true, icon: MoreHorizontal }
   ];

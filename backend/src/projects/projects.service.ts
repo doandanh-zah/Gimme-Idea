@@ -45,6 +45,7 @@ export class ProjectsService {
       search: query.search,
       sortBy: query.sortBy,
       sortOrder: query.sortOrder,
+      poolStatus: query.poolStatus,
       limit: query.limit,
       offset: query.offset,
     });
@@ -101,6 +102,10 @@ export class ProjectsService {
       supabaseQuery = supabaseQuery.or(
         `title.ilike.%${query.search}%,description.ilike.%${query.search}%`
       );
+    }
+
+    if (query.poolStatus) {
+      supabaseQuery = supabaseQuery.eq("pool_status", query.poolStatus);
     }
 
     // Apply sorting (convert camelCase to snake_case for database columns)
