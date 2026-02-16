@@ -18,6 +18,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useWallet, useConnection } from '@solana/wallet-adapter-react';
 import { LAMPORTS_PER_SOL } from '@solana/web3.js';
 import BN from 'bn.js';
+import { getAssociatedTokenAddressSync, createAssociatedTokenAccountInstruction } from '@solana/spl-token';
 import { makeFutarchyClient } from '@/lib/metadao/client';
 import { META_MINT, MAINNET_USDC, PriceMath, getDaoAddr } from '@metadaoproject/futarchy/v0.7';
 import { apiClient } from '../lib/api-client';
@@ -882,6 +883,25 @@ export const IdeaDetail = () => {
 
             const tx = await (ixBuilder as any).transaction();
             tx.feePayer = wallet.publicKey;
+
+            // Ensure creator has ATA for quote/base mints (prevents common AccountNotInitialized errors).
+            const usdcAta = getAssociatedTokenAddressSync(MAINNET_USDC, wallet.publicKey, true);
+            const metaAta = getAssociatedTokenAddressSync(META_MINT, wallet.publicKey, true);
+            const [usdcInfo, metaInfo] = await Promise.all([
+                (connection as any).getAccountInfo(usdcAta, 'confirmed'),
+                (connection as any).getAccountInfo(metaAta, 'confirmed'),
+            ]);
+            const ataIxs: any[] = [];
+            if (!usdcInfo) {
+                ataIxs.push(createAssociatedTokenAccountInstruction(wallet.publicKey, usdcAta, wallet.publicKey, MAINNET_USDC));
+            }
+            if (!metaInfo) {
+                ataIxs.push(createAssociatedTokenAccountInstruction(wallet.publicKey, metaAta, wallet.publicKey, META_MINT));
+            }
+            if (ataIxs.length > 0) {
+                tx.instructions = [...ataIxs, ...tx.instructions];
+            }
+
             const { blockhash, lastValidBlockHeight } = await (connection as any).getLatestBlockhash('confirmed');
             tx.recentBlockhash = blockhash;
 
