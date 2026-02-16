@@ -1188,12 +1188,25 @@ export default function AdminDashboard() {
         connection.getAccountInfo(META_MINT, 'confirmed'),
       ]);
 
-      const usdcTokenProgram = usdcMintInfo?.owner?.equals(TOKEN_2022_PROGRAM_ID)
+      const usdcOwner = usdcMintInfo?.owner?.toBase58?.();
+      const metaOwner = metaMintInfo?.owner?.toBase58?.();
+      const token2022Program = TOKEN_2022_PROGRAM_ID.toBase58();
+
+      const usdcTokenProgram = usdcOwner === token2022Program
         ? TOKEN_2022_PROGRAM_ID
         : TOKEN_PROGRAM_ID;
-      const metaTokenProgram = metaMintInfo?.owner?.equals(TOKEN_2022_PROGRAM_ID)
+      const metaTokenProgram = metaOwner === token2022Program
         ? TOKEN_2022_PROGRAM_ID
         : TOKEN_PROGRAM_ID;
+
+      console.log('[Create DAO] Mint owners', {
+        usdcMint: MAINNET_USDC.toBase58(),
+        usdcOwner,
+        usdcProgram: usdcTokenProgram.toBase58(),
+        metaMint: META_MINT.toBase58(),
+        metaOwner,
+        metaProgram: metaTokenProgram.toBase58(),
+      });
 
       const usdcAta = getAssociatedTokenAddressSync(MAINNET_USDC, wallet.publicKey, true, usdcTokenProgram, ASSOCIATED_TOKEN_PROGRAM_ID);
       const metaAta = getAssociatedTokenAddressSync(META_MINT, wallet.publicKey, true, metaTokenProgram, ASSOCIATED_TOKEN_PROGRAM_ID);
