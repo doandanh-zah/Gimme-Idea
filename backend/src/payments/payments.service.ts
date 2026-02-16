@@ -2,6 +2,7 @@ import { Injectable, BadRequestException } from '@nestjs/common';
 import { SupabaseService } from '../shared/supabase.service';
 import { SolanaService } from '../shared/solana.service';
 import { VerifyPaymentDto } from './dto/verify-payment.dto';
+import { CreatePoolSupportDto } from './dto/create-pool-support.dto';
 import { ApiResponse, Transaction } from '../shared/types';
 
 @Injectable()
@@ -10,6 +11,50 @@ export class PaymentsService {
     private supabaseService: SupabaseService,
     private solanaService: SolanaService,
   ) {}
+
+  async recordPoolSupport(
+    userId: string,
+    dto: CreatePoolSupportDto
+  ): Promise<ApiResponse<any>> {
+    const supabase = this.supabaseService.getAdminClient();
+
+    const { data: user } = await supabase
+      .from('users')
+      .select('wallet')
+      .eq('id', userId)
+      .single();
+
+    const supporterWallet = dto.supporterWallet || user?.wallet;
+    if (!supporterWallet) {
+      throw new BadRequestException('Supporter wallet not found');
+    }
+
+    const row = {
+      project_id: dto.projectId,
+      supporter_wallet: supporterWallet,
+      supporter_user_id: userId,
+      tx_hash: dto.txHash,
+      amount_usdc: dto.amountUsdc,
+      fee_usdc: dto.feeUsdc,
+      treasury_wallet: dto.treasuryWallet,
+      confirmed_at: new Date().toISOString(),
+    };
+
+    const { data, error } = await supabase
+      .from('pool_supports')
+      .insert(row)
+      .select('*')
+      .single();
+
+    if (error) {
+      if ((error as any)?.message?.toLowerCase?.().includes('duplicate')) {
+        return { success: true, data: null, message: 'Support already recorded' };
+      }
+      throw new Error(`Failed to record pool support: ${error.message}`);
+    }
+
+    return { success: true, data, message: 'Pool support recorded' };
+  }
 
   /**
    * Verify Solana transaction and record payment
@@ -164,32 +209,29 @@ export class PaymentsService {
   }
 
   /**
-   * Get top donators (for donate page)
+   * Get top donators based on canonical pool_supports ledger.
    */
   async getTopDonators(limit: number = 10): Promise<ApiResponse<any[]>> {
     const supabase = this.supabaseService.getAdminClient();
 
-    // Query to get top donators with total amount donated
     const { data, error } = await supabase
-      .from('transactions')
+      .from('pool_supports')
       .select(`
-        from_wallet,
-        amount,
-        user:users!transactions_user_id_fkey(username, avatar)
+        supporter_wallet,
+        amount_usdc,
+        supporter:users!pool_supports_supporter_user_id_fkey(username, avatar)
       `)
-      .eq('status', 'confirmed')
-      .order('created_at', { ascending: false });
+      .order('confirmed_at', { ascending: false });
 
     if (error) {
       throw new Error(`Failed to fetch donators: ${error.message}`);
     }
 
-    // Aggregate donations by user
     const donatorMap = new Map<string, any>();
 
     data?.forEach((tx: any) => {
-      const wallet = tx.from_wallet;
-      const user = Array.isArray(tx.user) ? tx.user[0] : tx.user;
+      const wallet = tx.supporter_wallet;
+      const user = Array.isArray(tx.supporter) ? tx.supporter[0] : tx.supporter;
 
       if (!donatorMap.has(wallet)) {
         donatorMap.set(wallet, {
@@ -198,14 +240,15 @@ export class PaymentsService {
           avatar: user?.avatar,
           totalDonated: 0,
           donationCount: 0,
+          unit: 'USDC',
         });
       }
+
       const donator = donatorMap.get(wallet);
-      donator.totalDonated += tx.amount || 0;
+      donator.totalDonated += Number(tx.amount_usdc || 0);
       donator.donationCount += 1;
     });
 
-    // Convert to array and sort by total donated
     const topDonators = Array.from(donatorMap.values())
       .sort((a, b) => b.totalDonated - a.totalDonated)
       .slice(0, limit);

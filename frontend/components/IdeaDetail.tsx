@@ -1327,6 +1327,7 @@ export const IdeaDetail = () => {
             <SupportDepositModal
                 isOpen={showSupportDeposit}
                 onClose={() => setShowSupportDeposit(false)}
+                projectId={project.id}
                 treasuryAddress={project.governanceTreasuryAddress}
                 ideaTitle={project.title}
                 feeBps={project.supportFeeBps ?? 50}

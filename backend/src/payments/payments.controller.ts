@@ -1,6 +1,7 @@
 import { Controller, Post, Get, Body, Query, UseGuards } from '@nestjs/common';
 import { PaymentsService } from './payments.service';
 import { VerifyPaymentDto } from './dto/verify-payment.dto';
+import { CreatePoolSupportDto } from './dto/create-pool-support.dto';
 import { AuthGuard } from '../common/guards/auth.guard';
 import { CurrentUser } from '../common/decorators/user.decorator';
 import { ApiResponse, Transaction } from '../shared/types';
@@ -30,6 +31,19 @@ export class PaymentsController {
   @UseGuards(AuthGuard)
   async getHistory(@CurrentUser('userId') userId: string): Promise<ApiResponse<Transaction[]>> {
     return this.paymentsService.getTransactionHistory(userId);
+  }
+
+  /**
+   * POST /api/payments/pool-support
+   * Record canonical support ledger entry after successful USDC support tx
+   */
+  @Post('pool-support')
+  @UseGuards(AuthGuard)
+  async recordPoolSupport(
+    @CurrentUser('userId') userId: string,
+    @Body() dto: CreatePoolSupportDto
+  ): Promise<ApiResponse<any>> {
+    return this.paymentsService.recordPoolSupport(userId, dto);
   }
 
   /**

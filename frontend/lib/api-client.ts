@@ -222,6 +222,18 @@ export const apiClient = {
     }),
 
   // Payments
+  recordPoolSupport: (data: {
+    projectId: string;
+    txHash: string;
+    amountUsdc: number;
+    feeUsdc: number;
+    treasuryWallet: string;
+    supporterWallet?: string;
+  }) =>
+    apiFetch<any>(`/payments/pool-support`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
   verifyTransaction: (data: {
     signature: string;
     type: "tip" | "bounty" | "reward";

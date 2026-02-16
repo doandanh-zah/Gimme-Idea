@@ -17,6 +17,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { WalletRequiredModal } from './WalletRequiredModal';
 import { getUsdcMintPubkey } from '../lib/solana/usdc';
 import { showDonateToast } from '../lib/donate-toast';
+import { apiClient } from '../lib/api-client';
 
 const DEV_WALLET_DEFAULT = 'FzcnaZMYcoAYpLgr7Wym2b8hrKYk3VXsRxWSLuvZKLJm';
 const USDC_DECIMALS = 6;
@@ -37,6 +38,7 @@ function fromBaseUnits(amount: bigint, decimals: number) {
 export interface SupportDepositModalProps {
   isOpen: boolean;
   onClose: () => void;
+  projectId: string;
   treasuryAddress?: string;
   ideaTitle: string;
   feeBps?: number; // e.g. 50
@@ -47,6 +49,7 @@ export interface SupportDepositModalProps {
 export function SupportDepositModal({
   isOpen,
   onClose,
+  projectId,
   treasuryAddress,
   ideaTitle,
   feeBps = 50,
@@ -232,6 +235,20 @@ export function SupportDepositModal({
 
       const signature = await sendTransaction(tx, connection);
       await connection.confirmTransaction({ signature, blockhash, lastValidBlockHeight }, 'confirmed');
+
+      // Record canonical support ledger (best-effort)
+      try {
+        await apiClient.recordPoolSupport({
+          projectId,
+          txHash: signature,
+          amountUsdc: netAmount,
+          feeUsdc: feeAmount,
+          treasuryWallet: treasury.toBase58(),
+          supporterWallet: publicKey.toBase58(),
+        });
+      } catch (ledgerErr) {
+        console.warn('Failed to record pool_supports ledger:', ledgerErr);
+      }
 
       setTxHash(signature);
       toast.success('Support sent');

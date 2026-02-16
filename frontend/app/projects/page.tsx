@@ -130,7 +130,7 @@ export default function ProjectsPage() {
                         <div className="text-gray-500 truncate">{shorten(d.wallet)}</div>
                       </div>
                       <div className="text-right">
-                        <div className="text-white font-semibold">{Number(d.totalDonated || 0).toFixed(2)} SOL</div>
+                        <div className="text-white font-semibold">{Number(d.totalDonated || 0).toFixed(2)} {d.unit || 'USDC'}</div>
                         <div className="text-gray-500">{d.donationCount || 0} tx</div>
                       </div>
                     </div>
