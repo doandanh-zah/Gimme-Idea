@@ -18,13 +18,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useWallet, useConnection } from '@solana/wallet-adapter-react';
 import { LAMPORTS_PER_SOL } from '@solana/web3.js';
 import BN from 'bn.js';
-import {
-    getAssociatedTokenAddressSync,
-    createAssociatedTokenAccountInstruction,
-    ASSOCIATED_TOKEN_PROGRAM_ID,
-    TOKEN_PROGRAM_ID,
-    TOKEN_2022_PROGRAM_ID,
-} from '@solana/spl-token';
+// removed ATA auto-create helpers (caused token program mismatch in simulation)
 import { makeFutarchyClient } from '@/lib/metadao/client';
 import { META_MINT, MAINNET_USDC, PriceMath, getDaoAddr } from '@metadaoproject/futarchy/v0.7';
 import { apiClient } from '../lib/api-client';
@@ -896,61 +890,18 @@ export const IdeaDetail = () => {
                 (connection as any).getAccountInfo(META_MINT, 'confirmed'),
             ]);
 
-            const usdcOwner = usdcMintInfo?.owner?.toBase58?.();
-            const metaOwner = metaMintInfo?.owner?.toBase58?.();
-            const token2022Program = TOKEN_2022_PROGRAM_ID.toBase58();
-
-            const usdcTokenProgram = usdcOwner === token2022Program
-                ? TOKEN_2022_PROGRAM_ID
-                : TOKEN_PROGRAM_ID;
-            const metaTokenProgram = metaOwner === token2022Program
-                ? TOKEN_2022_PROGRAM_ID
-                : TOKEN_PROGRAM_ID;
+            // Guardrail: if mint cannot be fetched, the connected RPC likely isn't mainnet.
+            if (!usdcMintInfo || !metaMintInfo) {
+                toast.error('RPC mismatch: required mainnet mints are unavailable. Please switch RPC/network to mainnet-beta.');
+                return;
+            }
 
             console.log('[Create DAO] Mint owners', {
                 usdcMint: MAINNET_USDC.toBase58(),
-                usdcOwner,
-                usdcProgram: usdcTokenProgram.toBase58(),
+                usdcOwner: usdcMintInfo.owner.toBase58(),
                 metaMint: META_MINT.toBase58(),
-                metaOwner,
-                metaProgram: metaTokenProgram.toBase58(),
+                metaOwner: metaMintInfo.owner.toBase58(),
             });
-
-            const usdcAta = getAssociatedTokenAddressSync(MAINNET_USDC, wallet.publicKey, true, usdcTokenProgram, ASSOCIATED_TOKEN_PROGRAM_ID);
-            const metaAta = getAssociatedTokenAddressSync(META_MINT, wallet.publicKey, true, metaTokenProgram, ASSOCIATED_TOKEN_PROGRAM_ID);
-
-            const [usdcInfo, metaInfo] = await Promise.all([
-                (connection as any).getAccountInfo(usdcAta, 'confirmed'),
-                (connection as any).getAccountInfo(metaAta, 'confirmed'),
-            ]);
-            const ataIxs: any[] = [];
-            if (!usdcInfo) {
-                ataIxs.push(
-                    createAssociatedTokenAccountInstruction(
-                        wallet.publicKey,
-                        usdcAta,
-                        wallet.publicKey,
-                        MAINNET_USDC,
-                        usdcTokenProgram,
-                        ASSOCIATED_TOKEN_PROGRAM_ID
-                    )
-                );
-            }
-            if (!metaInfo) {
-                ataIxs.push(
-                    createAssociatedTokenAccountInstruction(
-                        wallet.publicKey,
-                        metaAta,
-                        wallet.publicKey,
-                        META_MINT,
-                        metaTokenProgram,
-                        ASSOCIATED_TOKEN_PROGRAM_ID
-                    )
-                );
-            }
-            if (ataIxs.length > 0) {
-                tx.instructions = [...ataIxs, ...tx.instructions];
-            }
 
             const { blockhash, lastValidBlockHeight } = await (connection as any).getLatestBlockhash('confirmed');
             tx.recentBlockhash = blockhash;
