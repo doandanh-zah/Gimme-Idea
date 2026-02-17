@@ -339,10 +339,7 @@ export function SupportDepositModal({
                     <span className="text-gray-400">Total</span>
                     <span className="text-white font-bold">{parsedAmount} USDC</span>
                   </div>
-                  <div className="flex justify-between text-xs">
-                    <span className="text-gray-500">Fee ({(feeBps / 100).toFixed(2)}%, cap {feeCapUsdc} USDC)</span>
-                    <span className="text-gray-300">{feeAmount.toFixed(2)} USDC → {shortenAddress(feeRecipient)}</span>
-                  </div>
+                  {/* fee row removed by request */}
                   <div className="flex justify-between text-xs">
                     <span className="text-gray-500">To treasury</span>
                     <span className="text-gray-300">{netAmount.toFixed(2)} USDC</span>
@@ -362,7 +359,7 @@ export function SupportDepositModal({
               <div className="bg-white/5 border border-white/10 rounded-xl p-3 mb-4 text-[11px] text-gray-400 flex items-start gap-2">
                 <Info className="w-4 h-4 mt-0.5 text-gray-300" />
                 <div>
-                  This sends two USDC transfers in one transaction: <b>net</b> to the idea treasury and the <b>fee</b> to the dev wallet.
+                  This sends USDC to the idea treasury in one transaction.
                 </div>
               </div>
 
