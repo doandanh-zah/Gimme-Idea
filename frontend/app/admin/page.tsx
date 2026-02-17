@@ -1771,6 +1771,9 @@ export default function AdminDashboard() {
                             {p.execution_payload?.amountUsdc ? (
                               <div className="text-gray-500">amount: {p.execution_payload.amountUsdc} USDC</div>
                             ) : null}
+                            {p.onchain_proposal_pubkey ? (
+                              <div className="text-gray-500 break-all">onchain proposal: {p.onchain_proposal_pubkey}</div>
+                            ) : null}
                           </div>
                           <div className="flex items-center gap-2 flex-wrap">
                             <button
@@ -1831,6 +1834,26 @@ export default function AdminDashboard() {
                               className="px-3 py-1.5 text-xs rounded-md bg-blue-600 text-white"
                             >
                               View tx
+                            </a>
+                          ) : null}
+                          {p.onchain_create_tx ? (
+                            <a
+                              href={`https://solscan.io/tx/${p.onchain_create_tx}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="px-3 py-1.5 text-xs rounded-md bg-indigo-600 text-white"
+                            >
+                              View create tx
+                            </a>
+                          ) : null}
+                          {p.onchain_proposal_pubkey ? (
+                            <a
+                              href={`https://solscan.io/account/${p.onchain_proposal_pubkey}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="px-3 py-1.5 text-xs rounded-md bg-cyan-700 text-white"
+                            >
+                              View proposal acct
                             </a>
                           ) : null}
                         </div>

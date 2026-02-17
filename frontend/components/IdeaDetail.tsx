@@ -1293,6 +1293,26 @@ export const IdeaDetail = () => {
                                             View execution tx
                                         </a>
                                     ) : null}
+                                    {p.onchain_create_tx ? (
+                                        <a
+                                            href={`https://solscan.io/tx/${p.onchain_create_tx}`}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="text-xs text-indigo-300 hover:underline mt-1 inline-block ml-3"
+                                        >
+                                            View create tx
+                                        </a>
+                                    ) : null}
+                                    {p.onchain_proposal_pubkey ? (
+                                        <a
+                                            href={`https://solscan.io/account/${p.onchain_proposal_pubkey}`}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="text-xs text-cyan-300 hover:underline mt-1 inline-block ml-3"
+                                        >
+                                            View proposal account
+                                        </a>
+                                    ) : null}
                                 </div>
                             ))}
                             {proposals.length === 0 ? (
