@@ -12,27 +12,25 @@ export class PaymentsService {
     private solanaService: SolanaService,
   ) {}
 
-  async recordPoolSupport(
-    userId: string,
-    dto: CreatePoolSupportDto
-  ): Promise<ApiResponse<any>> {
+  async recordPoolSupport(dto: CreatePoolSupportDto): Promise<ApiResponse<any>> {
     const supabase = this.supabaseService.getAdminClient();
 
-    const { data: user } = await supabase
-      .from('users')
-      .select('wallet')
-      .eq('id', userId)
-      .single();
-
-    const supporterWallet = dto.supporterWallet || user?.wallet;
+    const supporterWallet = dto.supporterWallet;
     if (!supporterWallet) {
-      throw new BadRequestException('Supporter wallet not found');
+      throw new BadRequestException('supporterWallet is required');
     }
+
+    // Best-effort link to user id by wallet (supports non-logged-in wallet donors)
+    const { data: linkedUser } = await supabase
+      .from('users')
+      .select('id')
+      .eq('wallet', supporterWallet)
+      .maybeSingle();
 
     const row = {
       project_id: dto.projectId,
       supporter_wallet: supporterWallet,
-      supporter_user_id: userId,
+      supporter_user_id: linkedUser?.id || null,
       tx_hash: dto.txHash,
       amount_usdc: dto.amountUsdc,
       fee_usdc: dto.feeUsdc,

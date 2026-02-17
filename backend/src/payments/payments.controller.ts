@@ -38,12 +38,8 @@ export class PaymentsController {
    * Record canonical support ledger entry after successful USDC support tx
    */
   @Post('pool-support')
-  @UseGuards(AuthGuard)
-  async recordPoolSupport(
-    @CurrentUser('userId') userId: string,
-    @Body() dto: CreatePoolSupportDto
-  ): Promise<ApiResponse<any>> {
-    return this.paymentsService.recordPoolSupport(userId, dto);
+  async recordPoolSupport(@Body() dto: CreatePoolSupportDto): Promise<ApiResponse<any>> {
+    return this.paymentsService.recordPoolSupport(dto);
   }
 
   /**
