@@ -16,4 +16,16 @@ export class CreateProposalDto {
     amountUsdc?: number;
     note?: string;
   };
+
+  @IsOptional()
+  @IsString()
+  onchainProposalPubkey?: string;
+
+  @IsOptional()
+  @IsString()
+  onchainCreateTx?: string;
+
+  @IsOptional()
+  @IsObject()
+  onchainRefs?: Record<string, any>;
 }

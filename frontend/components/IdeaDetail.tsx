@@ -834,12 +834,19 @@ export const IdeaDetail = () => {
         },
     });
 
-    useEffect(() => {
+    const fetchProposals = React.useCallback(async () => {
         if (!project?.id) return;
-        apiClient.listProposals(project.id).then((res: any) => {
+        try {
+            const res = await apiClient.listProposals(project.id);
             if (res?.success && res?.data) setProposals(res.data);
-        }).catch(() => undefined);
+        } catch {
+            // no-op
+        }
     }, [project?.id]);
+
+    useEffect(() => {
+        fetchProposals();
+    }, [fetchProposals]);
 
     if (!project) return null;
 
@@ -1358,6 +1365,8 @@ export const IdeaDetail = () => {
                 isOpen={showProposalModal}
                 onClose={() => setShowProposalModal(false)}
                 projectId={project.id}
+                daoAddress={project.governanceRealmAddress}
+                onSubmitted={fetchProposals}
             />
 
             <DaoRequestModal

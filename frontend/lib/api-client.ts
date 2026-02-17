@@ -189,6 +189,9 @@ export const apiClient = {
         amountUsdc?: number;
         note?: string;
       };
+      onchainProposalPubkey?: string;
+      onchainCreateTx?: string;
+      onchainRefs?: Record<string, any>;
     }
   ) =>
     apiFetch<any>(`/projects/${projectId}/proposals`, {
@@ -1177,4 +1180,3 @@ export const apiClient = {
       body: JSON.stringify({ ideaId }),
     }),
 };
-

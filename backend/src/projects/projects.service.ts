@@ -904,6 +904,9 @@ export class ProjectsService {
         title: dto.title,
         description: dto.description,
         execution_payload: dto.executionPayload || null,
+        onchain_proposal_pubkey: dto.onchainProposalPubkey || null,
+        onchain_create_tx: dto.onchainCreateTx || null,
+        onchain_refs: dto.onchainRefs || null,
         status: "pending",
       })
       .select("*")
