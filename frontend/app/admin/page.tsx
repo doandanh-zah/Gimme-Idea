@@ -1782,6 +1782,38 @@ export default function AdminDashboard() {
                           </div>
                         </div>
 
+                        <div className="mt-2 text-[11px] text-gray-500">
+                          Execute on-chain is done in MetaDAO/external app (wallet signature required), then paste tx signature here.
+                        </div>
+
+                        <div className="mt-2 flex flex-wrap gap-2">
+                          <Link
+                            href={`/idea/${p.project_id}`}
+                            target="_blank"
+                            className="px-3 py-1.5 text-xs rounded-md bg-white/10 text-white"
+                          >
+                            Open Idea
+                          </Link>
+                          <a
+                            href="https://www.metadao.fi/"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="px-3 py-1.5 text-xs rounded-md bg-purple-700 text-white"
+                          >
+                            Execute via MetaDAO
+                          </a>
+                          {p.onchain_tx ? (
+                            <a
+                              href={`https://solscan.io/tx/${p.onchain_tx}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="px-3 py-1.5 text-xs rounded-md bg-blue-600 text-white"
+                            >
+                              View tx
+                            </a>
+                          ) : null}
+                        </div>
+
                         <div className="mt-2 flex flex-col sm:flex-row gap-2">
                           <input
                             value={proposalTxInputs[p.id] || ''}
@@ -1796,16 +1828,6 @@ export default function AdminDashboard() {
                           >
                             Mark Executed
                           </button>
-                          {p.onchain_tx ? (
-                            <a
-                              href={`https://solscan.io/tx/${p.onchain_tx}`}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="px-3 py-1.5 text-xs rounded-md bg-blue-600 text-white"
-                            >
-                              View tx
-                            </a>
-                          ) : null}
                         </div>
                       </div>
                     ))}
