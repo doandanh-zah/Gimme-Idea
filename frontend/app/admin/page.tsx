@@ -51,8 +51,9 @@ import {
   Globe
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
-import { useWallet, useConnection } from '@solana/wallet-adapter-react';
+import { useWallet } from '@solana/wallet-adapter-react';
 import { Connection, LAMPORTS_PER_SOL, PublicKey, Transaction, clusterApiUrl } from '@solana/web3.js';
+import { getAssociatedTokenAddressSync, TOKEN_PROGRAM_ID } from '@solana/spl-token';
 import BN from 'bn.js';
 // removed ATA auto-create helpers (caused token program mismatch in simulation)
 import { makeFutarchyClient } from '@/lib/metadao/client';
@@ -295,7 +296,6 @@ function AccessCodeGate({ onSuccess }: { onSuccess: () => void }) {
 export default function AdminDashboard() {
   const { user, isLoading: authLoading } = useAuth();
   const wallet = useWallet();
-  const { connection } = useConnection();
   const router = useRouter();
   const [ideas, setIdeas] = useState<Idea[]>([]);
   const [activityLog, setActivityLog] = useState<ActivityLog[]>([]);
@@ -313,6 +313,9 @@ export default function AdminDashboard() {
   const [proposalsQueue, setProposalsQueue] = useState<any[]>([]);
   const [reviewingProposalId, setReviewingProposalId] = useState<string | null>(null);
   const [proposalTxInputs, setProposalTxInputs] = useState<Record<string, string>>({});
+  const [executingProposalId, setExecutingProposalId] = useState<string | null>(null);
+  const [proposalExecuteStep, setProposalExecuteStep] = useState<Record<string, string>>({});
+  const [proposalExecuteError, setProposalExecuteError] = useState<Record<string, string>>({});
   const [searchQuery, setSearchQuery] = useState('');
   const [backfillResult, setBackfillResult] = useState<any>(null);
   const [isBackfilling, setIsBackfilling] = useState(false);
@@ -1350,13 +1353,148 @@ export default function AdminDashboard() {
     }
   };
 
-  const handleExecuteRefundStub = (proposal: any) => {
-    console.log('[ExecuteRefund][stub]', {
-      proposalId: proposal?.id,
-      projectId: proposal?.project_id,
-      executionPayload: proposal?.execution_payload,
-    });
-    toast.success('Execute Refund trigger clicked (stub)');
+  const getTokenBalanceRaw = async (
+    conn: Connection,
+    owner: PublicKey,
+    mint: PublicKey
+  ): Promise<bigint> => {
+    try {
+      const ata = getAssociatedTokenAddressSync(mint, owner, true);
+      const tokenBalance = await conn.getTokenAccountBalance(ata, 'confirmed');
+      return BigInt(tokenBalance.value.amount);
+    } catch {
+      return 0n;
+    }
+  };
+
+  const handleExecuteRefundOnchain = async (proposal: any) => {
+    const proposalId = proposal?.id as string;
+    if (!proposalId) {
+      toast.error('Invalid proposal id');
+      return;
+    }
+    if (!wallet.publicKey || !wallet.signTransaction) {
+      toast.error('Connect admin wallet to execute on-chain');
+      return;
+    }
+    if (!proposal?.onchain_proposal_pubkey) {
+      toast.error('Missing on-chain proposal pubkey');
+      return;
+    }
+
+    try {
+      setExecutingProposalId(proposalId);
+      setProposalExecuteError((prev) => ({ ...prev, [proposalId]: '' }));
+      setProposalExecuteStep((prev) => ({ ...prev, [proposalId]: 'Preparing mainnet execution...' }));
+
+      const mainnetRpc =
+        process.env.NEXT_PUBLIC_MAINNET_RPC_URL ||
+        ((process.env.NEXT_PUBLIC_SOLANA_NETWORK || 'mainnet-beta') === 'mainnet-beta'
+          ? process.env.NEXT_PUBLIC_SOLANA_RPC_URL
+          : undefined) ||
+        clusterApiUrl('mainnet-beta');
+      const mainnetConnection = new Connection(mainnetRpc, 'confirmed');
+      const futarchy = makeFutarchyClient(mainnetConnection as any, wallet as any);
+
+      const proposalPubkey = new PublicKey(proposal.onchain_proposal_pubkey);
+      const onchainProposal = await futarchy.getProposal(proposalPubkey);
+      const daoPubkey = onchainProposal.dao;
+      const dao = await futarchy.getDao(daoPubkey);
+      const signatures: string[] = [];
+
+      setProposalExecuteStep((prev) => ({ ...prev, [proposalId]: '1/3 Finalizing proposal...' }));
+      const finalizeSig = await futarchy.finalizeProposal(proposalPubkey);
+      signatures.push(finalizeSig);
+
+      setProposalExecuteStep((prev) => ({ ...prev, [proposalId]: '2/3 Unwinding liquidity (if position exists)...' }));
+      const ammPosition = PublicKey.findProgramAddressSync(
+        [Buffer.from('amm_position'), daoPubkey.toBuffer(), wallet.publicKey.toBuffer()],
+        futarchy.getProgramId()
+      )[0];
+      const position = await futarchy.autocrat.account.ammPosition.fetchNullable(ammPosition);
+      if (position?.liquidity && position.liquidity.gt(new BN(0))) {
+        const [eventAuthority] = PublicKey.findProgramAddressSync(
+          [Buffer.from('__event_authority')],
+          futarchy.getProgramId()
+        );
+        const unwindSig = await futarchy.autocrat.methods
+          .withdrawLiquidity({
+            liquidityToWithdraw: position.liquidity,
+            minBaseAmount: new BN(0),
+            minQuoteAmount: new BN(0),
+          })
+          .accounts({
+            dao: daoPubkey,
+            positionAuthority: wallet.publicKey,
+            liquidityProviderBaseAccount: getAssociatedTokenAddressSync(
+              dao.baseMint,
+              wallet.publicKey,
+              true
+            ),
+            liquidityProviderQuoteAccount: getAssociatedTokenAddressSync(
+              dao.quoteMint,
+              wallet.publicKey,
+              true
+            ),
+            ammBaseVault: getAssociatedTokenAddressSync(dao.baseMint, daoPubkey, true),
+            ammQuoteVault: getAssociatedTokenAddressSync(dao.quoteMint, daoPubkey, true),
+            ammPosition,
+            tokenProgram: TOKEN_PROGRAM_ID,
+            eventAuthority,
+            program: futarchy.getProgramId(),
+          })
+          .rpc();
+        signatures.push(unwindSig);
+      }
+
+      setProposalExecuteStep((prev) => ({ ...prev, [proposalId]: '3/3 Redeeming conditional tokens (if any)...' }));
+      const baseConditionalBalance =
+        (await getTokenBalanceRaw(mainnetConnection, wallet.publicKey, onchainProposal.passBaseMint)) +
+        (await getTokenBalanceRaw(mainnetConnection, wallet.publicKey, onchainProposal.failBaseMint));
+      const quoteConditionalBalance =
+        (await getTokenBalanceRaw(mainnetConnection, wallet.publicKey, onchainProposal.passQuoteMint)) +
+        (await getTokenBalanceRaw(mainnetConnection, wallet.publicKey, onchainProposal.failQuoteMint));
+
+      if (baseConditionalBalance > 0n) {
+        const redeemBaseSig = await futarchy.vaultClient
+          .redeemTokensIx(
+            onchainProposal.question,
+            onchainProposal.baseVault,
+            dao.baseMint,
+            2,
+            wallet.publicKey,
+            wallet.publicKey
+          )
+          .rpc();
+        signatures.push(redeemBaseSig);
+      }
+
+      if (quoteConditionalBalance > 0n) {
+        const redeemQuoteSig = await futarchy.vaultClient
+          .redeemTokensIx(
+            onchainProposal.question,
+            onchainProposal.quoteVault,
+            dao.quoteMint,
+            2,
+            wallet.publicKey,
+            wallet.publicKey
+          )
+          .rpc();
+        signatures.push(redeemQuoteSig);
+      }
+
+      const lastSig = signatures[signatures.length - 1] || finalizeSig;
+      setProposalTxInputs((prev) => ({ ...prev, [proposalId]: lastSig }));
+      setProposalExecuteStep((prev) => ({ ...prev, [proposalId]: 'Execution complete. Review tx and sync DB status.' }));
+      toast.success('On-chain execution completed. Final tx copied to input.');
+    } catch (e: any) {
+      const message = e?.message || 'Failed to execute on-chain refund';
+      setProposalExecuteError((prev) => ({ ...prev, [proposalId]: message }));
+      setProposalExecuteStep((prev) => ({ ...prev, [proposalId]: 'Execution failed' }));
+      toast.error(message);
+    } finally {
+      setExecutingProposalId(null);
+    }
   };
 
   const handleBackfillAI = async () => {
@@ -1798,17 +1936,24 @@ export default function AdminDashboard() {
                               Rejected
                             </button>
                             <button
-                              onClick={() => handleExecuteRefundStub(p)}
-                              className="px-3 py-1.5 text-xs rounded-md bg-[#FFD700] text-black font-semibold"
+                              disabled={executingProposalId === p.id}
+                              onClick={() => handleExecuteRefundOnchain(p)}
+                              className="px-3 py-1.5 text-xs rounded-md bg-[#FFD700] text-black font-semibold disabled:opacity-50"
                             >
-                              Duyệt (stub)
+                              {executingProposalId === p.id ? 'Executing...' : 'Execute Refund'}
                             </button>
                           </div>
                         </div>
 
                         <div className="mt-2 text-[11px] text-gray-500">
-                          Execute on-chain is done in MetaDAO/external app (wallet signature required), then paste tx signature here.
+                          Execute on-chain runs here with connected admin wallet: finalize → unwind (if needed) → redeem.
                         </div>
+                        {proposalExecuteStep[p.id] ? (
+                          <div className="mt-1 text-[11px] text-yellow-300">{proposalExecuteStep[p.id]}</div>
+                        ) : null}
+                        {proposalExecuteError[p.id] ? (
+                          <div className="mt-1 text-[11px] text-red-400 break-all">{proposalExecuteError[p.id]}</div>
+                        ) : null}
 
                         <div className="mt-2 flex flex-wrap gap-2">
                           <Link
