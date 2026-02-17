@@ -237,8 +237,11 @@ export function SupportDepositModal({
       await connection.confirmTransaction({ signature, blockhash, lastValidBlockHeight }, 'confirmed');
 
       // Record canonical support ledger (best-effort)
+      if (!projectId) {
+        console.warn('Missing projectId for pool_supports ledger write');
+      }
       try {
-        await apiClient.recordPoolSupport({
+        const ledgerRes = await apiClient.recordPoolSupport({
           projectId,
           txHash: signature,
           amountUsdc: netAmount,
@@ -246,8 +249,14 @@ export function SupportDepositModal({
           treasuryWallet: treasury.toBase58(),
           supporterWallet: publicKey.toBase58(),
         });
+
+        if (!ledgerRes?.success) {
+          console.warn('pool_supports ledger write failed:', ledgerRes?.error || ledgerRes);
+          toast.error('Support sent, but donor ranking sync failed. Team has been notified.');
+        }
       } catch (ledgerErr) {
         console.warn('Failed to record pool_supports ledger:', ledgerErr);
+        toast.error('Support sent, but donor ranking sync failed. Team has been notified.');
       }
 
       setTxHash(signature);
