@@ -274,7 +274,7 @@ export function SupportDepositModal({
 
   return (
     <div className="fixed inset-0 z-[110] flex items-center justify-center px-3 sm:px-4">
-      <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" onClick={processing ? undefined : onClose} />
+      <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" onClick={processing && !txHash ? undefined : onClose} />
 
       <motion.div
         initial={{ scale: 0.95, opacity: 0 }}
@@ -286,7 +286,7 @@ export function SupportDepositModal({
         <button
           onClick={onClose}
           className="absolute top-3 right-3 text-gray-400 hover:text-white z-20"
-          disabled={processing}
+          disabled={processing && !txHash}
         >
           <X className="w-5 h-5" />
         </button>
@@ -323,6 +323,12 @@ export function SupportDepositModal({
                   >
                     View on Solscan <ExternalLink className="w-3 h-3" />
                   </a>
+                  <button
+                    onClick={onClose}
+                    className="mt-3 w-full py-2 rounded-xl bg-white/10 hover:bg-white/20 text-sm text-white"
+                  >
+                    Done
+                  </button>
                 </div>
               </motion.div>
             ) : (
