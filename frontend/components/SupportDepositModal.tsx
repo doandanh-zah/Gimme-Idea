@@ -35,6 +35,10 @@ function fromBaseUnits(amount: bigint, decimals: number) {
   return Number(amount) / denom;
 }
 
+function normalizeAmountInput(raw: string) {
+  return raw.replace(',', '.').trim();
+}
+
 export interface SupportDepositModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -80,7 +84,7 @@ export function SupportDepositModal({
   }, [isOpen]);
 
   const parsedAmount = useMemo(() => {
-    const n = Number(amount);
+    const n = Number(normalizeAmountInput(amount));
     return Number.isFinite(n) ? n : NaN;
   }, [amount]);
 
@@ -405,9 +409,10 @@ export function SupportDepositModal({
                     <input
                       type="number"
                       value={amount}
-                      onChange={(e) => setAmount(e.target.value)}
-                      step="1"
+                      onChange={(e) => setAmount(normalizeAmountInput(e.target.value))}
+                      step="0.01"
                       min="0"
+                      inputMode="decimal"
                       className="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-xl font-bold outline-none focus:border-[#FFD700]/40 transition-colors text-white"
                     />
                     <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 font-mono text-sm">USDC</span>
