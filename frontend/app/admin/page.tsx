@@ -1350,6 +1350,15 @@ export default function AdminDashboard() {
     }
   };
 
+  const handleExecuteRefundStub = (proposal: any) => {
+    console.log('[ExecuteRefund][stub]', {
+      proposalId: proposal?.id,
+      projectId: proposal?.project_id,
+      executionPayload: proposal?.execution_payload,
+    });
+    toast.success('Execute Refund trigger clicked (stub)');
+  };
+
   const handleBackfillAI = async () => {
     setIsBackfilling(true);
     setBackfillResult(null);
@@ -1784,6 +1793,12 @@ export default function AdminDashboard() {
                               className="px-3 py-1.5 text-xs rounded-md bg-red-600 text-white disabled:opacity-50"
                             >
                               Rejected
+                            </button>
+                            <button
+                              onClick={() => handleExecuteRefundStub(p)}
+                              className="px-3 py-1.5 text-xs rounded-md bg-[#FFD700] text-black font-semibold"
+                            >
+                              Duyệt (stub)
                             </button>
                           </div>
                         </div>
