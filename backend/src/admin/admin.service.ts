@@ -474,6 +474,33 @@ export class AdminService {
     };
   }
 
+  async listProposals(
+    adminId: string,
+    status?: "pending" | "voting" | "passed" | "rejected" | "executed"
+  ): Promise<ApiResponse<any[]>> {
+    if (!(await this.isAdmin(adminId))) {
+      throw new ForbiddenException("Admin access required");
+    }
+
+    const supabase = this.supabaseService.getAdminClient();
+    let q = supabase
+      .from("proposals")
+      .select(
+        `id, project_id, proposer_id, title, description, status, onchain_tx, created_at, updated_at,
+         project:projects!proposals_project_id_fkey(id, title),
+         proposer:users!proposals_proposer_id_fkey(id, username, wallet)`
+      )
+      .order("created_at", { ascending: false })
+      .limit(100);
+
+    if (status) q = q.eq("status", status);
+
+    const { data, error } = await q;
+    if (error) throw new Error(`Failed to list proposals: ${error.message}`);
+
+    return { success: true, data: data || [] };
+  }
+
   async reviewProposal(
     adminId: string,
     proposalId: string,

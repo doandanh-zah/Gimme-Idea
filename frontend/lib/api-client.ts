@@ -682,6 +682,10 @@ export const apiClient = {
       body: JSON.stringify(data),
     }),
 
+  listAdminProposals: (
+    status?: "pending" | "voting" | "passed" | "rejected" | "executed"
+  ) => apiFetch<any[]>(`/admin/proposals${status ? `?status=${status}` : ""}`),
+
   reviewProposal: (
     proposalId: string,
     data: {

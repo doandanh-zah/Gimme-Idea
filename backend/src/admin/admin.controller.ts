@@ -130,6 +130,15 @@ export class AdminController {
     return this.adminService.reviewDaoRequest(userId, requestId, body);
   }
 
+  @Get("proposals")
+  @UseGuards(AuthGuard)
+  async listProposals(
+    @CurrentUser("userId") userId: string,
+    @Query("status") status?: "pending" | "voting" | "passed" | "rejected" | "executed"
+  ): Promise<ApiResponse<any[]>> {
+    return this.adminService.listProposals(userId, status);
+  }
+
   @Patch("proposals/:id/review")
   @UseGuards(AuthGuard)
   async reviewProposal(

@@ -310,6 +310,9 @@ export default function AdminDashboard() {
   const [creatingDaoIdeaId, setCreatingDaoIdeaId] = useState<string | null>(null);
   const [daoRequests, setDaoRequests] = useState<any[]>([]);
   const [reviewingDaoRequestId, setReviewingDaoRequestId] = useState<string | null>(null);
+  const [proposalsQueue, setProposalsQueue] = useState<any[]>([]);
+  const [reviewingProposalId, setReviewingProposalId] = useState<string | null>(null);
+  const [proposalTxInputs, setProposalTxInputs] = useState<Record<string, string>>({});
   const [searchQuery, setSearchQuery] = useState('');
   const [backfillResult, setBackfillResult] = useState<any>(null);
   const [isBackfilling, setIsBackfilling] = useState(false);
@@ -511,12 +514,13 @@ export default function AdminDashboard() {
       
       setIsLoading(true);
       try {
-        const [ideasRes, activityRes, hackathonsRes, statsRes, daoReqRes] = await Promise.all([
+        const [ideasRes, activityRes, hackathonsRes, statsRes, daoReqRes, proposalsRes] = await Promise.all([
           apiClient.getProjects({ type: 'idea', limit: 100 }),
           apiClient.getAdminActivityLog(20),
           fetchAdminHackathons(),
           fetchSystemStats(),
           apiClient.listDaoRequests('pending'),
+          apiClient.listAdminProposals(),
         ]);
 
         if (ideasRes.success && ideasRes.data) {
@@ -527,6 +531,9 @@ export default function AdminDashboard() {
         }
         if (daoReqRes.success && daoReqRes.data) {
           setDaoRequests(daoReqRes.data);
+        }
+        if (proposalsRes.success && proposalsRes.data) {
+          setProposalsQueue((proposalsRes.data as any[]).filter((p) => p.status !== 'executed').slice(0, 20));
         }
       } catch (error) {
         console.error('Failed to fetch admin data:', error);
@@ -1314,6 +1321,35 @@ export default function AdminDashboard() {
     }
   };
 
+  const handleReviewProposal = async (
+    proposalId: string,
+    status: 'pending' | 'voting' | 'passed' | 'rejected' | 'executed'
+  ) => {
+    try {
+      setReviewingProposalId(proposalId);
+      const onchainTx = (proposalTxInputs[proposalId] || '').trim();
+      const res = await apiClient.reviewProposal(proposalId, {
+        status,
+        onchainTx: onchainTx || undefined,
+      });
+
+      if (!res.success) {
+        toast.error(res.error || 'Failed to review proposal');
+        return;
+      }
+
+      toast.success(`Proposal marked ${status}`);
+      const refreshed = await apiClient.listAdminProposals();
+      if (refreshed.success && refreshed.data) {
+        setProposalsQueue((refreshed.data as any[]).filter((p) => p.status !== 'executed').slice(0, 20));
+      }
+    } catch (e: any) {
+      toast.error(e?.message || 'Failed to review proposal');
+    } finally {
+      setReviewingProposalId(null);
+    }
+  };
+
   const handleBackfillAI = async () => {
     setIsBackfilling(true);
     setBackfillResult(null);
@@ -1700,6 +1736,76 @@ export default function AdminDashboard() {
                           >
                             Reject
                           </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              <div>
+                <h3 className="text-sm font-semibold text-white">Proposals Queue</h3>
+                {proposalsQueue.length === 0 ? (
+                  <p className="text-xs text-gray-500 mt-1">No pending/voting/passed proposals</p>
+                ) : (
+                  <div className="mt-2 space-y-2">
+                    {proposalsQueue.map((p) => (
+                      <div key={p.id} className="p-3 rounded-lg bg-white/5 border border-white/10">
+                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                          <div className="text-xs text-gray-300">
+                            <div className="font-medium text-white">{p.title}</div>
+                            <div className="text-gray-400 mt-0.5">{p.project?.title || p.project_id}</div>
+                            <div className="mt-1">status: <span className="text-white">{p.status}</span></div>
+                          </div>
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <button
+                              disabled={reviewingProposalId === p.id}
+                              onClick={() => handleReviewProposal(p.id, 'voting')}
+                              className="px-3 py-1.5 text-xs rounded-md bg-yellow-600 text-white disabled:opacity-50"
+                            >
+                              Voting
+                            </button>
+                            <button
+                              disabled={reviewingProposalId === p.id}
+                              onClick={() => handleReviewProposal(p.id, 'passed')}
+                              className="px-3 py-1.5 text-xs rounded-md bg-emerald-600 text-white disabled:opacity-50"
+                            >
+                              Passed
+                            </button>
+                            <button
+                              disabled={reviewingProposalId === p.id}
+                              onClick={() => handleReviewProposal(p.id, 'rejected')}
+                              className="px-3 py-1.5 text-xs rounded-md bg-red-600 text-white disabled:opacity-50"
+                            >
+                              Rejected
+                            </button>
+                          </div>
+                        </div>
+
+                        <div className="mt-2 flex flex-col sm:flex-row gap-2">
+                          <input
+                            value={proposalTxInputs[p.id] || ''}
+                            onChange={(e) => setProposalTxInputs((prev) => ({ ...prev, [p.id]: e.target.value }))}
+                            placeholder="onchain tx signature (required for executed)"
+                            className="flex-1 bg-black/30 border border-white/10 rounded-md px-3 py-1.5 text-xs text-white"
+                          />
+                          <button
+                            disabled={reviewingProposalId === p.id || !(proposalTxInputs[p.id] || '').trim()}
+                            onClick={() => handleReviewProposal(p.id, 'executed')}
+                            className="px-3 py-1.5 text-xs rounded-md bg-green-700 text-white disabled:opacity-50"
+                          >
+                            Mark Executed
+                          </button>
+                          {p.onchain_tx ? (
+                            <a
+                              href={`https://solscan.io/tx/${p.onchain_tx}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="px-3 py-1.5 text-xs rounded-md bg-blue-600 text-white"
+                            >
+                              View tx
+                            </a>
+                          ) : null}
                         </div>
                       </div>
                     ))}
