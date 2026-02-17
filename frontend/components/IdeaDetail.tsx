@@ -1270,6 +1270,12 @@ export const IdeaDetail = () => {
                                         }`}>{p.status}</span>
                                     </div>
                                     <p className="text-xs text-gray-400 mt-1 whitespace-pre-wrap">{p.description}</p>
+                                    {(p.execution_payload?.recipientWallet || p.execution_payload?.amountUsdc) ? (
+                                        <div className="mt-1 text-[11px] text-gray-500">
+                                            {p.execution_payload?.recipientWallet ? `Recipient: ${p.execution_payload.recipientWallet}` : ''}
+                                            {p.execution_payload?.amountUsdc ? ` • Amount: ${p.execution_payload.amountUsdc} USDC` : ''}
+                                        </div>
+                                    ) : null}
                                     {p.onchain_tx ? (
                                         <a
                                             href={`https://solscan.io/tx/${p.onchain_tx}`}

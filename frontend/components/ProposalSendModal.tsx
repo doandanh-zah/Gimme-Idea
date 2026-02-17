@@ -18,6 +18,8 @@ export function ProposalSendModal({
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [recipientWallet, setRecipientWallet] = useState('');
+  const [amountUsdc, setAmountUsdc] = useState('');
 
   if (!isOpen) return null;
 
@@ -29,9 +31,15 @@ export function ProposalSendModal({
 
     try {
       setSubmitting(true);
+      const parsedAmount = Number(amountUsdc);
       const res = await apiClient.createProposal(projectId, {
         title: title.trim(),
         description: description.trim(),
+        executionPayload: {
+          recipientWallet: recipientWallet.trim() || undefined,
+          amountUsdc: Number.isFinite(parsedAmount) && parsedAmount > 0 ? parsedAmount : undefined,
+          note: 'execute manually via governance signer wallet',
+        },
       });
 
       if (!res.success) {
@@ -42,6 +50,8 @@ export function ProposalSendModal({
       toast.success('Proposal sent successfully');
       setTitle('');
       setDescription('');
+      setRecipientWallet('');
+      setAmountUsdc('');
       onClose();
     } catch (e: any) {
       toast.error(e?.message || 'Failed to send proposal');
@@ -101,6 +111,21 @@ export function ProposalSendModal({
               placeholder="Rationale, recipient, amount, milestones, execution note"
               className="w-full rounded-xl bg-white/5 border border-white/10 px-3 py-2 text-sm text-white"
             />
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              <input
+                value={recipientWallet}
+                onChange={(e) => setRecipientWallet(e.target.value)}
+                placeholder="Recipient wallet (optional)"
+                className="w-full rounded-xl bg-white/5 border border-white/10 px-3 py-2 text-sm text-white"
+              />
+              <input
+                value={amountUsdc}
+                onChange={(e) => setAmountUsdc(e.target.value)}
+                placeholder="Amount USDC (optional)"
+                inputMode="decimal"
+                className="w-full rounded-xl bg-white/5 border border-white/10 px-3 py-2 text-sm text-white"
+              />
+            </div>
           </div>
 
           <button

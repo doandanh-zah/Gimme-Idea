@@ -864,7 +864,7 @@ export class ProjectsService {
     const { data, error } = await supabase
       .from("proposals")
       .select(
-        `id, project_id, proposer_id, title, description, status, onchain_tx, created_at,
+        `id, project_id, proposer_id, title, description, status, onchain_tx, execution_payload, created_at,
          proposer:users!proposals_proposer_id_fkey(id, username, wallet)`
       )
       .eq("project_id", projectId)
@@ -903,6 +903,7 @@ export class ProjectsService {
         proposer_id: userId,
         title: dto.title,
         description: dto.description,
+        execution_payload: dto.executionPayload || null,
         status: "pending",
       })
       .select("*")

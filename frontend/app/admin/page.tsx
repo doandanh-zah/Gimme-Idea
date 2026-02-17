@@ -1756,6 +1756,12 @@ export default function AdminDashboard() {
                             <div className="font-medium text-white">{p.title}</div>
                             <div className="text-gray-400 mt-0.5">{p.project?.title || p.project_id}</div>
                             <div className="mt-1">status: <span className="text-white">{p.status}</span></div>
+                            {p.execution_payload?.recipientWallet ? (
+                              <div className="mt-1 text-gray-500 break-all">recipient: {p.execution_payload.recipientWallet}</div>
+                            ) : null}
+                            {p.execution_payload?.amountUsdc ? (
+                              <div className="text-gray-500">amount: {p.execution_payload.amountUsdc} USDC</div>
+                            ) : null}
                           </div>
                           <div className="flex items-center gap-2 flex-wrap">
                             <button

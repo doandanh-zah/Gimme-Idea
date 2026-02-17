@@ -1,4 +1,4 @@
-import { IsString, MinLength } from 'class-validator';
+import { IsObject, IsOptional, IsString, MinLength } from 'class-validator';
 
 export class CreateProposalDto {
   @IsString()
@@ -8,4 +8,12 @@ export class CreateProposalDto {
   @IsString()
   @MinLength(10)
   description: string;
+
+  @IsOptional()
+  @IsObject()
+  executionPayload?: {
+    recipientWallet?: string;
+    amountUsdc?: number;
+    note?: string;
+  };
 }

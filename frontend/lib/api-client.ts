@@ -179,7 +179,18 @@ export const apiClient = {
 
   listProposals: (projectId: string) => apiFetch<any[]>(`/projects/${projectId}/proposals`),
 
-  createProposal: (projectId: string, data: { title: string; description: string }) =>
+  createProposal: (
+    projectId: string,
+    data: {
+      title: string;
+      description: string;
+      executionPayload?: {
+        recipientWallet?: string;
+        amountUsdc?: number;
+        note?: string;
+      };
+    }
+  ) =>
     apiFetch<any>(`/projects/${projectId}/proposals`, {
       method: "POST",
       body: JSON.stringify(data),
