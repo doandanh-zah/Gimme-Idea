@@ -312,7 +312,6 @@ export default function AdminDashboard() {
   const [reviewingDaoRequestId, setReviewingDaoRequestId] = useState<string | null>(null);
   const [proposalsQueue, setProposalsQueue] = useState<any[]>([]);
   const [reviewingProposalId, setReviewingProposalId] = useState<string | null>(null);
-  const [proposalTxInputs, setProposalTxInputs] = useState<Record<string, string>>({});
   const [executingProposalId, setExecutingProposalId] = useState<string | null>(null);
   const [proposalExecuteStep, setProposalExecuteStep] = useState<Record<string, string>>({});
   const [proposalExecuteError, setProposalExecuteError] = useState<Record<string, string>>({});
@@ -1326,15 +1325,11 @@ export default function AdminDashboard() {
 
   const handleReviewProposal = async (
     proposalId: string,
-    status: 'pending' | 'voting' | 'passed' | 'rejected' | 'executed'
+    status: 'pending' | 'voting' | 'passed' | 'rejected'
   ) => {
     try {
       setReviewingProposalId(proposalId);
-      const onchainTx = (proposalTxInputs[proposalId] || '').trim();
-      const res = await apiClient.reviewProposal(proposalId, {
-        status,
-        onchainTx: onchainTx || undefined,
-      });
+      const res = await apiClient.reviewProposal(proposalId, { status });
 
       if (!res.success) {
         toast.error(res.error || 'Failed to review proposal');
@@ -1382,6 +1377,17 @@ export default function AdminDashboard() {
       return;
     }
 
+    const recipientWallet = proposal?.execution_payload?.recipientWallet;
+    const amountUsdc = Number(proposal?.execution_payload?.amountUsdc || 0);
+    if (!recipientWallet) {
+      toast.error('Missing recipient wallet in execution payload');
+      return;
+    }
+    if (!Number.isFinite(amountUsdc) || amountUsdc <= 0) {
+      toast.error('Invalid amountUsdc in execution payload');
+      return;
+    }
+
     try {
       setExecutingProposalId(proposalId);
       setProposalExecuteError((prev) => ({ ...prev, [proposalId]: '' }));
@@ -1397,14 +1403,43 @@ export default function AdminDashboard() {
       const futarchy = makeFutarchyClient(mainnetConnection as any, wallet as any);
 
       const proposalPubkey = new PublicKey(proposal.onchain_proposal_pubkey);
+      const recipientPubkey = new PublicKey(recipientWallet);
+      const expectedAmountRaw = BigInt(Math.round(amountUsdc * 1_000_000));
+
       const onchainProposal = await futarchy.getProposal(proposalPubkey);
       const daoPubkey = onchainProposal.dao;
       const dao = await futarchy.getDao(daoPubkey);
       const signatures: string[] = [];
+      const treasuryBefore = await getTokenBalanceRaw(
+        mainnetConnection,
+        dao.squadsMultisigVault,
+        dao.quoteMint
+      );
+      const recipientBefore = await getTokenBalanceRaw(
+        mainnetConnection,
+        recipientPubkey,
+        dao.quoteMint
+      );
 
       setProposalExecuteStep((prev) => ({ ...prev, [proposalId]: '1/3 Finalizing proposal...' }));
       const finalizeSig = await futarchy.finalizeProposal(proposalPubkey);
       signatures.push(finalizeSig);
+
+      const treasuryAfterFinalize = await getTokenBalanceRaw(
+        mainnetConnection,
+        dao.squadsMultisigVault,
+        dao.quoteMint
+      );
+      const recipientAfterFinalize = await getTokenBalanceRaw(
+        mainnetConnection,
+        recipientPubkey,
+        dao.quoteMint
+      );
+      const recipientDelta = recipientAfterFinalize - recipientBefore;
+      const treasuryDelta = treasuryBefore - treasuryAfterFinalize;
+      if (recipientDelta < expectedAmountRaw || treasuryDelta < expectedAmountRaw) {
+        throw new Error('Finalize tx did not move expected funds between treasury and recipient');
+      }
 
       setProposalExecuteStep((prev) => ({ ...prev, [proposalId]: '2/3 Unwinding liquidity (if position exists)...' }));
       const ammPosition = PublicKey.findProgramAddressSync(
@@ -1483,10 +1518,32 @@ export default function AdminDashboard() {
         signatures.push(redeemQuoteSig);
       }
 
+      for (const sig of signatures) {
+        const status = await mainnetConnection.getSignatureStatus(sig, {
+          searchTransactionHistory: true,
+        });
+        if (!status.value || status.value.err) {
+          throw new Error(`Signature verification failed for tx ${sig}`);
+        }
+      }
+
       const lastSig = signatures[signatures.length - 1] || finalizeSig;
-      setProposalTxInputs((prev) => ({ ...prev, [proposalId]: lastSig }));
-      setProposalExecuteStep((prev) => ({ ...prev, [proposalId]: 'Execution complete. Review tx and sync DB status.' }));
-      toast.success('On-chain execution completed. Final tx copied to input.');
+      setProposalExecuteStep((prev) => ({ ...prev, [proposalId]: 'Syncing executed status to DB...' }));
+      const synced = await apiClient.reviewProposal(proposalId, {
+        status: 'executed',
+        onchainTx: lastSig,
+      });
+      if (!synced.success) {
+        throw new Error(synced.error || 'Failed to sync executed status to DB');
+      }
+
+      const refreshed = await apiClient.listAdminProposals();
+      if (refreshed.success && refreshed.data) {
+        setProposalsQueue((refreshed.data as any[]).filter((p) => p.status !== 'executed').slice(0, 20));
+      }
+
+      setProposalExecuteStep((prev) => ({ ...prev, [proposalId]: 'Execution complete and DB synced.' }));
+      toast.success(`Executed + synced. Solscan: https://solscan.io/tx/${lastSig}`);
     } catch (e: any) {
       const message = e?.message || 'Failed to execute on-chain refund';
       setProposalExecuteError((prev) => ({ ...prev, [proposalId]: message }));
@@ -2003,21 +2060,6 @@ export default function AdminDashboard() {
                           ) : null}
                         </div>
 
-                        <div className="mt-2 flex flex-col sm:flex-row gap-2">
-                          <input
-                            value={proposalTxInputs[p.id] || ''}
-                            onChange={(e) => setProposalTxInputs((prev) => ({ ...prev, [p.id]: e.target.value }))}
-                            placeholder="onchain tx signature (required for executed)"
-                            className="flex-1 bg-black/30 border border-white/10 rounded-md px-3 py-1.5 text-xs text-white"
-                          />
-                          <button
-                            disabled={reviewingProposalId === p.id || !(proposalTxInputs[p.id] || '').trim()}
-                            onClick={() => handleReviewProposal(p.id, 'executed')}
-                            className="px-3 py-1.5 text-xs rounded-md bg-green-700 text-white disabled:opacity-50"
-                          >
-                            Mark Executed
-                          </button>
-                        </div>
                       </div>
                     ))}
                   </div>

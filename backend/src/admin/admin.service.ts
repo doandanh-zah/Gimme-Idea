@@ -5,6 +5,7 @@ import {
   ForbiddenException,
   BadRequestException,
 } from "@nestjs/common";
+import { Connection } from "@solana/web3.js";
 import { SupabaseService } from "../shared/supabase.service";
 import { ApiResponse } from "../shared/types";
 
@@ -137,6 +138,41 @@ export class AdminService {
   private readonly logger = new Logger(AdminService.name);
 
   constructor(private supabaseService: SupabaseService) {}
+
+  private async assertConfirmedMainnetTx(signature: string): Promise<void> {
+    const rpc =
+      process.env.SOLANA_RPC_URL ||
+      process.env.NEXT_PUBLIC_SOLANA_RPC_URL ||
+      "https://api.mainnet-beta.solana.com";
+    const connection = new Connection(rpc, "confirmed");
+
+    try {
+      const status = await connection.getSignatureStatus(signature, {
+        searchTransactionHistory: true,
+      });
+      if (!status.value) {
+        throw new BadRequestException("onchainTx not found on mainnet");
+      }
+      if (status.value.err) {
+        throw new BadRequestException("onchainTx failed on-chain");
+      }
+
+      const tx = await connection.getTransaction(signature, {
+        commitment: "confirmed",
+        maxSupportedTransactionVersion: 0,
+      });
+      if (!tx || tx.meta?.err) {
+        throw new BadRequestException(
+          "onchainTx not found on mainnet or transaction failed"
+        );
+      }
+    } catch (error: any) {
+      if (error instanceof BadRequestException) throw error;
+      throw new BadRequestException(
+        `Invalid onchainTx signature: ${error?.message || "verification failed"}`
+      );
+    }
+  }
 
   /**
    * Check if user is admin
@@ -514,6 +550,32 @@ export class AdminService {
     }
 
     const supabase = this.supabaseService.getAdminClient();
+    const { data: existing, error: existingError } = await supabase
+      .from("proposals")
+      .select("id, onchain_proposal_pubkey, onchain_tx")
+      .eq("id", proposalId)
+      .single();
+
+    if (existingError || !existing) {
+      throw new NotFoundException("Proposal not found");
+    }
+
+    if (body.status === "executed") {
+      const signature = (body.onchainTx || "").trim();
+      if (!signature) {
+        throw new BadRequestException(
+          "onchainTx is required when marking proposal executed"
+        );
+      }
+      if (!existing.onchain_proposal_pubkey) {
+        throw new BadRequestException(
+          "Proposal is missing on-chain mapping (onchain_proposal_pubkey)"
+        );
+      }
+      await this.assertConfirmedMainnetTx(signature);
+      body.onchainTx = signature;
+    }
+
     const patch: any = {
       status: body.status,
       updated_at: new Date().toISOString(),
