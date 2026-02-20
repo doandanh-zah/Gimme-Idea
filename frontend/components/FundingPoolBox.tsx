@@ -19,7 +19,9 @@ export function FundingPoolBox({ project, onSupport }: { project: Project; onSup
   const { connection } = useConnection();
   const [totalRaisedUsdc, setTotalRaisedUsdc] = useState<number | null>(null);
 
-  const isOpen = project.poolStatus === 'pool_open' && !!project.governanceTreasuryAddress;
+  const isOpen =
+    (project.poolStatus === 'pool_open' || project.poolStatus === 'active') &&
+    !!project.governanceTreasuryAddress;
 
   useEffect(() => {
     let cancelled = false;

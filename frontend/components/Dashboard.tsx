@@ -79,7 +79,8 @@ export default function Dashboard({ mode }: DashboardProps) {
         project.tags.some(tag => tag === categoryFilter);
 
       const matchesPoolFilter = !showOpenPoolsOnly || (
-        project.poolStatus === 'pool_open' && !!project.governanceTreasuryAddress
+        (project.poolStatus === 'pool_open' || project.poolStatus === 'active') &&
+        !!project.governanceTreasuryAddress
       );
       
       if (searchQuery === '') return matchesType && matchesCategory && matchesPoolFilter;

@@ -31,6 +31,9 @@ import { FundingPoolBox } from './FundingPoolBox';
 import { SupportDepositModal } from './SupportDepositModal';
 import { DaoRequestModal } from './DaoRequestModal';
 import { ProposalSendModal } from './ProposalSendModal';
+import { CreatePoolButton } from './ideas/CreatePoolButton';
+import { TradingWidget } from './ideas/TradingWidget';
+import { FinalizeIdeaButton } from './admin/FinalizeIdeaButton';
 
 // AI Bot display name
 const AI_BOT_NAME = 'Gimme Sensei';
@@ -848,6 +851,12 @@ export const IdeaDetail = () => {
         fetchProposals();
     }, [fetchProposals]);
 
+    const refreshIdeaAndProposals = async () => {
+        if (!project?.id) return;
+        await fetchProjectById(project.id);
+        await fetchProposals();
+    };
+
     if (!project) return null;
 
     const isIdeaOwner = !!user?.wallet && !!project.author?.wallet && user.wallet === project.author.wallet;
@@ -1159,7 +1168,7 @@ export const IdeaDetail = () => {
                                 )}
                             </button>
 
-                            {isIdeaOwner && project.poolStatus !== 'pool_open' && (
+                            {isIdeaOwner && !['pool_open', 'active', 'finalized'].includes(project.poolStatus || '') && (
                                 <button
                                     onClick={() => setShowDaoRequestModal(true)}
                                     className="bg-white/10 text-white px-4 sm:px-5 py-2 rounded-full font-bold flex items-center gap-2 hover:bg-white/15 transition-colors text-sm"
@@ -1238,6 +1247,35 @@ export const IdeaDetail = () => {
                         <FundingPoolBox project={project} onSupport={() => setShowSupportDeposit(true)} />
                     </div>
 
+                    {/* Decision Pool + Trading (Phase 2/3/4) */}
+                    <div className="mb-10 rounded-2xl border border-white/10 bg-white/[0.03] p-5 space-y-4">
+                        <div className="flex items-center justify-between gap-3">
+                            <h3 className="text-sm font-bold text-white uppercase tracking-wider font-mono">
+                                Decision Pool
+                            </h3>
+                            {project.finalDecision ? (
+                                <span className="text-xs text-yellow-300">Final: {project.finalDecision}</span>
+                            ) : null}
+                        </div>
+
+                        {project.proposalPubkey ? (
+                            <>
+                                <TradingWidget idea={project} />
+                                {isAdmin ? (
+                                    <FinalizeIdeaButton
+                                        idea={project}
+                                        onFinalized={refreshIdeaAndProposals}
+                                    />
+                                ) : null}
+                            </>
+                        ) : (
+                            <CreatePoolButton
+                                idea={project}
+                                onCreated={refreshIdeaAndProposals}
+                            />
+                        )}
+                    </div>
+
                     {/* Proposals */}
                     <div className="mb-10 rounded-2xl border border-white/10 bg-white/[0.03] p-5">
                         <div className="flex items-center justify-between mb-3">
@@ -1248,7 +1286,7 @@ export const IdeaDetail = () => {
                             Submit via <span className="text-gray-300">Send Proposal</span>, then track status here. If executed on-chain, tx link appears in the row.
                         </p>
 
-                        {project.poolStatus === 'pool_open' ? (
+                        {(project.poolStatus === 'pool_open' || project.poolStatus === 'active') ? (
                             <button
                                 onClick={() => setShowProposalModal(true)}
                                 className="px-4 py-2 rounded-full bg-[#FFD700] text-black text-sm font-bold"

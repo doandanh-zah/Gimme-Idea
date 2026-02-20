@@ -70,7 +70,16 @@ export interface Project {
   // ============================================
   // Commit-to-Build (Phase 1) - Governance/Pool metadata
   // ============================================
-  poolStatus?: 'draft' | 'reviewing' | 'approved_for_pool' | 'pool_open' | 'rejected' | string;
+  poolStatus?:
+    | "none"
+    | "draft"
+    | "reviewing"
+    | "approved_for_pool"
+    | "pool_open"
+    | "active"
+    | "finalized"
+    | "rejected"
+    | string;
   governanceRealmAddress?: string;
   governanceTreasuryAddress?: string;
   governanceReceiptMint?: string;
@@ -79,6 +88,18 @@ export interface Project {
   supportFeeRecipient?: string; // dev wallet
   poolCreatedAt?: string;
   poolCreatedBy?: string;
+
+  // Gimme Idea + MetaDAO decision market fields
+  proposalPubkey?: string;
+  passPoolAddress?: string;
+  failPoolAddress?: string;
+  poolCreateTx?: string;
+  poolFinalizeTx?: string;
+  poolRefs?: Record<string, any>;
+  finalDecision?: "pass" | "reject" | string;
+  finalizedAt?: string;
+  totalPassVolume?: number;
+  totalFailVolume?: number;
 }
 
 export interface User {

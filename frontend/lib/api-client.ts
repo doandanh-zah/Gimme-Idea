@@ -199,6 +199,38 @@ export const apiClient = {
       body: JSON.stringify(data),
     }),
 
+  createIdeaPool: (
+    projectId: string,
+    data: {
+      daoAddress: string;
+      proposalPubkey: string;
+      passPoolAddress: string;
+      failPoolAddress: string;
+      poolCreateTx: string;
+      sponsor?: boolean;
+      onchainRefs?: Record<string, any>;
+    }
+  ) =>
+    apiFetch<any>(`/projects/${projectId}/create-pool`, {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
+
+  getIdeaMarketStats: (projectId: string) =>
+    apiFetch<{
+      poolStatus: string;
+      proposalPubkey?: string | null;
+      passPoolAddress?: string | null;
+      failPoolAddress?: string | null;
+      passPoolBalance: number;
+      failPoolBalance: number;
+      passProbability: number | null;
+      failProbability: number | null;
+      finalDecision?: "pass" | "reject" | string | null;
+      finalizedAt?: string | null;
+      updatedAt: string;
+    }>(`/projects/${projectId}/market-stats`),
+
   // Comments
   getProjectComments: (projectId: string) =>
     apiFetch<any[]>(`/comments/project/${projectId}`),
@@ -709,6 +741,15 @@ export const apiClient = {
   ) =>
     apiFetch<any>(`/admin/proposals/${proposalId}/review`, {
       method: "PATCH",
+      body: JSON.stringify(data),
+    }),
+
+  finalizeIdea: (
+    ideaId: string,
+    data: { decision: "pass" | "reject"; onchainTx: string; proposalPubkey?: string }
+  ) =>
+    apiFetch<any>(`/admin/ideas/${ideaId}/finalize`, {
+      method: "POST",
       body: JSON.stringify(data),
     }),
 
