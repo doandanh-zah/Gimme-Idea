@@ -17,6 +17,7 @@ import { UpdateProjectDto } from "./dto/update-project.dto";
 import { QueryProjectsDto } from "./dto/query-projects.dto";
 import { CreateDaoRequestDto } from "./dto/create-dao-request.dto";
 import { CreateProposalDto } from "./dto/create-proposal.dto";
+import { CreateIdeaPoolDto } from "./dto/create-idea-pool.dto";
 import { AnyAuthGuard } from "../common/guards/any-auth.guard";
 import { CurrentUser } from "../common/decorators/user.decorator";
 import { CacheControlInterceptor } from "../common/interceptors/cache-control.interceptor";
@@ -146,5 +147,22 @@ export class ProjectsController {
     @Body() dto: CreateProposalDto
   ): Promise<ApiResponse<any>> {
     return this.projectsService.createProposal(id, userId, dto);
+  }
+
+  @Post(":id/create-pool")
+  @UseGuards(AnyAuthGuard)
+  async createIdeaPool(
+    @Param("id") id: string,
+    @CurrentUser("userId") userId: string,
+    @Body() dto: CreateIdeaPoolDto
+  ): Promise<ApiResponse<any>> {
+    return this.projectsService.createIdeaPool(id, userId, dto);
+  }
+
+  @Get(":id/market-stats")
+  async getIdeaMarketStats(
+    @Param("id") id: string
+  ): Promise<ApiResponse<any>> {
+    return this.projectsService.getIdeaMarketStats(id);
   }
 }

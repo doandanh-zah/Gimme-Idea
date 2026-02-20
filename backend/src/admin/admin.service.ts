@@ -319,10 +319,13 @@ export class AdminService {
     projectId: string,
     updates: {
       poolStatus?:
+        | "none"
         | "draft"
         | "reviewing"
         | "approved_for_pool"
         | "pool_open"
+        | "active"
+        | "finalized"
         | "rejected"
         | string;
       governanceRealmAddress?: string | null;
@@ -599,6 +602,75 @@ export class AdminService {
     });
 
     return { success: true, data, message: `Proposal marked ${body.status}` };
+  }
+
+  async finalizeIdeaDecision(
+    adminId: string,
+    projectId: string,
+    body: {
+      decision: "pass" | "reject";
+      onchainTx: string;
+      proposalPubkey?: string;
+    }
+  ): Promise<ApiResponse<any>> {
+    if (!(await this.isAdmin(adminId))) {
+      throw new ForbiddenException("Admin access required");
+    }
+
+    const signature = (body.onchainTx || "").trim();
+    if (!signature) {
+      throw new BadRequestException("onchainTx is required");
+    }
+
+    const supabase = this.supabaseService.getAdminClient();
+    const { data: project, error: projectError } = await supabase
+      .from("projects")
+      .select("id, title, proposal_pubkey, pool_status, final_decision")
+      .eq("id", projectId)
+      .single();
+
+    if (projectError || !project) {
+      throw new NotFoundException("Idea not found");
+    }
+    if (!project.proposal_pubkey) {
+      throw new BadRequestException("Idea is missing proposal_pubkey mapping");
+    }
+    if (body.proposalPubkey && body.proposalPubkey !== project.proposal_pubkey) {
+      throw new BadRequestException("proposalPubkey mismatch");
+    }
+
+    await this.assertConfirmedMainnetTx(signature);
+
+    const now = new Date().toISOString();
+    const { data, error } = await supabase
+      .from("projects")
+      .update({
+        pool_status: "finalized",
+        final_decision: body.decision,
+        finalized_at: now,
+        pool_finalize_tx: signature,
+      })
+      .eq("id", projectId)
+      .select(
+        "id, title, pool_status, proposal_pubkey, final_decision, finalized_at, pool_finalize_tx"
+      )
+      .single();
+
+    if (error || !data) {
+      throw new Error(`Failed to finalize idea: ${error?.message}`);
+    }
+
+    await this.logAdminAction(adminId, "finalize_idea", "project", projectId, {
+      decision: body.decision,
+      onchainTx: signature,
+      proposalPubkey: project.proposal_pubkey,
+    });
+
+    return {
+      success: true,
+      data,
+      message: `Idea finalized as ${body.decision}`,
+    };
   }
 
   // ============================================

@@ -1,4 +1,4 @@
-import { IsObject, IsOptional, IsString, MinLength } from 'class-validator';
+import { IsObject, IsOptional, IsString, MinLength } from "class-validator";
 
 export class CreateProposalDto {
   @IsString()
@@ -17,13 +17,13 @@ export class CreateProposalDto {
     note?: string;
   };
 
-  @IsOptional()
   @IsString()
-  onchainProposalPubkey?: string;
+  @MinLength(20)
+  onchainProposalPubkey: string;
 
-  @IsOptional()
   @IsString()
-  onchainCreateTx?: string;
+  @MinLength(20)
+  onchainCreateTx: string;
 
   @IsOptional()
   @IsObject()

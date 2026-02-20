@@ -18,6 +18,7 @@ import {
 import { AuthGuard } from "../common/guards/auth.guard";
 import { ReviewDaoRequestDto } from "./dto/review-dao-request.dto";
 import { ReviewProposalDto } from "./dto/review-proposal.dto";
+import { FinalizeIdeaDto } from "./dto/finalize-idea.dto";
 import { CurrentUser } from "../common/decorators/user.decorator";
 import { ApiResponse } from "../shared/types";
 
@@ -88,10 +89,13 @@ export class AdminController {
     @Body()
     body: {
       poolStatus?:
+        | "none"
         | "draft"
         | "reviewing"
         | "approved_for_pool"
         | "pool_open"
+        | "active"
+        | "finalized"
         | "rejected"
         | string;
       governanceRealmAddress?: string | null;
@@ -147,6 +151,16 @@ export class AdminController {
     @Body() body: ReviewProposalDto
   ): Promise<ApiResponse<any>> {
     return this.adminService.reviewProposal(userId, proposalId, body);
+  }
+
+  @Post("ideas/:id/finalize")
+  @UseGuards(AuthGuard)
+  async finalizeIdea(
+    @Param("id") projectId: string,
+    @CurrentUser("userId") userId: string,
+    @Body() body: FinalizeIdeaDto
+  ): Promise<ApiResponse<any>> {
+    return this.adminService.finalizeIdeaDecision(userId, projectId, body);
   }
 
   // ============================================

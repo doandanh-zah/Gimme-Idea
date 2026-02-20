@@ -15,12 +15,16 @@ import { TTLCache } from "../shared/ttl-cache";
 import { Connection, PublicKey } from "@solana/web3.js";
 import { CreateDaoRequestDto } from "./dto/create-dao-request.dto";
 import { CreateProposalDto } from "./dto/create-proposal.dto";
+import { CreateIdeaPoolDto } from "./dto/create-idea-pool.dto";
 
 @Injectable()
 export class ProjectsService {
   private readonly logger = new Logger(ProjectsService.name);
   private readonly AI_BOT_WALLET =
     "FzcnaZMYcoAYpLgr7Wym2b8hrKYk3VXsRxWSLuvZKLJm";
+  private readonly IDEA_POOL_VOTE_THRESHOLD = Number(
+    process.env.IDEA_POOL_VOTE_THRESHOLD || 10
+  );
 
   // Egress control: cache hot list/detail responses for a short TTL.
   // This reduces repeated Supabase reads from FE (refresh/retries, multi-tab).
@@ -76,6 +80,16 @@ export class ProjectsService {
 
         pool_status,
         governance_treasury_address,
+        proposal_pubkey,
+        pass_pool_address,
+        fail_pool_address,
+        pool_create_tx,
+        pool_finalize_tx,
+        pool_refs,
+        final_decision,
+        finalized_at,
+        total_pass_volume,
+        total_fail_volume,
 
         author:users!projects_author_id_fkey(
           username,
@@ -177,6 +191,18 @@ export class ProjectsService {
         // Commit-to-Build (Phase 1)
         poolStatus: p.pool_status,
         governanceTreasuryAddress: p.governance_treasury_address,
+        proposalPubkey: p.proposal_pubkey,
+        passPoolAddress: p.pass_pool_address,
+        failPoolAddress: p.fail_pool_address,
+        poolCreateTx: p.pool_create_tx,
+        poolFinalizeTx: p.pool_finalize_tx,
+        poolRefs: p.pool_refs,
+        finalDecision: p.final_decision,
+        finalizedAt: p.finalized_at,
+        totalPassVolume:
+          p.total_pass_volume == null ? undefined : Number(p.total_pass_volume),
+        totalFailVolume:
+          p.total_fail_volume == null ? undefined : Number(p.total_fail_volume),
       };
     });
 
@@ -224,6 +250,16 @@ export class ProjectsService {
 
         pool_status,
         governance_treasury_address,
+        proposal_pubkey,
+        pass_pool_address,
+        fail_pool_address,
+        pool_create_tx,
+        pool_finalize_tx,
+        pool_refs,
+        final_decision,
+        finalized_at,
+        total_pass_volume,
+        total_fail_volume,
 
         problem,
         solution,
@@ -282,6 +318,18 @@ export class ProjectsService {
         // Commit-to-Build (Phase 1)
         poolStatus: p.pool_status,
         governanceTreasuryAddress: p.governance_treasury_address,
+        proposalPubkey: p.proposal_pubkey,
+        passPoolAddress: p.pass_pool_address,
+        failPoolAddress: p.fail_pool_address,
+        poolCreateTx: p.pool_create_tx,
+        poolFinalizeTx: p.pool_finalize_tx,
+        poolRefs: p.pool_refs,
+        finalDecision: p.final_decision,
+        finalizedAt: p.finalized_at,
+        totalPassVolume:
+          p.total_pass_volume == null ? undefined : Number(p.total_pass_volume),
+        totalFailVolume:
+          p.total_fail_volume == null ? undefined : Number(p.total_fail_volume),
       };
     });
 
@@ -428,6 +476,22 @@ export class ProjectsService {
       supportFeeRecipient: project.support_fee_recipient,
       poolCreatedAt: project.pool_created_at,
       poolCreatedBy: project.pool_created_by,
+      proposalPubkey: project.proposal_pubkey,
+      passPoolAddress: project.pass_pool_address,
+      failPoolAddress: project.fail_pool_address,
+      poolCreateTx: project.pool_create_tx,
+      poolFinalizeTx: project.pool_finalize_tx,
+      poolRefs: project.pool_refs,
+      finalDecision: project.final_decision,
+      finalizedAt: project.finalized_at,
+      totalPassVolume:
+        project.total_pass_volume == null
+          ? undefined
+          : Number(project.total_pass_volume),
+      totalFailVolume:
+        project.total_fail_volume == null
+          ? undefined
+          : Number(project.total_fail_volume),
 
       // Idea-specific fields
       problem: project.problem,
@@ -892,9 +956,17 @@ export class ProjectsService {
 
     if (!project) throw new NotFoundException("Project not found");
 
-    if (project.pool_status !== "pool_open") {
+    if (!["pool_open", "active"].includes(project.pool_status)) {
       throw new BadRequestException("Pool is not open yet");
     }
+
+    try {
+      new PublicKey(dto.onchainProposalPubkey);
+    } catch {
+      throw new BadRequestException("Invalid onchainProposalPubkey");
+    }
+
+    await this.assertConfirmedMainnetTx(dto.onchainCreateTx);
 
     const { data, error } = await supabase
       .from("proposals")
@@ -904,8 +976,8 @@ export class ProjectsService {
         title: dto.title,
         description: dto.description,
         execution_payload: dto.executionPayload || null,
-        onchain_proposal_pubkey: dto.onchainProposalPubkey || null,
-        onchain_create_tx: dto.onchainCreateTx || null,
+        onchain_proposal_pubkey: dto.onchainProposalPubkey,
+        onchain_create_tx: dto.onchainCreateTx,
         onchain_refs: dto.onchainRefs || null,
         status: "pending",
       })
@@ -917,6 +989,170 @@ export class ProjectsService {
     }
 
     return { success: true, data, message: "Proposal created" };
+  }
+
+  async createIdeaPool(
+    projectId: string,
+    userId: string,
+    dto: CreateIdeaPoolDto
+  ): Promise<ApiResponse<any>> {
+    const supabase = this.supabaseService.getAdminClient();
+
+    const { data: project, error: projectError } = await supabase
+      .from("projects")
+      .select(
+        "id, type, title, votes, pool_status, proposal_pubkey, governance_realm_address"
+      )
+      .eq("id", projectId)
+      .single();
+
+    if (projectError || !project) {
+      throw new NotFoundException("Project not found");
+    }
+    if (project.type !== "idea") {
+      throw new BadRequestException("Decision pool is only supported for ideas");
+    }
+    if (project.proposal_pubkey && project.pool_status === "active") {
+      throw new BadRequestException("Decision pool already active for this idea");
+    }
+
+    const reachedThreshold = Number(project.votes || 0) >= this.IDEA_POOL_VOTE_THRESHOLD;
+    if (!reachedThreshold && !dto.sponsor) {
+      throw new BadRequestException(
+        `Idea needs ${this.IDEA_POOL_VOTE_THRESHOLD} upvotes or sponsor mode`
+      );
+    }
+
+    let daoAddress = "";
+    let proposalPubkey = "";
+    let passPoolAddress = "";
+    let failPoolAddress = "";
+    try {
+      daoAddress = new PublicKey(dto.daoAddress).toBase58();
+      proposalPubkey = new PublicKey(dto.proposalPubkey).toBase58();
+      passPoolAddress = new PublicKey(dto.passPoolAddress).toBase58();
+      failPoolAddress = new PublicKey(dto.failPoolAddress).toBase58();
+    } catch {
+      throw new BadRequestException("Invalid pool/proposal pubkey in request body");
+    }
+
+    const createSignature = dto.poolCreateTx.trim();
+    if (!createSignature) {
+      throw new BadRequestException("poolCreateTx is required");
+    }
+    await this.assertConfirmedMainnetTx(createSignature);
+
+    const { data: user } = await supabase
+      .from("users")
+      .select("wallet")
+      .eq("id", userId)
+      .single();
+
+    const refs = {
+      ...(dto.onchainRefs || {}),
+      creatorUserId: userId,
+      creatorWallet: user?.wallet || null,
+      votesAtCreation: Number(project.votes || 0),
+      threshold: this.IDEA_POOL_VOTE_THRESHOLD,
+      sponsor: !!dto.sponsor,
+    };
+
+    const { data, error } = await supabase
+      .from("projects")
+      .update({
+        pool_status: "active",
+        governance_realm_address: daoAddress,
+        governance_treasury_address: daoAddress,
+        proposal_pubkey: proposalPubkey,
+        pass_pool_address: passPoolAddress,
+        fail_pool_address: failPoolAddress,
+        pool_create_tx: createSignature,
+        pool_finalize_tx: null,
+        pool_refs: refs,
+        final_decision: null,
+        finalized_at: null,
+        pool_created_at: new Date().toISOString(),
+      })
+      .eq("id", projectId)
+      .select(
+        "id, title, pool_status, proposal_pubkey, pass_pool_address, fail_pool_address, pool_create_tx, pool_refs, governance_realm_address"
+      )
+      .single();
+
+    if (error || !data) {
+      throw new Error(`Failed to create idea pool mapping: ${error?.message}`);
+    }
+
+    return {
+      success: true,
+      data,
+      message: "Decision pool created and mapped",
+    };
+  }
+
+  async getIdeaMarketStats(projectId: string): Promise<ApiResponse<any>> {
+    const supabase = this.supabaseService.getAdminClient();
+    const { data: project, error } = await supabase
+      .from("projects")
+      .select(
+        "id, pool_status, proposal_pubkey, pass_pool_address, fail_pool_address, final_decision, finalized_at"
+      )
+      .eq("id", projectId)
+      .single();
+
+    if (error || !project) {
+      throw new NotFoundException("Project not found");
+    }
+
+    const passPool = project.pass_pool_address;
+    const failPool = project.fail_pool_address;
+
+    if (!passPool || !failPool) {
+      return {
+        success: true,
+        data: {
+          poolStatus: project.pool_status || "none",
+          passPoolAddress: passPool || null,
+          failPoolAddress: failPool || null,
+          passPoolBalance: 0,
+          failPoolBalance: 0,
+          passProbability: null,
+          failProbability: null,
+          finalDecision: project.final_decision || null,
+          finalizedAt: project.finalized_at || null,
+          updatedAt: new Date().toISOString(),
+        },
+      };
+    }
+
+    const rpc =
+      process.env.SOLANA_RPC_URL ||
+      process.env.NEXT_PUBLIC_SOLANA_RPC_URL ||
+      "https://api.mainnet-beta.solana.com";
+    const connection = new Connection(rpc, "confirmed");
+    const passPoolBalance = await this.getTokenAccountUiBalance(connection, passPool);
+    const failPoolBalance = await this.getTokenAccountUiBalance(connection, failPool);
+    const total = passPoolBalance + failPoolBalance;
+
+    const passProbability = total > 0 ? passPoolBalance / total : null;
+    const failProbability = total > 0 ? failPoolBalance / total : null;
+
+    return {
+      success: true,
+      data: {
+        poolStatus: project.pool_status || "none",
+        proposalPubkey: project.proposal_pubkey || null,
+        passPoolAddress: passPool,
+        failPoolAddress: failPool,
+        passPoolBalance,
+        failPoolBalance,
+        passProbability,
+        failProbability,
+        finalDecision: project.final_decision || null,
+        finalizedAt: project.finalized_at || null,
+        updatedAt: new Date().toISOString(),
+      },
+    };
   }
 
   /**
@@ -992,6 +1228,48 @@ export class ProjectsService {
       data: inserted,
       message: "DAO request submitted and pending admin approval",
     };
+  }
+
+  private async assertConfirmedMainnetTx(signature: string): Promise<void> {
+    const rpc =
+      process.env.SOLANA_RPC_URL ||
+      process.env.NEXT_PUBLIC_SOLANA_RPC_URL ||
+      "https://api.mainnet-beta.solana.com";
+    const connection = new Connection(rpc, "confirmed");
+
+    const status = await connection.getSignatureStatus(signature, {
+      searchTransactionHistory: true,
+    });
+    if (!status.value) {
+      throw new BadRequestException("onchain tx not found");
+    }
+    if (status.value.err) {
+      throw new BadRequestException("onchain tx failed");
+    }
+
+    const tx = await connection.getTransaction(signature, {
+      commitment: "confirmed",
+      maxSupportedTransactionVersion: 0,
+    });
+    if (!tx || tx.meta?.err) {
+      throw new BadRequestException("onchain tx verification failed");
+    }
+  }
+
+  private async getTokenAccountUiBalance(
+    connection: Connection,
+    tokenAccountAddress: string
+  ): Promise<number> {
+    try {
+      const balance = await connection.getTokenAccountBalance(
+        new PublicKey(tokenAccountAddress),
+        "confirmed"
+      );
+      const amount = Number(balance.value.uiAmountString || 0);
+      return Number.isFinite(amount) ? amount : 0;
+    } catch {
+      return 0;
+    }
   }
 
   private async verifyDaoRequestPayment(

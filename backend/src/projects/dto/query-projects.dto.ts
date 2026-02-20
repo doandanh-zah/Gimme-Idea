@@ -71,5 +71,14 @@ export class QueryProjectsDto {
 
   @IsOptional()
   @IsString()
-  poolStatus?: "draft" | "reviewing" | "approved_for_pool" | "pool_open" | "rejected" | string;
+  poolStatus?:
+    | "none"
+    | "draft"
+    | "reviewing"
+    | "approved_for_pool"
+    | "pool_open"
+    | "active"
+    | "finalized"
+    | "rejected"
+    | string;
 }
