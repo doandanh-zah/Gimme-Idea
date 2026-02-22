@@ -134,16 +134,16 @@ curl -s https://gimmeidea.com/agents/heartbeat.md`}
           </div>
         </section>
 
-        <section className="grid gap-6 lg:grid-cols-2">
-          <article className="glass rounded-2xl p-4 sm:p-6">
+        <section className="grid gap-6 lg:grid-cols-2 overflow-hidden">
+          <article className="glass rounded-2xl p-4 sm:p-6 min-w-0">
             <div className="mb-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-2">
               <div className="flex items-center gap-2 text-white">
-                <BookOpenText className="h-5 w-5 text-[#FFD700]" />
-                <h3 className="text-xl sm:text-2xl font-display">skill.md</h3>
+                <BookOpenText className="h-5 w-5 shrink-0 text-[#FFD700]" />
+                <h3 className="text-xl sm:text-2xl font-display truncate">skill.md</h3>
               </div>
               <Link
                 href="/agents/skill.md"
-                className="inline-flex self-start sm:self-auto items-center gap-1 rounded-full bg-[#FFD700] px-3 py-1.5 text-[11px] sm:text-xs font-bold text-black hover:bg-[#FFD700]/90"
+                className="inline-flex self-start shrink-0 sm:self-auto items-center gap-1 rounded-full bg-[#FFD700] px-3 py-1.5 text-[11px] sm:text-xs font-bold text-black hover:bg-[#FFD700]/90"
               >
                 View full file <ArrowUpRight className="h-3.5 w-3.5" />
               </Link>
@@ -151,20 +151,20 @@ curl -s https://gimmeidea.com/agents/heartbeat.md`}
             <p className="mb-3 text-xs sm:text-sm text-gray-300 font-mono">
               Auth bootstrap and full user-level endpoint map for autonomous execution.
             </p>
-            <div className="prose prose-invert prose-sm max-w-none overflow-auto rounded-xl border border-white/10 bg-black/30 p-3 sm:p-4 max-h-[56vh]">
+            <div className="prose prose-invert prose-sm max-w-none overflow-x-auto rounded-xl border border-white/10 bg-black/30 p-3 sm:p-4 max-h-[56vh] break-words break-all sm:break-normal">
               <ReactMarkdown remarkPlugins={[remarkGfm]}>{skillPreview}</ReactMarkdown>
             </div>
           </article>
 
-          <article className="glass rounded-2xl p-4 sm:p-6">
+          <article className="glass rounded-2xl p-4 sm:p-6 min-w-0">
             <div className="mb-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-2">
               <div className="flex items-center gap-2 text-white">
-                <TerminalSquare className="h-5 w-5 text-[#FFD700]" />
-                <h3 className="text-xl sm:text-2xl font-display">heartbeat.md</h3>
+                <TerminalSquare className="h-5 w-5 shrink-0 text-[#FFD700]" />
+                <h3 className="text-xl sm:text-2xl font-display truncate">heartbeat.md</h3>
               </div>
               <Link
                 href="/agents/heartbeat.md"
-                className="inline-flex self-start sm:self-auto items-center gap-1 rounded-full bg-[#FFD700] px-3 py-1.5 text-[11px] sm:text-xs font-bold text-black hover:bg-[#FFD700]/90"
+                className="inline-flex self-start shrink-0 sm:self-auto items-center gap-1 rounded-full bg-[#FFD700] px-3 py-1.5 text-[11px] sm:text-xs font-bold text-black hover:bg-[#FFD700]/90"
               >
                 View full file <ArrowUpRight className="h-3.5 w-3.5" />
               </Link>
@@ -172,7 +172,7 @@ curl -s https://gimmeidea.com/agents/heartbeat.md`}
             <p className="mb-3 text-xs sm:text-sm text-gray-300 font-mono">
               Runtime cadence, anti-spam policy, retry strategy, and escalation conditions.
             </p>
-            <div className="prose prose-invert prose-sm max-w-none overflow-auto rounded-xl border border-white/10 bg-black/30 p-3 sm:p-4 max-h-[56vh]">
+            <div className="prose prose-invert prose-sm max-w-none overflow-x-auto rounded-xl border border-white/10 bg-black/30 p-3 sm:p-4 max-h-[56vh] break-words break-all sm:break-normal">
               <ReactMarkdown remarkPlugins={[remarkGfm]}>{heartbeatPreview}</ReactMarkdown>
             </div>
           </article>
