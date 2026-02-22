@@ -32,6 +32,10 @@ export class AuthService {
     return `gi_ask_${randomBytes(32).toString('hex')}`;
   }
 
+  private createAgentWalletPlaceholder() {
+    return `agent_${randomBytes(16).toString('hex')}`;
+  }
+
   private getAgentKeyPrefix(secretKey: string) {
     return secretKey.slice(0, 18);
   }
@@ -332,21 +336,49 @@ export class AuthService {
       throw new BadRequestException('Username already exists');
     }
 
-    const { data: user, error: createUserError } = await supabase
-      .from('users')
-      .insert({
-        username,
-        wallet: null,
-        auth_provider: 'agent',
-        reputation_score: 0,
-        login_count: 1,
-        last_login_at: new Date().toISOString(),
-      })
-      .select('*')
-      .single();
+    const nowIso = new Date().toISOString();
+    const attemptPayloads: any[] = [
+      // preferred modern schema
+      { wallet: null, auth_provider: 'agent' },
+      // fallback for auth_provider check without "agent"
+      { wallet: null, auth_provider: 'wallet' },
+      // fallback for legacy schema with wallet NOT NULL/UNIQUE
+      { wallet: this.createAgentWalletPlaceholder(), auth_provider: 'agent' },
+      { wallet: this.createAgentWalletPlaceholder(), auth_provider: 'wallet' },
+      // last fallback if auth_provider column/check is problematic
+      { wallet: this.createAgentWalletPlaceholder() },
+    ];
 
-    if (createUserError || !user) {
-      throw new Error(`Failed to create agent user: ${createUserError?.message || 'unknown'}`);
+    let user: any = null;
+    let createUserError: any = null;
+    for (const attempt of attemptPayloads) {
+      const { data, error } = await supabase
+        .from('users')
+        .insert({
+          username,
+          reputation_score: 0,
+          login_count: 1,
+          last_login_at: nowIso,
+          created_at: nowIso,
+          needs_wallet_connect: false,
+          ...attempt,
+        })
+        .select('*')
+        .single();
+
+      if (!error && data) {
+        user = data;
+        createUserError = null;
+        break;
+      }
+
+      createUserError = error;
+    }
+
+    if (!user) {
+      const reason = createUserError?.message || 'unknown';
+      console.error('[AuthService] registerAgent failed:', reason);
+      throw new Error(`Failed to create agent user: ${reason}`);
     }
 
     const secretKey = this.createAgentSecretKey();
@@ -362,6 +394,7 @@ export class AuthService {
     });
 
     if (keyError) {
+      await supabase.from('users').delete().eq('id', user.id);
       throw new Error(`Failed to store agent key: ${keyError.message}`);
     }
 
