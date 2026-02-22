@@ -4,7 +4,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAppStore } from '../lib/store';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, ThumbsUp, ThumbsDown, MessageCircle, Send, EyeOff, User, DollarSign, Share2, Pencil, Trash2, X, Check, Loader2, Bookmark, ChevronDown, Archive, Globe } from 'lucide-react';
+import { ArrowLeft, ThumbsUp, ThumbsDown, MessageCircle, Send, EyeOff, User, DollarSign, Share2, Pencil, Trash2, X, Check, Loader2, Bookmark, ChevronDown, Archive } from 'lucide-react';
 import { BookmarkModal } from './BookmarkModal';
 import { motion, AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';
@@ -15,25 +15,14 @@ import { MarkdownContent } from './MarkdownContent';
 import { MarkdownGuide } from './MarkdownGuide';
 import { AuthorLink, AuthorAvatar } from './AuthorLink';
 import { useAuth } from '../contexts/AuthContext';
-import { useWallet, useConnection } from '@solana/wallet-adapter-react';
-import { Connection, LAMPORTS_PER_SOL, PublicKey, clusterApiUrl } from '@solana/web3.js';
-import BN from 'bn.js';
-// removed ATA auto-create helpers (caused token program mismatch in simulation)
-import { makeFutarchyClient } from '@/lib/metadao/client';
-import { META_MINT, MAINNET_USDC, PriceMath, getDaoAddr } from '@metadaoproject/futarchy/v0.7';
 import { apiClient } from '../lib/api-client';
 import { sanitizeText, hasDangerousContent } from '../lib/sanitize';
 import { createUniqueSlug } from '../lib/slug-utils';
 import AdminDeleteButton from './AdminDeleteButton';
 import AdminBadge, { GimmeSenseiBadge } from './AdminBadge';
 import { RelatedProjectsModal } from './RelatedProjectsModal';
-import { FundingPoolBox } from './FundingPoolBox';
-import { SupportDepositModal } from './SupportDepositModal';
-import { DaoRequestModal } from './DaoRequestModal';
 import { ProposalSendModal } from './ProposalSendModal';
 import { CreatePoolButton } from './ideas/CreatePoolButton';
-import { TradingWidget } from './ideas/TradingWidget';
-import { FinalizeIdeaButton } from './admin/FinalizeIdeaButton';
 
 // AI Bot display name
 const AI_BOT_NAME = 'Gimme Sensei';
@@ -763,14 +752,11 @@ export const IdeaDetail = () => {
         fetchProjectById,
     } = useAppStore();
     const { isAdmin } = useAuth();
-    const wallet = useWallet();
-    const { connection } = useConnection();
     const router = useRouter();
     const [commentText, setCommentText] = useState('');
     const [isAnonComment, setIsAnonComment] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [hasVoted, setHasVoted] = useState(false);
-    const [creatingDao, setCreatingDao] = useState(false);
 
     // Reply form state - only one reply form can be open at a time
     const [activeReplyId, setActiveReplyId] = useState<string | null>(null);
@@ -780,8 +766,6 @@ export const IdeaDetail = () => {
     const [paymentRecipient, setPaymentRecipient] = useState('');
 
     // Support/Deposit (Commit-to-Build)
-    const [showSupportDeposit, setShowSupportDeposit] = useState(false);
-    const [showDaoRequestModal, setShowDaoRequestModal] = useState(false);
     const [proposals, setProposals] = useState<any[]>([]);
     const [showProposalModal, setShowProposalModal] = useState(false);
     const [recipientWallet, setRecipientWallet] = useState('');
@@ -859,158 +843,7 @@ export const IdeaDetail = () => {
 
     if (!project) return null;
 
-    const isIdeaOwner = !!user?.wallet && !!project.author?.wallet && user.wallet === project.author.wallet;
-
-    const handleCreateDao = async () => {
-        if (!isAdmin) return;
-        if (!project?.id) return;
-        if (!wallet.publicKey) {
-            toast.error('Connect wallet to create DAO');
-            return;
-        }
-
-        const solanaNetwork = process.env.NEXT_PUBLIC_SOLANA_NETWORK || 'mainnet-beta';
-        if (solanaNetwork !== 'mainnet-beta') {
-            toast.error('Create DAO is only supported on mainnet-beta right now');
-            return;
-        }
-
-        try {
-            setCreatingDao(true);
-
-            const mainnetRpc =
-                process.env.NEXT_PUBLIC_MAINNET_RPC_URL ||
-                ((process.env.NEXT_PUBLIC_SOLANA_NETWORK || 'mainnet-beta') === 'mainnet-beta'
-                    ? process.env.NEXT_PUBLIC_SOLANA_RPC_URL
-                    : undefined) ||
-                clusterApiUrl('mainnet-beta');
-            const mainnetConnection = new Connection(mainnetRpc, 'confirmed');
-
-            const futarchy = makeFutarchyClient(mainnetConnection as any, wallet as any);
-
-            // Quick pre-check: Create DAO needs SOL for account rent + tx fee.
-            const balanceLamports = await (mainnetConnection as any).getBalance(wallet.publicKey, 'confirmed');
-            const balanceSol = balanceLamports / LAMPORTS_PER_SOL;
-            if (balanceSol < 0.05) {
-                toast.error(`Insufficient SOL to create DAO (need ~0.05+ SOL, current ${balanceSol.toFixed(4)} SOL)`);
-                return;
-            }
-
-            const baseMintAddress = process.env.NEXT_PUBLIC_FUTARCHY_BASE_MINT || META_MINT.toBase58();
-            let baseMint: PublicKey;
-            try {
-                baseMint = new PublicKey(baseMintAddress);
-            } catch {
-                toast.error('Invalid NEXT_PUBLIC_FUTARCHY_BASE_MINT config');
-                return;
-            }
-
-            const baseMintInfo = await (mainnetConnection as any).getAccountInfo(baseMint, 'confirmed');
-            if (!baseMintInfo) {
-                toast.error(`Base mint not found on mainnet: ${baseMint.toBase58()}`);
-                return;
-            }
-
-            const nonce = new BN(Date.now());
-            const oneBuck = PriceMath.getAmmPrice(1, 6, 6);
-
-            const ixBuilder = futarchy.initializeDaoIx({
-                baseMint,
-                quoteMint: MAINNET_USDC,
-                params: {
-                    secondsPerProposal: 60 * 60 * 24 * 3,
-                    twapStartDelaySeconds: 60 * 60 * 24,
-                    twapInitialObservation: oneBuck,
-                    twapMaxObservationChangePerUpdate: oneBuck.divn(100),
-                    minQuoteFutarchicLiquidity: new BN(10_000),
-                    minBaseFutarchicLiquidity: new BN(10_000),
-                    passThresholdBps: 300,
-                    nonce,
-                    initialSpendingLimit: null,
-                    baseToStake: new BN(0),
-                    teamSponsoredPassThresholdBps: 300,
-                    teamAddress: wallet.publicKey,
-                },
-                provideLiquidity: false,
-            });
-
-            const tx = await (ixBuilder as any).transaction();
-            tx.feePayer = wallet.publicKey;
-
-            // Ensure creator has ATA for quote/base mints (prevents common AccountNotInitialized errors).
-            // Removed hard RPC-mismatch guard because some RPC providers may intermittently
-            // return null on getAccountInfo for these mints. Let simulation decide the real error.
-            console.log('[Create DAO] RPC endpoint', mainnetRpc.replace(/api-key=[^&]+/i, 'api-key=***'));
-            console.log('[Create DAO] Mints', {
-                usdcMint: MAINNET_USDC.toBase58(),
-                baseMint: baseMint.toBase58(),
-            });
-
-            const { blockhash, lastValidBlockHeight } = await (mainnetConnection as any).getLatestBlockhash('confirmed');
-            tx.recentBlockhash = blockhash;
-
-            if (!(wallet as any).signTransaction) {
-                throw new Error('Wallet does not support signTransaction');
-            }
-
-            const signed = await (wallet as any).signTransaction(tx);
-            const sim = await (mainnetConnection as any).simulateTransaction(signed);
-            if (sim.value.err) {
-                console.error('[Create DAO] Simulation error:', sim.value.err);
-                console.error('[Create DAO] Simulation logs:', sim.value.logs);
-
-                const logs = sim.value.logs || [];
-                const compactReason =
-                    logs.find((l: string) => /insufficient|custom program error|failed/i.test(l)) ||
-                    logs.find((l: string) => /Error|error/i.test(l));
-
-                toast.error(compactReason ? `Create DAO failed: ${compactReason}` : 'Create DAO failed (simulation). Check console for logs.');
-                return;
-            }
-
-            const sig = await (mainnetConnection as any).sendRawTransaction(signed.serialize(), {
-                skipPreflight: true,
-                maxRetries: 3,
-            });
-            await (mainnetConnection as any).confirmTransaction({ signature: sig, blockhash, lastValidBlockHeight }, 'confirmed');
-
-            const [dao] = getDaoAddr({ nonce, daoCreator: wallet.publicKey });
-
-            const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
-            const res = await fetch(`${API_URL}/admin/projects/${project.id}/funding-pool`, {
-                method: 'PATCH',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${localStorage.getItem('auth_token') || ''}`,
-                },
-                body: JSON.stringify({
-                    poolStatus: 'pool_open',
-                    governanceRealmAddress: dao.toBase58(),
-                    governanceTreasuryAddress: dao.toBase58(),
-                    supportFeeBps: 50,
-                    supportFeeCapUsdc: 0,
-                    supportFeeRecipient: 'FzcnaZMYcoAYpLgr7Wym2b8hrKYk3VXsRxWSLuvZKLJm',
-                }),
-            });
-            const data = await res.json();
-            if (!data.success) {
-                toast.error(data.error || 'DAO created but failed to save to DB');
-            } else {
-                toast.success('DAO created + pool opened');
-                await fetchProjectById(project.id);
-            }
-        } catch (e: any) {
-            console.error('[Create DAO] Error:', e);
-            const msg =
-                e?.message ||
-                e?.error?.message ||
-                (typeof e === 'string' ? e : 'Failed to create DAO');
-            if (e?.logs) console.error('[Create DAO] logs:', e.logs);
-            toast.error(msg);
-        } finally {
-            setCreatingDao(false);
-        }
-    };
+    
     const handleVote = async () => {
         if (!user) {
             openConnectReminder();
@@ -1168,28 +1001,9 @@ export const IdeaDetail = () => {
                                 )}
                             </button>
 
-                            {isIdeaOwner && !['pool_open', 'active', 'finalized'].includes(project.poolStatus || '') && (
-                                <button
-                                    onClick={() => setShowDaoRequestModal(true)}
-                                    className="bg-white/10 text-white px-4 sm:px-5 py-2 rounded-full font-bold flex items-center gap-2 hover:bg-white/15 transition-colors text-sm"
-                                    title="Request admin approval to create DAO"
-                                >
-                                    <Globe className="w-4 h-4" /> Request DAO ($3)
-                                </button>
-                            )}
-
                             {/* Admin Actions */}
                             {isAdmin && (
                                 <>
-                                    <button
-                                        onClick={handleCreateDao}
-                                        disabled={creatingDao}
-                                        className="bg-white/10 text-white px-4 sm:px-5 py-2 rounded-full font-bold flex items-center gap-2 hover:bg-white/15 transition-colors text-sm disabled:opacity-50 disabled:cursor-not-allowed"
-                                        title="Create MetaDAO DAO + open pool for this idea"
-                                    >
-                                        <Globe className="w-4 h-4" /> {creatingDao ? 'Creating DAO…' : 'Create DAO'}
-                                    </button>
-
                                     <AdminDeleteButton
                                         projectId={project.id}
                                         projectTitle={project.title}
@@ -1242,37 +1056,22 @@ export const IdeaDetail = () => {
                     </div>
                 </div>
 
-                    {/* Funding Pool */}
-                    <div className="mt-10 mb-10">
-                        <FundingPoolBox project={project} onSupport={() => setShowSupportDeposit(true)} />
-                    </div>
-
-                    {/* Decision Pool + Trading (Phase 2/3/4) */}
+                    {/* On-chain Actions */}
                     <div className="mb-10 rounded-2xl border border-white/10 bg-white/[0.03] p-5 space-y-4">
                         <div className="flex items-center justify-between gap-3">
                             <h3 className="text-sm font-bold text-white uppercase tracking-wider font-mono">
-                                Decision Pool
+                                On-chain Actions
                             </h3>
                             {project.finalDecision ? (
                                 <span className="text-xs text-yellow-300">Final: {project.finalDecision}</span>
                             ) : null}
                         </div>
-
-                        {project.proposalPubkey ? (
-                            <>
-                                <TradingWidget idea={project} />
-                                {isAdmin ? (
-                                    <FinalizeIdeaButton
-                                        idea={project}
-                                        onFinalized={refreshIdeaAndProposals}
-                                    />
-                                ) : null}
-                            </>
+                        {!project.proposalPubkey ? (
+                            <CreatePoolButton idea={project} onCreated={refreshIdeaAndProposals} />
                         ) : (
-                            <CreatePoolButton
-                                idea={project}
-                                onCreated={refreshIdeaAndProposals}
-                            />
+                            <p className="text-xs text-gray-400">
+                                Pool already created. You can send proposal below.
+                            </p>
                         )}
                     </div>
 
@@ -1408,31 +1207,12 @@ export const IdeaDetail = () => {
                 </div>
             </div>
 
-            <SupportDepositModal
-                isOpen={showSupportDeposit}
-                onClose={() => setShowSupportDeposit(false)}
-                projectId={project.id}
-                treasuryAddress={project.governanceTreasuryAddress}
-                ideaTitle={project.title}
-                feeBps={project.supportFeeBps ?? 50}
-                feeCapUsdc={project.supportFeeCapUsdc ?? 0}
-                feeRecipient={project.supportFeeRecipient ?? 'FzcnaZMYcoAYpLgr7Wym2b8hrKYk3VXsRxWSLuvZKLJm'}
-            />
-
             <ProposalSendModal
                 isOpen={showProposalModal}
                 onClose={() => setShowProposalModal(false)}
                 projectId={project.id}
                 daoAddress={project.governanceRealmAddress}
                 onSubmitted={fetchProposals}
-            />
-
-            <DaoRequestModal
-                isOpen={showDaoRequestModal}
-                onClose={() => setShowDaoRequestModal(false)}
-                projectId={project.id}
-                minUsd={3}
-                recipientWallet={'FzcnaZMYcoAYpLgr7Wym2b8hrKYk3VXsRxWSLuvZKLJm'}
             />
 
             <PaymentModal
