@@ -84,10 +84,10 @@ export default function AgentAuthPage() {
             </p>
             <div className="flex flex-wrap gap-2">
               <button
-                onClick={() => router.push('/settings/agent')}
+                onClick={() => router.push('/idea')}
                 className="px-4 py-2 rounded-full bg-emerald-500/20 border border-emerald-300/30 text-emerald-200 text-sm font-semibold"
               >
-                Manage Agent Keys
+                Go to Ideas
               </button>
               <button
                 onClick={async () => {

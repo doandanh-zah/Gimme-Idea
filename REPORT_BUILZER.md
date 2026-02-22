@@ -53,14 +53,14 @@ Update every 10 minutes.
 
 ## Update 20:17 ICT
 - Phase: Phase 3 + Phase 4 continuation
-- Done: Added backend endpoint `GET /auth/agent/keys`; added dedicated Agent auth page (`/auth/agent`) for register/login without prompt/alert; added Agent key management page (`/settings/agent`) with list/rotate/revoke + last-used view; updated navbar shortcut; expanded `mcp/gimme-idea/skill.md` and `heartbeat.md` to full user-level operation guide.
+- Done: Added backend endpoint `GET /auth/agent/keys`; added dedicated Agent auth page (`/auth/agent`) for register/login without prompt/alert; updated navbar shortcut; expanded `mcp/gimme-idea/skill.md` and `heartbeat.md` to full user-level operation guide.
 - Blockers: Need local build verification for both backend/frontend before final push.
 - Next (10m): Run compile checks, fix any errors, commit and push.
 - Commit: <pending>
 
 ## Update 20:29 ICT
 - Phase: Verification + handoff
-- Done: Backend build passed after fixing Nest 429 exception import and `helmet` import compatibility; frontend docs/page routes completed for `/agents`, `/skill.md`, `/heartbeat.md`; TypeScript check `npx tsc --noEmit` passed in frontend.
+- Done: Backend build passed after fixing Nest 429 exception import and `helmet` import compatibility; frontend docs/page routes completed for `/agents`, `/agents/skill.md`, `/agents/heartbeat.md`; TypeScript check `npx tsc --noEmit` passed in frontend.
 - Blockers: Full `next build` in local environment was interrupted before final success log capture.
 - Next (10m): Commit and hand off for Vercel deploy verification.
 - Commit: <pending>
