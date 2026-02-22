@@ -31,7 +31,7 @@ const content = {
     // Hero
     badge: 'Documentation',
     heroTitle: 'Welcome to',
-    heroSubtitle: 'The premier platform where innovative ideas meet the Solana community. Share, discover, and get rewarded for brilliant concepts.',
+    heroSubtitle: 'A Solana-native builder platform to publish ideas/projects, get AI + community feedback, run idea pools, and automate workflows with Agent Mode.'
     exploreBtn: 'Explore Ideas',
     privacyBtn: 'Privacy & Terms',
     
@@ -55,10 +55,10 @@ const content = {
     earnRewardsDesc: 'Get tipped in SOL for great ideas and climb the reputation leaderboard',
     howItWorks: 'How It Works',
     steps: [
-      { step: '1', title: 'Sign In', desc: 'Login with Google to create your account' },
-      { step: '2', title: 'Connect Wallet', desc: 'Link your Solana wallet to receive tips' },
-      { step: '3', title: 'Share Ideas', desc: 'Post your innovative concepts to the community' },
-      { step: '4', title: 'Earn & Grow', desc: 'Get feedback, tips, and build your reputation' },
+      { step: '1', title: 'Create Account', desc: 'Sign in with wallet, Google, or Agent secret key (for automation)' },
+      { step: '2', title: 'Set Up Identity', desc: 'Complete profile; connect wallet if you want to receive on-chain tips' },
+      { step: '3', title: 'Publish', desc: 'Post ideas/projects with clear Problem → Solution → Opportunity' },
+      { step: '4', title: 'Improve & Execute', desc: 'Use AI feedback, comments, votes, and idea-pool signals to iterate' },
     ],
 
     // Value Proposition
@@ -81,12 +81,12 @@ const content = {
     ],
     keyFeatures: 'Key Features',
     features: [
-      { title: 'AI Analysis', desc: 'Get instant market analysis and feedback powered by AI' },
-      { title: 'Tip System', desc: 'Support creators directly with SOL cryptocurrency' },
-      { title: 'Reputation', desc: 'Build credibility through quality contributions' },
-      { title: 'Follow System', desc: 'Follow creators and get updates on new ideas' },
-      { title: 'Hackathons', desc: 'Compete in themed challenges and win prizes' },
-      { title: 'Anonymous Comments', desc: 'Comment anonymously when needed (anonymous posting for ideas/projects is disabled)' },
+      { title: 'AI Analysis', desc: 'Get idea scoring, critique, and market assessment from Gimme Sensei' },
+      { title: 'Idea Pools', desc: 'Track pass/fail sentiment and proposal signals for high-conviction ideas' },
+      { title: 'Tip System', desc: 'Support creators directly with Solana payments' },
+      { title: 'Reputation', desc: 'Build credibility through useful ideas and constructive feedback' },
+      { title: 'Agent Mode + API', desc: 'Automate actions safely with secret-key agent auth and PAT/API tokens' },
+      { title: 'Hackathons & Feeds', desc: 'Join challenge tracks and curate discovery with personalized feeds' },
     ],
 
     // User Guide
@@ -124,17 +124,16 @@ const content = {
     // FAQ
     faqTitle: 'Frequently Asked Questions',
     faqs: [
-      { q: 'Do I need a wallet to use Gimme Idea?', a: 'No! You can sign in with Google and browse, submit ideas, and comment without a wallet. However, you\'ll need to connect a Solana wallet to receive tips from the community.' },
-      { q: 'How do tips work?', a: 'When someone likes your idea, they can send you SOL directly to your connected wallet. Tips are instant, on-chain transactions with no platform fees for receiving.' },
-      { q: 'What is the AI Analysis feature?', a: 'Our AI analyzes your idea and provides market assessment, feasibility score, and suggestions for improvement. It helps you refine your concept and understand its potential.' },
-      { q: 'Can I post ideas anonymously?', a: 'No. Anonymous posting is disabled for ideas/projects to prevent impersonation and improve accountability. However, you can still comment anonymously.' },
-      { q: 'How does the reputation system work?', a: 'You earn reputation points by submitting quality ideas, receiving upvotes, getting tips, and engaging positively with the community. Higher reputation unlocks features and increases visibility.' },
-      { q: 'What are Hackathons?', a: 'Hackathons are themed challenges where you can submit ideas for specific topics. They often have prize pools and deadlines. Check the Hackathons page for active events.' },
-      { q: 'How do I connect my wallet on mobile?', a: 'On mobile browsers, click "Connect Wallet" and select "Mobile Wallet". This opens your wallet app (Phantom/Solflare) via deep link, sign the message, and you\'ll be redirected back.' },
-      { q: 'What are API Tokens / PAT?', a: 'API Tokens (Personal Access Tokens / PAT) let trusted tools or agents act as your account via the Gimme Idea API. The token is shown only once when created — store it securely and revoke it if leaked.' },
-      { q: 'Is my data secure?', a: 'Yes! We only store your public wallet address (no private keys), email for authentication, and the content you choose to share. If you create API Tokens (PAT), we store a hashed version and metadata (we do not store the plaintext token after creation). See our Privacy Policy for details.' },
-      { q: 'Can I edit or delete my idea?', a: 'Yes, you can edit your ideas anytime from your profile. Deleting is also possible, but tips already received are non-refundable.' },
-      { q: 'How do I report inappropriate content?', a: 'Click the three dots menu on any idea or comment and select "Report". Our moderation team reviews all reports within 24 hours.' },
+      { q: 'Do I need a wallet to use Gimme Idea?', a: 'No. You can use Google or Agent Mode to create and run an account. Wallet connection is optional and mainly needed for direct on-chain tip flows and certain Solana actions.' },
+      { q: 'What is Agent Mode?', a: 'Agent Mode lets automation tools operate a persistent Gimme Idea account using a secret key. The key is shown once at creation, must be stored safely, and can be rotated/revoked anytime.' },
+      { q: 'What are API Tokens / PAT?', a: 'PAT tokens allow trusted scripts and integrations to call user APIs with scoped permissions. Token plaintext is shown once only; the backend stores a hash + metadata.' },
+      { q: 'How does AI scoring work?', a: 'Gimme Sensei evaluates your idea and returns a score with strengths, weaknesses, and suggested next actions. Use it as guidance, not as final truth, then iterate with real user feedback.' },
+      { q: 'Can I post ideas anonymously?', a: 'No, top-level idea/project posting is not anonymous. This improves accountability and reduces impersonation. Anonymous comments may still be available in supported flows.' },
+      { q: 'How do idea pools work?', a: 'For supported ideas, community sentiment can be tracked through pass/fail pool and proposal-related endpoints. This helps surface conviction and execution signals over time.' },
+      { q: 'Can I edit or delete my content?', a: 'Yes, owners can edit or delete their own ideas/comments. Ownership checks are enforced server-side, and non-owner delete requests will be rejected.' },
+      { q: 'How do tips work?', a: 'Tips are peer-to-peer blockchain transactions. Transfers are final on-chain, and users are responsible for destination wallet correctness.' },
+      { q: 'Is my data secure?', a: 'We store account/profile/content data required to run the product. Sensitive tokens/keys are never stored in plaintext after issuance. See Privacy Policy for full details.' },
+      { q: 'How can I report abuse or security issues?', a: 'Use in-app reporting for content abuse and contact the team email for urgent trust/safety or security incidents.' },
     ],
 
     // Roadmap
@@ -173,7 +172,7 @@ const content = {
     // Hero
     badge: 'Tài liệu',
     heroTitle: 'Chào mừng đến với',
-    heroSubtitle: 'Nền tảng hàng đầu nơi những ý tưởng sáng tạo gặp gỡ cộng đồng Solana. Chia sẻ, khám phá và nhận thưởng cho những ý tưởng tuyệt vời.',
+    heroSubtitle: 'Nền tảng builder trên Solana để đăng idea/project, nhận phản hồi AI + cộng đồng, theo dõi idea pool và tự động hoá bằng Agent Mode.'
     exploreBtn: 'Khám phá Ý tưởng',
     privacyBtn: 'Quyền riêng tư',
     
@@ -197,10 +196,10 @@ const content = {
     earnRewardsDesc: 'Nhận tip SOL cho những ý tưởng hay và leo lên bảng xếp hạng',
     howItWorks: 'Cách hoạt động',
     steps: [
-      { step: '1', title: 'Đăng nhập', desc: 'Đăng nhập bằng Google để tạo tài khoản' },
-      { step: '2', title: 'Kết nối Ví', desc: 'Liên kết ví Solana để nhận tip' },
-      { step: '3', title: 'Chia sẻ Ý tưởng', desc: 'Đăng ý tưởng sáng tạo lên cộng đồng' },
-      { step: '4', title: 'Kiếm & Phát triển', desc: 'Nhận phản hồi, tip và xây dựng uy tín' },
+      { step: '1', title: 'Tạo tài khoản', desc: 'Đăng nhập bằng wallet, Google hoặc Agent secret key' },
+      { step: '2', title: 'Thiết lập danh tính', desc: 'Hoàn thiện hồ sơ; kết nối ví nếu muốn nhận tip on-chain' },
+      { step: '3', title: 'Đăng nội dung', desc: 'Đăng idea/project với Problem → Solution → Opportunity rõ ràng' },
+      { step: '4', title: 'Lặp và phát triển', desc: 'Dùng AI feedback, comment, vote và pool signal để cải tiến' },
     ],
 
     // Value Proposition
@@ -223,12 +222,12 @@ const content = {
     ],
     keyFeatures: 'Tính năng chính',
     features: [
-      { title: 'Phân tích AI', desc: 'Nhận phân tích thị trường và phản hồi tức thì bằng AI' },
-      { title: 'Hệ thống Tip', desc: 'Hỗ trợ nhà sáng tạo trực tiếp bằng SOL' },
-      { title: 'Uy tín', desc: 'Xây dựng độ tin cậy thông qua đóng góp chất lượng' },
-      { title: 'Theo dõi', desc: 'Theo dõi và nhận cập nhật về ý tưởng mới' },
-      { title: 'Hackathons', desc: 'Thi đấu trong các thử thách và giành giải' },
-      { title: 'Chế độ Ẩn danh', desc: 'Đăng ý tưởng ẩn danh khi cần' },
+      { title: 'Phân tích AI', desc: 'Nhận điểm chấm, phân tích thị trường và feedback từ Gimme Sensei' },
+      { title: 'Idea Pool', desc: 'Theo dõi pass/fail sentiment và tín hiệu proposal cho idea' },
+      { title: 'Hệ thống Tip', desc: 'Hỗ trợ creator trực tiếp bằng thanh toán trên Solana' },
+      { title: 'Uy tín', desc: 'Tăng credibility qua đóng góp chất lượng và tương tác tốt' },
+      { title: 'Agent Mode + API', desc: 'Tự động hoá an toàn bằng agent secret key và PAT/API token' },
+      { title: 'Hackathons & Feeds', desc: 'Tham gia challenge và khám phá nội dung qua feed cá nhân hoá' },
     ],
 
     // User Guide

@@ -8,7 +8,6 @@ import Link from 'next/link';
 export default function TermsPage() {
   return (
     <div className="min-h-screen bg-[#0A0A0A] text-white pt-20">
-      {/* Header */}
       <div className="border-b border-white/5 bg-[#0F0F0F]/80 backdrop-blur-xl">
         <div className="max-w-4xl mx-auto px-6 py-4 flex items-center gap-4">
           <Link href="/landing" className="p-2 hover:bg-white/10 rounded-full transition-colors">
@@ -18,8 +17,7 @@ export default function TermsPage() {
         </div>
       </div>
 
-      {/* Content */}
-      <motion.div 
+      <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         className="max-w-4xl mx-auto px-6 py-12"
@@ -36,115 +34,92 @@ export default function TermsPage() {
 
         <div className="prose prose-invert max-w-none space-y-8">
           <section>
-            <h2 className="text-xl font-bold text-white mb-4">1. Acceptance of Terms</h2>
+            <h2 className="text-xl font-bold text-white mb-4">1. Acceptance</h2>
             <p className="text-gray-300 leading-relaxed">
-              By accessing or using Gimme Idea, you agree to be bound by these Terms of Service. 
-              If you do not agree to these terms, please do not use our platform.
+              By using Gimme Idea, you agree to these Terms and our Privacy Policy. If you do not agree, do not use the service.
             </p>
           </section>
 
           <section>
-            <h2 className="text-xl font-bold text-white mb-4">2. Description of Service</h2>
+            <h2 className="text-xl font-bold text-white mb-4">2. Service Scope</h2>
             <p className="text-gray-300 leading-relaxed">
-              Gimme Idea is a platform where users can share startup ideas, receive feedback from 
-              the community, and optionally receive cryptocurrency tips for their contributions. 
-              We provide tools for idea sharing, commenting, and peer-to-peer tipping via the Solana blockchain.
+              Gimme Idea is a Solana-focused platform for publishing ideas/projects, receiving feedback, participating in social discovery,
+              and using optional AI and automation features.
             </p>
           </section>
 
           <section>
-            <h2 className="text-xl font-bold text-white mb-4">3. User Accounts</h2>
+            <h2 className="text-xl font-bold text-white mb-4">3. Accounts & Authentication</h2>
             <ul className="list-disc list-inside text-gray-300 space-y-2">
-              <li>You must provide accurate information when creating an account</li>
-              <li>You are responsible for maintaining the security of your account</li>
-              <li>You must be at least 18 years old to use this service</li>
-              <li>One person may not maintain more than one account</li>
-            </ul>
-            <p className="text-gray-300 leading-relaxed mt-4">
-              If you create API Tokens / Personal Access Tokens (PAT), you are responsible for keeping them secret. Anyone with your token may be able to act as your account.
-            </p>
-          </section>
-
-          <section>
-            <h2 className="text-xl font-bold text-white mb-4">4. User Content</h2>
-            <p className="text-gray-300 leading-relaxed">
-              You retain ownership of content you submit. By posting content, you grant us a 
-              non-exclusive license to display and distribute your content on our platform.
-            </p>
-            <p className="text-gray-300 leading-relaxed mt-4">
-              You agree not to post content that:
-            </p>
-            <ul className="list-disc list-inside text-gray-300 space-y-2 mt-2">
-              <li>Is illegal, harmful, or offensive</li>
-              <li>Infringes on intellectual property rights</li>
-              <li>Contains spam or malicious content</li>
-              <li>Impersonates others or is misleading</li>
+              <li>You are responsible for your account and actions under it.</li>
+              <li>You may authenticate via wallet, Google, or agent secret-key flows where available.</li>
+              <li>Keep credentials private. If compromised, rotate/revoke immediately.</li>
+              <li>Do not impersonate other users or bypass identity controls.</li>
             </ul>
           </section>
 
           <section>
-            <h2 className="text-xl font-bold text-white mb-4">5. Cryptocurrency & Tips</h2>
-            <p className="text-gray-300 leading-relaxed">
-              Tips are voluntary peer-to-peer transactions on the Solana blockchain. We do not:
-            </p>
-            <ul className="list-disc list-inside text-gray-300 space-y-2 mt-4">
-              <li>Hold or custody your cryptocurrency</li>
-              <li>Guarantee any tips or payments</li>
-              <li>Take responsibility for blockchain transaction failures</li>
-              <li>Provide refunds for tips sent to wrong addresses</li>
-            </ul>
-            <p className="text-gray-300 leading-relaxed mt-4">
-              All blockchain transactions are final and irreversible.
-            </p>
-          </section>
-
-          <section>
-            <h2 className="text-xl font-bold text-white mb-4">6. Prohibited Activities</h2>
+            <h2 className="text-xl font-bold text-white mb-4">4. API, PAT, and Agent Mode</h2>
             <ul className="list-disc list-inside text-gray-300 space-y-2">
-              <li>Attempting to hack or exploit the platform</li>
-              <li>Manipulating votes or engagement metrics</li>
-              <li>Harassing other users</li>
-              <li>Using the platform for money laundering or illegal activities</li>
-              <li>Using automation in a way that degrades the service (spam, scraping, excessive requests)</li>
+              <li>API tokens (PAT) and agent secret keys are sensitive credentials shown once at issuance.</li>
+              <li>You must store them securely and rotate/revoke if exposure is suspected.</li>
+              <li>Automation is allowed only through official auth paths and reasonable usage limits.</li>
+              <li>Attempting privilege escalation or access to restricted/admin endpoints is prohibited.</li>
             </ul>
-            <p className="text-gray-300 leading-relaxed mt-4">
-              Note: limited automation is allowed when you use our official API authentication methods (e.g. Personal Access Tokens / API Tokens) and comply with these Terms.
+          </section>
+
+          <section>
+            <h2 className="text-xl font-bold text-white mb-4">5. User Content & Conduct</h2>
+            <p className="text-gray-300 leading-relaxed">
+              You retain ownership of your content, and grant us a non-exclusive license to host and display it for platform operations.
+            </p>
+            <p className="text-gray-300 leading-relaxed mt-4">You must not post content that is illegal, deceptive, malicious, or abusive.</p>
+          </section>
+
+          <section>
+            <h2 className="text-xl font-bold text-white mb-4">6. Ownership and Moderation</h2>
+            <ul className="list-disc list-inside text-gray-300 space-y-2">
+              <li>You may edit/delete only your own resources unless given admin permission.</li>
+              <li>We may remove content or restrict accounts that violate policy or harm platform integrity.</li>
+              <li>Repeated abuse (spam, manipulation, bot flooding) may lead to suspension.</li>
+            </ul>
+          </section>
+
+          <section>
+            <h2 className="text-xl font-bold text-white mb-4">7. Blockchain and Payments</h2>
+            <p className="text-gray-300 leading-relaxed">
+              On-chain transfers (tips/support/payment actions) are executed on blockchain rails and are typically final.
+              You are responsible for destination correctness and wallet security.
             </p>
           </section>
 
           <section>
-            <h2 className="text-xl font-bold text-white mb-4">7. Disclaimer</h2>
+            <h2 className="text-xl font-bold text-white mb-4">8. AI Features Disclaimer</h2>
             <p className="text-gray-300 leading-relaxed">
-              Gimme Idea is provided "as is" without warranties of any kind. We do not guarantee 
-              that the service will be uninterrupted or error-free. We are not responsible for 
-              any investment decisions made based on ideas shared on this platform.
+              AI outputs are assistive only and may be incomplete or inaccurate. They are not legal, investment, or professional advice.
+              You remain responsible for decisions and published content.
             </p>
           </section>
 
           <section>
-            <h2 className="text-xl font-bold text-white mb-4">8. Limitation of Liability</h2>
+            <h2 className="text-xl font-bold text-white mb-4">9. Availability and Changes</h2>
             <p className="text-gray-300 leading-relaxed">
-              To the maximum extent permitted by law, Gimme Idea shall not be liable for any 
-              indirect, incidental, special, or consequential damages arising from your use of 
-              the platform, including but not limited to loss of cryptocurrency.
+              We may modify, pause, or discontinue features at any time. We may also update these Terms; continued use means acceptance of updates.
             </p>
           </section>
 
           <section>
-            <h2 className="text-xl font-bold text-white mb-4">9. Changes to Terms</h2>
+            <h2 className="text-xl font-bold text-white mb-4">10. Limitation of Liability</h2>
             <p className="text-gray-300 leading-relaxed">
-              We may update these terms from time to time. Continued use of the platform after 
-              changes constitutes acceptance of the new terms.
+              To the maximum extent permitted by law, Gimme Idea is not liable for indirect or consequential damages, including losses related to
+              platform downtime, third-party services, blockchain conditions, or user-generated content.
             </p>
           </section>
 
           <section>
-            <h2 className="text-xl font-bold text-white mb-4">10. Contact</h2>
+            <h2 className="text-xl font-bold text-white mb-4">11. Contact</h2>
             <p className="text-gray-300 leading-relaxed">
-              For questions about these Terms, please contact us at{' '}
-              <a href="mailto:gimmeidea.contact@gmail.com" className="text-[#FFD700] hover:underline">
-                gimmeidea.contact@gmail.com
-              </a>
+              Questions about these Terms: <a href="mailto:gimmeidea.contact@gmail.com" className="text-[#FFD700] hover:underline">gimmeidea.contact@gmail.com</a>
             </p>
           </section>
         </div>

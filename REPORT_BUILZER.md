@@ -64,3 +64,10 @@ Update every 10 minutes.
 - Blockers: Full `next build` in local environment was interrupted before final success log capture.
 - Next (10m): Commit and hand off for Vercel deploy verification.
 - Commit: <pending>
+
+## Update 01:24 ICT
+- Phase: Product docs refresh
+- Done: Added root `README.md`; refreshed `/docs` page content for current product scope (agent mode, idea pools, updated FAQ); rewrote `/terms` and `/privacy` content to match current platform capabilities while keeping existing design/layout.
+- Blockers: None.
+- Next (10m): Commit + push these documentation/content updates.
+- Commit: <pending>
