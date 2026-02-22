@@ -14,9 +14,9 @@ Build an **Agent Mode** for Gimme Idea so an agent can:
 
 ## Requested constraints from Zah
 - Start execution at **14:45 (Asia/Ho_Chi_Minh)**
-- Roki must push to GitHub every **30 minutes**
-- Roki must update progress in `REPORT_BUILZER.md` every **30 minutes**
-- Lizen checks `REPORT_BUILZER.md` every **30 minutes** until complete
+- Roki must push to GitHub every **10 minutes**
+- Roki must update progress in `REPORT_BUILZER.md` every **10 minutes**
+- Lizen checks `REPORT_BUILZER.md` every **10 minutes** until complete
 
 ---
 
@@ -114,13 +114,13 @@ Build an **Agent Mode** for Gimme Idea so an agent can:
 
 ---
 
-## 30-minute reporting protocol (mandatory for Roki)
-Update `REPORT_BUILZER.md` every 30 minutes with:
+## 10-minute reporting protocol (mandatory for Roki)
+Update `REPORT_BUILZER.md` every 10 minutes with:
 - Timestamp (Asia/Ho_Chi_Minh)
 - Current phase
 - What was finished
 - Blockers
-- Next 30-min target
+- Next 10-min target
 - Commit hash pushed
 
 Template:
@@ -129,7 +129,7 @@ Template:
 - Phase:
 - Done:
 - Blockers:
-- Next (30m):
+- Next (10m):
 - Commit:
 ```
 

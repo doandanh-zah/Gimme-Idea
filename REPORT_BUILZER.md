@@ -4,7 +4,7 @@
 Agent secret-key auth + MCP/Skill + heartbeat for Gimme Idea
 
 ## Reporting rule
-Update every 30 minutes.
+Update every 10 minutes.
 
 ---
 
