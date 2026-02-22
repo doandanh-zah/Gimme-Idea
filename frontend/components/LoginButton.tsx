@@ -2,14 +2,12 @@
 
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { KeyRound, Wallet } from 'lucide-react';
+import { Wallet } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import toast from 'react-hot-toast';
-import { useRouter } from 'next/navigation';
 
 export const LoginButton = () => {
   const { signInWithGoogle, signInWithWallet, isLoading } = useAuth();
-  const router = useRouter();
   const [isSigningInGoogle, setIsSigningInGoogle] = useState(false);
   const [isSigningInWallet, setIsSigningInWallet] = useState(false);
 
@@ -36,13 +34,8 @@ export const LoginButton = () => {
     }
   };
 
-  const handleAgentLogin = async () => {
-    router.push('/auth/agent');
-  };
-
   const loadingGoogle = isLoading || isSigningInGoogle;
   const loadingWallet = isLoading || isSigningInWallet;
-  const loadingAgent = isLoading;
 
   return (
     <div className="flex items-center gap-2">
@@ -80,22 +73,6 @@ export const LoginButton = () => {
             <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" />
             <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" />
           </svg>
-        )}
-      </motion.button>
-
-      <motion.button
-        whileHover={{ scale: 1.05 }}
-        whileTap={{ scale: 0.95 }}
-        onClick={handleAgentLogin}
-        disabled={loadingAgent}
-        aria-label="Sign in with Agent key"
-        title="Sign in with Agent key"
-        className="flex items-center justify-center w-10 h-10 bg-emerald-500/20 text-emerald-300 rounded-full hover:bg-emerald-500/30 transition-all duration-300 border border-emerald-300/30 disabled:opacity-70 disabled:cursor-not-allowed"
-      >
-        {loadingAgent ? (
-          <div className="w-4 h-4 border-2 border-emerald-200/40 border-t-emerald-200 rounded-full animate-spin" />
-        ) : (
-          <KeyRound className="w-4 h-4" />
         )}
       </motion.button>
     </div>
