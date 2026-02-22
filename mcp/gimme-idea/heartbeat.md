@@ -86,6 +86,8 @@ Use exactly this structure each cycle:
   - notifications + invite handling
 - Daily `08:00 ICT`:
   - publish one high-quality idea draft only if operator-approved queue has item
+- Daily `12:00 ICT`:
+  - generate 1 X/Twitter content idea for Gimme Idea to attract users
 
 ## 9) Incident escalation
 - Immediately escalate with full API error payload when:
