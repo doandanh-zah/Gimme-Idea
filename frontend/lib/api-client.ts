@@ -473,6 +473,19 @@ export const apiClient = {
       body: JSON.stringify(params),
     }),
 
+  listAgentKeys: () =>
+    apiFetch<{
+      keys: Array<{
+        id: string;
+        name: string;
+        keyPrefix: string;
+        lastUsedAt?: string | null;
+        revokedAt?: string | null;
+        createdAt: string;
+        isActive: boolean;
+      }>;
+    }>("/auth/agent/keys"),
+
   // Settings
   getMenuConfig: () => apiFetch<any[]>("/settings/menu-config"),
 

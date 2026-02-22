@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable, TooManyRequestsException, UnauthorizedException } from "@nestjs/common";
+import { BadRequestException, HttpException, HttpStatus, Injectable, UnauthorizedException } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import * as jwt from "jsonwebtoken";
 import { createHash, randomBytes, timingSafeEqual } from 'crypto';
@@ -49,7 +49,7 @@ export class AuthService {
 
     current.count += 1;
     if (current.count > maxAttempts) {
-      throw new TooManyRequestsException('Too many attempts. Try again later.');
+      throw new HttpException('Too many attempts. Try again later.', HttpStatus.TOO_MANY_REQUESTS);
     }
   }
 
@@ -529,6 +529,49 @@ export class AuthService {
       success: true,
       data: { revoked: true },
       message: 'Agent key revoked',
+    };
+  }
+
+  async listAgentKeys(
+    userId: string
+  ): Promise<
+    ApiResponse<{
+      keys: Array<{
+        id: string;
+        name: string;
+        keyPrefix: string;
+        lastUsedAt?: string | null;
+        revokedAt?: string | null;
+        createdAt: string;
+        isActive: boolean;
+      }>;
+    }>
+  > {
+    const supabase = this.supabaseService.getAdminClient();
+    const { data, error } = await supabase
+      .from('agent_keys')
+      .select('id, name, key_prefix, last_used_at, revoked_at, created_at')
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      throw new Error(`Failed to list agent keys: ${error.message}`);
+    }
+
+    return {
+      success: true,
+      data: {
+        keys: (data || []).map((row: any) => ({
+          id: row.id,
+          name: row.name,
+          keyPrefix: row.key_prefix,
+          lastUsedAt: row.last_used_at,
+          revokedAt: row.revoked_at,
+          createdAt: row.created_at,
+          isActive: !row.revoked_at,
+        })),
+      },
+      message: 'Agent keys loaded',
     };
   }
 

@@ -5,12 +5,13 @@ import { motion } from 'framer-motion';
 import { KeyRound, Wallet } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import toast from 'react-hot-toast';
+import { useRouter } from 'next/navigation';
 
 export const LoginButton = () => {
-  const { signInWithGoogle, signInWithWallet, signInWithAgentKey, registerAgentAccount, isLoading } = useAuth();
+  const { signInWithGoogle, signInWithWallet, isLoading } = useAuth();
+  const router = useRouter();
   const [isSigningInGoogle, setIsSigningInGoogle] = useState(false);
   const [isSigningInWallet, setIsSigningInWallet] = useState(false);
-  const [isSigningInAgent, setIsSigningInAgent] = useState(false);
 
   const handleGoogleLogin = async () => {
     try {
@@ -36,34 +37,12 @@ export const LoginButton = () => {
   };
 
   const handleAgentLogin = async () => {
-    const mode = window.prompt('Agent mode: type "login" or "register"', 'login');
-    if (!mode) return;
-
-    try {
-      setIsSigningInAgent(true);
-      if (mode.toLowerCase() === 'register') {
-        const username = window.prompt('Agent username (3-32 chars):');
-        if (!username) return;
-        const keyName = window.prompt('Key name (optional):') || undefined;
-        const secretKey = await registerAgentAccount(username.trim(), keyName);
-        window.alert(`Agent account created. Save this secret key now (shown once):\n\n${secretKey}`);
-      } else {
-        const secretKey = window.prompt('Paste your agent secret key:');
-        if (!secretKey) return;
-        await signInWithAgentKey(secretKey.trim());
-        toast.success('Signed in with Agent key');
-      }
-    } catch (error: any) {
-      console.error('Agent auth error:', error);
-      toast.error(error?.message || 'Agent auth failed.');
-    } finally {
-      setIsSigningInAgent(false);
-    }
+    router.push('/auth/agent');
   };
 
   const loadingGoogle = isLoading || isSigningInGoogle;
   const loadingWallet = isLoading || isSigningInWallet;
-  const loadingAgent = isLoading || isSigningInAgent;
+  const loadingAgent = isLoading;
 
   return (
     <div className="flex items-center gap-2">

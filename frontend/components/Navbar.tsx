@@ -3,7 +3,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Wallet, Bell, Search, Menu, X, LayoutGrid, Plus, Trophy, BarChart3, User as UserIcon, Lightbulb, Heart, Rocket, LogOut, AlertCircle, MoreHorizontal, Info, Mail, Lock, UserPlus, MessageCircle, Sparkles, ThumbsUp, DollarSign, Map, Rss, Users } from 'lucide-react';
+import { Wallet, Bell, Search, Menu, X, LayoutGrid, Plus, Trophy, BarChart3, User as UserIcon, Lightbulb, Heart, Rocket, LogOut, AlertCircle, MoreHorizontal, Info, Mail, Lock, UserPlus, MessageCircle, Sparkles, ThumbsUp, DollarSign, Map, Rss, Users, KeyRound } from 'lucide-react';
 import { useAppStore } from '../lib/store';
 import { useAuth } from '../contexts/AuthContext';
 import { useRouter, usePathname } from 'next/navigation';
@@ -68,6 +68,14 @@ const Navbar = () => {
       icon: Sparkles,
       status: 'open',
       id: 'challenge',
+      isActive: true,
+    },
+    {
+      name: 'Agents',
+      route: '/agents',
+      icon: KeyRound,
+      status: 'open',
+      id: 'agents',
       isActive: true,
     },
     {
@@ -529,6 +537,12 @@ const Navbar = () => {
                       className="w-full text-left px-3 sm:px-4 py-2 sm:py-3 text-xs sm:text-sm text-gray-300 hover:bg-white/5 hover:text-white flex items-center gap-2"
                     >
                       <Lock className="w-4 h-4" /> API Tokens
+                    </button>
+                    <button
+                      onClick={() => { router.push('/settings/agent'); setShowUserMenu(false); }}
+                      className="w-full text-left px-3 sm:px-4 py-2 sm:py-3 text-xs sm:text-sm text-gray-300 hover:bg-white/5 hover:text-white flex items-center gap-2"
+                    >
+                      <KeyRound className="w-4 h-4" /> Agent Keys
                     </button>
                     {user.needsWalletConnect && (
                       <button

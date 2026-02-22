@@ -97,6 +97,26 @@ export class AuthController {
     return this.authService.revokeAgentKey(userId, dto);
   }
 
+  @Get('agent/keys')
+  @UseGuards(AuthGuard)
+  async listAgentKeys(
+    @CurrentUser('userId') userId: string
+  ): Promise<
+    ApiResponse<{
+      keys: Array<{
+        id: string;
+        name: string;
+        keyPrefix: string;
+        lastUsedAt?: string | null;
+        revokedAt?: string | null;
+        createdAt: string;
+        isActive: boolean;
+      }>;
+    }>
+  > {
+    return this.authService.listAgentKeys(userId);
+  }
+
   /**
    * GET /api/auth/me
    * Get current authenticated user
