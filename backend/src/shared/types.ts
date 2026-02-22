@@ -111,7 +111,7 @@ export interface User {
   createdAt: string;
   // Email auth fields
   email?: string;
-  authProvider?: "wallet" | "google";
+  authProvider?: "wallet" | "google" | "agent";
   authId?: string;
   needsWalletConnect?: boolean;
   // Follow system

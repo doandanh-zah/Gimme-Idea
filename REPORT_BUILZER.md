@@ -29,3 +29,10 @@ Update every 30 minutes.
 - Status: Repo is synced; no new upstream changes; no blockers detected.
 - Next (30m): Continue implementation cycle per `BUILZER.md`, then push next meaningful commit.
 - Commit: <pending>
+
+## Update 17:29 ICT
+- Phase: Phase 1 + Phase 2 (backend scaffold)
+- Done: Mapped auth stack, added `docs/agent-auth-design.md`, implemented agent auth DTOs + controller routes + AuthService methods (register/login/rotate/revoke), added SQL migration `migration_add_agent_keys.sql`, added MCP docs (`mcp/gimme-idea/skill.md`, `mcp/gimme-idea/heartbeat.md`).
+- Blockers: Local build check unavailable (`nest: not found`) due missing dev dependencies in current environment.
+- Next (30m): Install deps/verify compile, then continue frontend Agent Mode UI + key management panel.
+- Commit: <pending>

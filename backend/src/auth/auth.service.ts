@@ -1,21 +1,104 @@
-import { BadRequestException, Injectable, UnauthorizedException } from "@nestjs/common";
+import { BadRequestException, Injectable, TooManyRequestsException, UnauthorizedException } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import * as jwt from "jsonwebtoken";
+import { createHash, randomBytes, timingSafeEqual } from 'crypto';
 import { SolanaService } from "../shared/solana.service";
 import { SupabaseService } from "../shared/supabase.service";
 import { LoginDto } from "./dto/login.dto";
 import { EmailLoginDto } from "./dto/email-login.dto";
 import { LinkWalletDto } from "./dto/link-wallet.dto";
 import { UpdateWalletEmailDto } from "./dto/update-wallet-email.dto";
+import { AgentRegisterDto } from './dto/agent-register.dto';
+import { AgentLoginDto } from './dto/agent-login.dto';
+import { AgentRotateKeyDto } from './dto/agent-rotate-key.dto';
+import { AgentRevokeKeyDto } from './dto/agent-revoke-key.dto';
 import { ApiResponse, User } from "../shared/types";
 
 @Injectable()
 export class AuthService {
+  private readonly agentAttemptTracker = new Map<string, { count: number; firstAt: number }>();
+
   constructor(
     private solanaService: SolanaService,
     private supabaseService: SupabaseService,
     private configService: ConfigService
   ) {}
+
+  private sha256(input: string) {
+    return createHash('sha256').update(input).digest('hex');
+  }
+
+  private createAgentSecretKey() {
+    return `gi_ask_${randomBytes(32).toString('hex')}`;
+  }
+
+  private getAgentKeyPrefix(secretKey: string) {
+    return secretKey.slice(0, 18);
+  }
+
+  private assertAgentThrottle(prefix: string) {
+    const now = Date.now();
+    const winMs = 10 * 60 * 1000;
+    const maxAttempts = 20;
+    const current = this.agentAttemptTracker.get(prefix);
+
+    if (!current || now - current.firstAt > winMs) {
+      this.agentAttemptTracker.set(prefix, { count: 1, firstAt: now });
+      return;
+    }
+
+    current.count += 1;
+    if (current.count > maxAttempts) {
+      throw new TooManyRequestsException('Too many attempts. Try again later.');
+    }
+  }
+
+  private issueJwt(user: any) {
+    const jwtSecret = this.configService.get<string>('JWT_SECRET');
+    const jwtExpires = this.configService.get<string>('JWT_EXPIRES_IN') || '365d';
+
+    return jwt.sign(
+      {
+        userId: user.id,
+        wallet: user.wallet,
+        username: user.username,
+        email: user.email,
+      },
+      jwtSecret,
+      { expiresIn: jwtExpires }
+    );
+  }
+
+  private toUserResponse(user: any): User {
+    return {
+      id: user.id,
+      wallet: user.wallet || '',
+      username: user.username,
+      bio: user.bio,
+      avatar: user.avatar,
+      coverImage: user.cover_image,
+      reputationScore: user.reputation_score || 0,
+      socialLinks: user.social_links,
+      lastLoginAt: user.last_login_at,
+      loginCount: user.login_count || 0,
+      createdAt: user.created_at,
+      email: user.email,
+      authProvider: user.auth_provider || 'wallet',
+      authId: user.auth_id,
+      needsWalletConnect: user.needs_wallet_connect || false,
+      followersCount: user.followers_count || 0,
+      followingCount: user.following_count || 0,
+    };
+  }
+
+  private async audit(action: string, metadata: any = {}, actorUserId?: string) {
+    const supabase = this.supabaseService.getAdminClient();
+    await supabase.from('audit_logs').insert({
+      action,
+      actor_user_id: actorUserId || null,
+      metadata,
+    });
+  }
 
   /**
    * Login with Solana wallet signature (SIWS - Sign In With Solana)
@@ -230,6 +313,222 @@ export class AuthService {
       message: is_new_user
         ? "Account created successfully"
         : "Login successful",
+    };
+  }
+
+  async registerAgent(
+    dto: AgentRegisterDto
+  ): Promise<ApiResponse<{ token: string; user: User; secretKey: string }>> {
+    const supabase = this.supabaseService.getAdminClient();
+    const username = dto.username.trim();
+
+    const { data: existing } = await supabase
+      .from('users')
+      .select('id')
+      .eq('username', username)
+      .maybeSingle();
+
+    if (existing) {
+      throw new BadRequestException('Username already exists');
+    }
+
+    const { data: user, error: createUserError } = await supabase
+      .from('users')
+      .insert({
+        username,
+        wallet: null,
+        auth_provider: 'agent',
+        reputation_score: 0,
+        login_count: 1,
+        last_login_at: new Date().toISOString(),
+      })
+      .select('*')
+      .single();
+
+    if (createUserError || !user) {
+      throw new Error(`Failed to create agent user: ${createUserError?.message || 'unknown'}`);
+    }
+
+    const secretKey = this.createAgentSecretKey();
+    const keyHash = this.sha256(secretKey);
+    const keyPrefix = this.getAgentKeyPrefix(secretKey);
+
+    const { error: keyError } = await supabase.from('agent_keys').insert({
+      user_id: user.id,
+      name: dto.keyName || 'default',
+      key_hash: keyHash,
+      key_prefix: keyPrefix,
+      created_at: new Date().toISOString(),
+    });
+
+    if (keyError) {
+      throw new Error(`Failed to store agent key: ${keyError.message}`);
+    }
+
+    await this.audit('agent.register', { username, keyPrefix }, user.id);
+
+    return {
+      success: true,
+      data: {
+        token: this.issueJwt(user),
+        user: this.toUserResponse(user),
+        secretKey,
+      },
+      message: 'Agent account created. Secret key is shown once only.',
+    };
+  }
+
+  async loginAgent(
+    dto: AgentLoginDto
+  ): Promise<ApiResponse<{ token: string; user: User }>> {
+    const supabase = this.supabaseService.getAdminClient();
+    const secretKey = dto.secretKey?.trim();
+
+    if (!secretKey?.startsWith('gi_ask_')) {
+      throw new UnauthorizedException('Invalid agent secret key');
+    }
+
+    const keyPrefix = this.getAgentKeyPrefix(secretKey);
+    this.assertAgentThrottle(keyPrefix);
+
+    const { data: keys, error: keyFindErr } = await supabase
+      .from('agent_keys')
+      .select('id, user_id, key_hash, revoked_at')
+      .eq('key_prefix', keyPrefix)
+      .is('revoked_at', null)
+      .limit(20);
+
+    if (keyFindErr || !keys?.length) {
+      await this.audit('agent.login_failed', { keyPrefix, reason: 'not_found' });
+      throw new UnauthorizedException('Invalid agent secret key');
+    }
+
+    const incomingHash = this.sha256(secretKey);
+    const matched = keys.find((k: any) => {
+      const a = Buffer.from(k.key_hash);
+      const b = Buffer.from(incomingHash);
+      return a.length === b.length && timingSafeEqual(a, b);
+    });
+
+    if (!matched) {
+      await this.audit('agent.login_failed', { keyPrefix, reason: 'hash_mismatch' });
+      throw new UnauthorizedException('Invalid agent secret key');
+    }
+
+    const { data: user, error: userErr } = await supabase
+      .from('users')
+      .select('*')
+      .eq('id', matched.user_id)
+      .single();
+
+    if (userErr || !user) {
+      throw new UnauthorizedException('User not found');
+    }
+
+    await supabase.from('agent_keys').update({ last_used_at: new Date().toISOString() }).eq('id', matched.id);
+    await supabase
+      .from('users')
+      .update({
+        login_count: (user.login_count || 0) + 1,
+        last_login_at: new Date().toISOString(),
+      })
+      .eq('id', user.id);
+
+    await this.audit('agent.login_success', { keyPrefix }, user.id);
+
+    return {
+      success: true,
+      data: {
+        token: this.issueJwt({ ...user, login_count: (user.login_count || 0) + 1, last_login_at: new Date().toISOString() }),
+        user: this.toUserResponse({ ...user, login_count: (user.login_count || 0) + 1, last_login_at: new Date().toISOString() }),
+      },
+      message: 'Agent login successful',
+    };
+  }
+
+  async rotateAgentKey(
+    userId: string,
+    dto: AgentRotateKeyDto
+  ): Promise<ApiResponse<{ secretKey: string }>> {
+    const supabase = this.supabaseService.getAdminClient();
+    const currentHash = this.sha256(dto.currentSecretKey.trim());
+
+    const { data: activeKey, error: findErr } = await supabase
+      .from('agent_keys')
+      .select('id, key_hash')
+      .eq('user_id', userId)
+      .is('revoked_at', null)
+      .limit(50);
+
+    if (findErr || !activeKey?.length) {
+      throw new UnauthorizedException('No active key found');
+    }
+
+    const matched = activeKey.find((k: any) => {
+      const a = Buffer.from(k.key_hash);
+      const b = Buffer.from(currentHash);
+      return a.length === b.length && timingSafeEqual(a, b);
+    });
+
+    if (!matched) {
+      throw new UnauthorizedException('Current secret key is invalid');
+    }
+
+    await supabase.from('agent_keys').update({ revoked_at: new Date().toISOString() }).eq('id', matched.id);
+
+    const newSecret = this.createAgentSecretKey();
+    await supabase.from('agent_keys').insert({
+      user_id: userId,
+      name: dto.newKeyName || 'rotated',
+      key_hash: this.sha256(newSecret),
+      key_prefix: this.getAgentKeyPrefix(newSecret),
+      created_at: new Date().toISOString(),
+    });
+
+    await this.audit('agent.rotate_key', { previousKeyId: matched.id }, userId);
+
+    return {
+      success: true,
+      data: { secretKey: newSecret },
+      message: 'Agent key rotated. Save the new key now; it will not be shown again.',
+    };
+  }
+
+  async revokeAgentKey(
+    userId: string,
+    dto: AgentRevokeKeyDto
+  ): Promise<ApiResponse<{ revoked: boolean }>> {
+    const supabase = this.supabaseService.getAdminClient();
+    const hash = this.sha256(dto.secretKey.trim());
+
+    const { data: keys, error } = await supabase
+      .from('agent_keys')
+      .select('id, key_hash')
+      .eq('user_id', userId)
+      .is('revoked_at', null)
+      .limit(50);
+
+    if (error || !keys?.length) {
+      throw new UnauthorizedException('No active key found');
+    }
+
+    const matched = keys.find((k: any) => {
+      const a = Buffer.from(k.key_hash);
+      const b = Buffer.from(hash);
+      return a.length === b.length && timingSafeEqual(a, b);
+    });
+
+    if (!matched) {
+      throw new UnauthorizedException('Secret key is invalid');
+    }
+
+    await supabase.from('agent_keys').update({ revoked_at: new Date().toISOString() }).eq('id', matched.id);
+    await this.audit('agent.revoke_key', { keyId: matched.id }, userId);
+
+    return {
+      success: true,
+      data: { revoked: true },
+      message: 'Agent key revoked',
     };
   }
 

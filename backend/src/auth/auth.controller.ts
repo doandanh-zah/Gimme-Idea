@@ -4,6 +4,10 @@ import { LoginDto } from "./dto/login.dto";
 import { EmailLoginDto } from "./dto/email-login.dto";
 import { LinkWalletDto } from "./dto/link-wallet.dto";
 import { UpdateWalletEmailDto } from "./dto/update-wallet-email.dto";
+import { AgentRegisterDto } from './dto/agent-register.dto';
+import { AgentLoginDto } from './dto/agent-login.dto';
+import { AgentRotateKeyDto } from './dto/agent-rotate-key.dto';
+import { AgentRevokeKeyDto } from './dto/agent-revoke-key.dto';
 import { AuthGuard } from "../common/guards/auth.guard";
 import { CurrentUser } from "../common/decorators/user.decorator";
 import { ApiResponse, User } from "../shared/types";
@@ -59,6 +63,38 @@ export class AuthController {
     @Body() dto: UpdateWalletEmailDto
   ): Promise<ApiResponse<User>> {
     return this.authService.updateWalletEmail(userId, dto);
+  }
+
+  @Post('agent/register')
+  async registerAgent(
+    @Body() dto: AgentRegisterDto
+  ): Promise<ApiResponse<{ token: string; user: User; secretKey: string }>> {
+    return this.authService.registerAgent(dto);
+  }
+
+  @Post('agent/login')
+  async loginAgent(
+    @Body() dto: AgentLoginDto
+  ): Promise<ApiResponse<{ token: string; user: User }>> {
+    return this.authService.loginAgent(dto);
+  }
+
+  @Post('agent/rotate-key')
+  @UseGuards(AuthGuard)
+  async rotateAgentKey(
+    @CurrentUser('userId') userId: string,
+    @Body() dto: AgentRotateKeyDto
+  ): Promise<ApiResponse<{ secretKey: string }>> {
+    return this.authService.rotateAgentKey(userId, dto);
+  }
+
+  @Post('agent/revoke-key')
+  @UseGuards(AuthGuard)
+  async revokeAgentKey(
+    @CurrentUser('userId') userId: string,
+    @Body() dto: AgentRevokeKeyDto
+  ): Promise<ApiResponse<{ revoked: boolean }>> {
+    return this.authService.revokeAgentKey(userId, dto);
   }
 
   /**
