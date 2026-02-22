@@ -24,9 +24,30 @@ export interface IdeaFeedbackRequest {
 export interface AIFeedback {
   comment: string;
   score: number; // 0-100
+  modelScore?: number; // raw model score before deterministic weighting
+  subscores?: IdeaSubscores;
+  painEvidence?: {
+    confidence: number; // 0-100
+    confidenceLabel: "low" | "medium" | "high";
+    queries: string[];
+    citations: Array<{
+      title: string;
+      url: string;
+      source: string;
+    }>;
+  };
   strengths: string[];
   weaknesses: string[];
   suggestions: string[];
+}
+
+export interface IdeaSubscores {
+  problem: number; // problem clarity + urgency
+  solution: number; // solution quality + fit
+  feasibility: number; // technical/execution feasibility
+  goToMarket: number; // distribution + adoption plan
+  defensibility: number; // moat/differentiation
+  blockchainFit: number; // web3 necessity
 }
 
 export interface MarketAssessment {
@@ -37,6 +58,22 @@ export interface MarketAssessment {
   recommendations: string[];
   marketSize: "small" | "medium" | "large";
   competitionLevel: "low" | "medium" | "high";
+}
+
+interface PainEvidenceCitation {
+  title: string;
+  url: string;
+  snippet: string;
+  source: string;
+  signalScore: number;
+}
+
+interface PainEvidenceReport {
+  confidence: number; // 0-100
+  confidenceLabel: "low" | "medium" | "high";
+  queries: string[];
+  citations: PainEvidenceCitation[];
+  promptBlock: string;
 }
 
 @Injectable()
@@ -54,11 +91,282 @@ export class AIService {
     });
   }
 
+  private clampScore(value: unknown, fallback: number = 50): number {
+    const numeric =
+      typeof value === "number"
+        ? value
+        : typeof value === "string"
+          ? Number(value)
+          : NaN;
+    const safe = Number.isFinite(numeric) ? numeric : fallback;
+    return Math.max(0, Math.min(100, Math.round(safe)));
+  }
+
+  private toStringArray(value: unknown, limit = 4): string[] {
+    if (!Array.isArray(value)) return [];
+    return value
+      .map((item) => (typeof item === "string" ? item : String(item)))
+      .map((s) => s.trim())
+      .filter(Boolean)
+      .slice(0, limit);
+  }
+
+  private normalizeIdeaSubscores(raw: any): IdeaSubscores {
+    const source = raw || {};
+    const pick = (keys: string[], fallback = 50): number => {
+      for (const key of keys) {
+        if (source[key] !== undefined && source[key] !== null) {
+          return this.clampScore(source[key], fallback);
+        }
+      }
+      return this.clampScore(undefined, fallback);
+    };
+
+    return {
+      problem: pick(["problem", "problemClarity", "problemSeverity"]),
+      solution: pick(["solution", "solutionQuality", "solutionFit"]),
+      feasibility: pick([
+        "feasibility",
+        "technicalFeasibility",
+        "executionFeasibility",
+      ]),
+      goToMarket: pick(["goToMarket", "gtm", "distribution"]),
+      defensibility: pick(["defensibility", "moat", "competition"]),
+      blockchainFit: pick([
+        "blockchainFit",
+        "web3Necessity",
+        "cryptoNativeFit",
+      ]),
+    };
+  }
+
+  private computeDeterministicIdeaScore(subscores: IdeaSubscores): number {
+    const weighted =
+      subscores.problem * 0.24 +
+      subscores.solution * 0.2 +
+      subscores.feasibility * 0.18 +
+      subscores.goToMarket * 0.16 +
+      subscores.defensibility * 0.12 +
+      subscores.blockchainFit * 0.1;
+    return this.clampScore(weighted, 50);
+  }
+
+  private getPainSignalKeywords(): string[] {
+    return [
+      "pain point",
+      "struggle",
+      "complaint",
+      "friction",
+      "issue",
+      "problem",
+      "slow",
+      "expensive",
+      "churn",
+      "drop-off",
+      "security incident",
+      "outage",
+      "support ticket",
+      "workaround",
+    ];
+  }
+
+  private extractCoreProblemPhrase(problem: string): string {
+    if (!problem) return "";
+    const firstSentence = problem.match(/^[^.!?\n]+/)?.[0] || problem;
+    const compact = firstSentence.replace(/\s+/g, " ").trim();
+    return compact.length > 140 ? `${compact.slice(0, 140)}...` : compact;
+  }
+
+  private buildPainEvidenceQueries(idea: IdeaFeedbackRequest): string[] {
+    const coreProblem = this.extractCoreProblemPhrase(idea.problem);
+    const title = idea.title?.trim() || "web3 startup idea";
+    const solutionHint = idea.solution?.trim() || "";
+
+    const q1 = `users complaining about ${coreProblem} pain points`;
+    const q2 = `${title} alternatives user pain complaints`;
+    const q3 = solutionHint
+      ? `${solutionHint.slice(0, 80)} market demand evidence`
+      : `${coreProblem} market demand evidence`;
+
+    return [q1, q2, q3]
+      .map((q) => q.replace(/\s+/g, " ").trim())
+      .filter((q) => q.length >= 12)
+      .slice(0, 3);
+  }
+
+  private scorePainCitationSignal(text: string): number {
+    const haystack = (text || "").toLowerCase();
+    const keywords = this.getPainSignalKeywords();
+    let score = 0;
+    for (const keyword of keywords) {
+      if (haystack.includes(keyword)) score += 1;
+    }
+    return score;
+  }
+
+  private estimatePainEvidenceConfidence(
+    citations: PainEvidenceCitation[]
+  ): { confidence: number; confidenceLabel: "low" | "medium" | "high" } {
+    if (!citations.length) return { confidence: 15, confidenceLabel: "low" };
+    const totalSignal = citations.reduce((acc, c) => acc + c.signalScore, 0);
+    const domainDiversity = new Set(citations.map((c) => c.source)).size;
+
+    // Blend signal density and source diversity
+    const raw = totalSignal * 8 + domainDiversity * 10;
+    const confidence = this.clampScore(raw, 20);
+    if (confidence >= 70) return { confidence, confidenceLabel: "high" };
+    if (confidence >= 40) return { confidence, confidenceLabel: "medium" };
+    return { confidence, confidenceLabel: "low" };
+  }
+
+  private async callBraveWebSearch(
+    apiKey: string,
+    query: string
+  ): Promise<PainEvidenceCitation[]> {
+    const baseUrl =
+      process.env.BRAVE_SEARCH_BASE_URL ||
+      "https://api.search.brave.com/res/v1/web/search";
+    const url = new URL(baseUrl);
+    url.searchParams.set("q", query);
+    url.searchParams.set("count", "6");
+    url.searchParams.set("search_lang", "en");
+    url.searchParams.set("text_decorations", "false");
+    url.searchParams.set("extra_snippets", "true");
+    url.searchParams.set("safesearch", "moderate");
+
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 8000);
+
+    try {
+      const response = await fetch(url.toString(), {
+        method: "GET",
+        headers: {
+          Accept: "application/json",
+          "X-Subscription-Token": apiKey,
+        },
+        signal: controller.signal,
+      });
+
+      if (!response.ok) {
+        const body = await response.text();
+        this.logger.warn(
+          `Brave Search API non-OK response (${response.status}): ${body.slice(
+            0,
+            160
+          )}`
+        );
+        return [];
+      }
+
+      const data = (await response.json()) as any;
+      const results = Array.isArray(data?.web?.results) ? data.web.results : [];
+
+      return results
+        .map((r: any) => {
+          const snippets = Array.isArray(r?.extra_snippets)
+            ? r.extra_snippets.join(" ")
+            : "";
+          const snippet = `${r?.description || ""} ${snippets}`
+            .replace(/\s+/g, " ")
+            .trim();
+          const source = this.extractDomain(r?.url || "");
+          const signalScore = this.scorePainCitationSignal(
+            `${r?.title || ""} ${snippet}`
+          );
+          return {
+            title: String(r?.title || "Untitled").slice(0, 180),
+            url: String(r?.url || ""),
+            snippet: snippet.slice(0, 260),
+            source,
+            signalScore,
+          } as PainEvidenceCitation;
+        })
+        .filter((item) => item.url && item.source !== "unknown");
+    } catch (error: any) {
+      this.logger.warn(`Brave Search call failed for query "${query}"`, error);
+      return [];
+    } finally {
+      clearTimeout(timeout);
+    }
+  }
+
+  private async getPainEvidenceFromBrave(
+    idea: IdeaFeedbackRequest
+  ): Promise<PainEvidenceReport | null> {
+    const apiKey = process.env.BRAVE_SEARCH_API_KEY?.trim();
+    const braveEnabled =
+      (process.env.AI_SCORING_BRAVE_ENABLED || "true").toLowerCase() !==
+      "false";
+
+    if (!apiKey || !braveEnabled) {
+      return null;
+    }
+
+    const queries = this.buildPainEvidenceQueries(idea);
+    if (!queries.length) {
+      return null;
+    }
+
+    const settled = await Promise.allSettled(
+      queries.map((q) => this.callBraveWebSearch(apiKey, q))
+    );
+
+    const allCitations: PainEvidenceCitation[] = [];
+    for (const item of settled) {
+      if (item.status === "fulfilled" && Array.isArray(item.value)) {
+        allCitations.push(...item.value);
+      }
+    }
+
+    if (!allCitations.length) {
+      return {
+        confidence: 15,
+        confidenceLabel: "low",
+        queries,
+        citations: [],
+        promptBlock:
+          "No external evidence retrieved from Brave Search. Be conservative on problem score unless internal evidence is strong.",
+      };
+    }
+
+    const dedupByUrl = new Map<string, PainEvidenceCitation>();
+    for (const c of allCitations) {
+      if (!dedupByUrl.has(c.url)) {
+        dedupByUrl.set(c.url, c);
+      }
+    }
+
+    const top = Array.from(dedupByUrl.values())
+      .sort((a, b) => b.signalScore - a.signalScore)
+      .slice(0, 5);
+
+    const { confidence, confidenceLabel } =
+      this.estimatePainEvidenceConfidence(top);
+    const promptLines = top.map(
+      (c, i) => `${i + 1}. [${c.source}] ${c.title} - ${c.snippet}`
+    );
+    const promptBlock = `Confidence: ${confidence}/100 (${confidenceLabel})\nQueries: ${queries.join(
+      " | "
+    )}\nEvidence snippets:\n${promptLines.join("\n")}`;
+
+    return {
+      confidence,
+      confidenceLabel,
+      queries,
+      citations: top,
+      promptBlock,
+    };
+  }
+
   /**
    * Generate AI feedback for an idea
    */
   async generateIdeaFeedback(idea: IdeaFeedbackRequest): Promise<AIFeedback> {
     this.logger.log(`Generating AI feedback for idea: ${idea.title}`);
+    const painEvidence = await this.getPainEvidenceFromBrave(idea);
+    const painEvidencePrompt = painEvidence
+      ? painEvidence.promptBlock
+      : "Brave Search not configured. Use only provided idea content and be conservative when evidence is weak.";
 
     const prompt = `You are "Gimme Sensei" - a brutally honest Web3/crypto startup advisor.
 
@@ -68,8 +376,11 @@ export class AIService {
 - Solution: ${idea.solution}
 - Opportunity: ${idea.opportunity || "Not specified"}
 
+**REAL-WORLD PAIN SIGNALS (FROM BRAVE SEARCH):**
+${painEvidencePrompt}
+
 **QUICK EVALUATION (Score 0-100):**
-Consider: Problem validity, blockchain necessity, technical feasibility, competition, user adoption, tokenomics, go-to-market, revenue model, risks.
+Consider: problem validity, blockchain necessity, technical feasibility, competition, user adoption, tokenomics, go-to-market, revenue model, execution risk.
 
 **SCORING:**
 - 0-39: Fundamentally flawed
@@ -79,6 +390,14 @@ Consider: Problem validity, blockchain necessity, technical feasibility, competi
 - 80-89: Strong, investable
 - 90-100: Exceptional
 
+**SUBSCORES (0-100 EACH):**
+- problem: clarity + urgency of user pain
+- solution: quality + problem-solution fit
+- feasibility: realistic build/ops capability
+- goToMarket: distribution and adoption plausibility
+- defensibility: moat vs existing alternatives
+- blockchainFit: actual need for crypto/web3 rails
+
 **RESPONSE RULES:**
 - Keep comment to 2-4 SHORT paragraphs max (150-250 words total)
 - Write like talking to founder face-to-face - direct, concise
@@ -86,10 +405,21 @@ Consider: Problem validity, blockchain necessity, technical feasibility, competi
 - Be SPECIFIC to this idea - no generic advice
 - Focus on 1-2 key strengths and 1-2 main concerns
 - End with ONE clear actionable next step
+- Use full 0-100 range when justified; do not compress scores into a narrow band.
+- If external pain evidence confidence is LOW, cap "problem" subscore at 60 unless explicit quantitative proof exists in the idea text.
+- If evidence confidence is HIGH with diverse sources, you may score problem higher when justified.
 
 **FORMAT:** Return valid JSON:
 {
   "score": <0-100>,
+  "subscores": {
+    "problem": <0-100>,
+    "solution": <0-100>,
+    "feasibility": <0-100>,
+    "goToMarket": <0-100>,
+    "defensibility": <0-100>,
+    "blockchainFit": <0-100>
+  },
   "comment": "<2-4 short paragraphs, conversational, 150-250 words max>",
   "strengths": ["<key strength 1>", "<key strength 2>"],
   "weaknesses": ["<main weakness 1>", "<main weakness 2>"],
@@ -103,31 +433,55 @@ Consider: Problem validity, blockchain necessity, technical feasibility, competi
           {
             role: "system",
             content:
-              "You are Gimme Sensei, a brutally honest Web3 advisor. Keep feedback CONCISE - 2-4 short paragraphs, 150-250 words max. No fluff, no generic advice. Score rigorously - most ideas land between 40-65. Always respond in English only.",
+              "You are Gimme Sensei, a brutally honest Web3 advisor. Keep feedback concise, specific, and non-generic. Always respond in English and valid JSON only.",
           },
           {
             role: "user",
             content: prompt,
           },
         ],
-        temperature: 0.8,
+        temperature: 0.25,
         max_tokens: 800,
         response_format: { type: "json_object" },
       });
 
       const response = completion.choices[0].message.content;
-      const feedback = JSON.parse(response);
+      if (!response) {
+        throw new Error("Empty AI response for idea feedback");
+      }
+      const parsed = JSON.parse(response);
+      const subscores = this.normalizeIdeaSubscores(parsed.subscores || parsed);
+      const deterministicScore = this.computeDeterministicIdeaScore(subscores);
+      const modelScore = this.clampScore(parsed.score, deterministicScore);
+      const comment =
+        typeof parsed.comment === "string" && parsed.comment.trim().length > 0
+          ? parsed.comment.trim()
+          : "The idea has potential, but the core validation is still too thin. Tighten the user pain definition, prove demand with small experiments, and validate why this should exist on Solana before scaling build scope.";
 
       this.logger.log(
-        `AI feedback generated successfully with score: ${feedback.score}`
+        `AI feedback generated successfully with deterministic score: ${deterministicScore} (model score: ${modelScore})`
       );
 
       return {
-        comment: feedback.comment,
-        score: feedback.score,
-        strengths: feedback.strengths || [],
-        weaknesses: feedback.weaknesses || [],
-        suggestions: feedback.suggestions || [],
+        comment,
+        score: deterministicScore,
+        modelScore,
+        subscores,
+        painEvidence: painEvidence
+          ? {
+              confidence: painEvidence.confidence,
+              confidenceLabel: painEvidence.confidenceLabel,
+              queries: painEvidence.queries,
+              citations: painEvidence.citations.map((c) => ({
+                title: c.title,
+                url: c.url,
+                source: c.source,
+              })),
+            }
+          : undefined,
+        strengths: this.toStringArray(parsed.strengths, 4),
+        weaknesses: this.toStringArray(parsed.weaknesses, 4),
+        suggestions: this.toStringArray(parsed.suggestions, 4),
       };
     } catch (error) {
       this.logger.error("Failed to generate AI feedback:", error);

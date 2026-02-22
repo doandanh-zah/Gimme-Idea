@@ -642,20 +642,32 @@ export class ProjectsService {
       problem: string;
       solution: string;
       opportunity?: string;
+    },
+    options?: {
+      reason?: "create" | "update";
     }
   ): Promise<void> {
-    this.logger.log(`Generating AI feedback for project ${projectId}`);
+    const reason = options?.reason || "create";
+    this.logger.log(
+      `Generating AI feedback for project ${projectId} (reason: ${reason})`
+    );
 
     try {
+      const supabase = this.supabaseService.getAdminClient();
+
       // Spam filter: check content quality
-      const minLength = 50; // Minimum total length
+      const minLength = 20; // Guardrail only for near-empty inputs
       const totalLength =
         (ideaData.problem || "").length + (ideaData.solution || "").length;
 
       if (totalLength < minLength) {
         this.logger.warn(
-          `Skipping AI feedback for project ${projectId}: content too short (${totalLength} chars)`
+          `Skipping AI feedback for project ${projectId}: content too short (${totalLength} chars). Clearing ai_score.`
         );
+        await supabase
+          .from("projects")
+          .update({ ai_score: null })
+          .eq("id", projectId);
         return;
       }
 
@@ -667,16 +679,12 @@ export class ProjectsService {
 
       if (hasSpam && totalLength < 100) {
         this.logger.warn(
-          `Skipping AI feedback for project ${projectId}: likely spam content`
+          `Project ${projectId} looks spammy; continue scoring to avoid stale/missing ai_score`
         );
-        return;
       }
 
       // Generate AI feedback
       const feedback = await this.aiService.generateIdeaFeedback(ideaData);
-
-      // Create AI comment
-      const supabase = this.supabaseService.getAdminClient();
 
       // First, get or create AI bot user
       let { data: aiUser } = await supabase
@@ -738,25 +746,64 @@ export class ProjectsService {
           .join("\n")}`;
       }
 
-      const { error: commentError } = await supabase.from("comments").insert({
-        project_id: projectId,
-        user_id: aiUser.id,
-        content: commentContent,
-        is_anonymous: false,
-        likes: 0,
-        tips_amount: 0,
-        is_ai_generated: true,
-        ai_model: "gpt-4o-mini",
-        ai_tokens_used: 0, // TODO: track actual tokens
-        created_at: new Date().toISOString(),
-      });
+      // Upsert AI comment so update/rescore doesn't spam multiple AI comments
+      const { data: existingAiComment, error: existingAiCommentError } =
+        await supabase
+          .from("comments")
+          .select("id")
+          .eq("project_id", projectId)
+          .eq("user_id", aiUser.id)
+          .eq("is_ai_generated", true)
+          .order("created_at", { ascending: false })
+          .limit(1)
+          .maybeSingle();
 
-      if (commentError) {
-        this.logger.error("Failed to create AI comment", commentError);
-      } else {
-        this.logger.log(
-          `AI feedback created for project ${projectId} with score ${feedback.score}`
+      if (existingAiCommentError) {
+        this.logger.error(
+          "Failed to check existing AI comment",
+          existingAiCommentError
         );
+      }
+
+      if (existingAiComment?.id) {
+        const { error: updateCommentError } = await supabase
+          .from("comments")
+          .update({
+            content: commentContent,
+            ai_model: "gpt-4o-mini",
+            ai_tokens_used: 0,
+            updated_at: new Date().toISOString(),
+          })
+          .eq("id", existingAiComment.id);
+
+        if (updateCommentError) {
+          this.logger.error("Failed to update AI comment", updateCommentError);
+        } else {
+          this.logger.log(
+            `AI feedback updated for project ${projectId} with score ${feedback.score}`
+          );
+        }
+      } else {
+        const { error: commentError } = await supabase.from("comments").insert({
+          project_id: projectId,
+          user_id: aiUser.id,
+          content: commentContent,
+          is_anonymous: false,
+          likes: 0,
+          tips_amount: 0,
+          is_ai_generated: true,
+          ai_model: "gpt-4o-mini",
+          ai_tokens_used: 0, // TODO: track actual tokens
+          created_at: new Date().toISOString(),
+        });
+
+        if (commentError) {
+          this.logger.error("Failed to create AI comment", commentError);
+        } else {
+          this.logger.log(
+            `AI feedback created for project ${projectId} with score ${feedback.score}`
+          );
+        }
       }
     } catch (error) {
       this.logger.error(
@@ -779,7 +826,7 @@ export class ProjectsService {
     // Check if user is the author
     const { data: project } = await supabase
       .from("projects")
-      .select("author_id")
+      .select("author_id, type, title, problem, solution, opportunity")
       .eq("id", id)
       .single();
 
@@ -790,6 +837,15 @@ export class ProjectsService {
     if (project.author_id !== userId) {
       throw new ForbiddenException("You can only update your own projects");
     }
+
+    const aiRelevantContentChanged =
+      project.type === "idea" &&
+      ((updateDto.title !== undefined && updateDto.title !== project.title) ||
+        (updateDto.problem !== undefined && updateDto.problem !== project.problem) ||
+        (updateDto.solution !== undefined &&
+          updateDto.solution !== project.solution) ||
+        (updateDto.opportunity !== undefined &&
+          (updateDto.opportunity || null) !== (project.opportunity || null)));
 
     // Update project - Only update fields that are provided
     const updateData: any = {};
@@ -863,6 +919,37 @@ export class ProjectsService {
       isAnonymous: updated.is_anonymous,
       createdAt: updated.created_at,
     };
+
+    if (aiRelevantContentChanged) {
+      if (updated.problem && updated.solution) {
+        this.generateAIFeedbackAsync(
+          id,
+          {
+            title: updated.title,
+            problem: updated.problem,
+            solution: updated.solution,
+            opportunity: updated.opportunity,
+          },
+          { reason: "update" }
+        ).catch((err) => {
+          this.logger.error(
+            `Failed to re-score AI feedback for updated project ${id}`,
+            err
+          );
+        });
+      } else {
+        const { error: clearScoreError } = await supabase
+          .from("projects")
+          .update({ ai_score: null })
+          .eq("id", id);
+        if (clearScoreError) {
+          this.logger.error(
+            `Failed to clear ai_score for project ${id}`,
+            clearScoreError
+          );
+        }
+      }
+    }
 
     return {
       success: true,
