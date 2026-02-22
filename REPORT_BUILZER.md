@@ -43,3 +43,10 @@ Update every 10 minutes.
 - Blockers: None.
 - Next (10m): Continue implementation and push next functional commit with updated files.
 - Commit: <pending>
+
+## Update 20:02 ICT
+- Phase: Phase 3 (Frontend Agent Mode)
+- Done: Added frontend API client methods for agent auth/key management; extended auth context with `signInWithAgentKey` and `registerAgentAccount`; added Agent login/register trigger button in `LoginButton`.
+- Blockers: Need end-to-end runtime check after dependency install/build in this environment.
+- Next (10m): Push commit now, then continue settings key-management UI + docs/test pass.
+- Commit: <pending>

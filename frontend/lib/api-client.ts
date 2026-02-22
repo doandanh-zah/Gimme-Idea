@@ -449,6 +449,30 @@ export const apiClient = {
       body: JSON.stringify(params),
     }),
 
+  registerAgent: (params: { username: string; keyName?: string }) =>
+    apiFetch<{ token: string; user: any; secretKey: string }>("/auth/agent/register", {
+      method: "POST",
+      body: JSON.stringify(params),
+    }),
+
+  loginAgent: (params: { secretKey: string }) =>
+    apiFetch<{ token: string; user: any }>("/auth/agent/login", {
+      method: "POST",
+      body: JSON.stringify(params),
+    }),
+
+  rotateAgentKey: (params: { currentSecretKey: string; newKeyName?: string }) =>
+    apiFetch<{ secretKey: string }>("/auth/agent/rotate-key", {
+      method: "POST",
+      body: JSON.stringify(params),
+    }),
+
+  revokeAgentKey: (params: { secretKey: string }) =>
+    apiFetch<{ revoked: boolean }>("/auth/agent/revoke-key", {
+      method: "POST",
+      body: JSON.stringify(params),
+    }),
+
   // Settings
   getMenuConfig: () => apiFetch<any[]>("/settings/menu-config"),
 

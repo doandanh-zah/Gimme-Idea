@@ -19,6 +19,8 @@ interface AuthContextType {
   isAdmin: boolean;
   signInWithGoogle: () => Promise<void>;
   signInWithWallet: () => Promise<void>;
+  signInWithAgentKey: (secretKey: string) => Promise<void>;
+  registerAgentAccount: (username: string, keyName?: string) => Promise<string>;
   signOut: () => Promise<void>;
   setShowWalletPopup: (value: boolean) => void;
   showWalletEmailPopup: boolean;
@@ -475,6 +477,63 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const mapUser = (src: any, fallbackProvider: 'wallet' | 'google' | 'agent' = 'wallet'): User => ({
+    id: src.id,
+    wallet: src.wallet || '',
+    username: src.username,
+    reputation: src.reputationScore || 0,
+    balance: src.balance || 0,
+    projects: [],
+    avatar: src.avatar,
+    coverImage: src.coverImage,
+    bio: src.bio,
+    socials: src.socialLinks,
+    email: src.email,
+    authProvider: src.authProvider || fallbackProvider,
+    authId: src.authId,
+    needsWalletConnect: src.needsWalletConnect,
+  });
+
+  const signInWithAgentKey = async (secretKey: string): Promise<void> => {
+    setIsLoading(true);
+    try {
+      const response = await apiClient.loginAgent({ secretKey });
+      if (!response.success || !response.data) {
+        throw new Error(response.error || 'Agent login failed');
+      }
+
+      localStorage.setItem('auth_token', response.data.token);
+      setUser(mapUser(response.data.user, 'agent'));
+      setIsNewUser(false);
+      setShowWalletPopup(false);
+      setShowWalletEmailPopup(false);
+      checkAdminStatus();
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const registerAgentAccount = async (username: string, keyName?: string): Promise<string> => {
+    setIsLoading(true);
+    try {
+      const response = await apiClient.registerAgent({ username, keyName });
+      if (!response.success || !response.data) {
+        throw new Error(response.error || 'Agent register failed');
+      }
+
+      localStorage.setItem('auth_token', response.data.token);
+      setUser(mapUser(response.data.user, 'agent'));
+      setIsNewUser(true);
+      setShowWalletPopup(false);
+      setShowWalletEmailPopup(false);
+      checkAdminStatus();
+
+      return response.data.secretKey;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const updateWalletEmail = async (email?: string): Promise<boolean> => {
     try {
       const response = await apiClient.updateWalletEmail({ email });
@@ -540,6 +599,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         isAdmin,
         signInWithGoogle,
         signInWithWallet,
+        signInWithAgentKey,
+        registerAgentAccount,
         signOut,
         setShowWalletPopup,
         setShowWalletEmailPopup,
