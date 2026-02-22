@@ -6,6 +6,7 @@ import { X, Send, ExternalLink } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { Connection, PublicKey, Transaction, clusterApiUrl } from '@solana/web3.js';
+import * as multisig from '@sqds/multisig';
 import {
   createAssociatedTokenAccountIdempotentInstruction,
   createTransferInstruction,
@@ -81,6 +82,22 @@ export function ProposalSendModal({
     return signature;
   };
 
+  const readNextSquadsTransactionIndex = async (
+    connection: Connection,
+    daoPubkey: PublicKey
+  ): Promise<bigint> => {
+    const multisigPda = multisig.getMultisigPda({ createKey: daoPubkey })[0];
+    const multisigAccount = await multisig.accounts.Multisig.fromAccountAddress(
+      connection,
+      multisigPda
+    );
+    const current = (multisigAccount as any).transactionIndex;
+    if (typeof current === 'bigint') return current + 1n;
+    if (typeof current === 'number') return BigInt(current) + 1n;
+    if (current?.toString) return BigInt(current.toString()) + 1n;
+    throw new Error('Unable to read Squads transaction index');
+  };
+
   const submit = async () => {
     if (!title.trim() || !description.trim()) {
       toast.error('Please fill title and description');
@@ -149,7 +166,7 @@ export function ProposalSendModal({
         TOKEN_PROGRAM_ID
       );
 
-      const transactionIndex = BigInt(Date.now());
+      const transactionIndex = await readNextSquadsTransactionIndex(mainnetConnection, daoPubkey);
       const { tx: squadsProposalTx, squadsProposal } = futarchy.squadsProposalCreateTx({
         dao: daoPubkey,
         instructions: [transferRefundIx],

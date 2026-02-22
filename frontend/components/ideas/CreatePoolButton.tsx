@@ -6,6 +6,7 @@ import BN from 'bn.js';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { Connection, PublicKey, SystemProgram, Transaction, clusterApiUrl } from '@solana/web3.js';
 import { getAssociatedTokenAddressSync } from '@solana/spl-token';
+import * as multisig from '@sqds/multisig';
 import {
   META_MINT,
   MAINNET_USDC,
@@ -81,6 +82,22 @@ export function CreatePoolButton({ idea, onCreated }: CreatePoolButtonProps) {
     return sig;
   };
 
+  const readNextSquadsTransactionIndex = async (
+    connection: Connection,
+    daoPubkey: PublicKey
+  ): Promise<bigint> => {
+    const multisigPda = multisig.getMultisigPda({ createKey: daoPubkey })[0];
+    const multisigAccount = await multisig.accounts.Multisig.fromAccountAddress(
+      connection,
+      multisigPda
+    );
+    const current = (multisigAccount as any).transactionIndex;
+    if (typeof current === 'bigint') return current + 1n;
+    if (typeof current === 'number') return BigInt(current) + 1n;
+    if (current?.toString) return BigInt(current.toString()) + 1n;
+    throw new Error('Unable to read Squads transaction index');
+  };
+
   const handleCreatePool = async () => {
     if (!wallet.publicKey) {
       toast.error('Connect wallet first');
@@ -139,7 +156,7 @@ export function CreatePoolButton({ idea, onCreated }: CreatePoolButtonProps) {
         toPubkey: wallet.publicKey,
         lamports: 0,
       });
-      const transactionIndex = BigInt(Date.now());
+      const transactionIndex = await readNextSquadsTransactionIndex(connection, daoPubkey);
       const { tx: squadsProposalTx, squadsProposal } = futarchy.squadsProposalCreateTx({
         dao: daoPubkey,
         instructions: [noopIx],
