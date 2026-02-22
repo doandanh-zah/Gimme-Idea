@@ -378,7 +378,7 @@ export class AuthService {
     if (!user) {
       const reason = createUserError?.message || 'unknown';
       console.error('[AuthService] registerAgent failed:', reason);
-      throw new Error(`Failed to create agent user: ${reason}`);
+      throw new BadRequestException(`Agent register failed: ${reason}`);
     }
 
     const secretKey = this.createAgentSecretKey();
@@ -395,7 +395,7 @@ export class AuthService {
 
     if (keyError) {
       await supabase.from('users').delete().eq('id', user.id);
-      throw new Error(`Failed to store agent key: ${keyError.message}`);
+      throw new BadRequestException(`Failed to store agent key: ${keyError.message}`);
     }
 
     await this.audit('agent.register', { username, keyPrefix }, user.id);
