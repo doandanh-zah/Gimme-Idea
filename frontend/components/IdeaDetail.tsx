@@ -766,7 +766,6 @@ export const IdeaDetail = () => {
     const [paymentRecipient, setPaymentRecipient] = useState('');
 
     // Support/Deposit (Commit-to-Build)
-    const [proposals, setProposals] = useState<any[]>([]);
     const [showProposalModal, setShowProposalModal] = useState(false);
     const [recipientWallet, setRecipientWallet] = useState('');
     const [selectedCommentId, setSelectedCommentId] = useState<string | null>(null);
@@ -821,24 +820,9 @@ export const IdeaDetail = () => {
         },
     });
 
-    const fetchProposals = React.useCallback(async () => {
-        if (!project?.id) return;
-        try {
-            const res = await apiClient.listProposals(project.id);
-            if (res?.success && res?.data) setProposals(res.data);
-        } catch {
-            // no-op
-        }
-    }, [project?.id]);
-
-    useEffect(() => {
-        fetchProposals();
-    }, [fetchProposals]);
-
     const refreshIdeaAndProposals = async () => {
         if (!project?.id) return;
         await fetchProjectById(project.id);
-        await fetchProposals();
     };
 
     if (!project) return null;
@@ -1069,93 +1053,13 @@ export const IdeaDetail = () => {
                         {!project.proposalPubkey ? (
                             <CreatePoolButton idea={project} onCreated={refreshIdeaAndProposals} />
                         ) : (
-                            <p className="text-xs text-gray-400">
-                                Pool already created. You can send proposal below.
-                            </p>
-                        )}
-                    </div>
-
-                    {/* Proposals */}
-                    <div className="mb-10 rounded-2xl border border-white/10 bg-white/[0.03] p-5">
-                        <div className="flex items-center justify-between mb-3">
-                            <h3 className="text-sm font-bold text-white uppercase tracking-wider font-mono">Governance Proposals</h3>
-                            <span className="text-xs text-gray-400">{proposals.length} total</span>
-                        </div>
-                        <p className="text-[11px] text-gray-500 mb-3">
-                            Submit via <span className="text-gray-300">Send Proposal</span>, then track status here. If executed on-chain, tx link appears in the row.
-                        </p>
-
-                        {(project.poolStatus === 'pool_open' || project.poolStatus === 'active') ? (
                             <button
                                 onClick={() => setShowProposalModal(true)}
                                 className="px-4 py-2 rounded-full bg-[#FFD700] text-black text-sm font-bold"
                             >
                                 Send Proposal
                             </button>
-                        ) : (
-                            <p className="text-xs text-gray-500">Open pool first to enable proposals.</p>
                         )}
-
-                        <div className="mt-4 space-y-2">
-                            {proposals.map((p) => (
-                                <div key={p.id} className="rounded-xl border border-white/10 bg-black/30 p-3">
-                                    <div className="flex items-center justify-between gap-3">
-                                        <div className="text-sm font-semibold text-white">{p.title}</div>
-                                        <span className={`text-[11px] px-2 py-1 rounded-full border ${
-                                            p.status === 'executed'
-                                                ? 'border-green-500/30 text-green-300 bg-green-500/10'
-                                                : p.status === 'passed'
-                                                    ? 'border-emerald-500/30 text-emerald-300 bg-emerald-500/10'
-                                                    : p.status === 'voting'
-                                                        ? 'border-yellow-500/30 text-yellow-300 bg-yellow-500/10'
-                                                        : p.status === 'rejected'
-                                                            ? 'border-red-500/30 text-red-300 bg-red-500/10'
-                                                            : 'border-white/15 text-gray-300 bg-white/5'
-                                        }`}>{p.status}</span>
-                                    </div>
-                                    <p className="text-xs text-gray-400 mt-1 whitespace-pre-wrap">{p.description}</p>
-                                    {(p.execution_payload?.recipientWallet || p.execution_payload?.amountUsdc) ? (
-                                        <div className="mt-1 text-[11px] text-gray-500">
-                                            {p.execution_payload?.recipientWallet ? `Recipient: ${p.execution_payload.recipientWallet}` : ''}
-                                            {p.execution_payload?.amountUsdc ? ` • Amount: ${p.execution_payload.amountUsdc} USDC` : ''}
-                                        </div>
-                                    ) : null}
-                                    {p.onchain_tx ? (
-                                        <a
-                                            href={`https://solscan.io/tx/${p.onchain_tx}`}
-                                            target="_blank"
-                                            rel="noopener noreferrer"
-                                            className="text-xs text-blue-300 hover:underline mt-2 inline-block"
-                                        >
-                                            View execution tx
-                                        </a>
-                                    ) : null}
-                                    {p.onchain_create_tx ? (
-                                        <a
-                                            href={`https://solscan.io/tx/${p.onchain_create_tx}`}
-                                            target="_blank"
-                                            rel="noopener noreferrer"
-                                            className="text-xs text-indigo-300 hover:underline mt-1 inline-block ml-3"
-                                        >
-                                            View create tx
-                                        </a>
-                                    ) : null}
-                                    {p.onchain_proposal_pubkey ? (
-                                        <a
-                                            href={`https://solscan.io/account/${p.onchain_proposal_pubkey}`}
-                                            target="_blank"
-                                            rel="noopener noreferrer"
-                                            className="text-xs text-cyan-300 hover:underline mt-1 inline-block ml-3"
-                                        >
-                                            View proposal account
-                                        </a>
-                                    ) : null}
-                                </div>
-                            ))}
-                            {proposals.length === 0 ? (
-                                <p className="text-xs text-gray-500">No proposals yet.</p>
-                            ) : null}
-                        </div>
                     </div>
 
 
@@ -1212,7 +1116,7 @@ export const IdeaDetail = () => {
                 onClose={() => setShowProposalModal(false)}
                 projectId={project.id}
                 daoAddress={project.governanceRealmAddress}
-                onSubmitted={fetchProposals}
+                onSubmitted={refreshIdeaAndProposals}
             />
 
             <PaymentModal
