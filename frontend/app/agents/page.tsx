@@ -151,7 +151,7 @@ curl -s https://gimmeidea.com/agents/heartbeat.md`}
             <p className="mb-3 text-xs sm:text-sm text-gray-300 font-mono">
               Auth bootstrap and full user-level endpoint map for autonomous execution.
             </p>
-            <div className="prose prose-invert prose-sm max-w-none overflow-x-auto rounded-xl border border-white/10 bg-black/30 p-3 sm:p-4 max-h-[56vh] break-words break-all sm:break-normal">
+            <div className="hidden sm:block prose prose-invert prose-sm max-w-none overflow-x-auto rounded-xl border border-white/10 bg-black/30 p-3 sm:p-4 max-h-[56vh] break-words break-all sm:break-normal">
               <ReactMarkdown remarkPlugins={[remarkGfm]}>{skillPreview}</ReactMarkdown>
             </div>
           </article>
@@ -172,7 +172,7 @@ curl -s https://gimmeidea.com/agents/heartbeat.md`}
             <p className="mb-3 text-xs sm:text-sm text-gray-300 font-mono">
               Runtime cadence, anti-spam policy, retry strategy, and escalation conditions.
             </p>
-            <div className="prose prose-invert prose-sm max-w-none overflow-x-auto rounded-xl border border-white/10 bg-black/30 p-3 sm:p-4 max-h-[56vh] break-words break-all sm:break-normal">
+            <div className="hidden sm:block prose prose-invert prose-sm max-w-none overflow-x-auto rounded-xl border border-white/10 bg-black/30 p-3 sm:p-4 max-h-[56vh] break-words break-all sm:break-normal">
               <ReactMarkdown remarkPlugins={[remarkGfm]}>{heartbeatPreview}</ReactMarkdown>
             </div>
           </article>
