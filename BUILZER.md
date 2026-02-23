@@ -1,129 +1,105 @@
 # BUILZER.md
 
 ## Owner
-- Planner: **Lizen**
+- Planner: **Roki** (Lizen tạm vắng)
 - Implementer: **Roki**
 - Repository: `doandanh-zah/Gimme-Idea`
 
-## Mission
-Build an **Agent Mode** for Gimme Idea so an agent can:
-1. Create account automatically
-2. Login using a **secret key** (no email, no wallet)
-3. Use a dedicated **MCP/Skill guide + heartbeat guide** to perform full user-level actions on Gimme Idea
-4. Reach parity with the current Superteam Earn agent workflow style (clear automation path, stable auth, toolable actions)
+## Mission (new)
+Prepare and execute a winning application for Superteam bounty:
+**OpenClaw Instances for Investors - Spark Hackathon #1**
+
+Listing: `https://superteam.fun/earn/listing/openclaw-instances-for-investors-spark-hackathon-1`
+
+## Key facts extracted from listing
+- Prize/Treasury reference: **$3,260**
+- Deadline: **2026-03-01 16:59:59Z**
+- Winner announcement target: **2026-03-15**
+- Mandatory: code open-source, revenue back to treasury, clear founder proposal
+- Apply flow requires:
+  1) Superteam Earn apply
+  2) Legends.fun profile/proposal
+  3) Founder card
+  4) Join Spark #1 leaderboard
 
 ## Requested constraints from Zah
-- Start execution at **14:45 (Asia/Ho_Chi_Minh)**
-- Roki must push to GitHub every **10 minutes**
-- Roki must update progress in `REPORT_BUILZER.md` every **10 minutes**
-- Lizen checks `REPORT_BUILZER.md` every **10 minutes** until complete
-
----
-
-## Quick repo findings (initial check)
-- Frontend exists (`frontend/`), backend exists (`backend/`)
-- Current docs indicate wallet/email auth focus (`devdocs/06-authentication-profiles.md`)
-- No documented agent-only auth flow yet
-- No dedicated `skills/gimme-idea/SKILL.md` + heartbeat automation docs found in repo root
+- Roki push progress every **10 minutes**
+- Update `REPORT_BUILZER.md` every **10 minutes**
+- Push first, then pull/recheck instructions each cycle
 
 ---
 
 ## Execution Plan for Roki
 
-### Phase 1 — Discovery & design (T+0 to T+30)
-1. Map current auth stack in backend:
-   - auth module, JWT issuance, guards, user model
-2. Confirm user schema supports API key / secret key auth
-3. Produce minimal architecture note in `docs/agent-auth-design.md`:
-   - Secret key format and storage (hashed at rest)
-   - Agent identity to user mapping
-   - Rotation and revoke strategy
-   - Rate-limit + abuse controls
+### Phase 1 — Bounty brief deconstruction (T+0 to T+20)
+1. Parse full listing + proposal template into concise checklist.
+2. Build acceptance criteria:
+   - Founder fit proof
+   - Product vision clarity
+   - Community building plan
+3. Create `docs/spark-hackathon-1-brief.md`.
 
-**Output:** approved design + affected file list
+**Output:** exact submission checklist + risk flags.
 
----
+### Phase 2 — Product strategy pack (T+20 to T+70)
+Create submission artifacts (draft quality):
+1. `docs/spark/openclaw-investor-product-thesis.md`
+2. `docs/spark/mvp-spec-6-weeks.md`
+3. `docs/spark/tech-architecture.md`
+4. `docs/spark/gtm-and-community-plan.md`
 
-### Phase 2 — Backend implementation (T+30 to T+120)
-1. Add data model for agent credentials (either in `users` extension or dedicated table):
-   - `agent_keys(id, user_id, key_hash, key_prefix, name, last_used_at, revoked_at, created_at)`
-2. Add endpoints:
-   - `POST /auth/agent/register` (create account + issue secret key once)
-   - `POST /auth/agent/login` (secret key -> JWT)
-   - `POST /auth/agent/rotate-key`
-   - `POST /auth/agent/revoke-key`
-3. Add auth guard support:
-   - `Authorization: Bearer <jwt>` standard flow after agent login
-4. Add audit logging:
-   - login attempts, key creation, revoke, rotate
+Must cover:
+- Investor persona pain points
+- Why OpenClaw is defensible
+- No-code investor workflow
+- Trust/safety guardrails
 
-**Security requirements (must-have):**
-- Never store raw secret keys
-- Show raw key only once at creation/rotation
-- Constant-time comparison
-- Brute-force protection + throttle
+**Output:** end-to-end product plan for evaluator review.
 
----
+### Phase 3 — Proposal economics & delivery plan (T+70 to T+110)
+1. Draft budget options:
+   - Conservative
+   - Balanced
+   - Aggressive
+2. Define milestone-linked payout split (upfront vs delivery)
+3. Optional token allocation argument with vesting
+4. File: `docs/spark/proposal-budget-options.md`
 
-### Phase 3 — Frontend / UX for Agent Mode (T+120 to T+180)
-1. Add Agent Mode in auth UI:
-   - “Create Agent Account”
-   - “Login with Secret Key”
-2. Add key management panel (user settings):
-   - Create/Rotate/Revoke key
-   - Last used indicator
-3. Add clear warning banners:
-   - Copy key and store safely
-   - Lost key cannot be recovered, only rotated
+**Output:** strategic ask aligned with futarchy voting.
 
----
+### Phase 4 — Build-in-public assets (T+110 to T+150)
+1. Draft X post thread (launch + weekly build updates)
+2. Draft Telegram update templates tagging organizers
+3. Draft founder card narrative + proof points
+4. File: `docs/spark/build-in-public-kit.md`
 
-### Phase 4 — MCP / Skill + Heartbeat docs (T+180 to T+240)
-1. Add `mcp/gimme-idea/skill.md`:
-   - How agent authenticates with secret key
-   - Full supported actions (create idea, edit, comment, vote, profile updates, etc.)
-   - Example tool-call payloads
-   - Error handling / retries
-2. Add `mcp/gimme-idea/heartbeat.md`:
-   - Scheduled behavior for posting/commenting tasks
-   - Quiet-hour and anti-spam rules
-   - Duplicate-comment avoidance
-   - Reporting format
+**Output:** ready-to-post visibility package.
 
----
+### Phase 5 — Submission package finalization (T+150 to T+190)
+1. Produce final application text in listing template format:
+   - `[WHAT I'M BUILDING]`
+   - `[TIMELINE]`
+   - `[BUDGET REQUEST]`
+   - `[TOKEN ALLOCATION]`
+   - `[WHAT I'LL DELIVER]`
+   - `[WHY ME/US]`
+   - `[LINKS]`
+2. File: `docs/spark/final-submission-draft.md`
 
-### Phase 5 — Testing & hardening (T+240 to T+300)
-1. Backend tests:
-   - register/login/rotate/revoke
-   - invalid key / revoked key / expired token
-2. Integration tests:
-   - agent can perform all user-level actions
-3. Basic threat checks:
-   - replay resistance
-   - leaked key handling flow
+**Output:** copy-paste ready submission.
+
+### Phase 6 — Quality gate + handoff (T+190 to done)
+1. Internal scoring rubric against listing criteria
+2. Risk review (overclaims, unclear milestones, weak moat)
+3. Final recommendations and fallback plan
+4. Update `REPORT_BUILZER.md` with completion block
+
+**Output:** investor-grade, submission-ready package.
 
 ---
 
-### Phase 6 — Delivery (T+300 to done)
-1. Final docs update in `docs/FEATURE_STATUS.md`
-2. Open PR summary (or direct push summary if working on main)
-3. Ensure `REPORT_BUILZER.md` final block includes:
-   - completed checklist
-   - known limitations
-   - next-step recommendations
-
----
-
-## 10-minute reporting protocol (mandatory for Roki)
-Update `REPORT_BUILZER.md` every 10 minutes with:
-- Timestamp (Asia/Ho_Chi_Minh)
-- Current phase
-- What was finished
-- Blockers
-- Next 10-min target
-- Commit hash pushed
-
-Template:
+## 10-minute reporting protocol (mandatory)
+Update `REPORT_BUILZER.md` every 10 minutes:
 ```md
 ## Update HH:MM ICT
 - Phase:
@@ -133,12 +109,9 @@ Template:
 - Commit:
 ```
 
----
-
 ## Definition of Done
-- Agent can register and login without email/wallet
-- Secret-key auth is secure (hashed, rotatable, revocable, audited)
-- Agent can execute full user-level features (same capability scope as normal user APIs)
-- `mcp/gimme-idea/skill.md` and `mcp/gimme-idea/heartbeat.md` exist and are actionable
-- `REPORT_BUILZER.md` contains continuous progress logs
-- All changes pushed to GitHub
+- Full Spark #1 submission package ready
+- Budget strategy + milestone plan complete
+- Build-in-public assets prepared
+- Final draft aligned to listing template
+- All files committed and pushed

@@ -176,3 +176,10 @@ Update every 10 minutes.
 - Blockers: None.
 - Next (10m): Continue implementation cycle and push next meaningful commit.
 - Commit: <pending>
+
+## Update 19:33 ICT
+- Phase: Spark Hackathon #1 planning
+- Done: Replaced `BUILZER.md` with a new execution plan for bounty "OpenClaw Instances for Investors" (brief deconstruction, strategy pack, budget model, build-in-public kit, final submission draft, quality gate).
+- Blockers: Need Zah/Lizen confirmation on preferred budget strategy (conservative/balanced/aggressive) before final proposal lock.
+- Next (10m): Start Phase 1 artifact `docs/spark-hackathon-1-brief.md` and push.
+- Commit: <pending>
