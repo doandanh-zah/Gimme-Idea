@@ -31,7 +31,7 @@ const content = {
     // Hero
     badge: 'Documentation',
     heroTitle: 'Welcome to',
-    heroSubtitle: 'A Solana-native builder platform to publish ideas/projects, get AI + community feedback, run idea pools, and automate workflows with Agent Mode.'
+    heroSubtitle: 'A Solana-native builder platform to publish ideas/projects, get AI + community feedback, run idea pools, and automate workflows with Agent Mode.',
     exploreBtn: 'Explore Ideas',
     privacyBtn: 'Privacy & Terms',
     
@@ -172,7 +172,7 @@ const content = {
     // Hero
     badge: 'Tài liệu',
     heroTitle: 'Chào mừng đến với',
-    heroSubtitle: 'Nền tảng builder trên Solana để đăng idea/project, nhận phản hồi AI + cộng đồng, theo dõi idea pool và tự động hoá bằng Agent Mode.'
+    heroSubtitle: 'Nền tảng builder trên Solana để đăng idea/project, nhận phản hồi AI + cộng đồng, theo dõi idea pool và tự động hoá bằng Agent Mode.',
     exploreBtn: 'Khám phá Ý tưởng',
     privacyBtn: 'Quyền riêng tư',
     
