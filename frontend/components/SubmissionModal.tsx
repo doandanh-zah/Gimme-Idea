@@ -100,21 +100,22 @@ export const SubmissionModal = () => {
   };
 
   const toggleCategory = (category: string) => {
-    if (formData.categories.includes(category)) {
-      // Remove category
-      setFormData({...formData, categories: formData.categories.filter(c => c !== category)});
-    } else {
-      // Add category (max 3)
-      if (formData.categories.length < 3) {
-        setFormData({...formData, categories: [...formData.categories, category]});
-      } else {
-        toast.error('You can select up to 3 categories');
+    setFormData((prev) => {
+      if (prev.categories.includes(category)) {
+        return { ...prev, categories: prev.categories.filter((c) => c !== category) };
       }
-    }
+
+      if (prev.categories.length >= 3) {
+        toast.error('You can select up to 3 categories');
+        return prev;
+      }
+
+      return { ...prev, categories: [...prev.categories, category] };
+    });
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSubmit = async (e?: React.FormEvent) => {
+    e?.preventDefault();
     
     // Check wallet connection with the new reminder popup
     if (!user) {
@@ -357,7 +358,7 @@ export const SubmissionModal = () => {
 
                     {/* Scrollable Form Area */}
                     <div className="overflow-y-auto p-4 sm:p-8 custom-scrollbar flex-1">
-                        <form onSubmit={handleSubmit} className="space-y-6 sm:space-y-8">
+                        <form id="submission-form" onSubmit={handleSubmit} className="space-y-6 sm:space-y-8">
                             
                             {/* Common Fields */}
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
@@ -385,7 +386,12 @@ export const SubmissionModal = () => {
                                             <button
                                                 key={cat}
                                                 type="button"
-                                                onClick={() => toggleCategory(cat)}
+                                                onClick={(ev) => {
+                                                    ev.preventDefault();
+                                                    ev.stopPropagation();
+                                                    toggleCategory(cat);
+                                                }}
+                                                aria-pressed={formData.categories.includes(cat)}
                                                 className={`px-4 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 ${
                                                     formData.categories.includes(cat)
                                                         ? isProject
@@ -538,8 +544,9 @@ export const SubmissionModal = () => {
 
                 {/* Footer Action */}
                 <div className="p-6 border-t border-white/10 bg-[#0A0A0F] flex-shrink-0">
-                    <button 
-                        onClick={handleSubmit}
+                    <button
+                        type="submit"
+                        form="submission-form"
                         className={`w-full py-4 rounded-xl font-bold text-lg flex items-center justify-center gap-3 transition-all hover:opacity-90 ${
                             isProject 
                                 ? 'bg-[#9945FF] text-white' 
