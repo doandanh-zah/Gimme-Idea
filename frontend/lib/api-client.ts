@@ -304,6 +304,20 @@ export const apiClient = {
       body: JSON.stringify({ txHash, planTier }),
     }),
 
+  createStripeCheckout: (data: {
+    plan: "pack" | "pro5" | "pro10";
+    payerName: string;
+    payerEmail: string;
+    country?: string;
+  }) =>
+    apiFetch<any>("/payments/stripe/checkout", {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
+
+  confirmStripeCheckout: (sessionId: string) =>
+    apiFetch<any>(`/payments/stripe/confirm?sessionId=${encodeURIComponent(sessionId)}`),
+
   getTopDonators: (limit?: number) =>
     apiFetch<any[]>(`/payments/top-donators${limit ? `?limit=${limit}` : ""}`),
 

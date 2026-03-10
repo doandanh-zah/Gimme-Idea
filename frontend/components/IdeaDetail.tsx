@@ -800,16 +800,35 @@ export const IdeaDetail = () => {
         }
     }, [project?.id, showRelatedProjectsModal]); // Refresh when modal closes
 
-    // Free-plan limiter: 5 idea views/day (auth users)
+    // Daily limiter: authenticated users via backend, guests via localStorage (persists across reload)
     useEffect(() => {
         const run = async () => {
-            if (!user || !project?.id) return;
-            const key = `idea-view:${project.id}:${new Date().toISOString().slice(0, 10)}`;
+            if (!project?.id) return;
+            const dateKey = new Date().toISOString().slice(0, 10);
+
+            if (!user) {
+                const guestKey = `guest-idea-views:${dateKey}`;
+                const viewedKey = `guest-idea-viewed:${project.id}:${dateKey}`;
+                if (sessionStorage.getItem(viewedKey)) return;
+
+                const used = Number(localStorage.getItem(guestKey) || '0');
+                if (used >= 5) {
+                    setViewGate({
+                        blocked: true,
+                        message: "You've reached 5 free idea views today. Sign in and upgrade on Billing for unlimited idea views.",
+                    });
+                    return;
+                }
+
+                localStorage.setItem(guestKey, String(used + 1));
+                sessionStorage.setItem(viewedKey, '1');
+                return;
+            }
+
+            const key = `idea-view:${project.id}:${dateKey}`;
             if (sessionStorage.getItem(key)) return;
 
             const res = await apiClient.consumeIdeaView();
-
-            // Fail-open to avoid false blocking when backend/migrations are temporarily unavailable.
             if (res.success === false) {
                 console.warn('consumeIdeaView failed, allowing access to avoid false paywall lock.');
                 return;
@@ -818,12 +837,12 @@ export const IdeaDetail = () => {
             if (res.success && res.data && res.data.allowed === false) {
                 setViewGate({
                     blocked: true,
-                    message: "You've reached 5 free idea views today. Upgrade to $5/month for unlimited idea views.",
+                    message: "You've reached 5 free idea views today. Upgrade on Billing for unlimited idea views.",
                 });
                 return;
             }
 
-            sessionStorage.setItem(key, "1");
+            sessionStorage.setItem(key, '1');
         };
         run();
     }, [user, project?.id]);
@@ -901,7 +920,7 @@ export const IdeaDetail = () => {
                     <p className="text-gray-300 mb-5">{viewGate.message}</p>
                     <div className="flex gap-3 justify-center">
                         <button
-                            onClick={() => router.push('/donate')}
+                            onClick={() => router.push('/billing')}
                             className="bg-[#FFD700] text-black px-5 py-2 rounded-full font-bold"
                         >
                             View Plans
@@ -1097,6 +1116,19 @@ export const IdeaDetail = () => {
         const nextStep = Math.min(assessmentStep + 1, 3);
         setAssessmentStep(nextStep);
 
+        const hasUnlimited = isAdmin || monetization?.planTier === 'pro10';
+        const hasPaidCredits = Number(monetization?.paidQuestionCredits || 0) > 0;
+
+        // After 2 free answers, stop showing next question for unpaid users and show paywall CTA.
+        if (nextAnswers.length >= 2 && !hasUnlimited && !hasPaidCredits) {
+            setGtmMessages((prev) => [
+                ...prev,
+                { role: 'assistant', content: 'Free limit reached. Upgrade or buy credits to continue with deeper tailored questions. You can still tap "Get Advice" now.' },
+            ]);
+            setShowBuyOptions(true);
+            return;
+        }
+
         if (nextAnswers.length < 4) {
             const nextQ = getAssessmentQuestion(nextStep);
             setGtmMessages((prev) => [...prev, { role: 'assistant', content: nextQ.question }]);
@@ -1282,20 +1314,12 @@ export const IdeaDetail = () => {
                         </section>
 
                         <section className="pt-2">
-                            <div className="flex flex-wrap gap-2">
-                                <button
-                                    onClick={initializeAssessment}
-                                    className="bg-[#FFD700] text-black px-4 py-2 rounded-full text-sm font-bold"
-                                >
-                                    Brainstorm with Gimme Sensei
-                                </button>
-                                <button
-                                    onClick={() => setShowBuyOptions(true)}
-                                    className="bg-white/10 text-white px-4 py-2 rounded-full text-sm font-semibold hover:bg-white/20"
-                                >
-                                    Buy / Upgrade
-                                </button>
-                            </div>
+                            <button
+                                onClick={initializeAssessment}
+                                className="bg-[#FFD700] text-black px-4 py-2 rounded-full text-sm font-bold"
+                            >
+                                Brainstorm with Gimme Sensei
+                            </button>
                         </section>
 
                     </div>
@@ -1375,7 +1399,8 @@ export const IdeaDetail = () => {
             {showBuyOptions && (
                 <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4" onClick={() => setShowBuyOptions(false)}>
                     <div className="w-full max-w-md rounded-2xl border border-white/10 bg-[#0D0D12] p-5" onClick={(e) => e.stopPropagation()}>
-                        <h3 className="text-lg font-bold text-[#FFD700] mb-4">Choose a plan</h3>
+                        <h3 className="text-lg font-bold text-[#FFD700] mb-2">Choose a plan</h3>
+                        <p className="text-xs text-gray-400 mb-4">Pay instantly with wallet, or continue to Billing for Visa/Mastercard checkout.</p>
                         <div className="space-y-2">
                             <button disabled={isBuyingPack} onClick={() => handlePurchase('pack')} className="w-full text-left bg-white/10 hover:bg-white/20 rounded-xl px-4 py-3">
                                 <div className="text-white font-semibold">$1 • 5 question credits</div>
@@ -1388,6 +1413,12 @@ export const IdeaDetail = () => {
                             <button disabled={isBuyingPack} onClick={() => handlePurchase('pro10')} className="w-full text-left bg-[#FFD700] text-black rounded-xl px-4 py-3">
                                 <div className="font-bold">$10 / month • Unlimited views + unlimited AI</div>
                                 <div className="text-xs opacity-80">Best for heavy usage</div>
+                            </button>
+                            <button
+                                onClick={() => router.push('/billing')}
+                                className="w-full bg-white/10 hover:bg-white/20 rounded-xl px-4 py-2.5 text-sm text-white"
+                            >
+                                Pay with Visa / Mastercard
                             </button>
                         </div>
                     </div>
