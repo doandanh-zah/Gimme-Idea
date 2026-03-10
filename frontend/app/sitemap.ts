@@ -29,12 +29,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       changeFrequency: "hourly",
       priority: 0.8,
     },
-    {
-      url: `${BASE_URL}/hackathons`,
-      lastModified: new Date(),
-      changeFrequency: "weekly",
-      priority: 0.8,
-    },
+    // Hackathon sitemap entry removed to keep public surface focused on Idea + GTM.
+
     {
       url: `${BASE_URL}/leaderboard`,
       lastModified: new Date(),

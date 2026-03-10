@@ -395,13 +395,13 @@ function ContactPage() {
                   <ArrowRight className="w-3.5 h-3.5 text-gray-600 group-hover:text-[#FFD700] group-hover:translate-x-0.5 transition-all flex-shrink-0" />
                 </Link>
                 <Link 
-                  href="/hackathons" 
+                  href="/idea" 
                   className="flex items-center gap-3 p-3 rounded-xl bg-white/[0.02] hover:bg-white/[0.05] border border-transparent hover:border-white/10 transition-all group"
                 >
-                  <span className="text-base">🏆</span>
+                  <span className="text-base">🧭</span>
                   <div className="flex-1 min-w-0">
-                    <p className="text-white text-sm font-medium">Hackathons</p>
-                    <p className="text-gray-600 text-xs truncate">Join competitions</p>
+                    <p className="text-white text-sm font-medium">GTM Assistant</p>
+                    <p className="text-gray-600 text-xs truncate">Validate & go-to-market faster</p>
                   </div>
                   <ArrowRight className="w-3.5 h-3.5 text-gray-600 group-hover:text-[#FFD700] group-hover:translate-x-0.5 transition-all flex-shrink-0" />
                 </Link>

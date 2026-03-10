@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Lightbulb, Rss, Rocket, ExternalLink, ArrowRight } from 'lucide-react';
+import { Lightbulb, Rss, MessageCircle, ExternalLink, ArrowRight } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 
@@ -27,12 +27,12 @@ const FEATURES = [
     external: false,
   },
   {
-    id: 'hackathons',
-    name: 'Hackathons',
-    description: 'Build together, compete together. Join exciting blockchain hackathons.',
-    icon: Rocket,
+    id: 'gtm',
+    name: 'GTM Assistant',
+    description: 'Validate ideas with guided questions, PMF signals, and action-focused go-to-market prompts.',
+    icon: MessageCircle,
     color: '#FF6B6B',
-    route: '/hackathons',
+    route: '/idea',
     external: false,
   },
 ];

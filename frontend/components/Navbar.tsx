@@ -3,7 +3,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Wallet, Bell, Search, Menu, X, LayoutGrid, Plus, Trophy, BarChart3, User as UserIcon, Lightbulb, Heart, Rocket, LogOut, AlertCircle, MoreHorizontal, Info, Mail, Lock, UserPlus, MessageCircle, Sparkles, ThumbsUp, DollarSign, Map, Rss, Users, KeyRound } from 'lucide-react';
+import { Wallet, Bell, Search, Menu, X, LayoutGrid, Plus, BarChart3, User as UserIcon, Lightbulb, Heart, Rocket, LogOut, AlertCircle, MoreHorizontal, Info, Mail, Lock, UserPlus, MessageCircle, Sparkles, ThumbsUp, DollarSign, Map, Rss, Users, KeyRound } from 'lucide-react';
 import { useAppStore } from '../lib/store';
 import { useAuth } from '../contexts/AuthContext';
 import { useRouter, usePathname } from 'next/navigation';
@@ -53,15 +53,8 @@ const Navbar = () => {
 
   // Dynamic Menu State
   const [moreLinks, setMoreLinks] = useState([
-    {
-      name: 'Hackathons',
-      route: '/hackathons',
-      icon: Trophy,
-      status: 'locked',
-      highlight: { badge: 'Sắp có', borderColor: '#FFD700', textColor: '#FFD700' },
-      id: 'hackathons',
-      isActive: true,
-    },
+    // Hackathon is intentionally hidden for end-user focus on Idea + GTM monetization.
+
     {
       name: 'Challenge',
       route: '/challenge',
