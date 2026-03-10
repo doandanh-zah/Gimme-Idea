@@ -407,4 +407,62 @@ export class UsersService {
 
     return { success: true };
   }
+
+  async consumeIdeaView(userId: string): Promise<ApiResponse<any>> {
+    const supabase = this.supabaseService.getAdminClient();
+    const { data, error } = await supabase.rpc("consume_idea_view", {
+      p_user_id: userId,
+    });
+
+    if (error) {
+      throw new BadRequestException("Failed to check daily idea view limit");
+    }
+
+    return { success: true, data };
+  }
+
+  async getMonetizationStatus(userId: string): Promise<ApiResponse<any>> {
+    const supabase = this.supabaseService.getAdminClient();
+
+    const { data: user } = await supabase
+      .from("users")
+      .select("plan_tier, plan_expires_at")
+      .eq("id", userId)
+      .single();
+
+    const { data: credits } = await supabase
+      .from("user_ai_credits")
+      .select("paid_credits")
+      .eq("user_id", userId)
+      .single();
+
+    const today = new Date().toISOString().slice(0, 10);
+    const { data: usage } = await supabase
+      .from("user_daily_usage")
+      .select("idea_views, ai_questions")
+      .eq("user_id", userId)
+      .eq("usage_date", today)
+      .single();
+
+    const planTier = user?.plan_tier || "free";
+    const planActive =
+      !user?.plan_expires_at || new Date(user.plan_expires_at) > new Date();
+    const effectivePlan =
+      planActive && ["pro5", "pro10"].includes(planTier) ? planTier : "free";
+
+    return {
+      success: true,
+      data: {
+        planTier: effectivePlan,
+        planExpiresAt: user?.plan_expires_at || null,
+        dailyIdeaViewsUsed: usage?.idea_views || 0,
+        dailyIdeaViewsLimit: effectivePlan === "free" ? 5 : -1,
+        dailyAIQuestionsUsed: usage?.ai_questions || 0,
+        dailyAIFreeLimit: effectivePlan === "pro10" ? -1 : 2,
+        paidQuestionCredits: credits?.paid_credits || 0,
+        questionPackSize: 5,
+      },
+    };
+  }
 }
+

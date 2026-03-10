@@ -303,6 +303,13 @@ export const apiClient = {
   // Users
   getUserByUsername: (username: string) => apiFetch<any>(`/users/${username}`),
 
+  consumeIdeaView: () =>
+    apiFetch<any>("/users/me/consume-idea-view", {
+      method: "PATCH",
+    }),
+
+  getMonetizationStatus: () => apiFetch<any>("/users/me/monetization"),
+
   getUserStats: (username: string) =>
     apiFetch<{
       reputation: number;

@@ -80,6 +80,29 @@ export class UsersController {
   }
 
   /**
+   * POST /api/users/me/consume-idea-view
+   * Consume one idea view for free-plan daily limiter
+   */
+  @Patch("me/consume-idea-view")
+  @UseGuards(AuthGuard)
+  async consumeIdeaView(
+    @CurrentUser("userId") userId: string
+  ): Promise<ApiResponse<any>> {
+    return this.usersService.consumeIdeaView(userId);
+  }
+
+  /**
+   * GET /api/users/me/monetization
+   */
+  @Get("me/monetization")
+  @UseGuards(AuthGuard)
+  async getMonetizationStatus(
+    @CurrentUser("userId") userId: string
+  ): Promise<ApiResponse<any>> {
+    return this.usersService.getMonetizationStatus(userId);
+  }
+
+  /**
    * GET /api/users/announcements
    * Get current user's active announcements
    */

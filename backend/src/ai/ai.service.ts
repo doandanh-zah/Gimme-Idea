@@ -80,6 +80,8 @@ interface PainEvidenceReport {
 export class AIService {
   private readonly logger = new Logger(AIService.name);
   private openai: OpenAI;
+  private readonly primaryModel = process.env.AI_MODEL_PRIMARY || "gpt-5.2";
+  private readonly fallbackModel = process.env.AI_MODEL_FALLBACK || "gpt-4o-mini";
 
   constructor(private supabaseService: SupabaseService) {
     const apiKey = process.env.OPENAI_API_KEY;
@@ -89,6 +91,21 @@ export class AIService {
     this.openai = new OpenAI({
       apiKey: apiKey || "sk-dummy-key", // Fallback for development
     });
+  }
+
+  private async createCompletionWithFallback(payload: Omit<OpenAI.Chat.Completions.ChatCompletionCreateParamsNonStreaming, 'model'>) {
+    try {
+      return await this.openai.chat.completions.create({
+        ...payload,
+        model: this.primaryModel,
+      });
+    } catch (error) {
+      this.logger.warn(`Primary model failed (${this.primaryModel}), retrying fallback ${this.fallbackModel}`);
+      return await this.openai.chat.completions.create({
+        ...payload,
+        model: this.fallbackModel,
+      });
+    }
   }
 
   private clampScore(value: unknown, fallback: number = 50): number {
@@ -427,8 +444,7 @@ Consider: problem validity, blockchain necessity, technical feasibility, competi
 }`;
 
     try {
-      const completion = await this.openai.chat.completions.create({
-        model: "gpt-4o-mini",
+      const completion = await this.createCompletionWithFallback({
         messages: [
           {
             role: "system",
@@ -536,8 +552,7 @@ ${previousAIComment ? `**YOUR PREVIOUS FEEDBACK:**\n${previousAIComment}\n` : ""
     ];
 
     try {
-      const completion = await this.openai.chat.completions.create({
-        model: "gpt-4o-mini",
+      const completion = await this.createCompletionWithFallback({
         messages: messages as any,
         temperature: 0.7,
         max_tokens: 400,
@@ -588,8 +603,7 @@ Respond with valid JSON:
 }`;
 
     try {
-      const completion = await this.openai.chat.completions.create({
-        model: "gpt-4o-mini",
+      const completion = await this.createCompletionWithFallback({
         messages: [
           {
             role: "system",
@@ -774,8 +788,7 @@ Return valid JSON:
   "reasoning": "Explain why these are good matches in a natural, conversational way (3-4 sentences). Don't use a template or formulaic language - just talk naturally about why you think these ideas would work well for them."
 }`;
 
-      const completion = await this.openai.chat.completions.create({
-        model: "gpt-4o-mini",
+      const completion = await this.createCompletionWithFallback({
         messages: [
           {
             role: "system",
@@ -883,8 +896,7 @@ Guidelines:
       ];
 
     try {
-      const completion = await this.openai.chat.completions.create({
-        model: "gpt-4o-mini",
+      const completion = await this.createCompletionWithFallback({
         messages: messages,
         temperature: 0.8, // Higher temperature for more varied responses
         max_tokens: 300,
@@ -937,8 +949,7 @@ Respond with JSON only:
 }`;
 
     try {
-      const completion = await this.openai.chat.completions.create({
-        model: "gpt-4o-mini",
+      const completion = await this.createCompletionWithFallback({
         messages: [
           {
             role: "system",
@@ -1037,7 +1048,7 @@ Respond with JSON only:
               likes: 0,
               tips_amount: 0,
               is_ai_generated: true,
-              ai_model: "gpt-4o-mini",
+              ai_model: this.primaryModel,
               ai_tokens_used: 0,
               created_at: new Date().toISOString(),
             })
@@ -1091,7 +1102,7 @@ Respond with JSON only:
             likes: 0,
             tips_amount: 0,
             is_ai_generated: true,
-            ai_model: "gpt-4o-mini",
+            ai_model: this.primaryModel,
             ai_tokens_used: 0,
             created_at: new Date().toISOString(),
           })
@@ -1128,7 +1139,7 @@ Respond with JSON only:
           likes: 0,
           tips_amount: 0,
           is_ai_generated: true,
-          ai_model: "gpt-4o-mini",
+          ai_model: this.primaryModel,
           ai_tokens_used: 0,
           created_at: new Date().toISOString(),
         })
@@ -1167,7 +1178,7 @@ Respond with JSON only:
           tipsAmount: 0,
           createdAt: comment.created_at,
           is_ai_generated: true,
-          ai_model: "gpt-4o-mini",
+          ai_model: this.primaryModel,
         },
       };
     } catch (error) {
@@ -1322,7 +1333,7 @@ Respond with JSON only:
               likes: 0,
               tips_amount: 0,
               is_ai_generated: true,
-              ai_model: "gpt-4o-mini",
+              ai_model: this.primaryModel,
               created_at: new Date().toISOString(),
             });
 

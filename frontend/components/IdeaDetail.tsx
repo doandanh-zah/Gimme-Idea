@@ -451,6 +451,16 @@ const CommentItem: React.FC<CommentItemProps> = ({ comment, projectId, isReply =
 
         setIsSubmittingReply(true);
         try {
+            // AI question monetization gate (free 2/day, then paid credits, pro10 unlimited)
+            if (comment.is_ai_generated) {
+                const quota = await apiClient.checkAIQuota(projectId);
+                if (!quota.success || !quota.data?.canUse) {
+                    toast.error('Free 2 questions used. Continue with $1 / 5 questions, or upgrade to $10 for unlimited AI chat.');
+                    setIsSubmittingReply(false);
+                    return;
+                }
+            }
+
             await replyComment(projectId, comment.id, replyText, isAnonReply);
             const userQuestion = replyText;
             setReplyText('');
@@ -776,6 +786,7 @@ export const IdeaDetail = () => {
     // Related Projects Modal State
     const [showRelatedProjectsModal, setShowRelatedProjectsModal] = useState(false);
     const [relatedProjectsCount, setRelatedProjectsCount] = useState(0);
+    const [viewGate, setViewGate] = useState<{ blocked: boolean; message?: string } | null>(null);
 
     const project = selectedProject;
 
@@ -785,6 +796,26 @@ export const IdeaDetail = () => {
             fetchRelatedProjectsCount();
         }
     }, [project?.id, showRelatedProjectsModal]); // Refresh when modal closes
+
+    // Free-plan limiter: 5 idea views/day (auth users)
+    useEffect(() => {
+        const run = async () => {
+            if (!user || !project?.id) return;
+            const key = `idea-view:${project.id}:${new Date().toISOString().slice(0, 10)}`;
+            if (sessionStorage.getItem(key)) return;
+
+            const res = await apiClient.consumeIdeaView();
+            if (!res.success || !res.data?.allowed) {
+                setViewGate({
+                    blocked: true,
+                    message: "You've reached 5 free idea views today. Upgrade to $5/month for unlimited idea views.",
+                });
+                return;
+            }
+            sessionStorage.setItem(key, "1");
+        };
+        run();
+    }, [user, project?.id]);
 
     const fetchRelatedProjectsCount = async () => {
         if (!project?.id) return;
@@ -827,7 +858,31 @@ export const IdeaDetail = () => {
 
     if (!project) return null;
 
-    
+    if (viewGate?.blocked) {
+        return (
+            <div className="min-h-screen pt-28 px-4">
+                <div className="max-w-xl mx-auto rounded-2xl border border-[#FFD700]/30 bg-[#12131a] p-6 text-center">
+                    <h2 className="text-2xl font-bold text-[#FFD700] mb-3">Daily limit reached</h2>
+                    <p className="text-gray-300 mb-5">{viewGate.message}</p>
+                    <div className="flex gap-3 justify-center">
+                        <button
+                            onClick={() => router.push('/pricing')}
+                            className="bg-[#FFD700] text-black px-5 py-2 rounded-full font-bold"
+                        >
+                            View Plans
+                        </button>
+                        <button
+                            onClick={() => router.push('/idea')}
+                            className="bg-white/10 text-white px-5 py-2 rounded-full font-bold"
+                        >
+                            Back
+                        </button>
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
     const handleVote = async () => {
         if (!user) {
             openConnectReminder();
