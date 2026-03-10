@@ -23,7 +23,6 @@ import AdminBadge, { GimmeSenseiBadge } from './AdminBadge';
 import { RelatedProjectsModal } from './RelatedProjectsModal';
 import { ProposalSendModal } from './ProposalSendModal';
 import { CreatePoolButton } from './ideas/CreatePoolButton';
-import { QUESTION_PACK_SIZE } from '../lib/gtm-question-bank';
 import { useWallet, useConnection } from '@solana/wallet-adapter-react';
 import { PublicKey, Transaction, SystemProgram, LAMPORTS_PER_SOL } from '@solana/web3.js';
 
@@ -788,6 +787,7 @@ export const IdeaDetail = () => {
     const [assessmentStep, setAssessmentStep] = useState(0);
     const [assessmentAnswers, setAssessmentAnswers] = useState<Array<{ question: string; answer: string }>>([]);
     const [gtmMessages, setGtmMessages] = useState<Array<{ role: 'assistant' | 'user'; content: string }>>([]);
+    const [customAnswer, setCustomAnswer] = useState('');
     const { publicKey, sendTransaction, connected } = useWallet();
     const { connection } = useConnection();
 
@@ -1011,28 +1011,37 @@ export const IdeaDetail = () => {
         }
     };
 
-    const getAdaptiveQuestion = (step: number) => {
+    const getAssessmentQuestion = (step: number) => {
         const title = project?.title || 'this idea';
-        const problem = project?.problem || '';
-        const p = problem.slice(0, 120);
-        const questions = [
-            `For "${title}", which user segment feels this pain most?`,
-            `How often does this pain happen for that segment each week?`,
-            `What are they using today instead of your solution?`,
-            `What is the #1 reason they would switch to ${title}?`,
-            `How urgent is this pain for them right now (1-5)?`,
-            `Would this segment realistically pay in the first 30 days? Why?`,
-            `If this failed, what would be the most likely reason?`,
-            `Given problem context: "${p}", what MVP outcome should be delivered first?`,
+        const base = [
+            {
+                question: `For "${title}", who are you in this context?`,
+                choices: ['Founder building it', 'Potential user/customer', 'Operator/manager', 'Researching only'],
+            },
+            {
+                question: `How real is this pain for you right now?`,
+                choices: ['Happens daily', 'Happens weekly', 'Rarely happens', 'Not sure yet'],
+            },
+            {
+                question: `What have you already tried before this idea?`,
+                choices: ['Existing tools', 'Manual workflow', 'Hire people/service', 'Tried nothing yet'],
+            },
+            {
+                question: `What proof can you provide for this pain?`,
+                choices: ['Real user interview notes', 'Usage metrics / logs', 'Only assumptions for now', 'Need help validating'],
+            },
         ];
-        return questions[Math.min(step, questions.length - 1)];
+
+        if (step >= base.length) return base[base.length - 1];
+        return base[step];
     };
 
     const initializeAssessment = () => {
-        const firstQuestion = getAdaptiveQuestion(0);
+        const q0 = getAssessmentQuestion(0);
         setAssessmentStep(0);
         setAssessmentAnswers([]);
-        setGtmMessages([{ role: 'assistant', content: firstQuestion }]);
+        setCustomAnswer('');
+        setGtmMessages([{ role: 'assistant', content: q0.question }]);
         setShowGtmChat(true);
     };
 
@@ -1079,48 +1088,67 @@ export const IdeaDetail = () => {
 
     const handleAnswerAssessment = async (answer: string) => {
         if (!project) return;
-        const question = getAdaptiveQuestion(assessmentStep);
-        const nextAnswers = [...assessmentAnswers, { question, answer }];
+        const q = getAssessmentQuestion(assessmentStep);
+        const nextAnswers = [...assessmentAnswers, { question: q.question, answer }];
 
         setGtmMessages((prev) => [...prev, { role: 'user', content: answer }]);
         setAssessmentAnswers(nextAnswers);
+
+        const nextStep = Math.min(assessmentStep + 1, 3);
+        setAssessmentStep(nextStep);
+
+        if (nextAnswers.length < 4) {
+            const nextQ = getAssessmentQuestion(nextStep);
+            setGtmMessages((prev) => [...prev, { role: 'assistant', content: nextQ.question }]);
+        }
+    };
+
+    const handleGenerateAdvice = async () => {
+        if (!project) return;
+        if (assessmentAnswers.length < 2) {
+            toast.error('Answer at least 2 questions first.');
+            return;
+        }
+
         setIsGtmSending(true);
-
         try {
-            const quota = await apiClient.checkAIQuota(project.id);
-            if (quota.success && quota.data && quota.data.canUse === false) {
-                toast.error('Free 2 questions used. Buy $1/5 questions, or choose Pro $10.');
-                setShowBuyOptions(true);
-                return;
+            // Admin bypass (frontend UX layer)
+            if (!isAdmin) {
+                const quota = await apiClient.checkAIQuota(project.id);
+                if (quota.success && quota.data && quota.data.canUse === false) {
+                    toast.error('Free questions used. Buy $1/5 questions or upgrade monthly.');
+                    setShowBuyOptions(true);
+                    return;
+                }
             }
 
-            const done = nextAnswers.length >= 6;
-            if (done) {
-                const summaryPrompt = `You are an expert startup validator. Idea:\nTitle: ${project.title}\nProblem: ${project.problem || ''}\nSolution: ${project.solution || ''}\nUser answers:\n${nextAnswers.map((a, i) => `${i + 1}. ${a.question}\nA: ${a.answer}`).join('\n')}\n\nReturn concise markdown with:\n1) Fit verdict: Go / Maybe / Kill\n2) Why (3 bullets)\n3) Biggest risks (3 bullets)\n4) 7-day validation plan (day-by-day)\n5) Final recommendation for this founder.`;
+            const prompt = `You are a strict startup validation advisor.\n\nIdea:\nTitle: ${project.title}\nProblem: ${project.problem || ''}\nSolution: ${project.solution || ''}\nOpportunity: ${project.opportunity || ''}\n\nUser profile answers:\n${assessmentAnswers.map((a, i) => `${i + 1}. ${a.question}\nAnswer: ${a.answer}`).join('\n')}\n\nRequirements:\n- Do NOT blindly accept user claims.
+- Explicitly label each key point as: Verified / Plausible / Unverified.
+- Ask for missing evidence where needed.
+- Output concise markdown with sections:
+1) Founder-Idea Fit (0-100)
+2) PMF Readiness (Go/Maybe/Kill)
+3) Contradictions or weak assumptions
+4) What to validate in next 7 days (day-by-day)
+5) Best next path for this specific user (not generic).
+`;
 
-                const reply = await apiClient.generateAIReply({
-                    projectId: project.id,
-                    userMessage: summaryPrompt,
-                    conversationHistory: [],
-                    ideaContext: {
-                        title: project.title,
-                        problem: project.problem || '',
-                        solution: project.solution || '',
-                    },
-                });
+            const reply = await apiClient.generateAIReply({
+                projectId: project.id,
+                userMessage: prompt,
+                conversationHistory: [],
+                ideaContext: {
+                    title: project.title,
+                    problem: project.problem || '',
+                    solution: project.solution || '',
+                },
+            });
 
-                if (!reply.success || !reply.data?.reply) throw new Error(reply.error || 'Failed to build assessment');
-                setGtmMessages((prev) => [...prev, { role: 'assistant', content: reply.data.reply }]);
-                await refreshMonetization();
-                return;
-            }
-
-            const nextStep = assessmentStep + 1;
-            setAssessmentStep(nextStep);
-            setGtmMessages((prev) => [...prev, { role: 'assistant', content: getAdaptiveQuestion(nextStep) }]);
+            if (!reply.success || !reply.data?.reply) throw new Error(reply.error || 'Failed to generate advice');
+            setGtmMessages((prev) => [...prev, { role: 'assistant', content: reply.data.reply }]);
             await refreshMonetization();
         } catch (error: any) {
-            toast.error(error?.message || 'Failed to continue assessment');
+            toast.error(error?.message || 'Failed to generate advice');
         } finally {
             setIsGtmSending(false);
         }
@@ -1253,35 +1281,23 @@ export const IdeaDetail = () => {
                             </div>
                         </section>
 
-                        <section>
-                            <h3 className="text-xl font-bold text-[#FFD700] mb-4 font-mono uppercase tracking-wider">Brainstorm with Gimme Sensei</h3>
-                            <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-5">
-                                <p className="text-sm text-gray-400 mb-4">Free first 2 assessment questions/day. Then unlock with <span className="text-[#FFD700] font-semibold">$1 / {QUESTION_PACK_SIZE} questions</span>, or use monthly plans ($5 / $10).</p>
-
-                                {monetization && (
-                                    <div className="mb-4 grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs">
-                                        <div className="rounded-lg border border-white/10 px-3 py-2 text-gray-300">Plan: <span className="text-white font-semibold">{monetization.planTier}</span></div>
-                                        <div className="rounded-lg border border-white/10 px-3 py-2 text-gray-300">Free used: <span className="text-white font-semibold">{monetization.dailyAIQuestionsUsed}/{monetization.dailyAIFreeLimit === -1 ? '∞' : monetization.dailyAIFreeLimit}</span></div>
-                                        <div className="rounded-lg border border-white/10 px-3 py-2 text-gray-300">Credits: <span className="text-[#FFD700] font-semibold">{monetization.paidQuestionCredits}</span></div>
-                                    </div>
-                                )}
-
-                                <div className="flex flex-wrap gap-2">
-                                    <button
-                                        onClick={() => setShowBuyOptions(true)}
-                                        className="bg-white/10 text-white px-4 py-2 rounded-full text-sm font-semibold hover:bg-white/20"
-                                    >
-                                        Buy / Upgrade
-                                    </button>
-                                    <button
-                                        onClick={initializeAssessment}
-                                        className="bg-[#FFD700] text-black px-4 py-2 rounded-full text-sm font-bold"
-                                    >
-                                        Brainstorm with Gimme Sensei
-                                    </button>
-                                </div>
+                        <section className="pt-2">
+                            <div className="flex flex-wrap gap-2">
+                                <button
+                                    onClick={initializeAssessment}
+                                    className="bg-[#FFD700] text-black px-4 py-2 rounded-full text-sm font-bold"
+                                >
+                                    Brainstorm with Gimme Sensei
+                                </button>
+                                <button
+                                    onClick={() => setShowBuyOptions(true)}
+                                    className="bg-white/10 text-white px-4 py-2 rounded-full text-sm font-semibold hover:bg-white/20"
+                                >
+                                    Buy / Upgrade
+                                </button>
                             </div>
                         </section>
+
                     </div>
                 </div>
 
@@ -1379,31 +1395,61 @@ export const IdeaDetail = () => {
             )}
 
             {showGtmChat && (
-                <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4" onClick={() => setShowGtmChat(false)}>
-                    <div className="w-full max-w-2xl rounded-2xl border border-white/10 bg-[#0D0D12] overflow-hidden" onClick={(e) => e.stopPropagation()}>
-                        <div className="px-5 py-4 border-b border-white/10 flex items-center justify-between">
-                            <h3 className="text-lg font-bold text-[#FFD700]">Brainstorm with Gimme Sensei</h3>
+                <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4" onClick={() => setShowGtmChat(false)}>
+                    <div className="w-full sm:max-w-2xl h-[88vh] sm:h-auto sm:max-h-[88vh] rounded-t-2xl sm:rounded-2xl border border-white/10 bg-[#0D0D12] overflow-hidden flex flex-col" onClick={(e) => e.stopPropagation()}>
+                        <div className="px-4 sm:px-5 py-4 border-b border-white/10 flex items-center justify-between">
+                            <h3 className="text-base sm:text-lg font-bold text-[#FFD700]">Brainstorm with Gimme Sensei</h3>
                             <button onClick={() => setShowGtmChat(false)} className="text-gray-400 hover:text-white"><X className="w-5 h-5" /></button>
                         </div>
-                        <div className="h-[440px] overflow-y-auto p-4 space-y-3 bg-white/[0.02]">
+                        <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-white/[0.02]">
                             {gtmMessages.map((m, idx) => (
-                                <div key={idx} className={`max-w-[90%] px-3 py-2 rounded-xl text-sm whitespace-pre-wrap ${m.role === 'assistant' ? 'bg-white/10 text-gray-100' : 'ml-auto bg-[#FFD700] text-black'}`}>
+                                <div key={idx} className={`max-w-[92%] px-3 py-2 rounded-xl text-sm whitespace-pre-wrap ${m.role === 'assistant' ? 'bg-white/10 text-gray-100' : 'ml-auto bg-[#FFD700] text-black'}`}>
                                     {m.content}
                                 </div>
                             ))}
                             {isGtmSending && <div className="text-xs text-gray-400">Analyzing your answer...</div>}
                         </div>
-                        <div className="p-4 border-t border-white/10">
+                        <div className="p-3 sm:p-4 border-t border-white/10 space-y-2">
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                                {['Very high', 'Medium', 'Low', 'Not sure'].map((choice) => (
-                                    <button key={choice} onClick={() => handleAnswerAssessment(choice)} disabled={isGtmSending} className="bg-white/10 hover:bg-white/20 text-white rounded-lg px-3 py-2 text-sm">
+                                {getAssessmentQuestion(assessmentStep).choices.map((choice) => (
+                                    <button
+                                        key={choice}
+                                        onClick={() => handleAnswerAssessment(choice)}
+                                        disabled={isGtmSending}
+                                        className="bg-white/10 hover:bg-white/20 text-white rounded-lg px-3 py-2 text-sm text-left"
+                                    >
                                         {choice}
                                     </button>
                                 ))}
-                                <button onClick={() => handleAnswerAssessment('Other / custom context')} disabled={isGtmSending} className="sm:col-span-2 bg-[#FFD700] text-black rounded-lg px-3 py-2 text-sm font-bold">
-                                    Other / custom context
+                            </div>
+                            <div className="flex gap-2">
+                                <input
+                                    value={customAnswer}
+                                    onChange={(e) => setCustomAnswer(e.target.value)}
+                                    placeholder="Or add custom answer..."
+                                    className="flex-1 bg-[#12131a] border border-white/10 rounded-full px-4 py-2 text-sm text-white outline-none"
+                                />
+                                <button
+                                    onClick={() => {
+                                        if (!customAnswer.trim()) return;
+                                        handleAnswerAssessment(customAnswer.trim());
+                                        setCustomAnswer('');
+                                    }}
+                                    className="bg-white/10 text-white px-3 py-2 rounded-full text-sm"
+                                >
+                                    Add
                                 </button>
                             </div>
+
+                            {assessmentAnswers.length >= 2 && (
+                                <button
+                                    onClick={handleGenerateAdvice}
+                                    disabled={isGtmSending}
+                                    className="w-full bg-[#FFD700] text-black rounded-full px-4 py-2.5 text-sm font-bold disabled:opacity-60"
+                                >
+                                    Get Advice
+                                </button>
+                            )}
                         </div>
                     </div>
                 </div>
