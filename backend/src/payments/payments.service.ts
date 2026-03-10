@@ -7,6 +7,9 @@ import { ApiResponse, Transaction } from '../shared/types';
 
 @Injectable()
 export class PaymentsService {
+  private readonly aiPackPriceUsd = 1;
+  private readonly aiPackQuestionCredits = 5;
+
   constructor(
     private supabaseService: SupabaseService,
     private solanaService: SolanaService,
@@ -169,6 +172,107 @@ export class PaymentsService {
         points: Math.floor(points / 2),
       });
     }
+  }
+
+  async redeemAiPack(userId: string, txHash: string): Promise<ApiResponse<any>> {
+    const supabase = this.supabaseService.getAdminClient();
+
+    const treasuryWallet = process.env.AI_QUESTION_PACK_TREASURY_WALLET;
+    if (!treasuryWallet) {
+      throw new BadRequestException('AI_QUESTION_PACK_TREASURY_WALLET is not configured');
+    }
+
+    const { data: existingPack } = await supabase
+      .from('ai_question_pack_purchases')
+      .select('id')
+      .eq('tx_hash', txHash)
+      .maybeSingle();
+
+    if (existingPack) {
+      throw new BadRequestException('This transaction has already been redeemed');
+    }
+
+    const verification = await this.solanaService.verifyTransaction(txHash);
+    if (!verification.isValid) {
+      throw new BadRequestException('Invalid transaction');
+    }
+
+    if (verification.to !== treasuryWallet) {
+      throw new BadRequestException('Transaction recipient mismatch for AI pack');
+    }
+
+    if ((verification.amount || 0) < this.aiPackPriceUsd) {
+      throw new BadRequestException('Transaction amount is lower than required amount');
+    }
+
+    const { data: existingTx } = await supabase
+      .from('transactions')
+      .select('id')
+      .eq('tx_hash', txHash)
+      .maybeSingle();
+
+    if (!existingTx) {
+      const { error: txError } = await supabase.from('transactions').insert({
+        tx_hash: txHash,
+        from_wallet: verification.from,
+        to_wallet: verification.to,
+        amount: verification.amount || this.aiPackPriceUsd,
+        type: 'reward',
+        user_id: userId,
+        status: 'confirmed',
+        created_at: new Date().toISOString(),
+      });
+      if (txError) throw new BadRequestException(`Failed to record tx: ${txError.message}`);
+    }
+
+    const { error: purchaseError } = await supabase
+      .from('ai_question_pack_purchases')
+      .insert({
+        user_id: userId,
+        tx_hash: txHash,
+        amount_usd: this.aiPackPriceUsd,
+        questions_granted: this.aiPackQuestionCredits,
+        status: 'confirmed',
+      });
+
+    if (purchaseError) {
+      throw new BadRequestException(`Failed to record AI pack purchase: ${purchaseError.message}`);
+    }
+
+    const { data: currentCredits } = await supabase
+      .from('user_ai_credits')
+      .select('paid_credits')
+      .eq('user_id', userId)
+      .maybeSingle();
+
+    const nextCredits = (currentCredits?.paid_credits || 0) + this.aiPackQuestionCredits;
+
+    const { error: creditsError } = await supabase
+      .from('user_ai_credits')
+      .upsert(
+        {
+          user_id: userId,
+          free_interactions_remaining: 2,
+          paid_credits: nextCredits,
+          total_interactions_used: 0,
+          updated_at: new Date().toISOString(),
+        },
+        { onConflict: 'user_id' },
+      );
+
+    if (creditsError) {
+      throw new BadRequestException(`Failed to grant question credits: ${creditsError.message}`);
+    }
+
+    return {
+      success: true,
+      data: {
+        txHash,
+        questionsGranted: this.aiPackQuestionCredits,
+        paidCredits: nextCredits,
+      },
+      message: 'AI question pack redeemed successfully',
+    };
   }
 
   /**

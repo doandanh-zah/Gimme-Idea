@@ -788,6 +788,9 @@ export const IdeaDetail = () => {
     const [showRelatedProjectsModal, setShowRelatedProjectsModal] = useState(false);
     const [relatedProjectsCount, setRelatedProjectsCount] = useState(0);
     const [viewGate, setViewGate] = useState<{ blocked: boolean; message?: string } | null>(null);
+    const [monetization, setMonetization] = useState<any>(null);
+    const [redeemTxHash, setRedeemTxHash] = useState('');
+    const [isRedeemingPack, setIsRedeemingPack] = useState(false);
 
     const project = selectedProject;
 
@@ -817,6 +820,15 @@ export const IdeaDetail = () => {
         };
         run();
     }, [user, project?.id]);
+
+    useEffect(() => {
+        const run = async () => {
+            if (!user) return;
+            const status = await apiClient.getMonetizationStatus();
+            if (status.success) setMonetization(status.data);
+        };
+        run();
+    }, [user]);
 
     const fetchRelatedProjectsCount = async () => {
         if (!project?.id) return;
@@ -967,6 +979,27 @@ export const IdeaDetail = () => {
         }
     };
 
+    const handleRedeemAiPack = async () => {
+        if (!redeemTxHash.trim()) {
+            toast.error('Please paste transaction hash');
+            return;
+        }
+        setIsRedeemingPack(true);
+        try {
+            const res = await apiClient.redeemAiPack(redeemTxHash.trim());
+            if (!res.success) {
+                toast.error(res.error || 'Failed to redeem AI pack');
+                return;
+            }
+            toast.success(`Redeemed +${res.data?.questionsGranted || 5} AI questions`);
+            setRedeemTxHash('');
+            const status = await apiClient.getMonetizationStatus();
+            if (status.success) setMonetization(status.data);
+        } finally {
+            setIsRedeemingPack(false);
+        }
+    };
+
     return (
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="min-h-screen pt-24 sm:pt-32 pb-20 px-4 sm:px-6">
             <div className="max-w-4xl mx-auto">
@@ -1098,6 +1131,15 @@ export const IdeaDetail = () => {
                             <h3 className="text-xl font-bold text-[#FFD700] mb-4 font-mono uppercase tracking-wider">GTM Assistant</h3>
                             <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-5">
                                 <p className="text-sm text-gray-400 mb-4">Free 2 câu đầu. Sau đó mở khóa theo gói <span className="text-[#FFD700] font-semibold">$1 / {QUESTION_PACK_SIZE} câu</span> hoặc Pro $10 để chat không giới hạn.</p>
+
+                                {monetization && (
+                                    <div className="mb-4 grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs">
+                                        <div className="rounded-lg border border-white/10 px-3 py-2 text-gray-300">Plan: <span className="text-white font-semibold">{monetization.planTier}</span></div>
+                                        <div className="rounded-lg border border-white/10 px-3 py-2 text-gray-300">Free used: <span className="text-white font-semibold">{monetization.dailyAIQuestionsUsed}/{monetization.dailyAIFreeLimit === -1 ? '∞' : monetization.dailyAIFreeLimit}</span></div>
+                                        <div className="rounded-lg border border-white/10 px-3 py-2 text-gray-300">Paid credits: <span className="text-[#FFD700] font-semibold">{monetization.paidQuestionCredits}</span></div>
+                                    </div>
+                                )}
+
                                 <div className="space-y-2 mb-4">
                                     {GTM_QUESTION_BANK.slice(0, 2).map((q) => (
                                         <div key={q.id} className="rounded-xl border border-white/10 px-3 py-2 text-sm text-gray-200">
@@ -1105,6 +1147,23 @@ export const IdeaDetail = () => {
                                         </div>
                                     ))}
                                 </div>
+
+                                <div className="flex flex-col sm:flex-row gap-2 mb-4">
+                                    <input
+                                        value={redeemTxHash}
+                                        onChange={(e) => setRedeemTxHash(e.target.value)}
+                                        placeholder="Paste tx hash to redeem $1 pack"
+                                        className="flex-1 bg-[#12131a] border border-white/10 rounded-full px-4 py-2 text-sm text-white outline-none focus:border-[#FFD700]/40"
+                                    />
+                                    <button
+                                        onClick={handleRedeemAiPack}
+                                        disabled={isRedeemingPack}
+                                        className="bg-white/10 text-white px-4 py-2 rounded-full text-sm font-semibold hover:bg-white/20 disabled:opacity-60"
+                                    >
+                                        {isRedeemingPack ? 'Redeeming...' : 'Redeem +5'}
+                                    </button>
+                                </div>
+
                                 <button
                                     onClick={() => toast('Reply to Gimme Sensei to start Q&A flow')}
                                     className="bg-[#FFD700] text-black px-4 py-2 rounded-full text-sm font-bold"

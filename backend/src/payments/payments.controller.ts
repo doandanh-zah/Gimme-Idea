@@ -2,6 +2,7 @@ import { Controller, Post, Get, Body, Query, UseGuards } from '@nestjs/common';
 import { PaymentsService } from './payments.service';
 import { VerifyPaymentDto } from './dto/verify-payment.dto';
 import { CreatePoolSupportDto } from './dto/create-pool-support.dto';
+import { RedeemAiPackDto } from './dto/redeem-ai-pack.dto';
 import { AuthGuard } from '../common/guards/auth.guard';
 import { CurrentUser } from '../common/decorators/user.decorator';
 import { ApiResponse, Transaction } from '../shared/types';
@@ -40,6 +41,19 @@ export class PaymentsController {
   @Post('pool-support')
   async recordPoolSupport(@Body() dto: CreatePoolSupportDto): Promise<ApiResponse<any>> {
     return this.paymentsService.recordPoolSupport(dto);
+  }
+
+  /**
+   * POST /api/payments/redeem-ai-pack
+   * Redeem a $1 transaction for 5 AI question credits
+   */
+  @Post('redeem-ai-pack')
+  @UseGuards(AuthGuard)
+  async redeemAiPack(
+    @CurrentUser('userId') userId: string,
+    @Body() dto: RedeemAiPackDto,
+  ): Promise<ApiResponse<any>> {
+    return this.paymentsService.redeemAiPack(userId, dto.txHash);
   }
 
   /**

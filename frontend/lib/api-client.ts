@@ -292,6 +292,12 @@ export const apiClient = {
       body: JSON.stringify(data),
     }),
 
+  redeemAiPack: (txHash: string) =>
+    apiFetch<any>("/payments/redeem-ai-pack", {
+      method: "POST",
+      body: JSON.stringify({ txHash }),
+    }),
+
   getTopDonators: (limit?: number) =>
     apiFetch<any[]>(`/payments/top-donators${limit ? `?limit=${limit}` : ""}`),
 
