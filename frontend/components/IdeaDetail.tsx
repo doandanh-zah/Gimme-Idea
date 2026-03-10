@@ -23,6 +23,7 @@ import AdminBadge, { GimmeSenseiBadge } from './AdminBadge';
 import { RelatedProjectsModal } from './RelatedProjectsModal';
 import { ProposalSendModal } from './ProposalSendModal';
 import { CreatePoolButton } from './ideas/CreatePoolButton';
+import { GTM_QUESTION_BANK, QUESTION_PACK_SIZE } from '../lib/gtm-question-bank';
 
 // AI Bot display name
 const AI_BOT_NAME = 'Gimme Sensei';
@@ -1090,6 +1091,26 @@ export const IdeaDetail = () => {
                             <h3 className="text-sm font-bold text-gray-500 mb-2 font-mono uppercase">Opportunity</h3>
                             <div className="text-gray-300">
                                 {project.opportunity ? <MarkdownContent content={project.opportunity} /> : "Not specified."}
+                            </div>
+                        </section>
+
+                        <section>
+                            <h3 className="text-xl font-bold text-[#FFD700] mb-4 font-mono uppercase tracking-wider">GTM Assistant</h3>
+                            <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-5">
+                                <p className="text-sm text-gray-400 mb-4">Free 2 câu đầu. Sau đó mở khóa theo gói <span className="text-[#FFD700] font-semibold">$1 / {QUESTION_PACK_SIZE} câu</span> hoặc Pro $10 để chat không giới hạn.</p>
+                                <div className="space-y-2 mb-4">
+                                    {GTM_QUESTION_BANK.slice(0, 2).map((q) => (
+                                        <div key={q.id} className="rounded-xl border border-white/10 px-3 py-2 text-sm text-gray-200">
+                                            Q{q.id}. {q.prompt}
+                                        </div>
+                                    ))}
+                                </div>
+                                <button
+                                    onClick={() => toast('Reply to Gimme Sensei to start Q&A flow')}
+                                    className="bg-[#FFD700] text-black px-4 py-2 rounded-full text-sm font-bold"
+                                >
+                                    Start guided Q&A
+                                </button>
                             </div>
                         </section>
                     </div>
