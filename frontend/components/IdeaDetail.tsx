@@ -814,13 +814,21 @@ export const IdeaDetail = () => {
             if (sessionStorage.getItem(key)) return;
 
             const res = await apiClient.consumeIdeaView();
-            if (!res.success || !res.data?.allowed) {
+
+            // Fail-open to avoid false blocking when backend/migrations are temporarily unavailable.
+            if (res.success === false) {
+                console.warn('consumeIdeaView failed, allowing access to avoid false paywall lock.');
+                return;
+            }
+
+            if (res.success && res.data && res.data.allowed === false) {
                 setViewGate({
                     blocked: true,
                     message: "You've reached 5 free idea views today. Upgrade to $5/month for unlimited idea views.",
                 });
                 return;
             }
+
             sessionStorage.setItem(key, "1");
         };
         run();
@@ -899,7 +907,7 @@ export const IdeaDetail = () => {
                     <p className="text-gray-300 mb-5">{viewGate.message}</p>
                     <div className="flex gap-3 justify-center">
                         <button
-                            onClick={() => router.push('/pricing')}
+                            onClick={() => router.push('/donate')}
                             className="bg-[#FFD700] text-black px-5 py-2 rounded-full font-bold"
                         >
                             View Plans
