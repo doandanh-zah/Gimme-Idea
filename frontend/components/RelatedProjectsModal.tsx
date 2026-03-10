@@ -264,7 +264,11 @@ export const RelatedProjectsModal: React.FC<RelatedProjectsModalProps> = ({
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
-                className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm"
+                className="fixed inset-0 z-50 flex items-center justify-center p-4"
+                style={{
+                    background: 'radial-gradient(ellipse at center, rgba(153, 69, 255, 0.15) 0%, rgba(255, 215, 0, 0.08) 30%, rgba(0, 0, 0, 0.8) 70%)',
+                    backdropFilter: 'blur(20px)',
+                }}
                 onClick={onClose}
             >
                 <motion.div
@@ -273,7 +277,10 @@ export const RelatedProjectsModal: React.FC<RelatedProjectsModalProps> = ({
                     exit={{ opacity: 0, scale: 0.95, y: 20 }}
                     transition={{ duration: 0.2 }}
                     className="w-full max-w-3xl max-h-[90vh] bg-[#0D0D12] rounded-2xl border border-white/10 overflow-hidden shadow-2xl"
-                    style={{ boxShadow: '0 20px 60px rgba(153, 69, 255, 0.15)' }}
+                    style={{
+                        boxShadow: '0 20px 60px rgba(153, 69, 255, 0.15)',
+                        borderColor: 'rgba(255, 215, 0, 0.25)',
+                    }}
                     onClick={(e) => e.stopPropagation()}
                 >
                     {/* Header */}
