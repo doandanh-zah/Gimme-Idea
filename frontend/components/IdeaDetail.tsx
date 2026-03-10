@@ -1254,7 +1254,7 @@ export const IdeaDetail = () => {
                         </section>
 
                         <section>
-                            <h3 className="text-xl font-bold text-[#FFD700] mb-4 font-mono uppercase tracking-wider">GTM Assistant</h3>
+                            <h3 className="text-xl font-bold text-[#FFD700] mb-4 font-mono uppercase tracking-wider">Brainstorm with Gimme Sensei</h3>
                             <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-5">
                                 <p className="text-sm text-gray-400 mb-4">Free first 2 assessment questions/day. Then unlock with <span className="text-[#FFD700] font-semibold">$1 / {QUESTION_PACK_SIZE} questions</span>, or use monthly plans ($5 / $10).</p>
 
@@ -1277,7 +1277,7 @@ export const IdeaDetail = () => {
                                         onClick={initializeAssessment}
                                         className="bg-[#FFD700] text-black px-4 py-2 rounded-full text-sm font-bold"
                                     >
-                                        Start GTM Assessment
+                                        Brainstorm with Gimme Sensei
                                     </button>
                                 </div>
                             </div>
@@ -1382,7 +1382,7 @@ export const IdeaDetail = () => {
                 <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4" onClick={() => setShowGtmChat(false)}>
                     <div className="w-full max-w-2xl rounded-2xl border border-white/10 bg-[#0D0D12] overflow-hidden" onClick={(e) => e.stopPropagation()}>
                         <div className="px-5 py-4 border-b border-white/10 flex items-center justify-between">
-                            <h3 className="text-lg font-bold text-[#FFD700]">GTM Assessment</h3>
+                            <h3 className="text-lg font-bold text-[#FFD700]">Brainstorm with Gimme Sensei</h3>
                             <button onClick={() => setShowGtmChat(false)} className="text-gray-400 hover:text-white"><X className="w-5 h-5" /></button>
                         </div>
                         <div className="h-[440px] overflow-y-auto p-4 space-y-3 bg-white/[0.02]">
