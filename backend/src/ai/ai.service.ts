@@ -657,6 +657,22 @@ Respond with valid JSON:
     const supabase = this.supabaseService.getAdminClient();
 
     try {
+      const { data: me } = await supabase
+        .from("users")
+        .select("role, wallet")
+        .eq("id", userId)
+        .single();
+
+      if (me?.role === "admin") {
+        return {
+          canUse: true,
+          freeRemaining: -1,
+          paidCredits: -1,
+          interactionsUsed: 0,
+          maxFreeInteractions: -1,
+        };
+      }
+
       const { data, error } = await supabase.rpc("can_user_use_ai", {
         p_user_id: userId,
         p_project_id: projectId,
@@ -710,6 +726,16 @@ Respond with valid JSON:
     const supabase = this.supabaseService.getAdminClient();
 
     try {
+      const { data: me } = await supabase
+        .from("users")
+        .select("role")
+        .eq("id", userId)
+        .single();
+
+      if (me?.role === "admin") {
+        return true;
+      }
+
       const { data, error } = await supabase.rpc("track_ai_interaction", {
         p_user_id: userId,
         p_project_id: projectId,
