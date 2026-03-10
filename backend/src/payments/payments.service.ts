@@ -9,6 +9,8 @@ import { ApiResponse, Transaction } from '../shared/types';
 export class PaymentsService {
   private readonly aiPackPriceUsd = 1;
   private readonly aiPackQuestionCredits = 5;
+  private readonly pro5PriceUsd = 5;
+  private readonly pro10PriceUsd = 10;
   private readonly aiQuestionPackTreasuryWallet = 'FzcnaZMYcoAYpLgr7Wym2b8hrKYk3VXsRxWSLuvZKLJm';
 
   constructor(
@@ -270,6 +272,70 @@ export class PaymentsService {
         paidCredits: nextCredits,
       },
       message: 'AI question pack redeemed successfully',
+    };
+  }
+
+  async redeemPlan(userId: string, txHash: string, planTier: 'pro5' | 'pro10'): Promise<ApiResponse<any>> {
+    const supabase = this.supabaseService.getAdminClient();
+
+    const requiredAmount = planTier === 'pro10' ? this.pro10PriceUsd : this.pro5PriceUsd;
+
+    const { data: existingTx } = await supabase
+      .from('transactions')
+      .select('id')
+      .eq('tx_hash', txHash)
+      .maybeSingle();
+
+    const verification = await this.solanaService.verifyTransaction(txHash);
+    if (!verification.isValid) throw new BadRequestException('Invalid transaction');
+    if (verification.to !== this.aiQuestionPackTreasuryWallet) {
+      throw new BadRequestException('Transaction recipient mismatch');
+    }
+    if ((verification.amount || 0) < requiredAmount) {
+      throw new BadRequestException(`Transaction amount is lower than required ${requiredAmount}`);
+    }
+
+    if (!existingTx) {
+      const { error: txError } = await supabase.from('transactions').insert({
+        tx_hash: txHash,
+        from_wallet: verification.from,
+        to_wallet: verification.to,
+        amount: verification.amount || requiredAmount,
+        type: 'reward',
+        user_id: userId,
+        status: 'confirmed',
+        created_at: new Date().toISOString(),
+      });
+      if (txError) throw new BadRequestException(`Failed to record tx: ${txError.message}`);
+    }
+
+    const now = new Date();
+    const { data: user } = await supabase
+      .from('users')
+      .select('plan_expires_at')
+      .eq('id', userId)
+      .single();
+
+    const currentExpiry = user?.plan_expires_at ? new Date(user.plan_expires_at) : null;
+    const base = currentExpiry && currentExpiry > now ? currentExpiry : now;
+    const nextExpiry = new Date(base);
+    nextExpiry.setUTCDate(nextExpiry.getUTCDate() + 30);
+
+    const { error: planError } = await supabase
+      .from('users')
+      .update({ plan_tier: planTier, plan_expires_at: nextExpiry.toISOString() })
+      .eq('id', userId);
+
+    if (planError) throw new BadRequestException(`Failed to update plan: ${planError.message}`);
+
+    return {
+      success: true,
+      data: {
+        txHash,
+        planTier,
+        planExpiresAt: nextExpiry.toISOString(),
+      },
+      message: 'Plan redeemed successfully',
     };
   }
 

@@ -3,6 +3,7 @@ import { PaymentsService } from './payments.service';
 import { VerifyPaymentDto } from './dto/verify-payment.dto';
 import { CreatePoolSupportDto } from './dto/create-pool-support.dto';
 import { RedeemAiPackDto } from './dto/redeem-ai-pack.dto';
+import { RedeemPlanDto } from './dto/redeem-plan.dto';
 import { AuthGuard } from '../common/guards/auth.guard';
 import { CurrentUser } from '../common/decorators/user.decorator';
 import { ApiResponse, Transaction } from '../shared/types';
@@ -54,6 +55,19 @@ export class PaymentsController {
     @Body() dto: RedeemAiPackDto,
   ): Promise<ApiResponse<any>> {
     return this.paymentsService.redeemAiPack(userId, dto.txHash);
+  }
+
+  /**
+   * POST /api/payments/redeem-plan
+   * Redeem a transaction for monthly subscription plan
+   */
+  @Post('redeem-plan')
+  @UseGuards(AuthGuard)
+  async redeemPlan(
+    @CurrentUser('userId') userId: string,
+    @Body() dto: RedeemPlanDto,
+  ): Promise<ApiResponse<any>> {
+    return this.paymentsService.redeemPlan(userId, dto.txHash, dto.planTier);
   }
 
   /**
