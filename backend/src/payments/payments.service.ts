@@ -9,6 +9,7 @@ import { ApiResponse, Transaction } from '../shared/types';
 export class PaymentsService {
   private readonly aiPackPriceUsd = 1;
   private readonly aiPackQuestionCredits = 5;
+  private readonly aiQuestionPackTreasuryWallet = 'FzcnaZMYcoAYpLgr7Wym2b8hrKYk3VXsRxWSLuvZKLJm';
 
   constructor(
     private supabaseService: SupabaseService,
@@ -177,10 +178,7 @@ export class PaymentsService {
   async redeemAiPack(userId: string, txHash: string): Promise<ApiResponse<any>> {
     const supabase = this.supabaseService.getAdminClient();
 
-    const treasuryWallet = process.env.AI_QUESTION_PACK_TREASURY_WALLET;
-    if (!treasuryWallet) {
-      throw new BadRequestException('AI_QUESTION_PACK_TREASURY_WALLET is not configured');
-    }
+    const treasuryWallet = this.aiQuestionPackTreasuryWallet;
 
     const { data: existingPack } = await supabase
       .from('ai_question_pack_purchases')
