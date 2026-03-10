@@ -298,6 +298,12 @@ export const apiClient = {
       body: JSON.stringify({ txHash }),
     }),
 
+  redeemPlan: (txHash: string, planTier: "pro5" | "pro10") =>
+    apiFetch<any>("/payments/redeem-plan", {
+      method: "POST",
+      body: JSON.stringify({ txHash, planTier }),
+    }),
+
   getTopDonators: (limit?: number) =>
     apiFetch<any[]>(`/payments/top-donators${limit ? `?limit=${limit}` : ""}`),
 

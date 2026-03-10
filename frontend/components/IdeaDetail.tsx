@@ -781,15 +781,13 @@ export const IdeaDetail = () => {
     const [relatedProjectsCount, setRelatedProjectsCount] = useState(0);
     const [viewGate, setViewGate] = useState<{ blocked: boolean; message?: string } | null>(null);
     const [monetization, setMonetization] = useState<any>(null);
-    const [redeemTxHash, setRedeemTxHash] = useState('');
-    const [isRedeemingPack, setIsRedeemingPack] = useState(false);
     const [isBuyingPack, setIsBuyingPack] = useState(false);
     const [showGtmChat, setShowGtmChat] = useState(false);
-    const [gtmInput, setGtmInput] = useState('');
+    const [showBuyOptions, setShowBuyOptions] = useState(false);
     const [isGtmSending, setIsGtmSending] = useState(false);
-    const [gtmMessages, setGtmMessages] = useState<Array<{ role: 'assistant' | 'user'; content: string }>>([
-        { role: 'assistant', content: 'Hi! I can guide your idea go-to-market. Start with: Who is your ideal customer profile (ICP)?' }
-    ]);
+    const [assessmentStep, setAssessmentStep] = useState(0);
+    const [assessmentAnswers, setAssessmentAnswers] = useState<Array<{ question: string; answer: string }>>([]);
+    const [gtmMessages, setGtmMessages] = useState<Array<{ role: 'assistant' | 'user'; content: string }>>([]);
     const { publicKey, sendTransaction, connected } = useWallet();
     const { connection } = useConnection();
 
@@ -1013,32 +1011,38 @@ export const IdeaDetail = () => {
         }
     };
 
-    const handleRedeemAiPack = async () => {
-        if (!redeemTxHash.trim()) {
-            toast.error('Please paste transaction hash');
-            return;
-        }
-        setIsRedeemingPack(true);
-        try {
-            const res = await apiClient.redeemAiPack(redeemTxHash.trim());
-            if (!res.success) {
-                toast.error(res.error || 'Failed to redeem AI pack');
-                return;
-            }
-            toast.success(`Redeemed +${res.data?.questionsGranted || 5} AI questions`);
-            setRedeemTxHash('');
-            await refreshMonetization();
-        } finally {
-            setIsRedeemingPack(false);
-        }
+    const getAdaptiveQuestion = (step: number) => {
+        const title = project?.title || 'this idea';
+        const problem = project?.problem || '';
+        const p = problem.slice(0, 120);
+        const questions = [
+            `For "${title}", which user segment feels this pain most?`,
+            `How often does this pain happen for that segment each week?`,
+            `What are they using today instead of your solution?`,
+            `What is the #1 reason they would switch to ${title}?`,
+            `How urgent is this pain for them right now (1-5)?`,
+            `Would this segment realistically pay in the first 30 days? Why?`,
+            `If this failed, what would be the most likely reason?`,
+            `Given problem context: "${p}", what MVP outcome should be delivered first?`,
+        ];
+        return questions[Math.min(step, questions.length - 1)];
     };
 
-    const handleBuyAiPackNow = async () => {
+    const initializeAssessment = () => {
+        const firstQuestion = getAdaptiveQuestion(0);
+        setAssessmentStep(0);
+        setAssessmentAnswers([]);
+        setGtmMessages([{ role: 'assistant', content: firstQuestion }]);
+        setShowGtmChat(true);
+    };
+
+    const handlePurchase = async (kind: 'pack' | 'pro5' | 'pro10') => {
         if (!connected || !publicKey) {
-            toast.error('Connect wallet to buy AI question pack');
+            toast.error('Connect wallet to continue');
             return;
         }
 
+        const amount = kind === 'pack' ? 1 : kind === 'pro5' ? 5 : 10;
         setIsBuyingPack(true);
         try {
             const recipient = new PublicKey(AI_PACK_TREASURY_WALLET);
@@ -1046,68 +1050,77 @@ export const IdeaDetail = () => {
                 SystemProgram.transfer({
                     fromPubkey: publicKey,
                     toPubkey: recipient,
-                    lamports: Math.floor(1 * LAMPORTS_PER_SOL),
+                    lamports: Math.floor(amount * LAMPORTS_PER_SOL),
                 })
             );
 
             const signature = await sendTransaction(tx, connection);
             const confirmation = await connection.confirmTransaction(signature, 'confirmed');
-            if (confirmation.value.err) {
-                throw new Error('Transaction failed on-chain');
+            if (confirmation.value.err) throw new Error('Transaction failed on-chain');
+
+            if (kind === 'pack') {
+                const res = await apiClient.redeemAiPack(signature);
+                if (!res.success) throw new Error(res.error || 'Redeem failed');
+                toast.success('Bought +5 question credits');
+            } else {
+                const res = await apiClient.redeemPlan(signature, kind);
+                if (!res.success) throw new Error(res.error || 'Plan activation failed');
+                toast.success(`Plan ${kind.toUpperCase()} activated`);
             }
 
-            const redeemed = await apiClient.redeemAiPack(signature);
-            if (!redeemed.success) {
-                toast.error(redeemed.error || 'Payment sent but redeem failed. You can paste tx hash to redeem manually.');
-                setRedeemTxHash(signature);
-                return;
-            }
-
-            toast.success(`Bought +${redeemed.data?.questionsGranted || 5} AI questions`);
             await refreshMonetization();
+            setShowBuyOptions(false);
         } catch (error: any) {
-            toast.error(error?.message || 'Failed to buy AI question pack');
+            toast.error(error?.message || 'Purchase failed');
         } finally {
             setIsBuyingPack(false);
         }
     };
 
-    const handleSendGtmChat = async () => {
-        if (!gtmInput.trim() || !project) return;
+    const handleAnswerAssessment = async (answer: string) => {
+        if (!project) return;
+        const question = getAdaptiveQuestion(assessmentStep);
+        const nextAnswers = [...assessmentAnswers, { question, answer }];
 
-        const userText = gtmInput.trim();
-        setGtmInput('');
-        setGtmMessages((prev) => [...prev, { role: 'user', content: userText }]);
+        setGtmMessages((prev) => [...prev, { role: 'user', content: answer }]);
+        setAssessmentAnswers(nextAnswers);
         setIsGtmSending(true);
 
         try {
             const quota = await apiClient.checkAIQuota(project.id);
             if (quota.success && quota.data && quota.data.canUse === false) {
-                toast.error('You reached today\'s free AI questions. Buy $1/5 questions or use Pro $10.');
+                toast.error('Free 2 questions used. Buy $1/5 questions, or choose Pro $10.');
+                setShowBuyOptions(true);
                 return;
             }
 
-            const history = gtmMessages.map((m) => ({ role: m.role, content: m.content }));
-            const reply = await apiClient.generateAIReply({
-                projectId: project.id,
-                userMessage: userText,
-                conversationHistory: history,
-                ideaContext: {
-                    title: project.title,
-                    problem: project.problem || '',
-                    solution: project.solution || '',
-                },
-            });
+            const done = nextAnswers.length >= 6;
+            if (done) {
+                const summaryPrompt = `You are an expert startup validator. Idea:\nTitle: ${project.title}\nProblem: ${project.problem || ''}\nSolution: ${project.solution || ''}\nUser answers:\n${nextAnswers.map((a, i) => `${i + 1}. ${a.question}\nA: ${a.answer}`).join('\n')}\n\nReturn concise markdown with:\n1) Fit verdict: Go / Maybe / Kill\n2) Why (3 bullets)\n3) Biggest risks (3 bullets)\n4) 7-day validation plan (day-by-day)\n5) Final recommendation for this founder.`;
 
-            if (!reply.success || !reply.data?.reply) {
-                toast.error(reply.error || 'Failed to get AI response');
+                const reply = await apiClient.generateAIReply({
+                    projectId: project.id,
+                    userMessage: summaryPrompt,
+                    conversationHistory: [],
+                    ideaContext: {
+                        title: project.title,
+                        problem: project.problem || '',
+                        solution: project.solution || '',
+                    },
+                });
+
+                if (!reply.success || !reply.data?.reply) throw new Error(reply.error || 'Failed to build assessment');
+                setGtmMessages((prev) => [...prev, { role: 'assistant', content: reply.data.reply }]);
+                await refreshMonetization();
                 return;
             }
 
-            setGtmMessages((prev) => [...prev, { role: 'assistant', content: reply.data.reply }]);
+            const nextStep = assessmentStep + 1;
+            setAssessmentStep(nextStep);
+            setGtmMessages((prev) => [...prev, { role: 'assistant', content: getAdaptiveQuestion(nextStep) }]);
             await refreshMonetization();
         } catch (error: any) {
-            toast.error(error?.message || 'Failed to chat with GTM assistant');
+            toast.error(error?.message || 'Failed to continue assessment');
         } finally {
             setIsGtmSending(false);
         }
@@ -1243,52 +1256,30 @@ export const IdeaDetail = () => {
                         <section>
                             <h3 className="text-xl font-bold text-[#FFD700] mb-4 font-mono uppercase tracking-wider">GTM Assistant</h3>
                             <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-5">
-                                <p className="text-sm text-gray-400 mb-4">Free 2 câu đầu. Sau đó mở khóa theo gói <span className="text-[#FFD700] font-semibold">$1 / {QUESTION_PACK_SIZE} câu</span> hoặc Pro $10 để chat không giới hạn.</p>
+                                <p className="text-sm text-gray-400 mb-4">Free first 2 assessment questions/day. Then unlock with <span className="text-[#FFD700] font-semibold">$1 / {QUESTION_PACK_SIZE} questions</span>, or use monthly plans ($5 / $10).</p>
 
                                 {monetization && (
                                     <div className="mb-4 grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs">
                                         <div className="rounded-lg border border-white/10 px-3 py-2 text-gray-300">Plan: <span className="text-white font-semibold">{monetization.planTier}</span></div>
                                         <div className="rounded-lg border border-white/10 px-3 py-2 text-gray-300">Free used: <span className="text-white font-semibold">{monetization.dailyAIQuestionsUsed}/{monetization.dailyAIFreeLimit === -1 ? '∞' : monetization.dailyAIFreeLimit}</span></div>
-                                        <div className="rounded-lg border border-white/10 px-3 py-2 text-gray-300">Paid credits: <span className="text-[#FFD700] font-semibold">{monetization.paidQuestionCredits}</span></div>
+                                        <div className="rounded-lg border border-white/10 px-3 py-2 text-gray-300">Credits: <span className="text-[#FFD700] font-semibold">{monetization.paidQuestionCredits}</span></div>
                                     </div>
                                 )}
 
-                                <div className="mb-4 text-sm text-gray-300">
-                                    Guided discovery questions are available inside the GTM chat.
-                                </div>
-
-                                <div className="flex flex-col sm:flex-row gap-2 mb-2">
+                                <div className="flex flex-wrap gap-2">
                                     <button
-                                        onClick={handleBuyAiPackNow}
-                                        disabled={isBuyingPack}
-                                        className="bg-[#FFD700] text-black px-4 py-2 rounded-full text-sm font-bold disabled:opacity-60"
+                                        onClick={() => setShowBuyOptions(true)}
+                                        className="bg-white/10 text-white px-4 py-2 rounded-full text-sm font-semibold hover:bg-white/20"
                                     >
-                                        {isBuyingPack ? 'Processing...' : 'Buy $1 pack now (+5)'}
+                                        Buy / Upgrade
+                                    </button>
+                                    <button
+                                        onClick={initializeAssessment}
+                                        className="bg-[#FFD700] text-black px-4 py-2 rounded-full text-sm font-bold"
+                                    >
+                                        Start GTM Assessment
                                     </button>
                                 </div>
-
-                                <div className="flex flex-col sm:flex-row gap-2 mb-4">
-                                    <input
-                                        value={redeemTxHash}
-                                        onChange={(e) => setRedeemTxHash(e.target.value)}
-                                        placeholder="Fallback: paste tx hash to redeem"
-                                        className="flex-1 bg-[#12131a] border border-white/10 rounded-full px-4 py-2 text-sm text-white outline-none focus:border-[#FFD700]/40"
-                                    />
-                                    <button
-                                        onClick={handleRedeemAiPack}
-                                        disabled={isRedeemingPack}
-                                        className="bg-white/10 text-white px-4 py-2 rounded-full text-sm font-semibold hover:bg-white/20 disabled:opacity-60"
-                                    >
-                                        {isRedeemingPack ? 'Redeeming...' : 'Redeem +5'}
-                                    </button>
-                                </div>
-
-                                <button
-                                    onClick={() => setShowGtmChat(true)}
-                                    className="bg-[#FFD700] text-black px-4 py-2 rounded-full text-sm font-bold"
-                                >
-                                    Start GTM chat
-                                </button>
                             </div>
                         </section>
                     </div>
@@ -1365,38 +1356,54 @@ export const IdeaDetail = () => {
                 </div>
             </div>
 
+            {showBuyOptions && (
+                <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4" onClick={() => setShowBuyOptions(false)}>
+                    <div className="w-full max-w-md rounded-2xl border border-white/10 bg-[#0D0D12] p-5" onClick={(e) => e.stopPropagation()}>
+                        <h3 className="text-lg font-bold text-[#FFD700] mb-4">Choose a plan</h3>
+                        <div className="space-y-2">
+                            <button disabled={isBuyingPack} onClick={() => handlePurchase('pack')} className="w-full text-left bg-white/10 hover:bg-white/20 rounded-xl px-4 py-3">
+                                <div className="text-white font-semibold">$1 • 5 question credits</div>
+                                <div className="text-xs text-gray-400">Pay once, use anytime</div>
+                            </button>
+                            <button disabled={isBuyingPack} onClick={() => handlePurchase('pro5')} className="w-full text-left bg-white/10 hover:bg-white/20 rounded-xl px-4 py-3">
+                                <div className="text-white font-semibold">$5 / month • Unlimited idea views</div>
+                                <div className="text-xs text-gray-400">Question pack purchase still available</div>
+                            </button>
+                            <button disabled={isBuyingPack} onClick={() => handlePurchase('pro10')} className="w-full text-left bg-[#FFD700] text-black rounded-xl px-4 py-3">
+                                <div className="font-bold">$10 / month • Unlimited views + unlimited AI</div>
+                                <div className="text-xs opacity-80">Best for heavy usage</div>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
             {showGtmChat && (
                 <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4" onClick={() => setShowGtmChat(false)}>
                     <div className="w-full max-w-2xl rounded-2xl border border-white/10 bg-[#0D0D12] overflow-hidden" onClick={(e) => e.stopPropagation()}>
                         <div className="px-5 py-4 border-b border-white/10 flex items-center justify-between">
-                            <h3 className="text-lg font-bold text-[#FFD700]">GTM Assistant Chat</h3>
-                            <button onClick={() => setShowGtmChat(false)} className="text-gray-400 hover:text-white">
-                                <X className="w-5 h-5" />
-                            </button>
+                            <h3 className="text-lg font-bold text-[#FFD700]">GTM Assessment</h3>
+                            <button onClick={() => setShowGtmChat(false)} className="text-gray-400 hover:text-white"><X className="w-5 h-5" /></button>
                         </div>
-                        <div className="h-[420px] overflow-y-auto p-4 space-y-3 bg-white/[0.02]">
+                        <div className="h-[440px] overflow-y-auto p-4 space-y-3 bg-white/[0.02]">
                             {gtmMessages.map((m, idx) => (
-                                <div key={idx} className={`max-w-[85%] px-3 py-2 rounded-xl text-sm ${m.role === 'assistant' ? 'bg-white/10 text-gray-100' : 'ml-auto bg-[#FFD700] text-black'}`}>
+                                <div key={idx} className={`max-w-[90%] px-3 py-2 rounded-xl text-sm whitespace-pre-wrap ${m.role === 'assistant' ? 'bg-white/10 text-gray-100' : 'ml-auto bg-[#FFD700] text-black'}`}>
                                     {m.content}
                                 </div>
                             ))}
-                            {isGtmSending && <div className="text-xs text-gray-400">GTM Assistant is thinking...</div>}
+                            {isGtmSending && <div className="text-xs text-gray-400">Analyzing your answer...</div>}
                         </div>
-                        <div className="p-4 border-t border-white/10 flex gap-2">
-                            <input
-                                value={gtmInput}
-                                onChange={(e) => setGtmInput(e.target.value)}
-                                onKeyDown={(e) => e.key === 'Enter' && handleSendGtmChat()}
-                                placeholder="Ask about ICP, PMF, pricing, or go-to-market strategy..."
-                                className="flex-1 bg-[#12131a] border border-white/10 rounded-full px-4 py-2 text-sm text-white outline-none focus:border-[#FFD700]/40"
-                            />
-                            <button
-                                onClick={handleSendGtmChat}
-                                disabled={isGtmSending || !gtmInput.trim()}
-                                className="bg-[#FFD700] text-black px-4 py-2 rounded-full text-sm font-bold disabled:opacity-60"
-                            >
-                                Send
-                            </button>
+                        <div className="p-4 border-t border-white/10">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                {['Very high', 'Medium', 'Low', 'Not sure'].map((choice) => (
+                                    <button key={choice} onClick={() => handleAnswerAssessment(choice)} disabled={isGtmSending} className="bg-white/10 hover:bg-white/20 text-white rounded-lg px-3 py-2 text-sm">
+                                        {choice}
+                                    </button>
+                                ))}
+                                <button onClick={() => handleAnswerAssessment('Other / custom context')} disabled={isGtmSending} className="sm:col-span-2 bg-[#FFD700] text-black rounded-lg px-3 py-2 text-sm font-bold">
+                                    Other / custom context
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>
