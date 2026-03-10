@@ -4,6 +4,7 @@ import { VerifyPaymentDto } from './dto/verify-payment.dto';
 import { CreatePoolSupportDto } from './dto/create-pool-support.dto';
 import { RedeemAiPackDto } from './dto/redeem-ai-pack.dto';
 import { RedeemPlanDto } from './dto/redeem-plan.dto';
+import { CreateStripeCheckoutDto } from './dto/create-stripe-checkout.dto';
 import { AuthGuard } from '../common/guards/auth.guard';
 import { CurrentUser } from '../common/decorators/user.decorator';
 import { ApiResponse, Transaction } from '../shared/types';
@@ -68,6 +69,24 @@ export class PaymentsController {
     @Body() dto: RedeemPlanDto,
   ): Promise<ApiResponse<any>> {
     return this.paymentsService.redeemPlan(userId, dto.txHash, dto.planTier);
+  }
+
+  @Post('stripe/checkout')
+  @UseGuards(AuthGuard)
+  async createStripeCheckout(
+    @CurrentUser('userId') userId: string,
+    @Body() dto: CreateStripeCheckoutDto,
+  ): Promise<ApiResponse<any>> {
+    return this.paymentsService.createStripeCheckout(userId, dto);
+  }
+
+  @Get('stripe/confirm')
+  @UseGuards(AuthGuard)
+  async confirmStripeCheckout(
+    @CurrentUser('userId') userId: string,
+    @Query('sessionId') sessionId: string,
+  ): Promise<ApiResponse<any>> {
+    return this.paymentsService.confirmStripeCheckout(userId, sessionId);
   }
 
   /**

@@ -4,6 +4,8 @@ import { SolanaService } from '../shared/solana.service';
 import { VerifyPaymentDto } from './dto/verify-payment.dto';
 import { CreatePoolSupportDto } from './dto/create-pool-support.dto';
 import { ApiResponse, Transaction } from '../shared/types';
+import Stripe from 'stripe';
+import { CreateStripeCheckoutDto } from './dto/create-stripe-checkout.dto';
 
 @Injectable()
 export class PaymentsService {
@@ -12,6 +14,9 @@ export class PaymentsService {
   private readonly pro5PriceUsd = 5;
   private readonly pro10PriceUsd = 10;
   private readonly aiQuestionPackTreasuryWallet = 'FzcnaZMYcoAYpLgr7Wym2b8hrKYk3VXsRxWSLuvZKLJm';
+  private readonly stripe = process.env.STRIPE_SECRET_KEY
+    ? new Stripe(process.env.STRIPE_SECRET_KEY, { apiVersion: '2025-02-24.acacia' as any })
+    : null;
 
   constructor(
     private supabaseService: SupabaseService,
@@ -337,6 +342,104 @@ export class PaymentsService {
       },
       message: 'Plan redeemed successfully',
     };
+  }
+
+  async createStripeCheckout(userId: string, dto: CreateStripeCheckoutDto): Promise<ApiResponse<any>> {
+    if (!this.stripe) {
+      throw new BadRequestException('Stripe is not configured');
+    }
+
+    const priceMap: Record<string, string | undefined> = {
+      pack: process.env.STRIPE_PRICE_PACK,
+      pro5: process.env.STRIPE_PRICE_PRO5,
+      pro10: process.env.STRIPE_PRICE_PRO10,
+    };
+
+    const priceId = priceMap[dto.plan];
+    if (!priceId) {
+      throw new BadRequestException(`Missing Stripe price for plan ${dto.plan}`);
+    }
+
+    const successUrl = `${process.env.FRONTEND_URL || 'https://gimmeidea.com'}/billing?success=1&session_id={CHECKOUT_SESSION_ID}`;
+    const cancelUrl = `${process.env.FRONTEND_URL || 'https://gimmeidea.com'}/billing?canceled=1`;
+
+    const session = await this.stripe.checkout.sessions.create({
+      mode: dto.plan === 'pack' ? 'payment' : 'subscription',
+      customer_email: dto.payerEmail,
+      line_items: [{ price: priceId, quantity: 1 }],
+      success_url: successUrl,
+      cancel_url: cancelUrl,
+      metadata: {
+        userId,
+        plan: dto.plan,
+        payerName: dto.payerName,
+        payerEmail: dto.payerEmail,
+        country: dto.country || '',
+      },
+    });
+
+    const supabase = this.supabaseService.getAdminClient();
+    await supabase.from('billing_payments').insert({
+      user_id: userId,
+      provider: 'stripe',
+      provider_session_id: session.id,
+      plan: dto.plan,
+      status: 'pending',
+      payer_name: dto.payerName,
+      payer_email: dto.payerEmail,
+      payer_country: dto.country || null,
+      amount_usd: dto.plan === 'pack' ? 1 : dto.plan === 'pro5' ? 5 : 10,
+      currency: 'USD',
+    });
+
+    return { success: true, data: { url: session.url, sessionId: session.id } };
+  }
+
+  async confirmStripeCheckout(userId: string, sessionId: string): Promise<ApiResponse<any>> {
+    if (!this.stripe) {
+      throw new BadRequestException('Stripe is not configured');
+    }
+
+    const session = await this.stripe.checkout.sessions.retrieve(sessionId);
+    const paid = session.payment_status === 'paid' || session.status === 'complete';
+    if (!paid) {
+      return { success: false, error: 'Payment is not completed yet' };
+    }
+
+    const plan = (session.metadata?.plan || 'pack') as 'pack' | 'pro5' | 'pro10';
+    const supabase = this.supabaseService.getAdminClient();
+
+    if (plan === 'pack') {
+      const { data: currentCredits } = await supabase
+        .from('user_ai_credits')
+        .select('paid_credits')
+        .eq('user_id', userId)
+        .maybeSingle();
+      const nextCredits = (currentCredits?.paid_credits || 0) + this.aiPackQuestionCredits;
+      await supabase.from('user_ai_credits').upsert({
+        user_id: userId,
+        free_interactions_remaining: 2,
+        paid_credits: nextCredits,
+        total_interactions_used: 0,
+        updated_at: new Date().toISOString(),
+      }, { onConflict: 'user_id' });
+    } else {
+      const now = new Date();
+      const { data: user } = await supabase.from('users').select('plan_expires_at').eq('id', userId).single();
+      const currentExpiry = user?.plan_expires_at ? new Date(user.plan_expires_at) : null;
+      const base = currentExpiry && currentExpiry > now ? currentExpiry : now;
+      const nextExpiry = new Date(base);
+      nextExpiry.setUTCDate(nextExpiry.getUTCDate() + 30);
+      await supabase.from('users').update({ plan_tier: plan, plan_expires_at: nextExpiry.toISOString() }).eq('id', userId);
+    }
+
+    await supabase
+      .from('billing_payments')
+      .update({ status: 'paid', updated_at: new Date().toISOString() })
+      .eq('provider_session_id', sessionId)
+      .eq('user_id', userId);
+
+    return { success: true, data: { paid: true, plan } };
   }
 
   /**
