@@ -24,6 +24,8 @@ import { RelatedProjectsModal } from './RelatedProjectsModal';
 import { ProposalSendModal } from './ProposalSendModal';
 import { CreatePoolButton } from './ideas/CreatePoolButton';
 import { GTM_QUESTION_BANK, QUESTION_PACK_SIZE } from '../lib/gtm-question-bank';
+import { useWallet, useConnection } from '@solana/wallet-adapter-react';
+import { PublicKey, Transaction, SystemProgram, LAMPORTS_PER_SOL } from '@solana/web3.js';
 
 // AI Bot display name
 const AI_BOT_NAME = 'Gimme Sensei';
@@ -791,6 +793,9 @@ export const IdeaDetail = () => {
     const [monetization, setMonetization] = useState<any>(null);
     const [redeemTxHash, setRedeemTxHash] = useState('');
     const [isRedeemingPack, setIsRedeemingPack] = useState(false);
+    const [isBuyingPack, setIsBuyingPack] = useState(false);
+    const { publicKey, sendTransaction, connected } = useWallet();
+    const { connection } = useConnection();
 
     const project = selectedProject;
 
@@ -994,6 +999,16 @@ export const IdeaDetail = () => {
         }
     };
 
+    const AI_PACK_TREASURY_WALLET = 'FzcnaZMYcoAYpLgr7Wym2b8hrKYk3VXsRxWSLuvZKLJm';
+
+    const refreshMonetization = async () => {
+        const status = await apiClient.getMonetizationStatus();
+        if (status.success) {
+            setMonetization(status.data);
+            sessionStorage.setItem('monetization-status-cache', JSON.stringify({ ts: Date.now(), data: status.data }));
+        }
+    };
+
     const handleRedeemAiPack = async () => {
         if (!redeemTxHash.trim()) {
             toast.error('Please paste transaction hash');
@@ -1008,13 +1023,48 @@ export const IdeaDetail = () => {
             }
             toast.success(`Redeemed +${res.data?.questionsGranted || 5} AI questions`);
             setRedeemTxHash('');
-            const status = await apiClient.getMonetizationStatus();
-            if (status.success) {
-                setMonetization(status.data);
-                sessionStorage.setItem('monetization-status-cache', JSON.stringify({ ts: Date.now(), data: status.data }));
-            }
+            await refreshMonetization();
         } finally {
             setIsRedeemingPack(false);
+        }
+    };
+
+    const handleBuyAiPackNow = async () => {
+        if (!connected || !publicKey) {
+            toast.error('Connect wallet to buy AI question pack');
+            return;
+        }
+
+        setIsBuyingPack(true);
+        try {
+            const recipient = new PublicKey(AI_PACK_TREASURY_WALLET);
+            const tx = new Transaction().add(
+                SystemProgram.transfer({
+                    fromPubkey: publicKey,
+                    toPubkey: recipient,
+                    lamports: Math.floor(1 * LAMPORTS_PER_SOL),
+                })
+            );
+
+            const signature = await sendTransaction(tx, connection);
+            const confirmation = await connection.confirmTransaction(signature, 'confirmed');
+            if (confirmation.value.err) {
+                throw new Error('Transaction failed on-chain');
+            }
+
+            const redeemed = await apiClient.redeemAiPack(signature);
+            if (!redeemed.success) {
+                toast.error(redeemed.error || 'Payment sent but redeem failed. You can paste tx hash to redeem manually.');
+                setRedeemTxHash(signature);
+                return;
+            }
+
+            toast.success(`Bought +${redeemed.data?.questionsGranted || 5} AI questions`);
+            await refreshMonetization();
+        } catch (error: any) {
+            toast.error(error?.message || 'Failed to buy AI question pack');
+        } finally {
+            setIsBuyingPack(false);
         }
     };
 
@@ -1166,11 +1216,21 @@ export const IdeaDetail = () => {
                                     ))}
                                 </div>
 
+                                <div className="flex flex-col sm:flex-row gap-2 mb-2">
+                                    <button
+                                        onClick={handleBuyAiPackNow}
+                                        disabled={isBuyingPack}
+                                        className="bg-[#FFD700] text-black px-4 py-2 rounded-full text-sm font-bold disabled:opacity-60"
+                                    >
+                                        {isBuyingPack ? 'Processing...' : 'Buy $1 pack now (+5)'}
+                                    </button>
+                                </div>
+
                                 <div className="flex flex-col sm:flex-row gap-2 mb-4">
                                     <input
                                         value={redeemTxHash}
                                         onChange={(e) => setRedeemTxHash(e.target.value)}
-                                        placeholder="Paste tx hash to redeem $1 pack"
+                                        placeholder="Fallback: paste tx hash to redeem"
                                         className="flex-1 bg-[#12131a] border border-white/10 rounded-full px-4 py-2 text-sm text-white outline-none focus:border-[#FFD700]/40"
                                     />
                                     <button
