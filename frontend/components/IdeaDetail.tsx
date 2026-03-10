@@ -824,8 +824,23 @@ export const IdeaDetail = () => {
     useEffect(() => {
         const run = async () => {
             if (!user) return;
+            const cacheKey = 'monetization-status-cache';
+            const cachedRaw = sessionStorage.getItem(cacheKey);
+            if (cachedRaw) {
+                try {
+                    const cached = JSON.parse(cachedRaw);
+                    if (cached?.ts && Date.now() - cached.ts < 60_000 && cached?.data) {
+                        setMonetization(cached.data);
+                        return;
+                    }
+                } catch {}
+            }
+
             const status = await apiClient.getMonetizationStatus();
-            if (status.success) setMonetization(status.data);
+            if (status.success) {
+                setMonetization(status.data);
+                sessionStorage.setItem(cacheKey, JSON.stringify({ ts: Date.now(), data: status.data }));
+            }
         };
         run();
     }, [user]);
@@ -994,7 +1009,10 @@ export const IdeaDetail = () => {
             toast.success(`Redeemed +${res.data?.questionsGranted || 5} AI questions`);
             setRedeemTxHash('');
             const status = await apiClient.getMonetizationStatus();
-            if (status.success) setMonetization(status.data);
+            if (status.success) {
+                setMonetization(status.data);
+                sessionStorage.setItem('monetization-status-cache', JSON.stringify({ ts: Date.now(), data: status.data }));
+            }
         } finally {
             setIsRedeemingPack(false);
         }
