@@ -23,7 +23,7 @@ import AdminBadge, { GimmeSenseiBadge } from './AdminBadge';
 import { RelatedProjectsModal } from './RelatedProjectsModal';
 import { ProposalSendModal } from './ProposalSendModal';
 import { CreatePoolButton } from './ideas/CreatePoolButton';
-import { GTM_QUESTION_BANK, QUESTION_PACK_SIZE } from '../lib/gtm-question-bank';
+import { QUESTION_PACK_SIZE } from '../lib/gtm-question-bank';
 import { useWallet, useConnection } from '@solana/wallet-adapter-react';
 import { PublicKey, Transaction, SystemProgram, LAMPORTS_PER_SOL } from '@solana/web3.js';
 
@@ -454,16 +454,6 @@ const CommentItem: React.FC<CommentItemProps> = ({ comment, projectId, isReply =
 
         setIsSubmittingReply(true);
         try {
-            // AI question monetization gate (free 2/day, then paid credits, pro10 unlimited)
-            if (comment.is_ai_generated) {
-                const quota = await apiClient.checkAIQuota(projectId);
-                if (!quota.success || !quota.data?.canUse) {
-                    toast.error('Free 2 questions used. Continue with $1 / 5 questions, or upgrade to $10 for unlimited AI chat.');
-                    setIsSubmittingReply(false);
-                    return;
-                }
-            }
-
             await replyComment(projectId, comment.id, replyText, isAnonReply);
             const userQuestion = replyText;
             setReplyText('');
@@ -794,6 +784,12 @@ export const IdeaDetail = () => {
     const [redeemTxHash, setRedeemTxHash] = useState('');
     const [isRedeemingPack, setIsRedeemingPack] = useState(false);
     const [isBuyingPack, setIsBuyingPack] = useState(false);
+    const [showGtmChat, setShowGtmChat] = useState(false);
+    const [gtmInput, setGtmInput] = useState('');
+    const [isGtmSending, setIsGtmSending] = useState(false);
+    const [gtmMessages, setGtmMessages] = useState<Array<{ role: 'assistant' | 'user'; content: string }>>([
+        { role: 'assistant', content: 'Hi! I can guide your idea go-to-market. Start with: Who is your ideal customer profile (ICP)?' }
+    ]);
     const { publicKey, sendTransaction, connected } = useWallet();
     const { connection } = useConnection();
 
@@ -1076,6 +1072,47 @@ export const IdeaDetail = () => {
         }
     };
 
+    const handleSendGtmChat = async () => {
+        if (!gtmInput.trim() || !project) return;
+
+        const userText = gtmInput.trim();
+        setGtmInput('');
+        setGtmMessages((prev) => [...prev, { role: 'user', content: userText }]);
+        setIsGtmSending(true);
+
+        try {
+            const quota = await apiClient.checkAIQuota(project.id);
+            if (quota.success && quota.data && quota.data.canUse === false) {
+                toast.error('You reached today\'s free AI questions. Buy $1/5 questions or use Pro $10.');
+                return;
+            }
+
+            const history = gtmMessages.map((m) => ({ role: m.role, content: m.content }));
+            const reply = await apiClient.generateAIReply({
+                projectId: project.id,
+                userMessage: userText,
+                conversationHistory: history,
+                ideaContext: {
+                    title: project.title,
+                    problem: project.problem || '',
+                    solution: project.solution || '',
+                },
+            });
+
+            if (!reply.success || !reply.data?.reply) {
+                toast.error(reply.error || 'Failed to get AI response');
+                return;
+            }
+
+            setGtmMessages((prev) => [...prev, { role: 'assistant', content: reply.data.reply }]);
+            await refreshMonetization();
+        } catch (error: any) {
+            toast.error(error?.message || 'Failed to chat with GTM assistant');
+        } finally {
+            setIsGtmSending(false);
+        }
+    };
+
     return (
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="min-h-screen pt-24 sm:pt-32 pb-20 px-4 sm:px-6">
             <div className="max-w-4xl mx-auto">
@@ -1216,12 +1253,8 @@ export const IdeaDetail = () => {
                                     </div>
                                 )}
 
-                                <div className="space-y-2 mb-4">
-                                    {GTM_QUESTION_BANK.slice(0, 2).map((q) => (
-                                        <div key={q.id} className="rounded-xl border border-white/10 px-3 py-2 text-sm text-gray-200">
-                                            Q{q.id}. {q.prompt}
-                                        </div>
-                                    ))}
+                                <div className="mb-4 text-sm text-gray-300">
+                                    Guided discovery questions are available inside the GTM chat.
                                 </div>
 
                                 <div className="flex flex-col sm:flex-row gap-2 mb-2">
@@ -1251,10 +1284,10 @@ export const IdeaDetail = () => {
                                 </div>
 
                                 <button
-                                    onClick={() => toast('Reply to Gimme Sensei to start Q&A flow')}
+                                    onClick={() => setShowGtmChat(true)}
                                     className="bg-[#FFD700] text-black px-4 py-2 rounded-full text-sm font-bold"
                                 >
-                                    Start guided Q&A
+                                    Start GTM chat
                                 </button>
                             </div>
                         </section>
@@ -1331,6 +1364,43 @@ export const IdeaDetail = () => {
                     </div>
                 </div>
             </div>
+
+            {showGtmChat && (
+                <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4" onClick={() => setShowGtmChat(false)}>
+                    <div className="w-full max-w-2xl rounded-2xl border border-white/10 bg-[#0D0D12] overflow-hidden" onClick={(e) => e.stopPropagation()}>
+                        <div className="px-5 py-4 border-b border-white/10 flex items-center justify-between">
+                            <h3 className="text-lg font-bold text-[#FFD700]">GTM Assistant Chat</h3>
+                            <button onClick={() => setShowGtmChat(false)} className="text-gray-400 hover:text-white">
+                                <X className="w-5 h-5" />
+                            </button>
+                        </div>
+                        <div className="h-[420px] overflow-y-auto p-4 space-y-3 bg-white/[0.02]">
+                            {gtmMessages.map((m, idx) => (
+                                <div key={idx} className={`max-w-[85%] px-3 py-2 rounded-xl text-sm ${m.role === 'assistant' ? 'bg-white/10 text-gray-100' : 'ml-auto bg-[#FFD700] text-black'}`}>
+                                    {m.content}
+                                </div>
+                            ))}
+                            {isGtmSending && <div className="text-xs text-gray-400">GTM Assistant is thinking...</div>}
+                        </div>
+                        <div className="p-4 border-t border-white/10 flex gap-2">
+                            <input
+                                value={gtmInput}
+                                onChange={(e) => setGtmInput(e.target.value)}
+                                onKeyDown={(e) => e.key === 'Enter' && handleSendGtmChat()}
+                                placeholder="Ask about ICP, PMF, pricing, or go-to-market strategy..."
+                                className="flex-1 bg-[#12131a] border border-white/10 rounded-full px-4 py-2 text-sm text-white outline-none focus:border-[#FFD700]/40"
+                            />
+                            <button
+                                onClick={handleSendGtmChat}
+                                disabled={isGtmSending || !gtmInput.trim()}
+                                className="bg-[#FFD700] text-black px-4 py-2 rounded-full text-sm font-bold disabled:opacity-60"
+                            >
+                                Send
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             <ProposalSendModal
                 isOpen={showProposalModal}
