@@ -1,11 +1,19 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { Suspense, useEffect, useMemo, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import toast from 'react-hot-toast';
 import { apiClient } from '../../lib/api-client';
 
 export default function BillingPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen pt-24 pb-16 px-4 sm:px-6" />}>
+      <BillingContent />
+    </Suspense>
+  );
+}
+
+function BillingContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [name, setName] = useState('');
