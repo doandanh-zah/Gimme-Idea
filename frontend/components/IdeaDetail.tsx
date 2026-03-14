@@ -859,7 +859,7 @@ export const IdeaDetail = () => {
                         setMonetization(cached.data);
                         return;
                     }
-                } catch {}
+                } catch { }
             }
 
             const status = await apiClient.getMonetizationStatus();
@@ -1249,12 +1249,12 @@ export const IdeaDetail = () => {
                             {/* Related Projects Button */}
                             <button
                                 onClick={() => setShowRelatedProjectsModal(true)}
-                                className="bg-gradient-to-r from-purple-600 to-blue-600 text-white px-4 sm:px-5 py-2 rounded-full font-bold flex items-center gap-2 hover:scale-105 transition-transform shadow-[0_0_20px_rgba(147,51,234,0.3)] text-sm relative cursor-pointer"
+                                className="relative flex items-center gap-2 rounded-full border border-cyan-400/20 bg-cyan-400/10 px-4 sm:px-5 py-2 text-sm font-bold text-cyan-100 transition-all hover:bg-cyan-400/15"
                                 title="Find similar projects on the internet"
                             >
                                 <Archive className="w-4 h-4" /> Projects
                                 {relatedProjectsCount > 0 && (
-                                    <span className="absolute -top-1 -right-1 bg-[#FFD700] text-black text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center shadow-lg">
+                                    <span className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-[#FFD700] text-xs font-bold text-black shadow-lg">
                                         {relatedProjectsCount}
                                     </span>
                                 )}
@@ -1325,27 +1325,27 @@ export const IdeaDetail = () => {
                     </div>
                 </div>
 
-                    {/* On-chain Actions */}
-                    <div className="mb-10 rounded-2xl border border-white/10 bg-white/[0.03] p-5 space-y-4">
-                        <div className="flex items-center justify-between gap-3">
-                            <h3 className="text-sm font-bold text-white uppercase tracking-wider font-mono">
-                                On-chain Actions
-                            </h3>
-                            {project.finalDecision ? (
-                                <span className="text-xs text-yellow-300">Final: {project.finalDecision}</span>
-                            ) : null}
-                        </div>
-                        {!project.proposalPubkey ? (
-                            <CreatePoolButton idea={project} onCreated={refreshIdeaAndProposals} />
-                        ) : (
-                            <button
-                                onClick={() => setShowProposalModal(true)}
-                                className="px-4 py-2 rounded-full bg-[#FFD700] text-black text-sm font-bold"
-                            >
-                                Send Proposal
-                            </button>
-                        )}
+                {/* On-chain Actions */}
+                <div className="mb-10 rounded-2xl border border-white/10 bg-white/[0.03] p-5 space-y-4">
+                    <div className="flex items-center justify-between gap-3">
+                        <h3 className="text-sm font-bold text-white uppercase tracking-wider font-mono">
+                            On-chain Actions
+                        </h3>
+                        {project.finalDecision ? (
+                            <span className="text-xs text-yellow-300">Final: {project.finalDecision}</span>
+                        ) : null}
                     </div>
+                    {!project.proposalPubkey ? (
+                        <CreatePoolButton idea={project} onCreated={refreshIdeaAndProposals} />
+                    ) : (
+                        <button
+                            onClick={() => setShowProposalModal(true)}
+                            className="px-4 py-2 rounded-full bg-[#FFD700] text-black text-sm font-bold"
+                        >
+                            Send Proposal
+                        </button>
+                    )}
+                </div>
 
 
                 {/* Comments */}

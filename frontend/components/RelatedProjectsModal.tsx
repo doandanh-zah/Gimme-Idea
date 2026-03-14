@@ -80,7 +80,6 @@ export const RelatedProjectsModal: React.FC<RelatedProjectsModalProps> = ({
     });
     const [isPinning, setIsPinning] = useState(false);
     const [aiSummary, setAiSummary] = useState<string>('');
-    const [activeView, setActiveView] = useState<'all' | 'ai' | 'community'>('all');
     const [sourceFilter, setSourceFilter] = useState<string>('all');
 
     // Fetch related projects on mount
@@ -273,8 +272,6 @@ export const RelatedProjectsModal: React.FC<RelatedProjectsModalProps> = ({
         : aiDetected.filter((project) => project.source === sourceFilter);
 
     const rankedAiProjects = [...filteredAiDetected].sort((a, b) => b.score - a.score);
-    const featuredProject = rankedAiProjects[0];
-    const remainingAiProjects = rankedAiProjects.slice(1);
     const totalProjects = aiDetected.length + userPinned.length;
 
     const getSourceBadgeClasses = (source: string) => {
@@ -305,59 +302,61 @@ export const RelatedProjectsModal: React.FC<RelatedProjectsModalProps> = ({
                     animate={{ opacity: 1, scale: 1, y: 0 }}
                     exit={{ opacity: 0, scale: 0.95, y: 20 }}
                     transition={{ duration: 0.2 }}
-                    className="w-full max-w-6xl max-h-[92vh] bg-[#091018] rounded-[28px] border border-white/10 overflow-hidden shadow-2xl"
+                    className="w-full max-w-4xl max-h-[92vh] overflow-hidden rounded-[28px] border border-white/10 bg-[#0D1118] shadow-2xl"
                     style={{ boxShadow: '0 28px 90px rgba(6, 182, 212, 0.12)' }}
                     onClick={(e) => e.stopPropagation()}
                 >
                     <div className="relative border-b border-white/10 bg-[radial-gradient(circle_at_top_left,rgba(34,211,238,0.16),transparent_34%),radial-gradient(circle_at_top_right,rgba(250,204,21,0.1),transparent_28%),linear-gradient(180deg,rgba(255,255,255,0.03),rgba(255,255,255,0))]">
                         <div className="absolute inset-0 bg-[linear-gradient(135deg,rgba(255,255,255,0.04),transparent_35%,transparent_65%,rgba(255,255,255,0.02))]" />
                         <div className="relative z-10 px-6 py-6 sm:px-8 sm:py-7">
-                            <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
-                                <div className="min-w-0">
-                                    <div className="inline-flex items-center gap-2 rounded-full border border-cyan-400/20 bg-cyan-400/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.24em] text-cyan-200">
-                                        <Sparkles className="h-3.5 w-3.5" />
-                                        Discovery Board
-                                    </div>
-                                    <div className="mt-4 flex items-start gap-4">
-                                        <div className="hidden h-14 w-14 rounded-2xl border border-cyan-300/20 bg-cyan-400/10 sm:flex sm:items-center sm:justify-center">
-                                            <Search className="h-7 w-7 text-cyan-200" />
-                                        </div>
-                                        <div className="min-w-0">
-                                            <h2 className="font-display text-2xl font-bold tracking-tight text-white sm:text-3xl">
-                                                Similar products around this idea
-                                            </h2>
-                                            <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-300 sm:text-[15px]">
-                                                A research-style view for mapping the market around
-                                                <span className="mx-1 font-semibold text-white">{ideaTitle}</span>
-                                                with AI matches and community-built references in one place.
-                                            </p>
-                                        </div>
-                                    </div>
+                            <div className="flex items-start gap-4">
+                                <div className="hidden h-14 w-14 items-center justify-center rounded-2xl border border-cyan-300/20 bg-cyan-400/10 sm:flex">
+                                    <Search className="h-7 w-7 text-cyan-200" />
                                 </div>
-                                <div className="flex flex-wrap items-center gap-2 lg:justify-end">
-                                    <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-slate-300">
-                                        <div className="text-[11px] uppercase tracking-[0.22em] text-slate-500">Total mapped</div>
-                                        <div className="mt-1 text-xl font-semibold text-white">{totalProjects}</div>
+                                <div className="min-w-0 flex-1">
+                                    <div className="inline-flex items-center gap-2 rounded-full border border-cyan-400/20 bg-cyan-400/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.22em] text-cyan-200">
+                                        <Sparkles className="h-3.5 w-3.5" />
+                                        Related Projects
                                     </div>
-                                    <div className="rounded-2xl border border-cyan-400/20 bg-cyan-400/10 px-4 py-3 text-sm text-cyan-100">
-                                        <div className="text-[11px] uppercase tracking-[0.22em] text-cyan-300/70">AI matches</div>
-                                        <div className="mt-1 text-xl font-semibold text-white">{aiDetected.length}</div>
-                                    </div>
-                                    <div className="rounded-2xl border border-amber-300/20 bg-amber-300/10 px-4 py-3 text-sm text-amber-100">
-                                        <div className="text-[11px] uppercase tracking-[0.22em] text-amber-200/70">Community pins</div>
-                                        <div className="mt-1 text-xl font-semibold text-white">{userPinned.length}</div>
+                                    <h2 className="mt-4 font-display text-2xl font-bold tracking-tight text-white sm:text-3xl">
+                                        Similar products around this idea
+                                    </h2>
+                                    <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-300 sm:text-[15px]">
+                                        Quick market context for
+                                        <span className="mx-1 font-semibold text-white">{ideaTitle}</span>
+                                        with AI-discovered references and community submissions.
+                                    </p>
+                                    <div className="mt-4 flex flex-wrap items-center gap-2">
+                                        <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs font-semibold text-slate-200">
+                                            {totalProjects} total
+                                        </span>
+                                        <span className="rounded-full border border-cyan-400/20 bg-cyan-400/10 px-3 py-1 text-xs font-semibold text-cyan-100">
+                                            {aiDetected.length} AI matches
+                                        </span>
+                                        <span className="rounded-full border border-amber-300/20 bg-amber-300/10 px-3 py-1 text-xs font-semibold text-amber-100">
+                                            {userPinned.length} community pins
+                                        </span>
                                     </div>
                                 </div>
                             </div>
 
                             <div className="mt-6 flex flex-wrap items-center gap-2">
+                                {user && !userHasPinned && !showPinForm && (
+                                    <button
+                                        onClick={() => setShowPinForm(true)}
+                                        className="inline-flex items-center gap-2 rounded-full border border-amber-300/20 bg-amber-300/10 px-4 py-2 text-sm font-medium text-amber-50 transition-all hover:bg-amber-300/15"
+                                    >
+                                        <Plus className="h-4 w-4" />
+                                        Pin Your Project
+                                    </button>
+                                )}
                                 <button
                                     onClick={handleClearProjects}
                                     disabled={aiDetected.length === 0}
                                     className="inline-flex items-center gap-2 rounded-full border border-red-400/20 bg-red-400/10 px-4 py-2 text-sm font-medium text-red-200 transition-all hover:bg-red-400/15 disabled:cursor-not-allowed disabled:border-white/10 disabled:bg-white/5 disabled:text-slate-500"
                                     title="Clear all AI-detected projects"
                                 >
-                                    <Trash2 className="w-4 h-4" />
+                                    <Trash2 className="h-4 w-4" />
                                     Clear AI Results
                                 </button>
                                 <button
@@ -372,439 +371,284 @@ export const RelatedProjectsModal: React.FC<RelatedProjectsModalProps> = ({
                                     onClick={onClose}
                                     className="ml-auto inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/10 bg-white/5 transition-colors hover:bg-white/10"
                                 >
-                                    <X className="w-5 h-5 text-slate-300" />
+                                    <X className="h-5 w-5 text-slate-300" />
                                 </button>
                             </div>
                         </div>
                     </div>
 
-                    <div className="overflow-y-auto max-h-[calc(92vh-188px)]" style={{
-                        scrollbarWidth: 'thin',
-                        scrollbarColor: '#22D3EE40 transparent'
-                    }}>
+                    <div
+                        className="max-h-[calc(92vh-188px)] overflow-y-auto"
+                        style={{
+                            scrollbarWidth: 'thin',
+                            scrollbarColor: '#22D3EE40 transparent',
+                        }}
+                    >
                         {isLoading ? (
                             <div className="flex min-h-[420px] flex-col items-center justify-center gap-3 px-6 py-12">
                                 <Loader2 className="h-8 w-8 animate-spin text-cyan-300" />
-                                <p className="text-slate-300">Loading discovery board...</p>
+                                <p className="text-slate-300">Loading related projects...</p>
                             </div>
                         ) : (
                             <div className="space-y-6 px-6 py-6 sm:px-8 sm:py-8">
-                                <div className="grid gap-4 xl:grid-cols-[1.6fr_1fr_0.8fr]">
+                                {aiSummary && (
                                     <div className="rounded-3xl border border-cyan-400/15 bg-cyan-400/10 p-5">
                                         <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.22em] text-cyan-200/80">
                                             <Sparkles className="h-3.5 w-3.5" />
-                                            AI Readout
+                                            AI Summary
                                         </div>
                                         <p className="mt-3 text-sm leading-7 text-slate-100 sm:text-[15px]">
-                                            {aiSummary || 'The search agent is mapping nearby startups, products, and open-source projects to show where this idea overlaps, differentiates, or can learn from existing execution.'}
+                                            {aiSummary}
                                         </p>
                                     </div>
+                                )}
 
-                                    <div className="rounded-3xl border border-white/10 bg-white/[0.04] p-5">
-                                        <div className="text-xs font-semibold uppercase tracking-[0.22em] text-slate-400">
-                                            Landscape
-                                        </div>
-                                        <div className="mt-4 space-y-3">
-                                            <div className="flex items-center justify-between text-sm text-slate-300">
-                                                <span>Sources indexed</span>
-                                                <span className="font-semibold text-white">{Object.keys(sourceCounts).length}</span>
-                                            </div>
-                                            <div className="flex items-center justify-between text-sm text-slate-300">
-                                                <span>Best match confidence</span>
-                                                <span className="font-semibold text-white">{featuredProject ? `${Math.round(featuredProject.score * 100)}%` : 'N/A'}</span>
-                                            </div>
-                                            <div className="flex items-center justify-between text-sm text-slate-300">
-                                                <span>Community references</span>
-                                                <span className="font-semibold text-white">{userPinned.length}</span>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <div className="rounded-3xl border border-amber-300/15 bg-amber-300/10 p-5">
-                                        <div className="text-xs font-semibold uppercase tracking-[0.22em] text-amber-100/80">
-                                            Contribution
-                                        </div>
-                                        <p className="mt-3 text-sm leading-6 text-amber-50/90">
-                                            Add one project your team has built to make the reference set more useful for future founders.
-                                        </p>
-                                        {user && !userHasPinned && !showPinForm && (
-                                            <button
-                                                onClick={() => setShowPinForm(true)}
-                                                className="mt-4 inline-flex items-center gap-2 rounded-full border border-amber-300/30 bg-amber-300/20 px-4 py-2 text-sm font-semibold text-amber-50 transition-all hover:bg-amber-300/25"
-                                            >
-                                                <Plus className="h-4 w-4" />
-                                                Pin Your Project
-                                            </button>
-                                        )}
-                                    </div>
-                                </div>
-
-                                <div className="grid gap-6 lg:grid-cols-[260px_minmax(0,1fr)]">
-                                    <aside className="space-y-4 lg:sticky lg:top-0 lg:self-start">
-                                        <div className="rounded-3xl border border-white/10 bg-white/[0.04] p-4">
-                                            <div className="text-xs font-semibold uppercase tracking-[0.22em] text-slate-400">
-                                                View
-                                            </div>
-                                            <div className="mt-3 space-y-2">
-                                                {[
-                                                    { key: 'all', label: 'All references', count: totalProjects },
-                                                    { key: 'ai', label: 'AI matches', count: aiDetected.length },
-                                                    { key: 'community', label: 'Community pins', count: userPinned.length },
-                                                ].map((item) => (
+                                <AnimatePresence>
+                                    {showPinForm && (
+                                        <motion.div
+                                            initial={{ opacity: 0, y: 8 }}
+                                            animate={{ opacity: 1, y: 0 }}
+                                            exit={{ opacity: 0, y: 8 }}
+                                            className="rounded-3xl border border-amber-300/20 bg-amber-300/10 p-4"
+                                        >
+                                            <h4 className="flex items-center gap-2 text-sm font-semibold text-amber-50">
+                                                <LinkIcon className="h-4 w-4" />
+                                                Pin your related project
+                                            </h4>
+                                            <div className="mt-3 space-y-3">
+                                                <input
+                                                    type="text"
+                                                    placeholder="Project title"
+                                                    value={pinFormData.title}
+                                                    onChange={(e) => setPinFormData({ ...pinFormData, title: e.target.value })}
+                                                    className="w-full rounded-2xl border border-white/10 bg-black/20 px-3 py-2.5 text-sm text-white placeholder:text-slate-500 focus:border-amber-300/40 focus:outline-none"
+                                                />
+                                                <input
+                                                    type="url"
+                                                    placeholder="https://project-url.com"
+                                                    value={pinFormData.url}
+                                                    onChange={(e) => setPinFormData({ ...pinFormData, url: e.target.value })}
+                                                    className="w-full rounded-2xl border border-white/10 bg-black/20 px-3 py-2.5 text-sm text-white placeholder:text-slate-500 focus:border-amber-300/40 focus:outline-none"
+                                                />
+                                                <textarea
+                                                    placeholder="Short description"
+                                                    value={pinFormData.description}
+                                                    onChange={(e) => setPinFormData({ ...pinFormData, description: e.target.value })}
+                                                    rows={3}
+                                                    className="w-full resize-none rounded-2xl border border-white/10 bg-black/20 px-3 py-2.5 text-sm text-white placeholder:text-slate-500 focus:border-amber-300/40 focus:outline-none"
+                                                />
+                                                <div className="flex items-center justify-end gap-2">
                                                     <button
-                                                        key={item.key}
-                                                        onClick={() => setActiveView(item.key as 'all' | 'ai' | 'community')}
-                                                        className={`flex w-full items-center justify-between rounded-2xl border px-3 py-3 text-left text-sm transition-all ${activeView === item.key
-                                                                ? 'border-cyan-400/30 bg-cyan-400/10 text-white'
-                                                                : 'border-white/10 bg-transparent text-slate-300 hover:bg-white/[0.03]'
-                                                            }`}
+                                                        onClick={() => {
+                                                            setShowPinForm(false);
+                                                            setPinFormData({ title: '', url: '', description: '' });
+                                                        }}
+                                                        className="px-3 py-2 text-xs font-medium text-slate-300 transition-colors hover:text-white"
                                                     >
-                                                        <span>{item.label}</span>
-                                                        <span className="rounded-full bg-white/10 px-2 py-0.5 text-xs font-semibold text-slate-200">{item.count}</span>
+                                                        Cancel
                                                     </button>
-                                                ))}
+                                                    <button
+                                                        onClick={handlePinProject}
+                                                        disabled={isPinning}
+                                                        className="inline-flex items-center gap-2 rounded-full bg-amber-300 px-4 py-2 text-xs font-semibold text-black transition-colors hover:bg-amber-200 disabled:opacity-50"
+                                                    >
+                                                        {isPinning ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Pin className="h-3.5 w-3.5" />}
+                                                        {isPinning ? 'Pinning...' : 'Pin Project'}
+                                                    </button>
+                                                </div>
+                                            </div>
+                                            <p className="mt-3 flex items-start gap-1.5 text-[11px] leading-5 text-amber-50/75">
+                                                <AlertCircle className="mt-0.5 h-3.5 w-3.5 flex-shrink-0" />
+                                                Each user can pin one project per idea.
+                                            </p>
+                                        </motion.div>
+                                    )}
+                                </AnimatePresence>
+
+                                {isSearching && (
+                                    <div className="relative overflow-hidden rounded-3xl border border-cyan-400/20 bg-cyan-400/10 p-6">
+                                        <div className="absolute inset-0 bg-[radial-gradient(circle_at_right,rgba(34,211,238,0.18),transparent_30%)]" />
+                                        <div className="relative flex items-center gap-4">
+                                            <Loader2 className="h-9 w-9 animate-spin text-cyan-200" />
+                                            <div>
+                                                <p className="text-lg font-semibold text-white">Refreshing the market scan</p>
+                                                <p className="mt-1 text-sm text-cyan-100/80">
+                                                    Looking for similar products, startups, and repositories tied to this idea.
+                                                </p>
                                             </div>
                                         </div>
+                                    </div>
+                                )}
 
-                                        <div className="rounded-3xl border border-white/10 bg-white/[0.04] p-4">
-                                            <div className="flex items-center justify-between gap-3">
-                                                <div className="text-xs font-semibold uppercase tracking-[0.22em] text-slate-400">
-                                                    Source Filter
-                                                </div>
-                                                <button
-                                                    onClick={() => setSourceFilter('all')}
-                                                    className="text-[11px] font-medium uppercase tracking-[0.18em] text-slate-500 hover:text-slate-300"
-                                                >
-                                                    Reset
-                                                </button>
+                                <section className="space-y-4">
+                                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                                        <div className="flex items-center gap-3">
+                                            <div className="flex h-10 w-10 items-center justify-center rounded-2xl border border-cyan-400/20 bg-cyan-400/10">
+                                                <Search className="h-4 w-4 text-cyan-200" />
                                             </div>
-                                            <div className="mt-3 flex flex-wrap gap-2">
+                                            <div>
+                                                <h3 className="text-lg font-semibold text-white">AI matches</h3>
+                                                <p className="text-sm text-slate-400">Clean, ranked references from the current search.</p>
+                                            </div>
+                                        </div>
+                                        <span className="w-fit rounded-full border border-cyan-400/20 bg-cyan-400/10 px-3 py-1 text-xs font-semibold text-cyan-100">
+                                            {rankedAiProjects.length} visible
+                                        </span>
+                                    </div>
+
+                                    {sourceFilters.length > 0 && (
+                                        <div className="flex flex-wrap gap-2">
+                                            <button
+                                                onClick={() => setSourceFilter('all')}
+                                                className={`rounded-full border px-3 py-1.5 text-xs font-semibold transition-all ${sourceFilter === 'all'
+                                                    ? 'border-cyan-400/30 bg-cyan-400/10 text-cyan-100'
+                                                    : 'border-white/10 bg-white/[0.03] text-slate-300 hover:bg-white/[0.06]'
+                                                    }`}
+                                            >
+                                                All sources
+                                            </button>
+                                            {sourceFilters.map(([source, count]) => (
                                                 <button
-                                                    onClick={() => setSourceFilter('all')}
-                                                    className={`rounded-full border px-3 py-1.5 text-xs font-semibold transition-all ${sourceFilter === 'all'
-                                                            ? 'border-cyan-400/30 bg-cyan-400/10 text-cyan-100'
-                                                            : 'border-white/10 bg-white/[0.03] text-slate-300 hover:bg-white/[0.06]'
+                                                    key={source}
+                                                    onClick={() => setSourceFilter(source)}
+                                                    className={`rounded-full border px-3 py-1.5 text-xs font-semibold transition-all ${sourceFilter === source
+                                                        ? 'border-cyan-400/30 bg-cyan-400/10 text-cyan-100'
+                                                        : 'border-white/10 bg-white/[0.03] text-slate-300 hover:bg-white/[0.06]'
                                                         }`}
                                                 >
-                                                    All
+                                                    {source} · {count}
                                                 </button>
-                                                {sourceFilters.map(([source, count]) => (
-                                                    <button
-                                                        key={source}
-                                                        onClick={() => setSourceFilter(source)}
-                                                        className={`rounded-full border px-3 py-1.5 text-xs font-semibold transition-all ${sourceFilter === source
-                                                                ? 'border-cyan-400/30 bg-cyan-400/10 text-cyan-100'
-                                                                : 'border-white/10 bg-white/[0.03] text-slate-300 hover:bg-white/[0.06]'
-                                                            }`}
-                                                    >
-                                                        {source} · {count}
-                                                    </button>
-                                                ))}
-                                            </div>
+                                            ))}
                                         </div>
+                                    )}
 
-                                        <AnimatePresence>
-                                            {showPinForm && (
-                                                <motion.div
-                                                    initial={{ opacity: 0, y: 8 }}
+                                    {rankedAiProjects.length === 0 ? (
+                                        <div className="rounded-3xl border border-white/10 bg-white/[0.03] px-6 py-12 text-center">
+                                            <Globe className="mx-auto h-12 w-12 text-slate-600" />
+                                            <p className="mt-4 text-base font-medium text-slate-200">No AI matches in this view</p>
+                                            <p className="mt-2 text-sm text-slate-500">
+                                                Try another source filter or run a fresh search.
+                                            </p>
+                                        </div>
+                                    ) : (
+                                        <div className="space-y-3">
+                                            {rankedAiProjects.map((project, index) => (
+                                                <motion.a
+                                                    key={project.id || `${project.url}-${index}`}
+                                                    href={project.url}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    initial={{ opacity: 0, y: 10 }}
                                                     animate={{ opacity: 1, y: 0 }}
-                                                    exit={{ opacity: 0, y: 8 }}
-                                                    className="rounded-3xl border border-amber-300/20 bg-amber-300/10 p-4"
+                                                    transition={{ delay: index * 0.03 }}
+                                                    className="group block rounded-3xl border border-white/10 bg-white/[0.04] p-5 transition-all hover:border-cyan-400/20 hover:bg-white/[0.06]"
+                                                    whileHover={{ scale: 1.01 }}
                                                 >
-                                                    <h4 className="flex items-center gap-2 text-sm font-semibold text-amber-50">
-                                                        <LinkIcon className="h-4 w-4" />
-                                                        Pin your related project
-                                                    </h4>
-                                                    <div className="mt-3 space-y-3">
-                                                        <input
-                                                            type="text"
-                                                            placeholder="Project title"
-                                                            value={pinFormData.title}
-                                                            onChange={(e) =>
-                                                                setPinFormData({ ...pinFormData, title: e.target.value })
-                                                            }
-                                                            className="w-full rounded-2xl border border-white/10 bg-black/20 px-3 py-2.5 text-sm text-white placeholder:text-slate-500 focus:border-amber-300/40 focus:outline-none"
-                                                        />
-                                                        <input
-                                                            type="url"
-                                                            placeholder="https://project-url.com"
-                                                            value={pinFormData.url}
-                                                            onChange={(e) =>
-                                                                setPinFormData({ ...pinFormData, url: e.target.value })
-                                                            }
-                                                            className="w-full rounded-2xl border border-white/10 bg-black/20 px-3 py-2.5 text-sm text-white placeholder:text-slate-500 focus:border-amber-300/40 focus:outline-none"
-                                                        />
-                                                        <textarea
-                                                            placeholder="Short description"
-                                                            value={pinFormData.description}
-                                                            onChange={(e) =>
-                                                                setPinFormData({ ...pinFormData, description: e.target.value })
-                                                            }
-                                                            rows={3}
-                                                            className="w-full resize-none rounded-2xl border border-white/10 bg-black/20 px-3 py-2.5 text-sm text-white placeholder:text-slate-500 focus:border-amber-300/40 focus:outline-none"
-                                                        />
-                                                        <div className="flex items-center justify-end gap-2">
-                                                            <button
-                                                                onClick={() => {
-                                                                    setShowPinForm(false);
-                                                                    setPinFormData({ title: '', url: '', description: '' });
-                                                                }}
-                                                                className="px-3 py-2 text-xs font-medium text-slate-300 transition-colors hover:text-white"
-                                                            >
-                                                                Cancel
-                                                            </button>
-                                                            <button
-                                                                onClick={handlePinProject}
-                                                                disabled={isPinning}
-                                                                className="inline-flex items-center gap-2 rounded-full bg-amber-300 px-4 py-2 text-xs font-semibold text-black transition-colors hover:bg-amber-200 disabled:opacity-50"
-                                                            >
-                                                                {isPinning ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Pin className="h-3.5 w-3.5" />}
-                                                                {isPinning ? 'Pinning...' : 'Pin Project'}
-                                                            </button>
+                                                    <div className="flex items-start justify-between gap-3">
+                                                        <div className="min-w-0 flex-1">
+                                                            <div className="flex items-center gap-2">
+                                                                <h4 className="truncate text-base font-semibold text-white transition-colors group-hover:text-cyan-100">
+                                                                    {project.title}
+                                                                </h4>
+                                                                <ExternalLink className="h-3.5 w-3.5 flex-shrink-0 text-slate-500 transition-colors group-hover:text-cyan-200" />
+                                                            </div>
+                                                            <p className="mt-3 line-clamp-3 text-sm leading-6 text-slate-400">
+                                                                {project.snippet}
+                                                            </p>
+                                                            <div className="mt-4 flex flex-wrap items-center gap-2">
+                                                                <span className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-semibold ${getSourceBadgeClasses(project.source)}`}>
+                                                                    <Globe className="h-3.5 w-3.5" />
+                                                                    {project.source}
+                                                                </span>
+                                                                <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs font-semibold text-slate-200">
+                                                                    {Math.round(project.score * 100)}% match
+                                                                </span>
+                                                            </div>
                                                         </div>
                                                     </div>
-                                                    <p className="mt-3 flex items-start gap-1.5 text-[11px] leading-5 text-amber-50/75">
-                                                        <AlertCircle className="mt-0.5 h-3.5 w-3.5 flex-shrink-0" />
-                                                        Each user can pin one project per idea.
-                                                    </p>
-                                                </motion.div>
-                                            )}
-                                        </AnimatePresence>
-                                    </aside>
+                                                </motion.a>
+                                            ))}
+                                        </div>
+                                    )}
+                                </section>
 
-                                    <div className="space-y-5">
-                                        {isSearching && (
-                                            <div className="relative overflow-hidden rounded-3xl border border-cyan-400/20 bg-cyan-400/10 p-6">
-                                                <div className="absolute inset-0 bg-[radial-gradient(circle_at_right,rgba(34,211,238,0.18),transparent_30%)]" />
-                                                <div className="relative flex items-center gap-4">
-                                                    <Loader2 className="h-9 w-9 animate-spin text-cyan-200" />
-                                                    <div>
-                                                        <p className="text-lg font-semibold text-white">Refreshing the market scan</p>
-                                                        <p className="mt-1 text-sm text-cyan-100/80">
-                                                            Looking for similar products, startups, and repositories tied to this idea.
-                                                        </p>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        )}
+                                <section className="space-y-4">
+                                    <div className="flex items-center gap-3">
+                                        <div className="flex h-10 w-10 items-center justify-center rounded-2xl border border-amber-300/20 bg-amber-300/10">
+                                            <Pin className="h-4 w-4 text-amber-100" />
+                                        </div>
+                                        <div>
+                                            <h3 className="text-lg font-semibold text-white">Community pinned</h3>
+                                            <p className="text-sm text-slate-400">Projects shared by builders who are actually shipping.</p>
+                                        </div>
+                                    </div>
 
-                                        {(activeView === 'all' || activeView === 'ai') && (
-                                            <section className="space-y-4">
-                                                <div className="flex items-center justify-between gap-3">
-                                                    <div className="flex items-center gap-3">
-                                                        <div className="flex h-10 w-10 items-center justify-center rounded-2xl border border-cyan-400/20 bg-cyan-400/10">
-                                                            <Search className="h-4 w-4 text-cyan-200" />
-                                                        </div>
-                                                        <div>
-                                                            <h3 className="text-lg font-semibold text-white">AI matches</h3>
-                                                            <p className="text-sm text-slate-400">Ranked by source confidence and topical overlap.</p>
-                                                        </div>
-                                                    </div>
-                                                    <span className="rounded-full border border-cyan-400/20 bg-cyan-400/10 px-3 py-1 text-xs font-semibold text-cyan-100">
-                                                        {filteredAiDetected.length} visible
-                                                    </span>
-                                                </div>
-
-                                                {filteredAiDetected.length === 0 ? (
-                                                    <div className="rounded-3xl border border-white/10 bg-white/[0.03] px-6 py-12 text-center">
-                                                        <Globe className="mx-auto h-12 w-12 text-slate-600" />
-                                                        <p className="mt-4 text-base font-medium text-slate-200">No AI matches in this view</p>
-                                                        <p className="mt-2 text-sm text-slate-500">
-                                                            Try another source filter or run a fresh search.
-                                                        </p>
-                                                    </div>
-                                                ) : (
-                                                    <>
-                                                        {featuredProject && (
-                                                            <motion.a
-                                                                key={featuredProject.id || featuredProject.url}
-                                                                href={featuredProject.url}
+                                    {userPinned.length === 0 ? (
+                                        <div className="rounded-3xl border border-white/10 bg-white/[0.03] px-6 py-12 text-center">
+                                            <Pin className="mx-auto h-12 w-12 text-slate-600" />
+                                            <p className="mt-4 text-base font-medium text-slate-200">No community projects pinned yet</p>
+                                            <p className="mt-2 text-sm text-slate-500">
+                                                Add the first real-world example related to this idea.
+                                            </p>
+                                        </div>
+                                    ) : (
+                                        <div className="space-y-3">
+                                            {userPinned.map((project, index) => (
+                                                <motion.div
+                                                    key={project.id}
+                                                    initial={{ opacity: 0, y: 10 }}
+                                                    animate={{ opacity: 1, y: 0 }}
+                                                    transition={{ delay: index * 0.03 }}
+                                                    className="rounded-3xl border border-amber-300/15 bg-amber-300/10 p-5 transition-all hover:border-amber-300/25"
+                                                >
+                                                    <div className="flex items-start justify-between gap-3">
+                                                        <div className="min-w-0 flex-1">
+                                                            <a
+                                                                href={project.url}
                                                                 target="_blank"
                                                                 rel="noopener noreferrer"
-                                                                initial={{ opacity: 0, y: 10 }}
-                                                                animate={{ opacity: 1, y: 0 }}
-                                                                className="group block overflow-hidden rounded-[28px] border border-cyan-400/20 bg-[linear-gradient(135deg,rgba(34,211,238,0.14),rgba(255,255,255,0.04))] p-6"
-                                                                whileHover={{ scale: 1.01 }}
+                                                                className="group flex items-center gap-2"
                                                             >
-                                                                <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-                                                                    <div className="min-w-0 flex-1">
-                                                                        <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-cyan-300/20 bg-cyan-300/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.2em] text-cyan-100">
-                                                                            Featured match
-                                                                        </div>
-                                                                        <div className="flex items-center gap-2">
-                                                                            <h4 className="truncate text-2xl font-semibold text-white transition-colors group-hover:text-cyan-100">
-                                                                                {featuredProject.title}
-                                                                            </h4>
-                                                                            <ExternalLink className="h-4 w-4 flex-shrink-0 text-cyan-100/70" />
-                                                                        </div>
-                                                                        <p className="mt-3 max-w-3xl text-sm leading-7 text-slate-200/90">
-                                                                            {featuredProject.snippet}
-                                                                        </p>
-                                                                        <div className="mt-4 flex flex-wrap items-center gap-2">
-                                                                            <span className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-semibold ${getSourceBadgeClasses(featuredProject.source)}`}>
-                                                                                <Globe className="h-3.5 w-3.5" />
-                                                                                {featuredProject.source}
-                                                                            </span>
-                                                                            <span className="rounded-full border border-white/10 bg-white/10 px-3 py-1 text-xs font-semibold text-white">
-                                                                                {Math.round(featuredProject.score * 100)}% confidence
-                                                                            </span>
-                                                                        </div>
-                                                                    </div>
-                                                                    <div className="w-full max-w-[220px] rounded-3xl border border-white/10 bg-black/20 p-4 lg:ml-6">
-                                                                        <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">
-                                                                            Confidence bar
-                                                                        </div>
-                                                                        <div className="mt-4 h-3 overflow-hidden rounded-full bg-white/10">
-                                                                            <div
-                                                                                className="h-full rounded-full bg-gradient-to-r from-cyan-300 via-cyan-400 to-emerald-300"
-                                                                                style={{ width: `${Math.max(10, Math.round(featuredProject.score * 100))}%` }}
-                                                                            />
-                                                                        </div>
-                                                                        <p className="mt-3 text-sm leading-6 text-slate-300">
-                                                                            Best current overlap based on retrieved search evidence.
-                                                                        </p>
-                                                                    </div>
-                                                                </div>
-                                                            </motion.a>
-                                                        )}
-
-                                                        {remainingAiProjects.length > 0 && (
-                                                            <div className="grid gap-3 xl:grid-cols-2">
-                                                                {remainingAiProjects.map((project, index) => (
-                                                                    <motion.a
-                                                                        key={project.id || `${project.url}-${index}`}
-                                                                        href={project.url}
-                                                                        target="_blank"
-                                                                        rel="noopener noreferrer"
-                                                                        initial={{ opacity: 0, y: 10 }}
-                                                                        animate={{ opacity: 1, y: 0 }}
-                                                                        transition={{ delay: index * 0.03 }}
-                                                                        className="group block rounded-3xl border border-white/10 bg-white/[0.04] p-5 transition-all hover:border-cyan-400/20 hover:bg-white/[0.06]"
-                                                                        whileHover={{ scale: 1.01 }}
-                                                                    >
-                                                                        <div className="flex items-start justify-between gap-3">
-                                                                            <div className="min-w-0 flex-1">
-                                                                                <div className="flex items-center gap-2">
-                                                                                    <h4 className="truncate text-base font-semibold text-white transition-colors group-hover:text-cyan-100">
-                                                                                        {project.title}
-                                                                                    </h4>
-                                                                                    <ExternalLink className="h-3.5 w-3.5 flex-shrink-0 text-slate-500 transition-colors group-hover:text-cyan-200" />
-                                                                                </div>
-                                                                                <p className="mt-3 line-clamp-3 text-sm leading-6 text-slate-400">
-                                                                                    {project.snippet}
-                                                                                </p>
-                                                                            </div>
-                                                                            <div className="rounded-2xl border border-white/10 bg-black/20 px-3 py-2 text-sm font-semibold text-white">
-                                                                                {Math.round(project.score * 100)}%
-                                                                            </div>
-                                                                        </div>
-                                                                        <div className="mt-4 flex flex-wrap items-center gap-2">
-                                                                            <span className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-semibold ${getSourceBadgeClasses(project.source)}`}>
-                                                                                <Globe className="h-3.5 w-3.5" />
-                                                                                {project.source}
-                                                                            </span>
-                                                                        </div>
-                                                                    </motion.a>
-                                                                ))}
-                                                            </div>
-                                                        )}
-                                                    </>
-                                                )}
-                                            </section>
-                                        )}
-
-                                        {(activeView === 'all' || activeView === 'community') && (
-                                            <section className="space-y-4">
-                                                <div className="flex items-center justify-between gap-3">
-                                                    <div className="flex items-center gap-3">
-                                                        <div className="flex h-10 w-10 items-center justify-center rounded-2xl border border-amber-300/20 bg-amber-300/10">
-                                                            <Pin className="h-4 w-4 text-amber-100" />
-                                                        </div>
-                                                        <div>
-                                                            <h3 className="text-lg font-semibold text-white">Community pinned</h3>
-                                                            <p className="text-sm text-slate-400">Real projects shared by builders in the community.</p>
-                                                        </div>
-                                                    </div>
-                                                    {!showPinForm && user && !userHasPinned && (
-                                                        <button
-                                                            onClick={() => setShowPinForm(true)}
-                                                            className="inline-flex items-center gap-2 rounded-full border border-amber-300/20 bg-amber-300/10 px-4 py-2 text-sm font-medium text-amber-50 transition-all hover:bg-amber-300/15"
-                                                        >
-                                                            <Plus className="h-4 w-4" />
-                                                            Add yours
-                                                        </button>
-                                                    )}
-                                                </div>
-
-                                                {userPinned.length === 0 ? (
-                                                    <div className="rounded-3xl border border-white/10 bg-white/[0.03] px-6 py-12 text-center">
-                                                        <Pin className="mx-auto h-12 w-12 text-slate-600" />
-                                                        <p className="mt-4 text-base font-medium text-slate-200">No community projects pinned yet</p>
-                                                        <p className="mt-2 text-sm text-slate-500">
-                                                            The board is ready for the first real-world implementation reference.
-                                                        </p>
-                                                    </div>
-                                                ) : (
-                                                    <div className="grid gap-3 xl:grid-cols-2">
-                                                        {userPinned.map((project, index) => (
-                                                            <motion.div
-                                                                key={project.id}
-                                                                initial={{ opacity: 0, y: 10 }}
-                                                                animate={{ opacity: 1, y: 0 }}
-                                                                transition={{ delay: index * 0.03 }}
-                                                                className="rounded-3xl border border-amber-300/15 bg-amber-300/10 p-5 transition-all hover:border-amber-300/25"
-                                                            >
-                                                                <div className="flex items-start justify-between gap-3">
-                                                                    <div className="min-w-0 flex-1">
-                                                                        <a
-                                                                            href={project.url}
-                                                                            target="_blank"
-                                                                            rel="noopener noreferrer"
-                                                                            className="group flex items-center gap-2"
-                                                                        >
-                                                                            <h4 className="truncate text-base font-semibold text-white transition-colors group-hover:text-amber-100">
-                                                                                {project.title}
-                                                                            </h4>
-                                                                            <ExternalLink className="h-3.5 w-3.5 flex-shrink-0 text-slate-500 transition-colors group-hover:text-amber-100" />
-                                                                        </a>
-                                                                        {project.description && (
-                                                                            <p className="mt-3 line-clamp-3 text-sm leading-6 text-slate-300">
-                                                                                {project.description}
-                                                                            </p>
-                                                                        )}
-                                                                        {project.user && (
-                                                                            <div className="mt-4 inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-xs text-slate-300">
-                                                                                {project.user.avatar ? (
-                                                                                    <img
-                                                                                        src={project.user.avatar}
-                                                                                        alt=""
-                                                                                        className="h-5 w-5 rounded-full"
-                                                                                    />
-                                                                                ) : (
-                                                                                    <User className="h-3.5 w-3.5" />
-                                                                                )}
-                                                                                by {project.user.username}
-                                                                            </div>
-                                                                        )}
-                                                                    </div>
-                                                                    {project.pinnedBy === user?.id && (
-                                                                        <button
-                                                                            onClick={handleUnpinProject}
-                                                                            className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/10 bg-white/5 text-slate-400 transition-colors hover:border-red-400/20 hover:bg-red-400/10 hover:text-red-200"
-                                                                            title="Unpin your project"
-                                                                        >
-                                                                            <PinOff className="h-4 w-4" />
-                                                                        </button>
+                                                                <h4 className="truncate text-base font-semibold text-white transition-colors group-hover:text-amber-100">
+                                                                    {project.title}
+                                                                </h4>
+                                                                <ExternalLink className="h-3.5 w-3.5 flex-shrink-0 text-slate-500 transition-colors group-hover:text-amber-100" />
+                                                            </a>
+                                                            {project.description && (
+                                                                <p className="mt-3 line-clamp-3 text-sm leading-6 text-slate-300">
+                                                                    {project.description}
+                                                                </p>
+                                                            )}
+                                                            {project.user && (
+                                                                <div className="mt-4 inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-xs text-slate-300">
+                                                                    {project.user.avatar ? (
+                                                                        <img
+                                                                            src={project.user.avatar}
+                                                                            alt=""
+                                                                            className="h-5 w-5 rounded-full"
+                                                                        />
+                                                                    ) : (
+                                                                        <User className="h-3.5 w-3.5" />
                                                                     )}
+                                                                    by {project.user.username}
                                                                 </div>
-                                                            </motion.div>
-                                                        ))}
+                                                            )}
+                                                        </div>
+                                                        {project.pinnedBy === user?.id && (
+                                                            <button
+                                                                onClick={handleUnpinProject}
+                                                                className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/10 bg-white/5 text-slate-400 transition-colors hover:border-red-400/20 hover:bg-red-400/10 hover:text-red-200"
+                                                                title="Unpin your project"
+                                                            >
+                                                                <PinOff className="h-4 w-4" />
+                                                            </button>
+                                                        )}
                                                     </div>
-                                                )}
-                                            </section>
-                                        )}
-                                    </div>
-                                </div>
+                                                </motion.div>
+                                            ))}
+                                        </div>
+                                    )}
+                                </section>
                             </div>
                         )}
                     </div>

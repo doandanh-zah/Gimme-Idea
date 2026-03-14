@@ -33,7 +33,7 @@ const nextConfig = {
       const originalEntry = config.entry;
       config.entry = async () => {
         const entries = await originalEntry();
-        
+
         // Inject polyfills at the very beginning of every entry point
         if (entries['main.app']) {
           entries['main.app'] = [
@@ -41,7 +41,7 @@ const nextConfig = {
             ...entries['main.app']
           ];
         }
-        
+
         return entries;
       };
 
