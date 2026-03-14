@@ -7,7 +7,13 @@ const config: CapacitorConfig = {
   server: {
     url: 'https://www.gimmeidea.com',
     cleartext: false,
-    androidScheme: 'https'
+    androidScheme: 'https',
+    allowNavigation: [
+      'www.gimmeidea.com',
+      'gimmeidea.com',
+      '*.supabase.co',
+      '*.supabase.in'
+    ]
   },
   plugins: {
     StatusBar: {
