@@ -108,7 +108,6 @@ export const RelatedProjectsModal: React.FC<RelatedProjectsModalProps> = ({
 
                 // If no AI-detected results exist, trigger a search automatically
                 if (aiResults.length === 0 && ideaTitle && ideaProblem && ideaSolution) {
-                    console.log('No AI results found, triggering automatic search...');
                     await searchForRelatedProjects();
                 }
             }
@@ -121,15 +120,8 @@ export const RelatedProjectsModal: React.FC<RelatedProjectsModalProps> = ({
     };
 
     const searchForRelatedProjects = async () => {
-        console.log('=== STARTING SEARCH FOR RELATED PROJECTS ===');
-        console.log('Idea ID:', ideaId);
-        console.log('Title:', ideaTitle);
-        console.log('Problem:', ideaProblem?.substring(0, 100) + '...');
-        console.log('Solution:', ideaSolution?.substring(0, 100) + '...');
-
         setIsSearching(true);
         try {
-            console.log('Calling API client searchRelatedProjects...');
             const searchResponse = await apiClient.searchRelatedProjects({
                 ideaId,
                 title: ideaTitle,
@@ -139,12 +131,8 @@ export const RelatedProjectsModal: React.FC<RelatedProjectsModalProps> = ({
                 tags: ideaTags,
             });
 
-            console.log('API Response:', searchResponse);
-
             if (searchResponse.success && searchResponse.data) {
                 const results = searchResponse.data.results || [];
-                console.log(`✅ Found ${results.length} results`);
-                console.log('Results:', results);
                 setAiDetected(results);
 
                 // Store AI summary
@@ -153,14 +141,7 @@ export const RelatedProjectsModal: React.FC<RelatedProjectsModalProps> = ({
                     try { localStorage.setItem(`aiSummary_${ideaId}`, searchResponse.data.aiSummary); } catch { /* ignore */ }
                 }
 
-                if (searchResponse.data.searchMeta) {
-                    const meta = searchResponse.data.searchMeta;
-                    console.log(`📊 Search meta: query="${meta.query}", fallback=${meta.fallbackUsed}, raw=${meta.rawCount}`);
-                }
-
                 if (searchResponse.data.quotaInfo) {
-                    const { remaining, used, max } = searchResponse.data.quotaInfo;
-                    console.log(`📊 Search quota: ${used}/${max} used, ${remaining} remaining`);
                     toast.success(`Found ${results.length} related projects!`);
                 } else {
                     toast.success(`Found ${results.length} related projects!`);
@@ -180,7 +161,6 @@ export const RelatedProjectsModal: React.FC<RelatedProjectsModalProps> = ({
             toast.error('Failed to search for related projects');
         } finally {
             setIsSearching(false);
-            console.log('=== SEARCH COMPLETED ===');
         }
     };
 

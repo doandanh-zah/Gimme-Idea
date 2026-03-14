@@ -22,11 +22,6 @@ async function apiFetch<T>(
   const token =
     typeof window !== "undefined" ? localStorage.getItem("auth_token") : null;
 
-  console.log(
-    `[API] ${options.method || "GET"} ${endpoint}`,
-    token ? "with token" : "no token"
-  );
-
   const headers: HeadersInit = {
     "Content-Type": "application/json",
     ...options.headers,
@@ -43,8 +38,6 @@ async function apiFetch<T>(
     });
 
     const data = await response.json();
-
-    console.log(`[API] ${endpoint} response:`, response.status, data.success, data);
 
     // Handle 400 Bad Request - validation errors
     if (response.status === 400) {
@@ -81,7 +74,6 @@ async function apiFetch<T>(
 
     // If response contains token, save it
     if (data.data?.token) {
-      console.log("[API] Saving new token from response");
       localStorage.setItem("auth_token", data.data.token);
     }
 

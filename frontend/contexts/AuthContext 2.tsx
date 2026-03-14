@@ -74,7 +74,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const refreshUser = useCallback(async () => {
     if (!supabaseUser) return;
-    
+
     try {
       const response = await apiClient.getCurrentUser();
       if (response.success && response.data) {
@@ -105,7 +105,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       setSupabaseUser(session?.user ?? null);
-      
+
       if (session?.user) {
         processEmailLogin(session.user).finally(() => {
           setIsLoading(false);
@@ -118,11 +118,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
-        console.log('Auth state change:', event, session?.user?.email);
-        
         setSession(session);
         setSupabaseUser(session?.user ?? null);
-        
+
         if (event === 'SIGNED_IN' && session?.user) {
           setIsLoading(true);
           await processEmailLogin(session.user);

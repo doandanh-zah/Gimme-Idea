@@ -1,9 +1,9 @@
 // Critical polyfills that MUST run before any other code
 // This file is imported first in ClientLayout and injected via webpack
 
-(function() {
+(function () {
   'use strict';
-  
+
   if (typeof window === 'undefined') return;
 
   // Polyfill global
@@ -27,12 +27,12 @@
       argv: [],
       pid: 1,
       title: 'browser',
-      nextTick: function(fn) {
+      nextTick: function (fn) {
         Promise.resolve().then(fn);
       },
-      cwd: function() { return '/'; },
-      exit: function() {},
-      umask: function() { return 0; }
+      cwd: function () { return '/'; },
+      exit: function () { },
+      umask: function () { return 0; }
     };
   }
 
@@ -50,8 +50,4 @@
 
   // Mark polyfills as loaded
   window.__POLYFILLS_LOADED__ = true;
-
-  if (typeof console !== 'undefined' && console.log) {
-    console.log('[Polyfills] ✓ Global polyfills loaded: global, globalThis, process');
-  }
 })();

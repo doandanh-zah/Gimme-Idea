@@ -8,6 +8,7 @@ import bs58 from 'bs58';
 import { supabase } from '@/lib/supabase';
 import { apiClient } from '@/lib/api-client';
 import { User } from '@/lib/types';
+import { logger } from '@/lib/logger';
 
 interface AuthContextType {
   supabaseUser: SupabaseUser | null;
@@ -69,23 +70,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const processEmailLogin = useCallback(async (supabaseUser: SupabaseUser, isNewLogin: boolean = false): Promise<User | null> => {
     try {
-      console.log('[Auth] Processing email login for:', supabaseUser.email);
-      
+      logger.debug('[Auth] Processing email login for:', supabaseUser.email);
+
       const response = await apiClient.loginWithEmail({
         email: supabaseUser.email || '',
         authId: supabaseUser.id,
         username: supabaseUser.user_metadata?.name || supabaseUser.user_metadata?.full_name,
       });
 
-      console.log('[Auth] Login response:', response.success, response.error);
+      logger.debug('[Auth] Login response:', response.success, response.error);
 
       if (response.success && response.data) {
         // Token should be saved automatically by apiFetch, but let's ensure it
         if (response.data.token) {
           localStorage.setItem('auth_token', response.data.token);
-          console.log('[Auth] Token saved successfully');
+          logger.debug('[Auth] Token saved successfully');
         }
-        
+
         const userData: User = {
           id: response.data.user.id,
           wallet: response.data.user.wallet || '',
@@ -105,7 +106,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
         setUser(userData);
         setIsNewUser(response.data.isNewUser);
-        
+
         // Check admin status after login
         checkAdminStatus();
 
@@ -138,7 +139,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const refreshUser = useCallback(async () => {
     if (!supabaseUser) return;
-    
+
     try {
       const response = await apiClient.getCurrentUser();
       if (response.success && response.data) {
@@ -177,13 +178,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setShowWalletEmailPopup(false);
       setIsAdmin(false);
       localStorage.removeItem('auth_token');
-      
+
       // If there's a valid Supabase session, try to re-login to backend
       if (session?.user) {
-        console.log('Attempting to refresh backend session...');
+        logger.debug('Attempting to refresh backend session...');
         const result = await processEmailLogin(session.user, false);
         if (result) {
-          console.log('Backend session refreshed successfully');
+          logger.debug('Backend session refreshed successfully');
         }
       }
     };
@@ -228,13 +229,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     // Get initial session and validate it with retry logic
     const initializeAuth = async () => {
-      console.log('[Auth] Initializing auth...');
-      
+      logger.debug('[Auth] Initializing auth...');
+
       try {
         const { data: { session }, error } = await supabase.auth.getSession();
-        
-        console.log('[Auth] Supabase session:', session ? 'found' : 'not found', error?.message);
-        
+
+        logger.debug('[Auth] Supabase session:', session ? 'found' : 'not found', error?.message);
+
         if (error) {
           console.error('[Auth] Error getting session:', error);
           setIsLoading(false);
@@ -242,20 +243,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
 
         if (session?.user) {
-          console.log('[Auth] User from Supabase:', session.user.email);
+          logger.debug('[Auth] User from Supabase:', session.user.email);
           setSession(session);
           setSupabaseUser(session.user);
-          
+
           // Check if we already have a valid token - try to get current user first
           const existingToken = localStorage.getItem('auth_token');
-          console.log('[Auth] Existing token:', existingToken ? 'found' : 'not found');
-          
+          logger.debug('[Auth] Existing token:', existingToken ? 'found' : 'not found');
+
           // If we have a token, try to get current user first (faster than full login)
           if (existingToken) {
             try {
               const userResponse = await apiClient.getCurrentUser();
               if (userResponse.success && userResponse.data) {
-                console.log('[Auth] Existing session valid, user data fetched');
+                logger.debug('[Auth] Existing session valid, user data fetched');
                 const userData: User = {
                   id: userResponse.data.id,
                   wallet: userResponse.data.wallet || '',
@@ -278,31 +279,31 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 return;
               }
             } catch (e) {
-              console.log('[Auth] Existing token invalid, will re-login');
+              logger.debug('[Auth] Existing token invalid, will re-login');
               localStorage.removeItem('auth_token');
             }
           }
-          
+
           // No valid token, need to login with backend
           let result = await processEmailLogin(session.user, false);
-          
+
           // If first attempt fails, wait a bit and retry once
           // This handles the case where backend is slow to respond
           if (!result) {
-            console.log('[Auth] First login attempt failed, retrying in 500ms...');
+            logger.debug('[Auth] First login attempt failed, retrying in 500ms...');
             await new Promise(resolve => setTimeout(resolve, 500));
             result = await processEmailLogin(session.user, false);
           }
-          
+
           if (!result) {
             // Backend validation failed after retry
             console.warn('[Auth] Backend login failed after retry - user may need to re-login');
           } else {
-            console.log('[Auth] Login successful, token saved:', !!localStorage.getItem('auth_token'));
+            logger.debug('[Auth] Login successful, token saved:', !!localStorage.getItem('auth_token'));
           }
         } else {
           // No Supabase session. Keep supporting wallet-first login via backend JWT.
-          console.log('[Auth] No Supabase session found');
+          logger.debug('[Auth] No Supabase session found');
           setSupabaseUser(null);
           setSession(null);
 
@@ -356,7 +357,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       async (event, session) => {
         setSession(session);
         setSupabaseUser(session?.user ?? null);
-        
+
         if (event === 'SIGNED_IN' && session?.user) {
           setIsLoading(true);
           // This is a NEW login - show popup if needed

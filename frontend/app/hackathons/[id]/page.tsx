@@ -170,7 +170,7 @@ export default function HackathonDashboard({ params }: { params: { id: string } 
             const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
             const res = await fetch(`${API_URL}/hackathons/${id}`);
             const data = await res.json();
-            
+
             if (data.success && data.data) {
                // Transform API data to match expected format
                const h = data.data;
@@ -299,7 +299,6 @@ export default function HackathonDashboard({ params }: { params: { id: string } 
       setTeamError(null);
       try {
          const response = await apiClient.getMyTeam(id);
-         console.log('[Team] getMyTeam response:', response);
          if (response.success && response.data) {
             setUserTeam(response.data.team || null);
             setUserTeamRole(response.data.role || null);
@@ -587,18 +586,14 @@ export default function HackathonDashboard({ params }: { params: { id: string } 
    // Load my submissions from API
    const loadMySubmissions = async () => {
       if (!id) return;
-      console.log('[Hackathon Submission] 📋 Loading my submissions for hackathon:', id);
       setIsLoadingSubmissions(true);
       setSubmissionError(null);
       try {
          const response = await apiClient.getMySubmissions(id);
-         console.log('[Hackathon Submission] 📡 getMySubmissions response:', response);
          // Response is ApiResponse<any[]>, extract data
          if (response.success && response.data) {
-            console.log('[Hackathon Submission] ✅ Loaded', response.data.length, 'submissions');
             setMySubmissions(response.data);
          } else {
-            console.log('[Hackathon Submission] ⚠️ No submissions or error:', response.error);
             setMySubmissions([]);
             if (response.error) {
                setSubmissionError(response.error);
@@ -615,7 +610,6 @@ export default function HackathonDashboard({ params }: { params: { id: string } 
    // Load submissions when entering submission tab
    useEffect(() => {
       if (activeSection === 'submission') {
-         console.log('[Hackathon Submission] 🔄 Entering submission tab, loading data...');
          loadMySubmissions();
       }
    }, [activeSection, id]);
@@ -624,30 +618,20 @@ export default function HackathonDashboard({ params }: { params: { id: string } 
    const handleImportIdea = async (idea: Project) => {
       if (!id) return;
 
-      console.log('[Hackathon Submission] 📥 Importing idea to hackathon:', {
-         hackathonId: id,
-         projectId: idea.id,
-         projectTitle: idea.title,
-      });
-
       // Check if already submitted
       if (mySubmissions.find(s => s.projectId === idea.id || s.project?.id === idea.id)) {
-         console.log('[Hackathon Submission] ⚠️ Idea already submitted');
          alert('This idea has already been submitted to this hackathon.');
          return;
       }
 
       setIsSubmitting(true);
       try {
-         console.log('[Hackathon Submission] 🚀 Calling createSubmission API...');
          const response = await apiClient.createSubmission({
             hackathonId: id,
             projectId: idea.id,
          });
-         console.log('[Hackathon Submission] 📡 API Response:', response);
 
          if (response.success) {
-            console.log('[Hackathon Submission] ✅ Submission created successfully!', response.data);
             // Reload submissions after creating
             await loadMySubmissions();
             setIsImportModalOpen(false);
@@ -777,7 +761,7 @@ export default function HackathonDashboard({ params }: { params: { id: string } 
                <p className="text-gray-400 mb-6">
                   {hackathonError || "The hackathon you're looking for doesn't exist or has been removed."}
                </p>
-               <Link 
+               <Link
                   href="/hackathons"
                   className="inline-flex items-center gap-2 px-6 py-3 bg-[#FFD700] text-black font-bold rounded-lg hover:bg-[#FFD700]/90 transition-colors"
                >
@@ -1078,8 +1062,8 @@ export default function HackathonDashboard({ params }: { params: { id: string } 
 
                                              {/* Registration Status */}
                                              {user && (
-                                                <div className={`border rounded-xl p-4 shrink-0 ${isRegistered 
-                                                   ? 'bg-gradient-to-br from-green-500/10 to-emerald-600/5 border-green-500/30' 
+                                                <div className={`border rounded-xl p-4 shrink-0 ${isRegistered
+                                                   ? 'bg-gradient-to-br from-green-500/10 to-emerald-600/5 border-green-500/30'
                                                    : 'bg-surface border-white/5'}`}
                                                 >
                                                    {isLoadingRegistration ? (
@@ -1921,11 +1905,10 @@ export default function HackathonDashboard({ params }: { params: { id: string } 
                                                          <div>
                                                             <div className="flex items-center gap-3 mb-1">
                                                                <h2 className="text-2xl font-bold text-white font-quantico">{userTeam.name}</h2>
-                                                               <span className={`text-[10px] px-2 py-0.5 rounded border uppercase font-bold ${
-                                                                  userTeamRole === 'leader' 
-                                                                     ? 'bg-gold/20 text-gold border-gold/20' 
+                                                               <span className={`text-[10px] px-2 py-0.5 rounded border uppercase font-bold ${userTeamRole === 'leader'
+                                                                     ? 'bg-gold/20 text-gold border-gold/20'
                                                                      : 'bg-blue-500/20 text-blue-400 border-blue-500/20'
-                                                               }`}>
+                                                                  }`}>
                                                                   {userTeamRole === 'leader' ? 'Leader' : 'Member'}
                                                                </span>
 
@@ -1937,18 +1920,18 @@ export default function HackathonDashboard({ params }: { params: { id: string } 
                                                          </div>
                                                          <div className="flex gap-2">
                                                             {userTeamRole === 'leader' && (
-                                                               <button 
+                                                               <button
                                                                   onClick={openTeamSettings}
-                                                                  className="p-2 rounded hover:bg-white/10 text-gray-400 hover:text-white transition-colors" 
+                                                                  className="p-2 rounded hover:bg-white/10 text-gray-400 hover:text-white transition-colors"
                                                                   title="Team Settings"
                                                                >
                                                                   <Settings className="w-4 h-4" />
                                                                </button>
                                                             )}
-                                                            <button 
+                                                            <button
                                                                onClick={handleLeaveTeam}
                                                                disabled={isLoadingTeam}
-                                                               className="p-2 rounded hover:bg-red-500/10 text-red-500 transition-colors disabled:opacity-50" 
+                                                               className="p-2 rounded hover:bg-red-500/10 text-red-500 transition-colors disabled:opacity-50"
                                                                title={userTeamRole === 'leader' ? 'Delete Team' : 'Leave Team'}
                                                             >
                                                                <LogOut className="w-4 h-4" />
@@ -1980,7 +1963,7 @@ export default function HackathonDashboard({ params }: { params: { id: string } 
                                                                   <div className="flex items-center gap-2">
                                                                      {member.role === 'leader' && <Trophy className="w-3 h-3 text-gold" />}
                                                                      {userTeamRole === 'leader' && member.role !== 'leader' && member.id !== user?.id && (
-                                                                        <button 
+                                                                        <button
                                                                            onClick={() => handleKickMember(member.id)}
                                                                            className="p-1 rounded hover:bg-red-500/10 text-gray-500 hover:text-red-500 transition-colors"
                                                                            title="Remove member"
@@ -2350,7 +2333,7 @@ export default function HackathonDashboard({ params }: { params: { id: string } 
                                                                      <button
                                                                         onClick={(e) => {
                                                                            e.stopPropagation();
-                                                                           if (window.confirm('Delete this idea?')) console.log('Delete:', idea.id);
+                                                                           window.confirm('Delete this idea?');
                                                                         }}
                                                                         className="p-1 hover:bg-red-500/10 rounded transition-colors text-gray-400 hover:text-red-400"
                                                                      >
@@ -2399,9 +2382,8 @@ export default function HackathonDashboard({ params }: { params: { id: string } 
             project={editingSubmission}
             isOpen={!!editingSubmission}
             onClose={() => setEditingSubmission(null)}
-            onSave={(updatedData) => {
+            onSave={() => {
                // Here you would save the changes - for now just close modal
-               console.log('Updated submission:', updatedData);
                setEditingSubmission(null);
             }}
          />
@@ -2440,11 +2422,10 @@ export default function HackathonDashboard({ params }: { params: { id: string } 
                      <div className="flex p-2 gap-2 border-b border-white/5">
                         <button
                            onClick={() => setTeamSettingsTab('team')}
-                           className={`flex-1 py-2 px-4 rounded-lg text-sm font-medium transition-all ${
-                              teamSettingsTab === 'team'
+                           className={`flex-1 py-2 px-4 rounded-lg text-sm font-medium transition-all ${teamSettingsTab === 'team'
                                  ? 'bg-gold/20 text-gold border border-gold/30'
                                  : 'text-gray-400 hover:text-white hover:bg-white/5'
-                           }`}
+                              }`}
                         >
                            <div className="flex items-center justify-center gap-2">
                               <Rocket className="w-4 h-4" />
@@ -2453,11 +2434,10 @@ export default function HackathonDashboard({ params }: { params: { id: string } 
                         </button>
                         <button
                            onClick={() => setTeamSettingsTab('members')}
-                           className={`flex-1 py-2 px-4 rounded-lg text-sm font-medium transition-all ${
-                              teamSettingsTab === 'members'
+                           className={`flex-1 py-2 px-4 rounded-lg text-sm font-medium transition-all ${teamSettingsTab === 'members'
                                  ? 'bg-gold/20 text-gold border border-gold/30'
                                  : 'text-gray-400 hover:text-white hover:bg-white/5'
-                           }`}
+                              }`}
                         >
                            <div className="flex items-center justify-center gap-2">
                               <Users className="w-4 h-4" />
@@ -2520,7 +2500,7 @@ export default function HackathonDashboard({ params }: { params: { id: string } 
                               <p className="text-xs text-gray-500 mb-4">
                                  Remove members from your team. You cannot remove yourself as the leader.
                               </p>
-                              
+
                               {(userTeam?.members || []).length === 0 ? (
                                  <div className="text-center py-8 text-gray-500 text-sm">
                                     No members in your team yet.
@@ -2528,8 +2508,8 @@ export default function HackathonDashboard({ params }: { params: { id: string } 
                               ) : (
                                  <div className="space-y-2 max-h-[300px] overflow-y-auto">
                                     {(userTeam?.members || []).map((member: any) => (
-                                       <div 
-                                          key={member.id || member.userId} 
+                                       <div
+                                          key={member.id || member.userId}
                                           className="flex items-center justify-between p-3 bg-black/20 rounded-lg border border-white/5"
                                        >
                                           <div className="flex items-center gap-3">
@@ -2548,7 +2528,7 @@ export default function HackathonDashboard({ params }: { params: { id: string } 
                                                 </p>
                                              </div>
                                           </div>
-                                          
+
                                           {member.role !== 'leader' && (
                                              <button
                                                 onClick={() => {

@@ -25,7 +25,6 @@ function AuthStoreSync() {
   const setUser = useAppStore((state) => state.setUser);
 
   useEffect(() => {
-    console.log('[AuthStoreSync] Syncing user to store:', authUser?.username || 'null');
     setUser(authUser);
   }, [authUser, setUser]);
 

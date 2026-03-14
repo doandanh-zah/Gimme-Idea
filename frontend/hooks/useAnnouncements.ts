@@ -105,8 +105,7 @@ export function useAnnouncements() {
           table: "user_announcements",
           filter: `user_id=eq.${subscriptionUserId}`,
         },
-        (payload) => {
-          console.log("[Announcements] Realtime INSERT received:", payload);
+        () => {
           // New announcement - refetch
           fetchAnnouncements();
         }
@@ -120,7 +119,6 @@ export function useAnnouncements() {
           filter: `user_id=eq.${subscriptionUserId}`,
         },
         (payload) => {
-          console.log("[Announcements] Realtime UPDATE received:", payload);
           const updated = payload.new as any;
           if (updated.is_dismissed) {
             setAnnouncements((prev) => prev.filter((a) => a.id !== updated.id));
@@ -142,14 +140,11 @@ export function useAnnouncements() {
           filter: `user_id=eq.${subscriptionUserId}`,
         },
         (payload) => {
-          console.log("[Announcements] Realtime DELETE received:", payload);
           const deleted = payload.old as any;
           setAnnouncements((prev) => prev.filter((a) => a.id !== deleted.id));
         }
       )
-      .subscribe((status) => {
-        console.log("[Announcements] Subscription status:", status);
-      });
+      .subscribe();
 
     subscriptionRef.current = channel;
 

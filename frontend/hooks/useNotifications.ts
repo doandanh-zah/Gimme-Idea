@@ -167,12 +167,6 @@ export function useNotifications() {
     // Use Supabase session user ID for realtime subscription if available
     // This ensures the subscription filter matches the RLS policy (auth.uid())
     const subscriptionUserId = session?.user?.id || user.id;
-    console.log(
-      "[Notifications] Setting up realtime for user:",
-      subscriptionUserId,
-      "session:",
-      !!session
-    );
 
     // Subscribe to realtime updates
     const channel = supabase
@@ -185,8 +179,7 @@ export function useNotifications() {
           table: "notifications",
           filter: `user_id=eq.${subscriptionUserId}`,
         },
-        (payload) => {
-          console.log("[Notifications] Realtime INSERT received:", payload);
+        () => {
           // Refetch to get full notification with actor info
           fetchNotifications();
           fetchUnreadCount();
@@ -201,7 +194,6 @@ export function useNotifications() {
           filter: `user_id=eq.${subscriptionUserId}`,
         },
         (payload) => {
-          console.log("[Notifications] Realtime UPDATE received:", payload);
           // Update local state
           const updated = payload.new as any;
           setNotifications((prev) =>
@@ -223,14 +215,11 @@ export function useNotifications() {
           filter: `user_id=eq.${subscriptionUserId}`,
         },
         (payload) => {
-          console.log("[Notifications] Realtime DELETE received:", payload);
           const deleted = payload.old as any;
           setNotifications((prev) => prev.filter((n) => n.id !== deleted.id));
         }
       )
-      .subscribe((status) => {
-        console.log("[Notifications] Subscription status:", status);
-      });
+      .subscribe();
 
     subscriptionRef.current = channel;
 

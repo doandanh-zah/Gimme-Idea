@@ -2,13 +2,13 @@
 
 import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { 
-  Shield, 
-  ShieldCheck, 
-  Plus, 
-  Calendar, 
-  Trophy, 
-  Users, 
+import {
+  Shield,
+  ShieldCheck,
+  Plus,
+  Calendar,
+  Trophy,
+  Users,
   Settings,
   Activity,
   Trash2,
@@ -237,7 +237,7 @@ function AccessCodeGate({ onSuccess }: { onSuccess: () => void }) {
               <Lock className="w-8 h-8 text-purple-400" />
             </div>
           </div>
-          
+
           <h1 className="text-xl font-bold text-white text-center mb-2">
             Restricted Area
           </h1>
@@ -318,21 +318,21 @@ export default function AdminDashboard() {
   const [searchQuery, setSearchQuery] = useState('');
   const [backfillResult, setBackfillResult] = useState<any>(null);
   const [isBackfilling, setIsBackfilling] = useState(false);
-  
+
   // Users states
   const [users, setUsers] = useState<User[]>([]);
   const [isLoadingUsers, setIsLoadingUsers] = useState(false);
   const [userSearchQuery, setUserSearchQuery] = useState('');
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [showUserModal, setShowUserModal] = useState(false);
-  
+
   // Projects states
   const [projects, setProjects] = useState<any[]>([]);
   const [isLoadingProjects, setIsLoadingProjects] = useState(false);
-  
+
   // System stats
   const [systemStats, setSystemStats] = useState<SystemStats | null>(null);
-  
+
   // Hackathon states
   const [hackathons, setHackathons] = useState<Hackathon[]>([]);
   const [selectedHackathon, setSelectedHackathon] = useState<Hackathon | null>(null);
@@ -457,7 +457,7 @@ export default function AdminDashboard() {
     registrationStart: '',
     registrationEnd: '',
   });
-  
+
   // imgbb upload state
   const [isUploadingImage, setIsUploadingImage] = useState(false);
 
@@ -513,7 +513,7 @@ export default function AdminDashboard() {
   useEffect(() => {
     const fetchData = async () => {
       if (!hasAccess) return;
-      
+
       setIsLoading(true);
       try {
         const [ideasRes, activityRes, hackathonsRes, statsRes, daoReqRes, proposalsRes] = await Promise.all([
@@ -607,12 +607,12 @@ export default function AdminDashboard() {
   const handleToggleBan = async (userId: string, currentlyBanned: boolean) => {
     const action = currentlyBanned ? 'unban' : 'ban';
     if (!confirm(`Are you sure you want to ${action} this user?`)) return;
-    
+
     try {
       const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
       const res = await fetch(`${API_URL}/admin/users/${userId}/${action}`, { method: 'POST' });
       const data = await res.json();
-      
+
       if (data.success) {
         toast.success(`User ${action}ned successfully`);
         fetchUsers();
@@ -628,16 +628,16 @@ export default function AdminDashboard() {
   const handleToggleAdmin = async (userId: string, currentlyAdmin: boolean) => {
     const action = currentlyAdmin ? 'remove admin' : 'make admin';
     if (!confirm(`Are you sure you want to ${action}?`)) return;
-    
+
     try {
       const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
-      const res = await fetch(`${API_URL}/admin/users/${userId}/admin`, { 
+      const res = await fetch(`${API_URL}/admin/users/${userId}/admin`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ isAdmin: !currentlyAdmin })
       });
       const data = await res.json();
-      
+
       if (data.success) {
         toast.success(`Admin status updated`);
         fetchUsers();
@@ -652,7 +652,7 @@ export default function AdminDashboard() {
   // Delete project
   const handleDeleteProject = async (projectId: string) => {
     if (!confirm('Are you sure you want to delete this project? This cannot be undone.')) return;
-    
+
     try {
       const res = await apiClient.deleteProject(projectId);
       if (res.success) {
@@ -776,8 +776,8 @@ export default function AdminDashboard() {
 
   // Update round field
   const updateRoundField = (roundNumber: number, field: keyof HackathonRound, value: any) => {
-    setSelectedHackathonRounds(prev => 
-      prev.map(round => 
+    setSelectedHackathonRounds(prev =>
+      prev.map(round =>
         round.roundNumber === roundNumber ? { ...round, [field]: value } : round
       )
     );
@@ -788,19 +788,19 @@ export default function AdminDashboard() {
     try {
       const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
       const method = editingHackathon ? 'PATCH' : 'POST';
-      const url = editingHackathon 
+      const url = editingHackathon
         ? `${API_URL}/admin/hackathons/${editingHackathon.id}`
         : `${API_URL}/admin/hackathons`;
-      
+
       const res = await fetch(url, {
         method,
-        headers: { 
+        headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${localStorage.getItem('auth_token') || ''}`
         },
         body: JSON.stringify(hackathonForm),
       });
-      
+
       const data = await res.json();
       if (data.success) {
         toast.success(editingHackathon ? 'Hackathon updated!' : 'Hackathon created!');
@@ -819,17 +819,17 @@ export default function AdminDashboard() {
   // Delete hackathon
   const handleDeleteHackathon = async (id: string) => {
     if (!confirm('Are you sure you want to delete this hackathon? This cannot be undone.')) return;
-    
+
     try {
       const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
-      const res = await fetch(`${API_URL}/admin/hackathons/${id}`, { 
+      const res = await fetch(`${API_URL}/admin/hackathons/${id}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('auth_token') || ''}`
         }
       });
       const data = await res.json();
-      
+
       if (data.success) {
         toast.success('Hackathon deleted!');
         fetchAdminHackathons();
@@ -847,11 +847,11 @@ export default function AdminDashboard() {
   // Score submission
   const handleScoreSubmission = async () => {
     if (!selectedSubmission) return;
-    
+
     const totalScore = Math.round(
       (scoreForm.innovation + scoreForm.execution + scoreForm.impact + scoreForm.presentation) / 4
     );
-    
+
     try {
       const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
       const res = await fetch(`${API_URL}/admin/submissions/${selectedSubmission.id}/score`, {
@@ -868,7 +868,7 @@ export default function AdminDashboard() {
           adminNotes: scoreForm.notes,
         }),
       });
-      
+
       const data = await res.json();
       if (data.success) {
         toast.success('Submission scored!');
@@ -895,7 +895,7 @@ export default function AdminDashboard() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ status }),
       });
-      
+
       const data = await res.json();
       if (data.success) {
         toast.success(`Status updated to ${status}!`);
@@ -1019,7 +1019,7 @@ export default function AdminDashboard() {
         { rank: 3, amount: '', title: '3rd Place' },
       ],
       round1: h.round1 || { startDate: '', endDate: '', resultsDate: '', mode: 'online' },
-      round2: h.round2 || { 
+      round2: h.round2 || {
         startDate: '', endDate: '', resultsDate: '', mode: 'online', teamsAdvancing: 20,
         submissions: {
           pitchDeck: { required: true, link: '' },
@@ -1028,7 +1028,7 @@ export default function AdminDashboard() {
           mvp: { required: false, link: '' },
         },
       },
-      round3: h.round3 || { 
+      round3: h.round3 || {
         startDate: '', endDate: '', resultsDate: '', mode: 'offline', teamsAdvancing: 5,
         submissions: {
           pitchDeck: { required: true, link: '' },
@@ -1075,25 +1075,24 @@ export default function AdminDashboard() {
     try {
       const formData = new FormData();
       formData.append('image', file);
-      
+
       // imgbb API key from environment variable
       const IMGBB_API_KEY = process.env.NEXT_PUBLIC_IMGBB_API_KEY;
-      
+
       if (!IMGBB_API_KEY) {
         toast.error('imgbb API key not configured');
         console.error('Missing NEXT_PUBLIC_IMGBB_API_KEY environment variable');
         setIsUploadingImage(false);
         return;
       }
-      
+
       const res = await fetch(`https://api.imgbb.com/1/upload?key=${IMGBB_API_KEY}`, {
         method: 'POST',
         body: formData,
       });
-      
+
       const data = await res.json();
-      console.log('imgbb response:', data); // Debug log
-      
+
       if (data.success && data.data?.url) {
         setHackathonForm(prev => ({ ...prev, coverImage: data.data.url }));
         toast.success('Image uploaded successfully!');
@@ -1294,7 +1293,7 @@ export default function AdminDashboard() {
 
   const handleDeleteIdea = async (id: string) => {
     if (!confirm('Are you sure you want to delete this idea?')) return;
-    
+
     try {
       const res = await apiClient.deleteProject(id);
       if (res.success) {
@@ -1557,7 +1556,7 @@ export default function AdminDashboard() {
   const handleBackfillAI = async () => {
     setIsBackfilling(true);
     setBackfillResult(null);
-    
+
     try {
       const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
       const res = await fetch(`${API_URL}/ai/backfill-feedback`, {
@@ -1655,7 +1654,7 @@ export default function AdminDashboard() {
     );
   }
 
-  const filteredIdeas = ideas.filter(idea => 
+  const filteredIdeas = ideas.filter(idea =>
     idea.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
     idea.category.toLowerCase().includes(searchQuery.toLowerCase())
   );
@@ -1738,11 +1737,10 @@ export default function AdminDashboard() {
                 if (tab.id === 'users' && users.length === 0) fetchUsers();
                 if (tab.id === 'projects' && projects.length === 0) fetchAllProjects();
               }}
-              className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors whitespace-nowrap ${
-                activeTab === tab.id
+              className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors whitespace-nowrap ${activeTab === tab.id
                   ? 'bg-white/10 text-white'
                   : 'text-gray-400 hover:text-white hover:bg-white/5'
-              }`}
+                }`}
             >
               <tab.icon className="w-4 h-4" />
               {tab.label}
@@ -1839,8 +1837,8 @@ export default function AdminDashboard() {
                       </span>
                     </div>
                     <div className="w-full bg-white/10 rounded-full h-2 mt-2">
-                      <div 
-                        className="bg-amber-500 h-2 rounded-full transition-all" 
+                      <div
+                        className="bg-amber-500 h-2 rounded-full transition-all"
                         style={{ width: `${ideas.length > 0 ? (ideasWithAI / ideas.length) * 100 : 0}%` }}
                       />
                     </div>
@@ -1883,12 +1881,11 @@ export default function AdminDashboard() {
                     <div key={h.id} className="flex items-center gap-4 p-3 bg-white/5 rounded-lg">
                       <div className="flex-grow min-w-0">
                         <div className="font-medium text-white mb-1 truncate">{h.title}</div>
-                        <span className={`inline-flex px-2 py-0.5 rounded text-xs font-medium ${
-                          h.status === 'active' ? 'bg-green-500/10 text-green-400' :
-                          h.status === 'upcoming' ? 'bg-blue-500/10 text-blue-400' :
-                          h.status === 'judging' ? 'bg-amber-500/10 text-amber-400' :
-                          'bg-gray-500/10 text-gray-400'
-                        }`}>
+                        <span className={`inline-flex px-2 py-0.5 rounded text-xs font-medium ${h.status === 'active' ? 'bg-green-500/10 text-green-400' :
+                            h.status === 'upcoming' ? 'bg-blue-500/10 text-blue-400' :
+                              h.status === 'judging' ? 'bg-amber-500/10 text-amber-400' :
+                                'bg-gray-500/10 text-gray-400'
+                          }`}>
                           {h.status}
                         </span>
                       </div>
@@ -2110,7 +2107,7 @@ export default function AdminDashboard() {
                           <Link href={`/idea/${idea.id}`} className="p-2 text-gray-400 hover:text-white hover:bg-white/10 rounded-lg">
                             <Eye className="w-4 h-4" />
                           </Link>
-                          <button 
+                          <button
                             onClick={() => handleDeleteIdea(idea.id)}
                             className="p-2 text-gray-400 hover:text-red-400 hover:bg-red-500/10 rounded-lg"
                           >
@@ -2403,9 +2400,8 @@ export default function AdminDashboard() {
                               <div className="font-medium text-white truncate max-w-xs">{p.title}</div>
                             </td>
                             <td className="px-6 py-4">
-                              <span className={`inline-flex px-2 py-1 rounded text-xs font-medium ${
-                                p.type === 'idea' ? 'bg-amber-500/10 text-amber-400' : 'bg-blue-500/10 text-blue-400'
-                              }`}>
+                              <span className={`inline-flex px-2 py-1 rounded text-xs font-medium ${p.type === 'idea' ? 'bg-amber-500/10 text-amber-400' : 'bg-blue-500/10 text-blue-400'
+                                }`}>
                                 {p.type || 'project'}
                               </span>
                             </td>
@@ -2478,7 +2474,7 @@ export default function AdminDashboard() {
                   New Hackathon
                 </button>
               </div>
-              
+
               <div className="overflow-x-auto">
                 <table className="w-full">
                   <thead>
@@ -2506,14 +2502,13 @@ export default function AdminDashboard() {
                             <div className="text-xs text-gray-500">/{hackathon.slug}</div>
                           </td>
                           <td className="px-6 py-4">
-                            <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium ${
-                              hackathon.status === 'active' ? 'bg-green-500/10 text-green-400 border border-green-500/20' :
-                              hackathon.status === 'upcoming' ? 'bg-blue-500/10 text-blue-400 border border-blue-500/20' :
-                              hackathon.status === 'judging' ? 'bg-amber-500/10 text-amber-400 border border-amber-500/20' :
-                              hackathon.status === 'completed' ? 'bg-purple-500/10 text-purple-400 border border-purple-500/20' :
-                              hackathon.status === 'cancelled' ? 'bg-red-500/10 text-red-400 border border-red-500/20' :
-                              'bg-gray-500/10 text-gray-400 border border-gray-500/20'
-                            }`}>
+                            <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium ${hackathon.status === 'active' ? 'bg-green-500/10 text-green-400 border border-green-500/20' :
+                                hackathon.status === 'upcoming' ? 'bg-blue-500/10 text-blue-400 border border-blue-500/20' :
+                                  hackathon.status === 'judging' ? 'bg-amber-500/10 text-amber-400 border border-amber-500/20' :
+                                    hackathon.status === 'completed' ? 'bg-purple-500/10 text-purple-400 border border-purple-500/20' :
+                                      hackathon.status === 'cancelled' ? 'bg-red-500/10 text-red-400 border border-red-500/20' :
+                                        'bg-gray-500/10 text-gray-400 border border-gray-500/20'
+                              }`}>
                               {hackathon.status === 'active' && <span className="w-1.5 h-1.5 bg-green-400 rounded-full animate-pulse" />}
                               {hackathon.status.charAt(0).toUpperCase() + hackathon.status.slice(1)}
                             </span>
@@ -2625,13 +2620,12 @@ export default function AdminDashboard() {
                               {submission.user?.username || 'Unknown'}
                             </td>
                             <td className="px-6 py-4">
-                              <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium ${
-                                submission.status === 'winner' ? 'bg-amber-500/10 text-amber-400 border border-amber-500/20' :
-                                submission.status === 'finalist' ? 'bg-purple-500/10 text-purple-400 border border-purple-500/20' :
-                                submission.status === 'approved' ? 'bg-green-500/10 text-green-400 border border-green-500/20' :
-                                submission.status === 'rejected' ? 'bg-red-500/10 text-red-400 border border-red-500/20' :
-                                'bg-gray-500/10 text-gray-400 border border-gray-500/20'
-                              }`}>
+                              <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium ${submission.status === 'winner' ? 'bg-amber-500/10 text-amber-400 border border-amber-500/20' :
+                                  submission.status === 'finalist' ? 'bg-purple-500/10 text-purple-400 border border-purple-500/20' :
+                                    submission.status === 'approved' ? 'bg-green-500/10 text-green-400 border border-green-500/20' :
+                                      submission.status === 'rejected' ? 'bg-red-500/10 text-red-400 border border-red-500/20' :
+                                        'bg-gray-500/10 text-gray-400 border border-gray-500/20'
+                                }`}>
                                 {submission.status === 'winner' && <Trophy className="w-3 h-3" />}
                                 {submission.status === 'finalist' && <Star className="w-3 h-3" />}
                                 {submission.status.charAt(0).toUpperCase() + submission.status.slice(1)}
@@ -2643,7 +2637,7 @@ export default function AdminDashboard() {
                                   <span className="text-white font-medium">{submission.score}/100</span>
                                   {submission.scoreBreakdown && (
                                     <div className="text-xs text-gray-500">
-                                      (I:{submission.scoreBreakdown.innovation} E:{submission.scoreBreakdown.execution} 
+                                      (I:{submission.scoreBreakdown.innovation} E:{submission.scoreBreakdown.execution}
                                       Im:{submission.scoreBreakdown.impact} P:{submission.scoreBreakdown.presentation})
                                     </div>
                                   )}
@@ -2727,7 +2721,7 @@ export default function AdminDashboard() {
               </div>
               <div className="p-4">
                 <p className="text-sm text-gray-400 mb-4">
-                  Partner hackathons are displayed as secondary cards on the hackathons page. 
+                  Partner hackathons are displayed as secondary cards on the hackathons page.
                   You can add them when creating/editing a hackathon in the "Partner Hackathons" section.
                 </p>
                 <div className="bg-white/5 rounded-lg p-4">
@@ -2994,12 +2988,11 @@ export default function AdminDashboard() {
                     <div className="space-y-3">
                       {hackathonForm.prizes.map((prize, idx) => (
                         <div key={idx} className="flex items-center gap-3">
-                          <span className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${
-                            idx === 0 ? 'bg-amber-500/20 text-amber-400' :
-                            idx === 1 ? 'bg-gray-400/20 text-gray-300' :
-                            idx === 2 ? 'bg-orange-600/20 text-orange-400' :
-                            'bg-white/10 text-gray-400'
-                          }`}>
+                          <span className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${idx === 0 ? 'bg-amber-500/20 text-amber-400' :
+                              idx === 1 ? 'bg-gray-400/20 text-gray-300' :
+                                idx === 2 ? 'bg-orange-600/20 text-orange-400' :
+                                  'bg-white/10 text-gray-400'
+                            }`}>
                             {prize.rank}
                           </span>
                           <input
@@ -3165,7 +3158,7 @@ export default function AdminDashboard() {
                         />
                       </div>
                     </div>
-                    
+
                     {/* Submission Requirements for Round 2 (when online/hybrid) */}
                     {(hackathonForm.round2.mode === 'online' || hackathonForm.round2.mode === 'hybrid') && (
                       <div className="mt-4 p-4 bg-blue-500/10 rounded-lg border border-blue-500/20">
@@ -3335,7 +3328,7 @@ export default function AdminDashboard() {
                         />
                       </div>
                     </div>
-                    
+
                     {/* Submission Requirements for Round 3 (when online/hybrid) */}
                     {(hackathonForm.round3.mode === 'online' || hackathonForm.round3.mode === 'hybrid') && (
                       <div className="mt-4 p-4 bg-amber-500/10 rounded-lg border border-amber-500/20">
@@ -3499,7 +3492,7 @@ export default function AdminDashboard() {
                       <BarChart3 className="w-4 h-4 text-purple-400" />
                       Judging Criteria
                     </h4>
-                    
+
                     {/* Weight Distribution */}
                     <div className="bg-white/5 rounded-xl p-4 mb-4">
                       <div className="flex items-center justify-between mb-3">
@@ -3559,7 +3552,7 @@ export default function AdminDashboard() {
                         </div>
                       </div>
                     </div>
-                    
+
                     {/* Judge Categories */}
                     <div>
                       <label className="block text-sm font-medium text-gray-400 mb-2">Judge Scoring Categories (Total of weights should = 100%)</label>
@@ -3919,11 +3912,10 @@ export default function AdminDashboard() {
                         >
                           {/* Round Header */}
                           <div className="flex items-center gap-3 mb-4">
-                            <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-lg ${
-                              round.roundType === 'idea' ? 'bg-green-500/20 text-green-400 border border-green-500/30' :
-                              round.roundType === 'pitching' ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30' :
-                              'bg-purple-500/20 text-purple-400 border border-purple-500/30'
-                            }`}>
+                            <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-lg ${round.roundType === 'idea' ? 'bg-green-500/20 text-green-400 border border-green-500/30' :
+                                round.roundType === 'pitching' ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30' :
+                                  'bg-purple-500/20 text-purple-400 border border-purple-500/30'
+                              }`}>
                               {round.roundNumber}
                             </div>
                             <div className="flex-grow">
@@ -3934,12 +3926,11 @@ export default function AdminDashboard() {
                                 className="bg-transparent text-lg font-semibold text-white w-full focus:outline-none border-b border-transparent hover:border-white/20 focus:border-cyan-500 transition-colors"
                               />
                             </div>
-                            <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-                              round.status === 'active' ? 'bg-green-500/10 text-green-400' :
-                              round.status === 'completed' ? 'bg-purple-500/10 text-purple-400' :
-                              round.status === 'judging' ? 'bg-amber-500/10 text-amber-400' :
-                              'bg-gray-500/10 text-gray-400'
-                            }`}>
+                            <span className={`px-3 py-1 rounded-full text-xs font-medium ${round.status === 'active' ? 'bg-green-500/10 text-green-400' :
+                                round.status === 'completed' ? 'bg-purple-500/10 text-purple-400' :
+                                  round.status === 'judging' ? 'bg-amber-500/10 text-amber-400' :
+                                    'bg-gray-500/10 text-gray-400'
+                              }`}>
                               {round.status.charAt(0).toUpperCase() + round.status.slice(1)}
                             </span>
                           </div>
