@@ -16,6 +16,7 @@ import {
     Link as LinkIcon,
     AlertCircle,
     Trash2,
+    RefreshCw,
 } from 'lucide-react';
 import { apiClient } from '../lib/api-client';
 import { useAuth } from '../contexts/AuthContext';
@@ -79,6 +80,8 @@ export const RelatedProjectsModal: React.FC<RelatedProjectsModalProps> = ({
     });
     const [isPinning, setIsPinning] = useState(false);
     const [aiSummary, setAiSummary] = useState<string>('');
+    const [activeView, setActiveView] = useState<'all' | 'ai' | 'community'>('all');
+    const [sourceFilter, setSourceFilter] = useState<string>('all');
 
     // Fetch related projects on mount
     useEffect(() => {
@@ -256,6 +259,36 @@ export const RelatedProjectsModal: React.FC<RelatedProjectsModalProps> = ({
     // Check if current user has already pinned a project
     const userHasPinned = userPinned.some((p) => p.pinnedBy === user?.id);
 
+    const sourceCounts = aiDetected.reduce<Record<string, number>>((acc, project) => {
+        acc[project.source] = (acc[project.source] || 0) + 1;
+        return acc;
+    }, {});
+
+    const sourceFilters = Object.entries(sourceCounts)
+        .sort((a, b) => Number(b[1]) - Number(a[1]))
+        .slice(0, 6);
+
+    const filteredAiDetected = sourceFilter === 'all'
+        ? aiDetected
+        : aiDetected.filter((project) => project.source === sourceFilter);
+
+    const rankedAiProjects = [...filteredAiDetected].sort((a, b) => b.score - a.score);
+    const featuredProject = rankedAiProjects[0];
+    const remainingAiProjects = rankedAiProjects.slice(1);
+    const totalProjects = aiDetected.length + userPinned.length;
+
+    const getSourceBadgeClasses = (source: string) => {
+        if (['producthunt.com', 'crunchbase.com', 'g2.com', 'ycombinator.com', 'betalist.com'].includes(source)) {
+            return 'bg-emerald-500/10 text-emerald-300 border-emerald-400/20';
+        }
+
+        if (source === 'github.com') {
+            return 'bg-slate-400/10 text-slate-200 border-slate-300/20';
+        }
+
+        return 'bg-cyan-500/10 text-cyan-300 border-cyan-400/20';
+    };
+
     if (!isOpen) return null;
 
     return (
@@ -264,11 +297,7 @@ export const RelatedProjectsModal: React.FC<RelatedProjectsModalProps> = ({
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
-                className="fixed inset-0 z-50 flex items-center justify-center p-4"
-                style={{
-                    background: 'radial-gradient(ellipse at center, rgba(153, 69, 255, 0.15) 0%, rgba(255, 215, 0, 0.08) 30%, rgba(0, 0, 0, 0.8) 70%)',
-                    backdropFilter: 'blur(20px)',
-                }}
+                className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm"
                 onClick={onClose}
             >
                 <motion.div
@@ -276,346 +305,510 @@ export const RelatedProjectsModal: React.FC<RelatedProjectsModalProps> = ({
                     animate={{ opacity: 1, scale: 1, y: 0 }}
                     exit={{ opacity: 0, scale: 0.95, y: 20 }}
                     transition={{ duration: 0.2 }}
-                    className="w-full max-w-3xl max-h-[90vh] bg-[#0D0D12] rounded-2xl border border-white/10 overflow-hidden shadow-2xl"
-                    style={{
-                        boxShadow: '0 20px 60px rgba(153, 69, 255, 0.15)',
-                        borderColor: 'rgba(255, 215, 0, 0.25)',
-                    }}
+                    className="w-full max-w-6xl max-h-[92vh] bg-[#091018] rounded-[28px] border border-white/10 overflow-hidden shadow-2xl"
+                    style={{ boxShadow: '0 28px 90px rgba(6, 182, 212, 0.12)' }}
                     onClick={(e) => e.stopPropagation()}
                 >
-                    {/* Header */}
-                    <div className="relative px-6 py-5 border-b border-white/10 bg-gradient-to-r from-purple-500/10 via-blue-500/10 to-purple-500/10">
-                        {/* Glow effect */}
-                        <div className="absolute inset-0 bg-gradient-to-r from-purple-500/5 to-blue-500/5 blur-xl" />
-                        <div className="relative z-10 flex items-center justify-between">
-                            <div className="flex items-center gap-4">
-                                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-purple-500/20 to-blue-500/20 border border-purple-500/30 flex items-center justify-center">
-                                    <Sparkles className="w-6 h-6 text-purple-400" />
+                    <div className="relative border-b border-white/10 bg-[radial-gradient(circle_at_top_left,rgba(34,211,238,0.16),transparent_34%),radial-gradient(circle_at_top_right,rgba(250,204,21,0.1),transparent_28%),linear-gradient(180deg,rgba(255,255,255,0.03),rgba(255,255,255,0))]">
+                        <div className="absolute inset-0 bg-[linear-gradient(135deg,rgba(255,255,255,0.04),transparent_35%,transparent_65%,rgba(255,255,255,0.02))]" />
+                        <div className="relative z-10 px-6 py-6 sm:px-8 sm:py-7">
+                            <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
+                                <div className="min-w-0">
+                                    <div className="inline-flex items-center gap-2 rounded-full border border-cyan-400/20 bg-cyan-400/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.24em] text-cyan-200">
+                                        <Sparkles className="h-3.5 w-3.5" />
+                                        Discovery Board
+                                    </div>
+                                    <div className="mt-4 flex items-start gap-4">
+                                        <div className="hidden h-14 w-14 rounded-2xl border border-cyan-300/20 bg-cyan-400/10 sm:flex sm:items-center sm:justify-center">
+                                            <Search className="h-7 w-7 text-cyan-200" />
+                                        </div>
+                                        <div className="min-w-0">
+                                            <h2 className="font-display text-2xl font-bold tracking-tight text-white sm:text-3xl">
+                                                Similar products around this idea
+                                            </h2>
+                                            <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-300 sm:text-[15px]">
+                                                A research-style view for mapping the market around
+                                                <span className="mx-1 font-semibold text-white">{ideaTitle}</span>
+                                                with AI matches and community-built references in one place.
+                                            </p>
+                                        </div>
+                                    </div>
                                 </div>
-                                <div>
-                                    <h2 className="text-xl font-bold text-white">Related Projects</h2>
-                                    <p className="text-sm text-gray-400 mt-0.5">
-                                        AI-powered discovery for <span className="text-purple-300">"{ideaTitle}"</span>
-                                    </p>
+                                <div className="flex flex-wrap items-center gap-2 lg:justify-end">
+                                    <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-slate-300">
+                                        <div className="text-[11px] uppercase tracking-[0.22em] text-slate-500">Total mapped</div>
+                                        <div className="mt-1 text-xl font-semibold text-white">{totalProjects}</div>
+                                    </div>
+                                    <div className="rounded-2xl border border-cyan-400/20 bg-cyan-400/10 px-4 py-3 text-sm text-cyan-100">
+                                        <div className="text-[11px] uppercase tracking-[0.22em] text-cyan-300/70">AI matches</div>
+                                        <div className="mt-1 text-xl font-semibold text-white">{aiDetected.length}</div>
+                                    </div>
+                                    <div className="rounded-2xl border border-amber-300/20 bg-amber-300/10 px-4 py-3 text-sm text-amber-100">
+                                        <div className="text-[11px] uppercase tracking-[0.22em] text-amber-200/70">Community pins</div>
+                                        <div className="mt-1 text-xl font-semibold text-white">{userPinned.length}</div>
+                                    </div>
                                 </div>
                             </div>
-                            <div className="flex items-center gap-2">
-                                {/* Clear AI Results Button */}
+
+                            <div className="mt-6 flex flex-wrap items-center gap-2">
                                 <button
                                     onClick={handleClearProjects}
                                     disabled={aiDetected.length === 0}
-                                    className="px-3 py-2 bg-red-500/15 hover:bg-red-500/25 disabled:bg-white/5 disabled:text-gray-600 disabled:cursor-not-allowed text-red-400 rounded-lg transition-all border border-red-500/20 hover:border-red-500/40 disabled:border-transparent flex items-center gap-1.5 text-sm font-medium"
+                                    className="inline-flex items-center gap-2 rounded-full border border-red-400/20 bg-red-400/10 px-4 py-2 text-sm font-medium text-red-200 transition-all hover:bg-red-400/15 disabled:cursor-not-allowed disabled:border-white/10 disabled:bg-white/5 disabled:text-slate-500"
                                     title="Clear all AI-detected projects"
                                 >
                                     <Trash2 className="w-4 h-4" />
                                     Clear AI Results
                                 </button>
                                 <button
-                                    onClick={onClose}
-                                    className="p-2 hover:bg-white/10 rounded-lg transition-colors"
+                                    onClick={searchForRelatedProjects}
+                                    disabled={isSearching}
+                                    className="inline-flex items-center gap-2 rounded-full border border-cyan-400/20 bg-cyan-400/10 px-4 py-2 text-sm font-medium text-cyan-100 transition-all hover:bg-cyan-400/15 disabled:cursor-not-allowed disabled:opacity-50"
                                 >
-                                    <X className="w-5 h-5 text-gray-400 hover:text-white" />
+                                    {isSearching ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
+                                    Refresh Search
+                                </button>
+                                <button
+                                    onClick={onClose}
+                                    className="ml-auto inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/10 bg-white/5 transition-colors hover:bg-white/10"
+                                >
+                                    <X className="w-5 h-5 text-slate-300" />
                                 </button>
                             </div>
                         </div>
                     </div>
 
-                    {/* Content */}
-                    <div className="p-6 overflow-y-auto max-h-[calc(90vh-100px)]" style={{
+                    <div className="overflow-y-auto max-h-[calc(92vh-188px)]" style={{
                         scrollbarWidth: 'thin',
-                        scrollbarColor: '#9945FF40 transparent'
+                        scrollbarColor: '#22D3EE40 transparent'
                     }}>
                         {isLoading ? (
-                            <div className="flex flex-col items-center justify-center py-12 gap-3">
-                                <Loader2 className="w-8 h-8 text-purple-400 animate-spin" />
-                                <p className="text-gray-400">Loading related projects...</p>
+                            <div className="flex min-h-[420px] flex-col items-center justify-center gap-3 px-6 py-12">
+                                <Loader2 className="h-8 w-8 animate-spin text-cyan-300" />
+                                <p className="text-slate-300">Loading discovery board...</p>
                             </div>
                         ) : (
-                            <>
-                                {/* AI Detected Projects Section */}
-                                <div className="mb-8">
-                                    <div className="flex items-center gap-2 mb-4">
-                                        <div className="w-6 h-6 rounded-lg bg-purple-500/20 border border-purple-500/30 flex items-center justify-center">
-                                            <Search className="w-3.5 h-3.5 text-purple-400" />
+                            <div className="space-y-6 px-6 py-6 sm:px-8 sm:py-8">
+                                <div className="grid gap-4 xl:grid-cols-[1.6fr_1fr_0.8fr]">
+                                    <div className="rounded-3xl border border-cyan-400/15 bg-cyan-400/10 p-5">
+                                        <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.22em] text-cyan-200/80">
+                                            <Sparkles className="h-3.5 w-3.5" />
+                                            AI Readout
                                         </div>
-                                        <h3 className="text-sm font-bold text-gray-200 uppercase tracking-wider">
-                                            AI Detected
-                                        </h3>
-                                        <span className="px-2 py-0.5 bg-purple-500/20 text-purple-300 rounded-full text-xs font-bold">
-                                            {aiDetected.length}
-                                        </span>
+                                        <p className="mt-3 text-sm leading-7 text-slate-100 sm:text-[15px]">
+                                            {aiSummary || 'The search agent is mapping nearby startups, products, and open-source projects to show where this idea overlaps, differentiates, or can learn from existing execution.'}
+                                        </p>
                                     </div>
 
-                                    {isSearching ? (
-                                        <div className="relative flex flex-col items-center justify-center py-12 bg-gradient-to-br from-purple-500/5 to-blue-500/5 rounded-xl border border-purple-500/20 overflow-hidden">
-                                            <div className="absolute inset-0 bg-gradient-to-r from-purple-500/5 to-blue-500/5 blur-2xl" />
-                                            <div className="relative z-10 flex flex-col items-center">
-                                                <Loader2 className="w-10 h-10 text-purple-400 animate-spin mb-4" />
-                                                <p className="text-purple-300 font-semibold text-lg">Searching the internet...</p>
-                                                <p className="text-sm text-gray-400 mt-2 max-w-xs text-center">
-                                                    Using AI to discover similar products &amp; startups
-                                                </p>
+                                    <div className="rounded-3xl border border-white/10 bg-white/[0.04] p-5">
+                                        <div className="text-xs font-semibold uppercase tracking-[0.22em] text-slate-400">
+                                            Landscape
+                                        </div>
+                                        <div className="mt-4 space-y-3">
+                                            <div className="flex items-center justify-between text-sm text-slate-300">
+                                                <span>Sources indexed</span>
+                                                <span className="font-semibold text-white">{Object.keys(sourceCounts).length}</span>
+                                            </div>
+                                            <div className="flex items-center justify-between text-sm text-slate-300">
+                                                <span>Best match confidence</span>
+                                                <span className="font-semibold text-white">{featuredProject ? `${Math.round(featuredProject.score * 100)}%` : 'N/A'}</span>
+                                            </div>
+                                            <div className="flex items-center justify-between text-sm text-slate-300">
+                                                <span>Community references</span>
+                                                <span className="font-semibold text-white">{userPinned.length}</span>
                                             </div>
                                         </div>
-                                    ) : aiDetected.length === 0 ? (
-                                        <div className="text-center py-12 bg-white/5 rounded-xl border border-white/10">
-                                            <Globe className="w-12 h-12 text-gray-600 mx-auto mb-3" />
-                                            <p className="text-gray-400 font-medium">No related projects found</p>
-                                            <p className="text-sm text-gray-500 mt-1.5">
-                                                AI couldn't find similar products on the internet
-                                            </p>
-                                        </div>
-                                    ) : (
-                                        <div className="space-y-3">
-                                            {/* AI Summary */}
-                                            {aiSummary && (
-                                                <motion.div 
-                                                    initial={{ opacity: 0, y: -10 }}
-                                                    animate={{ opacity: 1, y: 0 }}
-                                                    className="relative p-4 bg-gradient-to-br from-purple-500/10 to-blue-500/10 rounded-xl border border-purple-500/30 mb-5 overflow-hidden"
-                                                >
-                                                    <div className="absolute top-0 right-0 w-32 h-32 bg-purple-500/10 rounded-full blur-3xl" />
-                                                    <div className="relative z-10">
-                                                        <p className="text-xs font-bold text-purple-400 mb-2 flex items-center gap-1.5 uppercase tracking-wider">
-                                                            <Sparkles className="w-3.5 h-3.5" />
-                                                            AI Summary
-                                                        </p>
-                                                        <p className="text-sm text-gray-200 leading-relaxed">{aiSummary}</p>
-                                                    </div>
-                                                </motion.div>
-                                            )}
-                                            {aiDetected.map((project, index) => (
-                                                <motion.a
-                                                    key={project.id || index}
-                                                    href={project.url}
-                                                    target="_blank"
-                                                    rel="noopener noreferrer"
-                                                    initial={{ opacity: 0, y: 10 }}
-                                                    animate={{ opacity: 1, y: 0 }}
-                                                    transition={{ delay: index * 0.05 }}
-                                                    className="block p-4 bg-white/5 hover:bg-white/10 rounded-xl border border-white/10 hover:border-purple-500/40 transition-all group relative overflow-hidden"
-                                                    whileHover={{ scale: 1.01 }}
-                                                >
-                                                    {/* Hover glow effect */}
-                                                    <div className="absolute inset-0 bg-gradient-to-r from-purple-500/0 via-purple-500/5 to-purple-500/0 opacity-0 group-hover:opacity-100 transition-opacity" />
-                                                    <div className="flex items-start justify-between gap-3 relative z-10">
-                                                        <div className="flex-grow min-w-0">
-                                                            <div className="flex items-center gap-2 mb-1">
-                                                                <h4 className="font-bold text-white truncate group-hover:text-purple-300 transition-colors">
-                                                                    {project.title}
-                                                                </h4>
-                                                                <ExternalLink className="w-3.5 h-3.5 text-gray-500 group-hover:text-purple-400 flex-shrink-0 transition-colors" />
-                                                            </div>
-                                                            <p className="text-sm text-gray-400 mt-1.5 line-clamp-2 leading-relaxed">
-                                                                {project.snippet}
-                                                            </p>
-                                                            <div className="flex items-center gap-2 mt-3">
-                                                                <span className={`text-xs flex items-center gap-1.5 px-2 py-1 rounded-lg font-medium border ${['producthunt.com', 'crunchbase.com', 'g2.com', 'ycombinator.com', 'betalist.com'].includes(project.source)
-                                                                        ? 'bg-green-500/15 text-green-400 border-green-500/30'
-                                                                        : project.source === 'github.com'
-                                                                            ? 'bg-gray-500/15 text-gray-300 border-gray-500/30'
-                                                                            : 'bg-blue-500/15 text-blue-400 border-blue-500/30'
-                                                                    }`}>
-                                                                    <Globe className="w-3 h-3" />
-                                                                    {project.source}
-                                                                </span>
-                                                                {project.score > 0 && (
-                                                                    <span className="text-xs px-2.5 py-1 bg-purple-500/20 text-purple-300 rounded-lg font-semibold border border-purple-500/30">
-                                                                        {Math.round(project.score * 100)}% match
-                                                                    </span>
-                                                                )}
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                </motion.a>
-                                            ))}
-                                        </div>
-                                    )}
-                                </div>
+                                    </div>
 
-                                {/* User Pinned Projects Section */}
-                                <div>
-                                    <div className="flex items-center justify-between mb-4">
-                                        <div className="flex items-center gap-2">
-                                            <div className="w-6 h-6 rounded-lg bg-[#FFD700]/20 border border-[#FFD700]/30 flex items-center justify-center">
-                                                <Pin className="w-3.5 h-3.5 text-[#FFD700]" />
-                                            </div>
-                                            <h3 className="text-sm font-bold text-gray-200 uppercase tracking-wider">
-                                                Community Pinned
-                                            </h3>
-                                            <span className="px-2 py-0.5 bg-[#FFD700]/20 text-[#FFD700] rounded-full text-xs font-bold">
-                                                {userPinned.length}
-                                            </span>
+                                    <div className="rounded-3xl border border-amber-300/15 bg-amber-300/10 p-5">
+                                        <div className="text-xs font-semibold uppercase tracking-[0.22em] text-amber-100/80">
+                                            Contribution
                                         </div>
+                                        <p className="mt-3 text-sm leading-6 text-amber-50/90">
+                                            Add one project your team has built to make the reference set more useful for future founders.
+                                        </p>
                                         {user && !userHasPinned && !showPinForm && (
                                             <button
                                                 onClick={() => setShowPinForm(true)}
-                                                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-[#FFD700] bg-[#FFD700]/10 hover:bg-[#FFD700]/20 border border-[#FFD700]/30 rounded-lg transition-all"
+                                                className="mt-4 inline-flex items-center gap-2 rounded-full border border-amber-300/30 bg-amber-300/20 px-4 py-2 text-sm font-semibold text-amber-50 transition-all hover:bg-amber-300/25"
                                             >
-                                                <Plus className="w-3.5 h-3.5" />
+                                                <Plus className="h-4 w-4" />
                                                 Pin Your Project
                                             </button>
                                         )}
                                     </div>
+                                </div>
 
-                                    {/* Pin Form */}
-                                    <AnimatePresence>
-                                        {showPinForm && (
-                                            <motion.div
-                                                initial={{ opacity: 0, height: 0 }}
-                                                animate={{ opacity: 1, height: 'auto' }}
-                                                exit={{ opacity: 0, height: 0 }}
-                                                className="mb-4 p-4 bg-[#FFD700]/10 rounded-xl border border-[#FFD700]/20"
-                                            >
-                                                <h4 className="text-sm font-semibold text-[#FFD700] mb-3 flex items-center gap-2">
-                                                    <LinkIcon className="w-4 h-4" />
-                                                    Pin Your Related Project
-                                                </h4>
-                                                <div className="space-y-3">
-                                                    <div>
+                                <div className="grid gap-6 lg:grid-cols-[260px_minmax(0,1fr)]">
+                                    <aside className="space-y-4 lg:sticky lg:top-0 lg:self-start">
+                                        <div className="rounded-3xl border border-white/10 bg-white/[0.04] p-4">
+                                            <div className="text-xs font-semibold uppercase tracking-[0.22em] text-slate-400">
+                                                View
+                                            </div>
+                                            <div className="mt-3 space-y-2">
+                                                {[
+                                                    { key: 'all', label: 'All references', count: totalProjects },
+                                                    { key: 'ai', label: 'AI matches', count: aiDetected.length },
+                                                    { key: 'community', label: 'Community pins', count: userPinned.length },
+                                                ].map((item) => (
+                                                    <button
+                                                        key={item.key}
+                                                        onClick={() => setActiveView(item.key as 'all' | 'ai' | 'community')}
+                                                        className={`flex w-full items-center justify-between rounded-2xl border px-3 py-3 text-left text-sm transition-all ${
+                                                            activeView === item.key
+                                                                ? 'border-cyan-400/30 bg-cyan-400/10 text-white'
+                                                                : 'border-white/10 bg-transparent text-slate-300 hover:bg-white/[0.03]'
+                                                        }`}
+                                                    >
+                                                        <span>{item.label}</span>
+                                                        <span className="rounded-full bg-white/10 px-2 py-0.5 text-xs font-semibold text-slate-200">{item.count}</span>
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        </div>
+
+                                        <div className="rounded-3xl border border-white/10 bg-white/[0.04] p-4">
+                                            <div className="flex items-center justify-between gap-3">
+                                                <div className="text-xs font-semibold uppercase tracking-[0.22em] text-slate-400">
+                                                    Source Filter
+                                                </div>
+                                                <button
+                                                    onClick={() => setSourceFilter('all')}
+                                                    className="text-[11px] font-medium uppercase tracking-[0.18em] text-slate-500 hover:text-slate-300"
+                                                >
+                                                    Reset
+                                                </button>
+                                            </div>
+                                            <div className="mt-3 flex flex-wrap gap-2">
+                                                <button
+                                                    onClick={() => setSourceFilter('all')}
+                                                    className={`rounded-full border px-3 py-1.5 text-xs font-semibold transition-all ${
+                                                        sourceFilter === 'all'
+                                                            ? 'border-cyan-400/30 bg-cyan-400/10 text-cyan-100'
+                                                            : 'border-white/10 bg-white/[0.03] text-slate-300 hover:bg-white/[0.06]'
+                                                    }`}
+                                                >
+                                                    All
+                                                </button>
+                                                {sourceFilters.map(([source, count]) => (
+                                                    <button
+                                                        key={source}
+                                                        onClick={() => setSourceFilter(source)}
+                                                        className={`rounded-full border px-3 py-1.5 text-xs font-semibold transition-all ${
+                                                            sourceFilter === source
+                                                                ? 'border-cyan-400/30 bg-cyan-400/10 text-cyan-100'
+                                                                : 'border-white/10 bg-white/[0.03] text-slate-300 hover:bg-white/[0.06]'
+                                                        }`}
+                                                    >
+                                                        {source} · {count}
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        </div>
+
+                                        <AnimatePresence>
+                                            {showPinForm && (
+                                                <motion.div
+                                                    initial={{ opacity: 0, y: 8 }}
+                                                    animate={{ opacity: 1, y: 0 }}
+                                                    exit={{ opacity: 0, y: 8 }}
+                                                    className="rounded-3xl border border-amber-300/20 bg-amber-300/10 p-4"
+                                                >
+                                                    <h4 className="flex items-center gap-2 text-sm font-semibold text-amber-50">
+                                                        <LinkIcon className="h-4 w-4" />
+                                                        Pin your related project
+                                                    </h4>
+                                                    <div className="mt-3 space-y-3">
                                                         <input
                                                             type="text"
-                                                            placeholder="Project Title"
+                                                            placeholder="Project title"
                                                             value={pinFormData.title}
                                                             onChange={(e) =>
                                                                 setPinFormData({ ...pinFormData, title: e.target.value })
                                                             }
-                                                            className="w-full px-3 py-2 bg-black/30 border border-white/10 rounded-lg text-white text-sm placeholder:text-gray-500 focus:border-[#FFD700]/50 focus:outline-none"
+                                                            className="w-full rounded-2xl border border-white/10 bg-black/20 px-3 py-2.5 text-sm text-white placeholder:text-slate-500 focus:border-amber-300/40 focus:outline-none"
                                                         />
-                                                    </div>
-                                                    <div>
                                                         <input
                                                             type="url"
-                                                            placeholder="Project URL (https://...)"
+                                                            placeholder="https://project-url.com"
                                                             value={pinFormData.url}
                                                             onChange={(e) =>
                                                                 setPinFormData({ ...pinFormData, url: e.target.value })
                                                             }
-                                                            className="w-full px-3 py-2 bg-black/30 border border-white/10 rounded-lg text-white text-sm placeholder:text-gray-500 focus:border-[#FFD700]/50 focus:outline-none"
+                                                            className="w-full rounded-2xl border border-white/10 bg-black/20 px-3 py-2.5 text-sm text-white placeholder:text-slate-500 focus:border-amber-300/40 focus:outline-none"
                                                         />
-                                                    </div>
-                                                    <div>
                                                         <textarea
-                                                            placeholder="Brief description (optional)"
+                                                            placeholder="Short description"
                                                             value={pinFormData.description}
                                                             onChange={(e) =>
                                                                 setPinFormData({ ...pinFormData, description: e.target.value })
                                                             }
-                                                            rows={2}
-                                                            className="w-full px-3 py-2 bg-black/30 border border-white/10 rounded-lg text-white text-sm placeholder:text-gray-500 focus:border-[#FFD700]/50 focus:outline-none resize-none"
+                                                            rows={3}
+                                                            className="w-full resize-none rounded-2xl border border-white/10 bg-black/20 px-3 py-2.5 text-sm text-white placeholder:text-slate-500 focus:border-amber-300/40 focus:outline-none"
                                                         />
+                                                        <div className="flex items-center justify-end gap-2">
+                                                            <button
+                                                                onClick={() => {
+                                                                    setShowPinForm(false);
+                                                                    setPinFormData({ title: '', url: '', description: '' });
+                                                                }}
+                                                                className="px-3 py-2 text-xs font-medium text-slate-300 transition-colors hover:text-white"
+                                                            >
+                                                                Cancel
+                                                            </button>
+                                                            <button
+                                                                onClick={handlePinProject}
+                                                                disabled={isPinning}
+                                                                className="inline-flex items-center gap-2 rounded-full bg-amber-300 px-4 py-2 text-xs font-semibold text-black transition-colors hover:bg-amber-200 disabled:opacity-50"
+                                                            >
+                                                                {isPinning ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Pin className="h-3.5 w-3.5" />}
+                                                                {isPinning ? 'Pinning...' : 'Pin Project'}
+                                                            </button>
+                                                        </div>
                                                     </div>
-                                                    <div className="flex gap-2 justify-end">
-                                                        <button
-                                                            onClick={() => {
-                                                                setShowPinForm(false);
-                                                                setPinFormData({ title: '', url: '', description: '' });
-                                                            }}
-                                                            className="px-3 py-1.5 text-xs text-gray-400 hover:text-white transition-colors"
-                                                        >
-                                                            Cancel
-                                                        </button>
-                                                        <button
-                                                            onClick={handlePinProject}
-                                                            disabled={isPinning}
-                                                            className="px-4 py-1.5 text-xs bg-[#FFD700] text-black font-semibold rounded-lg hover:bg-[#FFD700]/90 transition-colors disabled:opacity-50 flex items-center gap-1.5"
-                                                        >
-                                                            {isPinning ? (
-                                                                <>
-                                                                    <Loader2 className="w-3 h-3 animate-spin" />
-                                                                    Pinning...
-                                                                </>
-                                                            ) : (
-                                                                <>
-                                                                    <Pin className="w-3 h-3" />
-                                                                    Pin Project
-                                                                </>
-                                                            )}
-                                                        </button>
+                                                    <p className="mt-3 flex items-start gap-1.5 text-[11px] leading-5 text-amber-50/75">
+                                                        <AlertCircle className="mt-0.5 h-3.5 w-3.5 flex-shrink-0" />
+                                                        Each user can pin one project per idea.
+                                                    </p>
+                                                </motion.div>
+                                            )}
+                                        </AnimatePresence>
+                                    </aside>
+
+                                    <div className="space-y-5">
+                                        {isSearching && (
+                                            <div className="relative overflow-hidden rounded-3xl border border-cyan-400/20 bg-cyan-400/10 p-6">
+                                                <div className="absolute inset-0 bg-[radial-gradient(circle_at_right,rgba(34,211,238,0.18),transparent_30%)]" />
+                                                <div className="relative flex items-center gap-4">
+                                                    <Loader2 className="h-9 w-9 animate-spin text-cyan-200" />
+                                                    <div>
+                                                        <p className="text-lg font-semibold text-white">Refreshing the market scan</p>
+                                                        <p className="mt-1 text-sm text-cyan-100/80">
+                                                            Looking for similar products, startups, and repositories tied to this idea.
+                                                        </p>
                                                     </div>
                                                 </div>
-                                                <p className="text-[10px] text-gray-500 mt-2 flex items-start gap-1">
-                                                    <AlertCircle className="w-3 h-3 mt-0.5 flex-shrink-0" />
-                                                    Pin a project you've built that's related to this idea. Each user can pin one project per idea.
-                                                </p>
-                                            </motion.div>
+                                            </div>
                                         )}
-                                    </AnimatePresence>
 
-                                    {userPinned.length === 0 && !showPinForm ? (
-                                        <div className="text-center py-12 bg-white/5 rounded-xl border border-white/10">
-                                            <Pin className="w-12 h-12 text-gray-600 mx-auto mb-3" />
-                                            <p className="text-gray-400 font-medium">No community projects pinned yet</p>
-                                            {user && (
-                                                <button
-                                                    onClick={() => setShowPinForm(true)}
-                                                    className="mt-4 px-4 py-2 text-sm font-semibold text-[#FFD700] bg-[#FFD700]/10 hover:bg-[#FFD700]/20 border border-[#FFD700]/30 rounded-lg transition-all"
-                                                >
-                                                    Be the first to pin your project
-                                                </button>
-                                            )}
-                                        </div>
-                                    ) : (
-                                        <div className="space-y-3">
-                                            {userPinned.map((project, index) => (
-                                                <motion.div
-                                                    key={project.id}
-                                                    initial={{ opacity: 0, y: 10 }}
-                                                    animate={{ opacity: 1, y: 0 }}
-                                                    transition={{ delay: index * 0.05 }}
-                                                    className="p-4 bg-[#FFD700]/5 rounded-xl border border-[#FFD700]/10 hover:border-[#FFD700]/30 transition-all"
-                                                >
-                                                    <div className="flex items-start justify-between gap-3">
-                                                        <div className="flex-grow min-w-0">
-                                                            <a
-                                                                href={project.url}
+                                        {(activeView === 'all' || activeView === 'ai') && (
+                                            <section className="space-y-4">
+                                                <div className="flex items-center justify-between gap-3">
+                                                    <div className="flex items-center gap-3">
+                                                        <div className="flex h-10 w-10 items-center justify-center rounded-2xl border border-cyan-400/20 bg-cyan-400/10">
+                                                            <Search className="h-4 w-4 text-cyan-200" />
+                                                        </div>
+                                                        <div>
+                                                            <h3 className="text-lg font-semibold text-white">AI matches</h3>
+                                                            <p className="text-sm text-slate-400">Ranked by source confidence and topical overlap.</p>
+                                                        </div>
+                                                    </div>
+                                                    <span className="rounded-full border border-cyan-400/20 bg-cyan-400/10 px-3 py-1 text-xs font-semibold text-cyan-100">
+                                                        {filteredAiDetected.length} visible
+                                                    </span>
+                                                </div>
+
+                                                {filteredAiDetected.length === 0 ? (
+                                                    <div className="rounded-3xl border border-white/10 bg-white/[0.03] px-6 py-12 text-center">
+                                                        <Globe className="mx-auto h-12 w-12 text-slate-600" />
+                                                        <p className="mt-4 text-base font-medium text-slate-200">No AI matches in this view</p>
+                                                        <p className="mt-2 text-sm text-slate-500">
+                                                            Try another source filter or run a fresh search.
+                                                        </p>
+                                                    </div>
+                                                ) : (
+                                                    <>
+                                                        {featuredProject && (
+                                                            <motion.a
+                                                                key={featuredProject.id || featuredProject.url}
+                                                                href={featuredProject.url}
                                                                 target="_blank"
                                                                 rel="noopener noreferrer"
-                                                                className="flex items-center gap-2 group"
+                                                                initial={{ opacity: 0, y: 10 }}
+                                                                animate={{ opacity: 1, y: 0 }}
+                                                                className="group block overflow-hidden rounded-[28px] border border-cyan-400/20 bg-[linear-gradient(135deg,rgba(34,211,238,0.14),rgba(255,255,255,0.04))] p-6"
+                                                                whileHover={{ scale: 1.01 }}
                                                             >
-                                                                <h4 className="font-semibold text-white truncate group-hover:text-[#FFD700] transition-colors">
-                                                                    {project.title}
-                                                                </h4>
-                                                                <ExternalLink className="w-3.5 h-3.5 text-gray-500 group-hover:text-[#FFD700] flex-shrink-0 transition-colors" />
-                                                            </a>
-                                                            {project.description && (
-                                                                <p className="text-sm text-gray-400 mt-1 line-clamp-2">
-                                                                    {project.description}
-                                                                </p>
-                                                            )}
-                                                            <div className="flex items-center gap-2 mt-2">
-                                                                {project.user && (
-                                                                    <div className="flex items-center gap-1.5 text-xs text-gray-500">
-                                                                        {project.user.avatar ? (
-                                                                            <img
-                                                                                src={project.user.avatar}
-                                                                                alt=""
-                                                                                className="w-4 h-4 rounded-full"
-                                                                            />
-                                                                        ) : (
-                                                                            <User className="w-3 h-3" />
-                                                                        )}
-                                                                        <span>by {project.user.username}</span>
+                                                                <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+                                                                    <div className="min-w-0 flex-1">
+                                                                        <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-cyan-300/20 bg-cyan-300/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.2em] text-cyan-100">
+                                                                            Featured match
+                                                                        </div>
+                                                                        <div className="flex items-center gap-2">
+                                                                            <h4 className="truncate text-2xl font-semibold text-white transition-colors group-hover:text-cyan-100">
+                                                                                {featuredProject.title}
+                                                                            </h4>
+                                                                            <ExternalLink className="h-4 w-4 flex-shrink-0 text-cyan-100/70" />
+                                                                        </div>
+                                                                        <p className="mt-3 max-w-3xl text-sm leading-7 text-slate-200/90">
+                                                                            {featuredProject.snippet}
+                                                                        </p>
+                                                                        <div className="mt-4 flex flex-wrap items-center gap-2">
+                                                                            <span className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-semibold ${getSourceBadgeClasses(featuredProject.source)}`}>
+                                                                                <Globe className="h-3.5 w-3.5" />
+                                                                                {featuredProject.source}
+                                                                            </span>
+                                                                            <span className="rounded-full border border-white/10 bg-white/10 px-3 py-1 text-xs font-semibold text-white">
+                                                                                {Math.round(featuredProject.score * 100)}% confidence
+                                                                            </span>
+                                                                        </div>
                                                                     </div>
-                                                                )}
-                                                            </div>
-                                                        </div>
-                                                        {project.pinnedBy === user?.id && (
-                                                            <button
-                                                                onClick={handleUnpinProject}
-                                                                className="p-2 hover:bg-white/10 rounded-lg transition-colors text-gray-400 hover:text-red-400"
-                                                                title="Unpin your project"
-                                                            >
-                                                                <PinOff className="w-4 h-4" />
-                                                            </button>
+                                                                    <div className="w-full max-w-[220px] rounded-3xl border border-white/10 bg-black/20 p-4 lg:ml-6">
+                                                                        <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">
+                                                                            Confidence bar
+                                                                        </div>
+                                                                        <div className="mt-4 h-3 overflow-hidden rounded-full bg-white/10">
+                                                                            <div
+                                                                                className="h-full rounded-full bg-gradient-to-r from-cyan-300 via-cyan-400 to-emerald-300"
+                                                                                style={{ width: `${Math.max(10, Math.round(featuredProject.score * 100))}%` }}
+                                                                            />
+                                                                        </div>
+                                                                        <p className="mt-3 text-sm leading-6 text-slate-300">
+                                                                            Best current overlap based on retrieved search evidence.
+                                                                        </p>
+                                                                    </div>
+                                                                </div>
+                                                            </motion.a>
                                                         )}
+
+                                                        {remainingAiProjects.length > 0 && (
+                                                            <div className="grid gap-3 xl:grid-cols-2">
+                                                                {remainingAiProjects.map((project, index) => (
+                                                                    <motion.a
+                                                                        key={project.id || `${project.url}-${index}`}
+                                                                        href={project.url}
+                                                                        target="_blank"
+                                                                        rel="noopener noreferrer"
+                                                                        initial={{ opacity: 0, y: 10 }}
+                                                                        animate={{ opacity: 1, y: 0 }}
+                                                                        transition={{ delay: index * 0.03 }}
+                                                                        className="group block rounded-3xl border border-white/10 bg-white/[0.04] p-5 transition-all hover:border-cyan-400/20 hover:bg-white/[0.06]"
+                                                                        whileHover={{ scale: 1.01 }}
+                                                                    >
+                                                                        <div className="flex items-start justify-between gap-3">
+                                                                            <div className="min-w-0 flex-1">
+                                                                                <div className="flex items-center gap-2">
+                                                                                    <h4 className="truncate text-base font-semibold text-white transition-colors group-hover:text-cyan-100">
+                                                                                        {project.title}
+                                                                                    </h4>
+                                                                                    <ExternalLink className="h-3.5 w-3.5 flex-shrink-0 text-slate-500 transition-colors group-hover:text-cyan-200" />
+                                                                                </div>
+                                                                                <p className="mt-3 line-clamp-3 text-sm leading-6 text-slate-400">
+                                                                                    {project.snippet}
+                                                                                </p>
+                                                                            </div>
+                                                                            <div className="rounded-2xl border border-white/10 bg-black/20 px-3 py-2 text-sm font-semibold text-white">
+                                                                                {Math.round(project.score * 100)}%
+                                                                            </div>
+                                                                        </div>
+                                                                        <div className="mt-4 flex flex-wrap items-center gap-2">
+                                                                            <span className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-semibold ${getSourceBadgeClasses(project.source)}`}>
+                                                                                <Globe className="h-3.5 w-3.5" />
+                                                                                {project.source}
+                                                                            </span>
+                                                                        </div>
+                                                                    </motion.a>
+                                                                ))}
+                                                            </div>
+                                                        )}
+                                                    </>
+                                                )}
+                                            </section>
+                                        )}
+
+                                        {(activeView === 'all' || activeView === 'community') && (
+                                            <section className="space-y-4">
+                                                <div className="flex items-center justify-between gap-3">
+                                                    <div className="flex items-center gap-3">
+                                                        <div className="flex h-10 w-10 items-center justify-center rounded-2xl border border-amber-300/20 bg-amber-300/10">
+                                                            <Pin className="h-4 w-4 text-amber-100" />
+                                                        </div>
+                                                        <div>
+                                                            <h3 className="text-lg font-semibold text-white">Community pinned</h3>
+                                                            <p className="text-sm text-slate-400">Real projects shared by builders in the community.</p>
+                                                        </div>
                                                     </div>
-                                                </motion.div>
-                                            ))}
-                                        </div>
-                                    )}
+                                                    {!showPinForm && user && !userHasPinned && (
+                                                        <button
+                                                            onClick={() => setShowPinForm(true)}
+                                                            className="inline-flex items-center gap-2 rounded-full border border-amber-300/20 bg-amber-300/10 px-4 py-2 text-sm font-medium text-amber-50 transition-all hover:bg-amber-300/15"
+                                                        >
+                                                            <Plus className="h-4 w-4" />
+                                                            Add yours
+                                                        </button>
+                                                    )}
+                                                </div>
+
+                                                {userPinned.length === 0 ? (
+                                                    <div className="rounded-3xl border border-white/10 bg-white/[0.03] px-6 py-12 text-center">
+                                                        <Pin className="mx-auto h-12 w-12 text-slate-600" />
+                                                        <p className="mt-4 text-base font-medium text-slate-200">No community projects pinned yet</p>
+                                                        <p className="mt-2 text-sm text-slate-500">
+                                                            The board is ready for the first real-world implementation reference.
+                                                        </p>
+                                                    </div>
+                                                ) : (
+                                                    <div className="grid gap-3 xl:grid-cols-2">
+                                                        {userPinned.map((project, index) => (
+                                                            <motion.div
+                                                                key={project.id}
+                                                                initial={{ opacity: 0, y: 10 }}
+                                                                animate={{ opacity: 1, y: 0 }}
+                                                                transition={{ delay: index * 0.03 }}
+                                                                className="rounded-3xl border border-amber-300/15 bg-amber-300/10 p-5 transition-all hover:border-amber-300/25"
+                                                            >
+                                                                <div className="flex items-start justify-between gap-3">
+                                                                    <div className="min-w-0 flex-1">
+                                                                        <a
+                                                                            href={project.url}
+                                                                            target="_blank"
+                                                                            rel="noopener noreferrer"
+                                                                            className="group flex items-center gap-2"
+                                                                        >
+                                                                            <h4 className="truncate text-base font-semibold text-white transition-colors group-hover:text-amber-100">
+                                                                                {project.title}
+                                                                            </h4>
+                                                                            <ExternalLink className="h-3.5 w-3.5 flex-shrink-0 text-slate-500 transition-colors group-hover:text-amber-100" />
+                                                                        </a>
+                                                                        {project.description && (
+                                                                            <p className="mt-3 line-clamp-3 text-sm leading-6 text-slate-300">
+                                                                                {project.description}
+                                                                            </p>
+                                                                        )}
+                                                                        {project.user && (
+                                                                            <div className="mt-4 inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-xs text-slate-300">
+                                                                                {project.user.avatar ? (
+                                                                                    <img
+                                                                                        src={project.user.avatar}
+                                                                                        alt=""
+                                                                                        className="h-5 w-5 rounded-full"
+                                                                                    />
+                                                                                ) : (
+                                                                                    <User className="h-3.5 w-3.5" />
+                                                                                )}
+                                                                                by {project.user.username}
+                                                                            </div>
+                                                                        )}
+                                                                    </div>
+                                                                    {project.pinnedBy === user?.id && (
+                                                                        <button
+                                                                            onClick={handleUnpinProject}
+                                                                            className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/10 bg-white/5 text-slate-400 transition-colors hover:border-red-400/20 hover:bg-red-400/10 hover:text-red-200"
+                                                                            title="Unpin your project"
+                                                                        >
+                                                                            <PinOff className="h-4 w-4" />
+                                                                        </button>
+                                                                    )}
+                                                                </div>
+                                                            </motion.div>
+                                                        ))}
+                                                    </div>
+                                                )}
+                                            </section>
+                                        )}
+                                    </div>
                                 </div>
-                            </>
+                            </div>
                         )}
                     </div>
                 </motion.div>
