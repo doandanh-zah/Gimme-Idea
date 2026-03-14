@@ -400,13 +400,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (error) throw error;
 
     if (isCapacitorApp && data?.url) {
-      const cap = (window as any).Capacitor;
-      // Prefer in-app browser plugin if available; fallback to same-webview redirect.
-      if (cap?.Plugins?.Browser?.open) {
-        await cap.Plugins.Browser.open({ url: data.url });
-      } else {
-        window.location.assign(data.url);
-      }
+      // Keep OAuth inside the app webview to avoid being stuck in Capacitor Browser overlay.
+      window.location.assign(data.url);
     }
   };
 
