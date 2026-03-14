@@ -16,6 +16,7 @@ import { useTeamInvites } from '../hooks/useTeamInvites';
 const Navbar = () => {
   const {
     openConnectReminder,
+    openSubmitModal,
     searchQuery,
     setSearchQuery,
     setView,
