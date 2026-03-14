@@ -454,11 +454,10 @@ export const RelatedProjectsModal: React.FC<RelatedProjectsModalProps> = ({
                                                     <button
                                                         key={item.key}
                                                         onClick={() => setActiveView(item.key as 'all' | 'ai' | 'community')}
-                                                        className={`flex w-full items-center justify-between rounded-2xl border px-3 py-3 text-left text-sm transition-all ${
-                                                            activeView === item.key
+                                                        className={`flex w-full items-center justify-between rounded-2xl border px-3 py-3 text-left text-sm transition-all ${activeView === item.key
                                                                 ? 'border-cyan-400/30 bg-cyan-400/10 text-white'
                                                                 : 'border-white/10 bg-transparent text-slate-300 hover:bg-white/[0.03]'
-                                                        }`}
+                                                            }`}
                                                     >
                                                         <span>{item.label}</span>
                                                         <span className="rounded-full bg-white/10 px-2 py-0.5 text-xs font-semibold text-slate-200">{item.count}</span>
@@ -482,11 +481,10 @@ export const RelatedProjectsModal: React.FC<RelatedProjectsModalProps> = ({
                                             <div className="mt-3 flex flex-wrap gap-2">
                                                 <button
                                                     onClick={() => setSourceFilter('all')}
-                                                    className={`rounded-full border px-3 py-1.5 text-xs font-semibold transition-all ${
-                                                        sourceFilter === 'all'
+                                                    className={`rounded-full border px-3 py-1.5 text-xs font-semibold transition-all ${sourceFilter === 'all'
                                                             ? 'border-cyan-400/30 bg-cyan-400/10 text-cyan-100'
                                                             : 'border-white/10 bg-white/[0.03] text-slate-300 hover:bg-white/[0.06]'
-                                                    }`}
+                                                        }`}
                                                 >
                                                     All
                                                 </button>
@@ -494,11 +492,10 @@ export const RelatedProjectsModal: React.FC<RelatedProjectsModalProps> = ({
                                                     <button
                                                         key={source}
                                                         onClick={() => setSourceFilter(source)}
-                                                        className={`rounded-full border px-3 py-1.5 text-xs font-semibold transition-all ${
-                                                            sourceFilter === source
+                                                        className={`rounded-full border px-3 py-1.5 text-xs font-semibold transition-all ${sourceFilter === source
                                                                 ? 'border-cyan-400/30 bg-cyan-400/10 text-cyan-100'
                                                                 : 'border-white/10 bg-white/[0.03] text-slate-300 hover:bg-white/[0.06]'
-                                                        }`}
+                                                            }`}
                                                     >
                                                         {source} · {count}
                                                     </button>

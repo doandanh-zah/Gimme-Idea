@@ -1,5 +1,19 @@
+const { execSync } = require('child_process');
+
+function getGitCommitSha() {
+  try {
+    return execSync('git rev-parse --short HEAD', { encoding: 'utf8' }).trim();
+  } catch {
+    return 'unknown';
+  }
+}
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  env: {
+    NEXT_PUBLIC_GIT_COMMIT_SHA: process.env.NEXT_PUBLIC_GIT_COMMIT_SHA || getGitCommitSha(),
+  },
+
   webpack: (config, { isServer }) => {
     // Ignore pino-pretty warnings (optional dependency from wallet adapters)
     config.resolve.alias = {

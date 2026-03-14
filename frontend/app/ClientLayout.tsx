@@ -32,6 +32,26 @@ function AuthStoreSync() {
   return null;
 }
 
+function CommitDebugLogger() {
+  useEffect(() => {
+    const commitSha = process.env.NEXT_PUBLIC_GIT_COMMIT_SHA;
+
+    if (!commitSha || typeof window === 'undefined') {
+      return;
+    }
+
+    const debugWindow = window as Window & { __GIMME_IDEA_COMMIT_LOGGED__?: boolean };
+    if (debugWindow.__GIMME_IDEA_COMMIT_LOGGED__) {
+      return;
+    }
+
+    debugWindow.__GIMME_IDEA_COMMIT_LOGGED__ = true;
+    console.log(`[Gimme Idea] Git commit: ${commitSha}`);
+  }, []);
+
+  return null;
+}
+
 // Note: Global polyfills are now handled via webpack ProvidePlugin in next.config.js
 // and synchronous inline script in layout.tsx
 
@@ -66,6 +86,7 @@ export default function ClientLayout({ children }: ClientLayoutProps) {
           <LazorkitProvider>
             <AuthProvider>
               <AuthStoreSync />
+              <CommitDebugLogger />
               {/* Global Constellation Background */}
               <ConstellationBackground opacity={0.25} showShootingStars={true} showGradientOrbs={true} />
               <Navbar />
