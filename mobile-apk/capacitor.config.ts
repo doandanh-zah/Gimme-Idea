@@ -8,6 +8,11 @@ const config: CapacitorConfig = {
     url: 'https://www.gimmeidea.com',
     cleartext: false,
     androidScheme: 'https'
+  },
+  plugins: {
+    StatusBar: {
+      overlay: false
+    }
   }
 };
 
