@@ -381,17 +381,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signInWithGoogle = async () => {
     const isCapacitorApp = typeof window !== 'undefined' && !!(window as any).Capacitor;
+    const redirectUri = isCapacitorApp
+      ? 'com.gimmeidea.app://auth/callback'
+      : `${window.location.origin}/auth/callback`;
 
     const { data, error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
-        redirectTo: `${window.location.origin}/auth/callback`,
-        // In Capacitor wrapper, avoid forcing external browser handoff when possible.
+        redirectTo: redirectUri,
         ...(isCapacitorApp ? { skipBrowserRedirect: true } : {}),
         queryParams: {
-          // Force Google to show account selection even if only one account
           prompt: 'select_account',
-          // Ensure fresh login
           access_type: 'offline',
         },
       },
@@ -400,7 +400,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (error) throw error;
 
     if (isCapacitorApp && data?.url) {
-      window.location.assign(data.url);
+      const cap = (window as any).Capacitor;
+      // Prefer in-app browser plugin if available; fallback to same-webview redirect.
+      if (cap?.Plugins?.Browser?.open) {
+        await cap.Plugins.Browser.open({ url: data.url });
+      } else {
+        window.location.assign(data.url);
+      }
     }
   };
 
@@ -410,11 +416,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       // Ensure wallet connected
       if (!connected || !publicKey) {
-        const preferredWallet = wallets.find((w) =>
-          w.adapter.name.toLowerCase().includes('phantom')
-        ) || wallets.find((w) =>
-          w.readyState === WalletReadyState.Installed || w.readyState === WalletReadyState.Loadable
-        );
+        const preferredWallet = wallets.find((w) => w.adapter.connected)
+          || wallets.find((w) =>
+            w.readyState === WalletReadyState.Installed || w.readyState === WalletReadyState.Loadable
+          );
 
         if (!preferredWallet) {
           throw new Error('No Solana wallet found. Please install Phantom or Solflare.');

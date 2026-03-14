@@ -16,7 +16,8 @@ import { WalletEmailPopup } from '../components/WalletEmailPopup';
 import ErrorBoundary from '../components/ErrorBoundary';
 import ConstellationBackground from '../components/ConstellationBackground';
 import Script from 'next/script';
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
+import { usePathname } from 'next/navigation';
 import { useAppStore } from '../lib/store';
 
 // Component to sync AuthContext user with Zustand store
@@ -64,8 +65,27 @@ interface ClientLayoutProps {
 }
 
 export default function ClientLayout({ children }: ClientLayoutProps) {
+  const pathname = usePathname();
+  const previousPath = useRef(pathname);
+  const [routeLoading, setRouteLoading] = useState(false);
+
+  useEffect(() => {
+    if (previousPath.current !== pathname) {
+      setRouteLoading(true);
+      const t = setTimeout(() => setRouteLoading(false), 550);
+      previousPath.current = pathname;
+      return () => clearTimeout(t);
+    }
+  }, [pathname]);
+
   return (
     <body className={`${inter.variable} ${mono.variable} ${space.variable} ${quantico.variable} font-sans bg-background text-white min-h-screen selection:bg-accent selection:text-black`}>
+      {routeLoading && (
+        <div className="fixed inset-0 z-[210] bg-black/45 backdrop-blur-[1px] flex items-center justify-center pointer-events-none">
+          <div className="w-10 h-10 rounded-full border-2 border-[#FFD700]/30 border-t-[#FFD700] animate-spin" />
+        </div>
+      )}
+
       {/* Google Analytics */}
       <Script
         src="https://www.googletagmanager.com/gtag/js?id=G-65VF8CLCR7"
