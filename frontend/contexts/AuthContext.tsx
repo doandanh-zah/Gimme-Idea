@@ -380,10 +380,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [processEmailLogin]);
 
   const signInWithGoogle = async () => {
-    const { error } = await supabase.auth.signInWithOAuth({
+    const isCapacitorApp = typeof window !== 'undefined' && !!(window as any).Capacitor;
+
+    const { data, error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
         redirectTo: `${window.location.origin}/auth/callback`,
+        // In Capacitor wrapper, avoid forcing external browser handoff when possible.
+        ...(isCapacitorApp ? { skipBrowserRedirect: true } : {}),
         queryParams: {
           // Force Google to show account selection even if only one account
           prompt: 'select_account',
@@ -392,7 +396,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         },
       },
     });
+
     if (error) throw error;
+
+    if (isCapacitorApp && data?.url) {
+      window.location.assign(data.url);
+    }
   };
 
   const signInWithWallet = async () => {

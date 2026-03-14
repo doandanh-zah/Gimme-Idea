@@ -145,7 +145,8 @@ const Navbar = () => {
 
 
   return (
-    <nav className="fixed top-4 sm:top-6 left-0 right-0 z-50 flex justify-center px-2 sm:px-4 pointer-events-none">
+    <>
+    <nav className="hidden md:flex fixed top-4 sm:top-6 left-0 right-0 z-50 justify-center px-2 sm:px-4 pointer-events-none">
       <motion.div
         initial={{ y: -100, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
@@ -634,6 +635,41 @@ const Navbar = () => {
         </motion.div>
       )}
     </nav>
+
+    {/* Mobile Bottom Tab Bar */}
+    <div className="md:hidden fixed bottom-4 left-1/2 -translate-x-1/2 z-50 w-[94%] max-w-md">
+      <div className="relative rounded-full border border-white/10 bg-[#0F0F0F]/95 backdrop-blur-xl px-4 py-3 shadow-2xl">
+        <div className="grid grid-cols-5 items-center text-xs">
+          <button onClick={() => router.push('/home')} className={`flex flex-col items-center gap-1 ${pathname?.startsWith('/home') ? 'text-[#FFD700]' : 'text-gray-400'}`}>
+            <LayoutGrid className="w-5 h-5" />
+          </button>
+          <button onClick={() => router.push('/idea')} className={`flex flex-col items-center gap-1 ${pathname?.startsWith('/idea') ? 'text-[#FFD700]' : 'text-gray-400'}`}>
+            <Lightbulb className="w-5 h-5" />
+          </button>
+
+          <div className="flex justify-center -mt-8">
+            <button
+              onClick={() => openSubmitModal('idea')}
+              className="w-14 h-14 rounded-full bg-[#FFD700] text-black flex items-center justify-center shadow-[0_8px_28px_rgba(255,215,0,0.45)] border-4 border-[#0F0F0F]"
+              aria-label="Create idea"
+            >
+              <Plus className="w-7 h-7" />
+            </button>
+          </div>
+
+          <button onClick={() => router.push('/feeds')} className={`flex flex-col items-center gap-1 ${pathname?.startsWith('/feeds') ? 'text-[#FFD700]' : 'text-gray-400'}`}>
+            <Rss className="w-5 h-5" />
+          </button>
+          <button
+            onClick={() => (user ? router.push('/profile') : setShowWalletPopup(true))}
+            className={`flex flex-col items-center gap-1 ${pathname?.startsWith('/profile') ? 'text-[#FFD700]' : 'text-gray-400'}`}
+          >
+            <UserIcon className="w-5 h-5" />
+          </button>
+        </div>
+      </div>
+    </div>
+    </>
   );
 };
 
