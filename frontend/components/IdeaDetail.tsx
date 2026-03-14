@@ -1519,6 +1519,8 @@ export const IdeaDetail = () => {
                 ideaSolution={project.solution || ''}
                 ideaCategory={project.category}
                 ideaTags={project.tags}
+                isIdeaUploader={Boolean(user?.username && project?.author?.username && user.username === project.author.username)}
+                ideaUploaderName={project?.author?.username || undefined}
             />
         </motion.div>
     );

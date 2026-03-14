@@ -55,6 +55,8 @@ interface RelatedProjectsModalProps {
     ideaSolution?: string;
     ideaCategory?: string;
     ideaTags?: string[];
+    isIdeaUploader?: boolean;
+    ideaUploaderName?: string;
 }
 
 export const RelatedProjectsModal: React.FC<RelatedProjectsModalProps> = ({
@@ -66,6 +68,8 @@ export const RelatedProjectsModal: React.FC<RelatedProjectsModalProps> = ({
     ideaSolution = '',
     ideaCategory,
     ideaTags,
+    isIdeaUploader = false,
+    ideaUploaderName,
 }) => {
     const { user } = useAuth();
     const [isLoading, setIsLoading] = useState(true);
@@ -81,6 +85,7 @@ export const RelatedProjectsModal: React.FC<RelatedProjectsModalProps> = ({
     const [isPinning, setIsPinning] = useState(false);
     const [aiSummary, setAiSummary] = useState<string>('');
     const [sourceFilter, setSourceFilter] = useState<string>('all');
+    const canPinAsUploader = isIdeaUploader;
 
     // Fetch related projects on mount
     useEffect(() => {
@@ -88,6 +93,12 @@ export const RelatedProjectsModal: React.FC<RelatedProjectsModalProps> = ({
             fetchRelatedProjects();
         }
     }, [isOpen, ideaId]);
+
+    useEffect(() => {
+        if (!canPinAsUploader && showPinForm) {
+            setShowPinForm(false);
+        }
+    }, [canPinAsUploader, showPinForm]);
 
     const fetchRelatedProjects = async () => {
         setIsLoading(true);
@@ -165,6 +176,11 @@ export const RelatedProjectsModal: React.FC<RelatedProjectsModalProps> = ({
     };
 
     const handlePinProject = async () => {
+        if (!canPinAsUploader) {
+            toast.error('Only the idea uploader can pin a project here.');
+            return;
+        }
+
         if (!pinFormData.title.trim() || !pinFormData.url.trim()) {
             toast.error('Please fill in project title and URL');
             return;
@@ -321,7 +337,7 @@ export const RelatedProjectsModal: React.FC<RelatedProjectsModalProps> = ({
                             </div>
 
                             <div className="mt-6 flex flex-wrap items-center gap-2">
-                                {user && !userHasPinned && !showPinForm && (
+                                {user && canPinAsUploader && !userHasPinned && !showPinForm && (
                                     <button
                                         onClick={() => setShowPinForm(true)}
                                         className="inline-flex items-center gap-2 rounded-full border border-amber-300/20 bg-amber-300/10 px-4 py-2 text-sm font-medium text-amber-50 transition-all hover:bg-amber-300/15"
@@ -383,8 +399,19 @@ export const RelatedProjectsModal: React.FC<RelatedProjectsModalProps> = ({
                                     </div>
                                 )}
 
+                                {canPinAsUploader ? (
+                                    <div className="rounded-2xl border border-amber-300/20 bg-amber-300/10 px-4 py-3 text-sm text-amber-50/90">
+                                        You uploaded this idea. Pin your project here to advertise your live build to visitors.
+                                    </div>
+                                ) : (
+                                    <div className="rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3 text-sm text-slate-300">
+                                        Only idea uploader can pin a project here
+                                        {ideaUploaderName ? ` (${ideaUploaderName})` : ''}.
+                                    </div>
+                                )}
+
                                 <AnimatePresence>
-                                    {showPinForm && (
+                                    {showPinForm && canPinAsUploader && (
                                         <motion.div
                                             initial={{ opacity: 0, y: 8 }}
                                             animate={{ opacity: 1, y: 0 }}
@@ -439,7 +466,7 @@ export const RelatedProjectsModal: React.FC<RelatedProjectsModalProps> = ({
                                             </div>
                                             <p className="mt-3 flex items-start gap-1.5 text-[11px] leading-5 text-amber-50/75">
                                                 <AlertCircle className="mt-0.5 h-3.5 w-3.5 flex-shrink-0" />
-                                                Each user can pin one project per idea.
+                                                Only the idea uploader can pin one project for this idea.
                                             </p>
                                         </motion.div>
                                     )}
@@ -559,7 +586,7 @@ export const RelatedProjectsModal: React.FC<RelatedProjectsModalProps> = ({
                                         </div>
                                         <div>
                                             <h3 className="text-lg font-semibold text-white">Community pinned</h3>
-                                            <p className="text-sm text-slate-400">Projects shared by builders who are actually shipping.</p>
+                                            <p className="text-sm text-slate-400">Pinned project from the idea uploader (advertised implementation).</p>
                                         </div>
                                     </div>
 
