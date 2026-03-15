@@ -6,6 +6,7 @@ import {
   Delete,
   Body,
   Param,
+  Query,
   UseGuards,
   Req,
 } from "@nestjs/common";
@@ -17,7 +18,7 @@ import { ApiResponse, Comment } from "../shared/types";
 
 @Controller("comments")
 export class CommentsController {
-  constructor(private commentsService: CommentsService) {}
+  constructor(private commentsService: CommentsService) { }
 
   /**
    * GET /api/comments/project/:projectId
@@ -25,9 +26,14 @@ export class CommentsController {
    */
   @Get("project/:projectId")
   async findByProject(
-    @Param("projectId") projectId: string
+    @Param("projectId") projectId: string,
+    @Query("limit") limit?: string,
+    @Query("offset") offset?: string
   ): Promise<ApiResponse<Comment[]>> {
-    return this.commentsService.findByProject(projectId);
+    return this.commentsService.findByProject(projectId, {
+      limit: limit ? parseInt(limit, 10) : 20,
+      offset: offset ? parseInt(offset, 10) : 0,
+    });
   }
 
   /**

@@ -9,7 +9,7 @@ import { ApiResponse, Comment } from "../shared/types";
 
 @Injectable()
 export class CommentsService {
-  constructor(private supabaseService: SupabaseService) {}
+  constructor(private supabaseService: SupabaseService) { }
 
   /**
    * Create new comment
@@ -62,10 +62,10 @@ export class CommentsService {
       author: comment.is_anonymous
         ? null
         : {
-            username: comment.author.username,
-            wallet: comment.author.wallet,
-            avatar: comment.author.avatar,
-          },
+          username: comment.author.username,
+          wallet: comment.author.wallet,
+          avatar: comment.author.avatar,
+        },
       likes: comment.likes || 0,
       parentCommentId: comment.parent_comment_id,
       isAnonymous: comment.is_anonymous,
@@ -81,10 +81,12 @@ export class CommentsService {
   }
 
   /**
-   * Get all comments for a project
+   * Get all comments for a project (paginated)
    */
-  async findByProject(projectId: string): Promise<ApiResponse<Comment[]>> {
+  async findByProject(projectId: string, options?: { limit?: number; offset?: number }): Promise<ApiResponse<Comment[]>> {
     const supabase = this.supabaseService.getAdminClient();
+    const limit = options?.limit || 20;
+    const offset = options?.offset || 0;
 
     // OPTIMIZATION: Select only needed columns to reduce egress
     const { data: comments, error } = await supabase
@@ -109,7 +111,9 @@ export class CommentsService {
       `
       )
       .eq("project_id", projectId)
-      .order("created_at", { ascending: true });
+      .order("created_at", { ascending: true })
+      .limit(limit)
+      .range(offset, offset + limit - 1);
 
     if (error) {
       throw new Error(`Failed to fetch comments: ${error.message}`);
@@ -126,10 +130,10 @@ export class CommentsService {
           c.is_anonymous || !authorData
             ? null
             : {
-                username: authorData.username,
-                wallet: authorData.wallet,
-                avatar: authorData.avatar,
-              },
+              username: authorData.username,
+              wallet: authorData.wallet,
+              avatar: authorData.avatar,
+            },
         likes: c.likes || 0,
         parentCommentId: c.parent_comment_id,
         isAnonymous: c.is_anonymous,
@@ -243,10 +247,10 @@ export class CommentsService {
       author: updated.is_anonymous
         ? null
         : {
-            username: updated.author.username,
-            wallet: updated.author.wallet,
-            avatar: updated.author.avatar,
-          },
+          username: updated.author.username,
+          wallet: updated.author.wallet,
+          avatar: updated.author.avatar,
+        },
       likes: updated.likes || 0,
       parentCommentId: updated.parent_comment_id,
       isAnonymous: updated.is_anonymous,

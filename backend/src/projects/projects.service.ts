@@ -35,7 +35,7 @@ export class ProjectsService {
   constructor(
     private supabaseService: SupabaseService,
     private aiService: AIService
-  ) {}
+  ) { }
 
   /**
    * Get all projects with filters
@@ -177,10 +177,10 @@ export class ProjectsService {
           p.is_anonymous || !authorData
             ? null
             : {
-                username: authorData.username,
-                wallet: authorData.wallet,
-                avatar: authorData.avatar,
-              },
+              username: authorData.username,
+              wallet: authorData.wallet,
+              avatar: authorData.avatar,
+            },
         bounty: p.bounty,
         imageUrl: p.image_url,
         // Idea-specific fields NOT included in list view to save bandwidth
@@ -304,10 +304,10 @@ export class ProjectsService {
           p.is_anonymous || !authorData
             ? null
             : {
-                username: authorData.username,
-                wallet: authorData.wallet,
-                avatar: authorData.avatar,
-              },
+              username: authorData.username,
+              wallet: authorData.wallet,
+              avatar: authorData.avatar,
+            },
         bounty: p.bounty,
         imageUrl: p.image_url,
         problem: p.problem, // Include for recommended cards preview
@@ -397,15 +397,14 @@ export class ProjectsService {
 
       // Check if lastPart looks like UUID prefix (8 hex chars)
       if (/^[a-f0-9]{8}$/i.test(lastPart)) {
-        // Search for projects where ID starts with this prefix
+        // Search for projects where ID starts with this prefix using database filter
         const { data: projects } = await supabase
           .from("projects")
-          .select(selectQuery);
+          .select(selectQuery)
+          .like("id", lastPart + "%");
 
         if (projects && projects.length > 0) {
-          project = projects.find((p) =>
-            p.id.toLowerCase().startsWith(lastPart.toLowerCase())
-          );
+          project = projects[0]; // Use first match since DB filters prefix
         }
       }
     }
@@ -414,12 +413,11 @@ export class ProjectsService {
     if (!project && /^[a-f0-9]{8}$/i.test(idOrSlug)) {
       const { data: projects } = await supabase
         .from("projects")
-        .select(selectQuery);
+        .select(selectQuery)
+        .like("id", idOrSlug + "%");
 
       if (projects && projects.length > 0) {
-        project = projects.find((p) =>
-          p.id.toLowerCase().startsWith(idOrSlug.toLowerCase())
-        );
+        project = projects[0]; // Use first match since DB filters prefix
       }
     }
 
@@ -427,7 +425,7 @@ export class ProjectsService {
       throw new NotFoundException("Project not found");
     }
 
-    // Fetch comments for this project
+    // Fetch comments for this project (paginated)
     const { data: comments } = await supabase
       .from("comments")
       .select(
@@ -441,7 +439,8 @@ export class ProjectsService {
       `
       )
       .eq("project_id", project.id)
-      .order("created_at", { ascending: true });
+      .order("created_at", { ascending: true })
+      .limit(20);
 
     const projectResponse: Project = {
       id: project.id,
@@ -458,11 +457,11 @@ export class ProjectsService {
       author: project.is_anonymous
         ? null
         : {
-            username: project.author.username,
-            wallet: project.author.wallet,
-            avatar: project.author.avatar,
-            slug: project.author.slug,
-          },
+          username: project.author.username,
+          wallet: project.author.wallet,
+          avatar: project.author.avatar,
+          slug: project.author.slug,
+        },
       bounty: project.bounty,
       imageUrl: project.image_url,
 
@@ -502,24 +501,24 @@ export class ProjectsService {
       // Include comments
       comments: comments
         ? comments.map((c) => ({
-            id: c.id,
-            projectId: c.project_id,
-            content: c.content,
-            author: c.is_anonymous
-              ? null
-              : {
-                  username: c.author.username,
-                  wallet: c.author.wallet,
-                  avatar: c.author.avatar,
-                },
-            likes: c.likes || 0,
-            parentCommentId: c.parent_comment_id,
-            isAnonymous: c.is_anonymous,
-            tipsAmount: c.tips_amount || 0,
-            createdAt: c.created_at,
-            is_ai_generated: c.is_ai_generated,
-            ai_model: c.ai_model,
-          }))
+          id: c.id,
+          projectId: c.project_id,
+          content: c.content,
+          author: c.is_anonymous
+            ? null
+            : {
+              username: c.author.username,
+              wallet: c.author.wallet,
+              avatar: c.author.avatar,
+            },
+          likes: c.likes || 0,
+          parentCommentId: c.parent_comment_id,
+          isAnonymous: c.is_anonymous,
+          tipsAmount: c.tips_amount || 0,
+          createdAt: c.created_at,
+          is_ai_generated: c.is_ai_generated,
+          ai_model: c.ai_model,
+        }))
         : [],
     };
 
@@ -595,11 +594,11 @@ export class ProjectsService {
       author: project.is_anonymous
         ? null
         : {
-            username: project.author.username,
-            wallet: project.author.wallet,
-            avatar: project.author.avatar,
-            slug: project.author.slug,
-          },
+          username: project.author.username,
+          wallet: project.author.wallet,
+          avatar: project.author.avatar,
+          slug: project.author.slug,
+        },
       bounty: project.bounty,
       imageUrl: project.image_url,
       // Idea-specific fields
@@ -905,11 +904,11 @@ export class ProjectsService {
       author: updated.is_anonymous
         ? null
         : {
-            username: updated.author.username,
-            wallet: updated.author.wallet,
-            avatar: updated.author.avatar,
-            slug: updated.author.slug,
-          },
+          username: updated.author.username,
+          wallet: updated.author.wallet,
+          avatar: updated.author.avatar,
+          slug: updated.author.slug,
+        },
       bounty: updated.bounty,
       imageUrl: updated.image_url,
       // Idea-specific fields

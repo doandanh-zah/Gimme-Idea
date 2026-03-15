@@ -48,7 +48,7 @@ export interface FeedItem {
 export class FeedsService {
   private readonly logger = new Logger(FeedsService.name);
 
-  constructor(private supabaseService: SupabaseService) {}
+  constructor(private supabaseService: SupabaseService) { }
 
   /**
    * Create a new feed
@@ -237,14 +237,14 @@ export class FeedsService {
 
     // Try to find by slug first, then by ID
     const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(feedIdOrSlug);
-    
+
     let query = supabase
       .from('feeds')
       .select(`
         *,
         creator:users!feeds_creator_id_fkey(username, wallet, avatar)
       `);
-    
+
     if (isUUID) {
       query = query.eq('id', feedIdOrSlug);
     } else {
@@ -259,7 +259,7 @@ export class FeedsService {
 
     // Check access permissions
     const isOwner = userId && feed.creator_id === userId;
-    
+
     // Private feeds are only accessible by owner
     if (feed.visibility === 'private' && !isOwner) {
       throw new ForbiddenException('This feed is private');
@@ -519,14 +519,14 @@ export class FeedsService {
     // Resolve slug to ID if needed
     let feedId = feedIdOrSlug;
     const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(feedIdOrSlug);
-    
+
     if (!isUUID) {
       const { data: feed } = await supabase
         .from('feeds')
         .select('id')
         .eq('slug', feedIdOrSlug)
         .single();
-      
+
       if (feed) {
         feedId = feed.id;
       }
@@ -537,8 +537,8 @@ export class FeedsService {
       .select(`
         *,
         project:projects(
-          id, type, title, description, category, votes, feedback_count, 
-          stage, tags, image_url, ai_score, created_at,
+          id, type, title, category, votes, feedback_count, 
+          image_url, ai_score, created_at,
           author:users!projects_author_id_fkey(username, wallet, avatar)
         ),
         added_by_user:users!feed_items_added_by_fkey(username, avatar)
@@ -632,10 +632,10 @@ export class FeedsService {
       updatedAt: feed.updated_at,
       creator: creator
         ? {
-            username: creator.username,
-            wallet: creator.wallet,
-            avatar: creator.avatar,
-          }
+          username: creator.username,
+          wallet: creator.wallet,
+          avatar: creator.avatar,
+        }
         : undefined,
     };
   }
@@ -657,9 +657,9 @@ export class FeedsService {
       project: item.project,
       addedByUser: addedByUser
         ? {
-            username: addedByUser.username,
-            avatar: addedByUser.avatar,
-          }
+          username: addedByUser.username,
+          avatar: addedByUser.avatar,
+        }
         : undefined,
     };
   }
