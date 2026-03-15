@@ -1,13 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { MAINTENANCE_MODE } from './lib/maintenance-config';
 
 export function middleware(req: NextRequest) {
   const host = req.headers.get('host') || '';
   const { pathname } = req.nextUrl;
 
   // Check maintenance mode - redirect all non-API/non-static to /maintenance
-  const maintenanceMode = process.env.MAINTENANCE_MODE === 'true';
   if (
-    maintenanceMode &&
+    MAINTENANCE_MODE &&
     !pathname.startsWith('/api') &&
     !pathname.startsWith('/maintenance') &&
     !pathname.startsWith('/_next') &&
