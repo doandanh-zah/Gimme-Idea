@@ -5,6 +5,9 @@ import { User as SupabaseUser, Session } from '@supabase/supabase-js';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { WalletReadyState } from '@solana/wallet-adapter-base';
 import bs58 from 'bs58';
+import { Capacitor } from '@capacitor/core';
+import { App } from '@capacitor/app';
+import { Browser } from '@capacitor/browser';
 import { supabase } from '@/lib/supabase';
 import { apiClient } from '@/lib/api-client';
 import { User } from '@/lib/types';
@@ -225,7 +228,44 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
     };
 
+    // Handle OAuth deep link in Capacitor (com.gimmeidea.app://auth/callback#access_token=...)
+    const handleAppUrlOpen = async (event: { url: string }) => {
+      try {
+        if (!event?.url) return;
+        const url = event.url;
+        if (!url.startsWith('com.gimmeidea.app://auth/callback')) return;
+
+        const hashIndex = url.indexOf('#');
+        if (hashIndex === -1) return;
+
+        const hashParams = new URLSearchParams(url.substring(hashIndex + 1));
+        const accessToken = hashParams.get('access_token');
+        const refreshToken = hashParams.get('refresh_token');
+
+        if (accessToken && refreshToken) {
+          const { error } = await supabase.auth.setSession({
+            access_token: accessToken,
+            refresh_token: refreshToken,
+          });
+          if (error) {
+            console.error('Error setting session from deep link:', error);
+          }
+        }
+
+        await Browser.close();
+      } catch (err) {
+        console.error('Error handling appUrlOpen:', err);
+      }
+    };
+
     handleHashFragment();
+    const isNativeApp = Capacitor.isNativePlatform && Capacitor.isNativePlatform();
+    let appUrlOpenListener: { remove: () => void } | null = null;
+    if (isNativeApp) {
+      App.addListener('appUrlOpen', handleAppUrlOpen).then((listener) => {
+        appUrlOpenListener = listener;
+      });
+    }
 
     // Get initial session and validate it with retry logic
     const initializeAuth = async () => {
@@ -375,13 +415,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     );
 
     return () => {
+      if (appUrlOpenListener) {
+        appUrlOpenListener.remove();
+      }
       subscription.unsubscribe();
     };
   }, [processEmailLogin]);
 
   const signInWithGoogle = async () => {
-    const isCapacitorApp = typeof window !== 'undefined' && !!(window as any).Capacitor;
-    const redirectUri = isCapacitorApp
+    const isNativeApp = Capacitor.isNativePlatform && Capacitor.isNativePlatform();
+    const redirectUri = isNativeApp
       ? 'com.gimmeidea.app://auth/callback'
       : `${window.location.origin}/auth/callback`;
 
@@ -389,7 +432,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       provider: 'google',
       options: {
         redirectTo: redirectUri,
-        ...(isCapacitorApp ? { skipBrowserRedirect: true } : {}),
+        ...(isNativeApp ? { skipBrowserRedirect: true } : {}),
         queryParams: {
           prompt: 'select_account',
           access_type: 'offline',
@@ -399,9 +442,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     if (error) throw error;
 
-    if (isCapacitorApp && data?.url) {
-      // Keep OAuth inside the app webview to avoid being stuck in Capacitor Browser overlay.
-      window.location.assign(data.url);
+    if (isNativeApp && data?.url) {
+      // Open OAuth in in-app browser (avoids jumping to external browser).
+      await Browser.open({ url: data.url, windowName: '_self' });
     }
   };
 

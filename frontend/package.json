@@ -9,6 +9,9 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@capacitor/app": "^8.0.1",
+    "@capacitor/browser": "^8.0.2",
+    "@capacitor/core": "^8.2.0",
     "@coral-xyz/anchor": "^0.32.1",
     "@hookform/resolvers": "latest",
     "@lazorkit/wallet": "^2.0.0",
