@@ -662,7 +662,7 @@ const Navbar = () => {
             <Rss className="w-5 h-5" />
           </button>
           <button
-            onClick={() => (user ? router.push('/profile') : setShowWalletPopup(true))}
+            onClick={() => (user ? router.push('/profile') : openConnectReminder())}
             className={`flex flex-col items-center gap-1 ${pathname?.startsWith('/profile') ? 'text-[#FFD700]' : 'text-gray-400'}`}
           >
             <UserIcon className="w-5 h-5" />

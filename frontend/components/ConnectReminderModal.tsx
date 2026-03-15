@@ -9,18 +9,36 @@ import { useAuth } from '../contexts/AuthContext';
 
 export const ConnectReminderModal = () => {
   const { isConnectReminderOpen, closeConnectReminder } = useAppStore();
-  const { signInWithGoogle } = useAuth();
+  const { signInWithGoogle, signInWithWallet, isLoading } = useAuth();
+  const [isSigningInGoogle, setIsSigningInGoogle] = React.useState(false);
+  const [isSigningInWallet, setIsSigningInWallet] = React.useState(false);
 
   if (!isConnectReminderOpen) return null;
 
-  const handleSignIn = async () => {
+  const handleGoogleSignIn = async () => {
     closeConnectReminder();
     try {
+      setIsSigningInGoogle(true);
       await signInWithGoogle();
     } catch (error) {
       console.error('Sign in error:', error);
+      setIsSigningInGoogle(false);
     }
   };
+
+  const handleWalletSignIn = async () => {
+    closeConnectReminder();
+    try {
+      setIsSigningInWallet(true);
+      await signInWithWallet();
+    } catch (error) {
+      console.error('Wallet sign in error:', error);
+      setIsSigningInWallet(false);
+    }
+  };
+
+  const loadingGoogle = isLoading || isSigningInGoogle;
+  const loadingWallet = isLoading || isSigningInWallet;
 
   return (
     <div className="fixed inset-0 z-[150] flex items-center justify-center px-4">
@@ -78,12 +96,16 @@ export const ConnectReminderModal = () => {
             </p>
 
             <button 
-                onClick={handleSignIn}
-                className="w-full py-4 bg-gradient-to-r from-[#FFD700] to-[#FDB931] rounded-xl font-bold text-black hover:shadow-[0_0_20px_rgba(255,215,0,0.4)] hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-2 group relative overflow-hidden"
+                onClick={handleGoogleSignIn}
+                disabled={loadingGoogle}
+                className="w-full py-4 bg-gradient-to-r from-[#FFD700] to-[#FDB931] rounded-xl font-bold text-black hover:shadow-[0_0_20px_rgba(255,215,0,0.4)] hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-2 group relative overflow-hidden disabled:opacity-70 disabled:cursor-not-allowed"
             >
                 <div className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300" />
                 <span className="relative flex items-center gap-2">
-                    <svg className="w-5 h-5" viewBox="0 0 24 24">
+                    {loadingGoogle ? (
+                      <div className="w-4 h-4 border-2 border-black/30 border-t-black rounded-full animate-spin" />
+                    ) : (
+                      <svg className="w-5 h-5" viewBox="0 0 24 24">
                         <path
                           fill="currentColor"
                           d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
@@ -100,9 +122,23 @@ export const ConnectReminderModal = () => {
                           fill="currentColor"
                           d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
                         />
-                    </svg>
+                      </svg>
+                    )}
                     Sign in with Google <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
                 </span>
+            </button>
+
+            <button 
+                onClick={handleWalletSignIn}
+                disabled={loadingWallet}
+                className="mt-3 w-full py-3.5 rounded-xl font-semibold text-white border border-white/15 hover:bg-white/10 transition-all flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
+            >
+                {loadingWallet ? (
+                  <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                ) : (
+                  <Wallet className="w-4 h-4" />
+                )}
+                Sign in with Wallet
             </button>
             
             <button 
