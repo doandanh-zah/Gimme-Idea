@@ -115,7 +115,7 @@ export default function MaintenancePage() {
                 >
                     <div className="flex items-center justify-center gap-3 mb-3">
                         <Clock className="w-5 h-5 text-yellow-400" />
-                        <p className="text-gray-300 font-medium">Estimated time: 30 minutes</p>
+                        <p className="text-gray-300 font-medium">Estimated time: 1 day</p>
                     </div>
                     <p className="text-gray-400 text-sm">Thank you for your patience!</p>
                 </motion.div>
@@ -128,8 +128,8 @@ export default function MaintenancePage() {
                     className="text-gray-500 text-xs sm:text-sm"
                 >
                     Questions? Contact us at{' '}
-                    <a href="mailto:support@gimmeidea.com" className="text-yellow-400 hover:text-yellow-300 transition">
-                        support@gimmeidea.com
+                    <a href="mailto:gimmeidea.contact@gmail.com" className="text-yellow-400 hover:text-yellow-300 transition">
+                        gimmeidea.contact@gmail.com
                     </a>
                 </motion.p>
             </motion.div>
