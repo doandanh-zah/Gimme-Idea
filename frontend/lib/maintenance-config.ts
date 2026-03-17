@@ -6,4 +6,4 @@
  * Simply change the boolean value and restart the server
  */
 
-export const MAINTENANCE_MODE = true;
+export const MAINTENANCE_MODE = false;
