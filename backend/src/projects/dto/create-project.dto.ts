@@ -48,6 +48,12 @@ export class CreateProjectDto {
   @IsOptional()
   opportunity?: string;
 
+  // Backward-compat only: frontend may still send this field as false.
+  // We accept it to avoid 400 from strict validation, but it is ignored by business logic.
+  @IsBoolean()
+  @IsOptional()
+  isAnonymous?: boolean;
+
   // Anonymous idea/project submission is disabled (comments can still be anonymous).
 }
 
