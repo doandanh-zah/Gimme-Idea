@@ -1055,3 +1055,10 @@ Update every 10 minutes.
 - Blockers: None.
 - Next (10m): Continue coordinated execution cadence and push next meaningful commit.
 - Commit: <pending>
+
+## Update 11:39 UTC (2026-03-19)
+- Phase: Hotfix — submit idea 400 Bad Request
+- Done: Identified root cause: frontend payload still includes legacy field `isAnonymous`, while backend `ValidationPipe` has `forbidNonWhitelisted: true`, causing `/api/projects` reject with 400 for many clients. Applied compatibility fix in backend DTO (`CreateProjectDto`) to accept optional boolean `isAnonymous`, and kept frontend submit payload clean (no `isAnonymous` in `projectData`). Rebased on latest `main` and pushed.
+- Blockers: Local backend build check unavailable (`nest: not found` in this env).
+- Next (10m): Verify production behavior via user retest and monitor error recurrence.
+- Commit: a18b1e9
