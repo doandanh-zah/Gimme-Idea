@@ -399,13 +399,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setSupabaseUser(session?.user ?? null);
 
         if (event === 'SIGNED_IN' && session?.user) {
-          // Avoid flashing global loading on tab focus/session refresh.
-          const shouldShowLoading = !user;
+          // Supabase can emit SIGNED_IN on tab focus/session refresh.
+          // If app user + backend token are already present, skip re-login to prevent UI flicker.
+          const hasBackendToken = !!localStorage.getItem('auth_token');
+          const hasHydratedUser = !!user;
+          if (hasHydratedUser && hasBackendToken) {
+            return;
+          }
+
+          const shouldShowLoading = !hasHydratedUser;
           if (shouldShowLoading) {
             setIsLoading(true);
           }
-          // This is a NEW login - show popup if needed
-          await processEmailLogin(session.user, true);
+          // Only treat as a brand-new login when app has no user and no backend token.
+          await processEmailLogin(session.user, !hasHydratedUser && !hasBackendToken);
           if (shouldShowLoading) {
             setIsLoading(false);
           }
