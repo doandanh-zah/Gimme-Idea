@@ -350,7 +350,7 @@ export const UploadProject = () => {
                     {tags.map(tag => (
                         <span key={tag} className="bg-[#9945FF]/20 text-[#d8b4fe] text-xs px-2.5 py-1.5 rounded-lg flex items-center gap-1.5 border border-[#9945FF]/30">
                             #{tag}
-                            <button type="button" onClick={() => removeTag(tag)} className="hover:text-white transition-colors"><X className="w-3 h-3" /></button>
+                            <button type="button" onClick={() => removeTag(tag)} className="flex-shrink-0 ml-1 hover:text-white transition-colors"><X className="w-3 h-3" /></button>
                         </span>
                     ))}
                     <input 

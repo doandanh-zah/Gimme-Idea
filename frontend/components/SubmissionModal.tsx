@@ -524,7 +524,7 @@ export const SubmissionModal = () => {
                                 {tags.map(tag => (
                                     <span key={tag} className={`text-xs px-3 py-1.5 rounded-lg flex items-center gap-1.5 font-bold ${isProject ? 'bg-purple-500/20 text-purple-300' : 'bg-yellow-500/20 text-yellow-300'}`}>
                                         #{tag}
-                                        <button type="button" onClick={() => removeTag(tag)} className="hover:text-white transition-colors"><X className="w-3 h-3" /></button>
+                                        <button type="button" onClick={() => removeTag(tag)} className="flex-shrink-0 ml-1 hover:text-white transition-colors"><X className="w-3 h-3" /></button>
                                     </span>
                                 ))}
                                 <input 

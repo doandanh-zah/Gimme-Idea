@@ -381,7 +381,7 @@ export const EditProjectModal = ({ project, isOpen, onClose, onSave }: EditProje
                   {tags.map(tag => (
                     <span key={tag} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/10 text-white text-sm">
                       {tag}
-                      <button type="button" onClick={() => removeTag(tag)} className="text-gray-400 hover:text-white">
+                      <button type="button" onClick={() => removeTag(tag)} className="flex-shrink-0 ml-1 text-gray-400 hover:text-white">
                         <X className="w-3 h-3" />
                       </button>
                     </span>
