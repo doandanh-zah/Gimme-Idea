@@ -172,20 +172,20 @@ export const EditProjectModal = ({ project, isOpen, onClose, onSave }: EditProje
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center px-2 sm:px-4">
-      <motion.div 
+      <motion.div
         initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
         onClick={onClose}
         className="absolute inset-0 bg-black/80 backdrop-blur-sm"
       />
 
-      <motion.div 
+      <motion.div
         initial={{ scale: 0.95, opacity: 0, y: 20 }}
         animate={{ scale: 1, opacity: 1, y: 0 }}
         exit={{ scale: 0.95, opacity: 0, y: 20 }}
         className="relative w-full max-w-4xl max-h-[90vh] flex flex-col"
       >
         <div className="relative bg-[#0D0D12] border border-white/10 rounded-2xl overflow-hidden flex flex-col max-h-[90vh]">
-          
+
           {/* Header */}
           <div className="relative px-4 sm:px-8 py-4 sm:py-6 border-b border-white/10 flex-shrink-0">
             <div className="relative z-10 flex justify-between items-center">
@@ -202,8 +202,8 @@ export const EditProjectModal = ({ project, isOpen, onClose, onSave }: EditProje
                   </p>
                 </div>
               </div>
-              <button 
-                onClick={onClose} 
+              <button
+                onClick={onClose}
                 className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-white/5 hover:bg-white/10 flex items-center justify-center transition-all text-gray-400 hover:text-white border border-white/10 hover:border-white/20"
               >
                 <X className="w-4 h-4 sm:w-5 sm:h-5" />
@@ -214,14 +214,14 @@ export const EditProjectModal = ({ project, isOpen, onClose, onSave }: EditProje
           {/* Scrollable Form Area */}
           <div className="overflow-y-auto p-4 sm:p-8 custom-scrollbar flex-1">
             <form onSubmit={handleSubmit} className="space-y-6 sm:space-y-8">
-              
+
               {/* Title */}
               <div className="space-y-2">
                 <label className="text-xs font-bold text-gray-400 uppercase tracking-wider ml-1 flex items-center gap-2">
                   {isIdea ? 'Idea Name' : 'Project Name'}
                   <span className="text-red-400">*</span>
                 </label>
-                <input 
+                <input
                   value={formData.title}
                   onChange={(e) => setFormData({ ...formData, title: e.target.value })}
                   className="w-full bg-[#141419] border border-white/10 rounded-xl px-5 py-4 outline-none focus:border-white/30 text-white placeholder:text-gray-600 transition-all font-medium hover:border-white/20"
@@ -242,13 +242,12 @@ export const EditProjectModal = ({ project, isOpen, onClose, onSave }: EditProje
                       key={cat}
                       type="button"
                       onClick={() => toggleCategory(cat)}
-                      className={`px-2.5 sm:px-4 py-2 sm:py-2.5 rounded-xl text-xs sm:text-sm font-medium transition-all duration-200 ${
-                        formData.categories.includes(cat)
+                      className={`px-2.5 sm:px-4 py-2 sm:py-2.5 rounded-xl text-xs sm:text-sm font-medium transition-all duration-200 ${formData.categories.includes(cat)
                           ? isIdea
                             ? 'bg-[#FFD700] text-black border border-[#FFD700]'
                             : 'bg-[#9945FF] text-white border border-[#9945FF]'
                           : 'bg-[#141419] text-gray-400 border border-white/10 hover:border-white/25 hover:text-white hover:bg-white/5'
-                      }`}
+                        }`}
                     >
                       {cat}
                     </button>
@@ -264,7 +263,7 @@ export const EditProjectModal = ({ project, isOpen, onClose, onSave }: EditProje
                       Problem <span className="text-red-400">*</span>
                       <MarkdownGuide />
                     </label>
-                    <textarea 
+                    <textarea
                       value={formData.problem}
                       onChange={(e) => setFormData({ ...formData, problem: e.target.value })}
                       className="w-full bg-[#141419] border border-white/10 rounded-xl px-5 py-4 outline-none focus:border-white/30 text-white h-32 resize-none placeholder:text-gray-600 leading-relaxed"
@@ -277,7 +276,7 @@ export const EditProjectModal = ({ project, isOpen, onClose, onSave }: EditProje
                       Opportunity
                       <MarkdownGuide />
                     </label>
-                    <textarea 
+                    <textarea
                       value={formData.opportunity}
                       onChange={(e) => setFormData({ ...formData, opportunity: e.target.value })}
                       className="w-full bg-[#141419] border border-white/10 rounded-xl px-5 py-4 outline-none focus:border-white/30 text-white h-24 resize-none placeholder:text-gray-600 leading-relaxed"
@@ -290,7 +289,7 @@ export const EditProjectModal = ({ project, isOpen, onClose, onSave }: EditProje
                       Solution <span className="text-red-400">*</span>
                       <MarkdownGuide />
                     </label>
-                    <textarea 
+                    <textarea
                       value={formData.solution}
                       onChange={(e) => setFormData({ ...formData, solution: e.target.value })}
                       className="w-full bg-[#141419] border border-white/10 rounded-xl px-5 py-4 outline-none focus:border-white/30 text-white h-32 resize-none placeholder:text-gray-600 leading-relaxed"
@@ -310,7 +309,7 @@ export const EditProjectModal = ({ project, isOpen, onClose, onSave }: EditProje
                       Description <span className="text-red-400">*</span>
                       <MarkdownGuide />
                     </label>
-                    <textarea 
+                    <textarea
                       value={formData.description}
                       onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                       className="w-full bg-[#141419] border border-white/10 rounded-xl px-5 py-4 outline-none focus:border-white/30 text-white h-32 resize-none placeholder:text-gray-600 leading-relaxed"
@@ -320,7 +319,7 @@ export const EditProjectModal = ({ project, isOpen, onClose, onSave }: EditProje
 
                   <div className="space-y-2">
                     <label className="text-xs font-bold text-gray-400 uppercase tracking-wider ml-1">Website</label>
-                    <input 
+                    <input
                       value={formData.website}
                       onChange={(e) => setFormData({ ...formData, website: e.target.value })}
                       className="w-full bg-[#141419] border border-white/10 rounded-xl px-5 py-4 outline-none focus:border-white/30 text-white placeholder:text-gray-600 transition-all"
@@ -330,7 +329,7 @@ export const EditProjectModal = ({ project, isOpen, onClose, onSave }: EditProje
 
                   <div className="space-y-2">
                     <label className="text-xs font-bold text-gray-400 uppercase tracking-wider ml-1">Bounty (USDC)</label>
-                    <input 
+                    <input
                       type="number"
                       value={formData.bounty}
                       onChange={(e) => setFormData({ ...formData, bounty: e.target.value })}
@@ -341,11 +340,10 @@ export const EditProjectModal = ({ project, isOpen, onClose, onSave }: EditProje
 
                   <div className="space-y-2">
                     <label className="text-xs font-bold text-gray-400 uppercase tracking-wider ml-1">Project Banner</label>
-                    <div 
+                    <div
                       onClick={() => !isUploadingImage && fileInputRef.current?.click()}
-                      className={`border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition-all relative h-48 flex flex-col items-center justify-center overflow-hidden bg-[#141419] ${
-                        isUploadingImage ? 'border-purple-500/50 cursor-wait' : 'border-white/10 hover:bg-white/5 hover:border-white/20'
-                      }`}
+                      className={`border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition-all relative h-48 flex flex-col items-center justify-center overflow-hidden bg-[#141419] ${isUploadingImage ? 'border-purple-500/50 cursor-wait' : 'border-white/10 hover:bg-white/5 hover:border-white/20'
+                        }`}
                     >
                       <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={handleImageUpload} disabled={isUploadingImage} />
                       {isUploadingImage ? (
@@ -400,12 +398,11 @@ export const EditProjectModal = ({ project, isOpen, onClose, onSave }: EditProje
 
           {/* Footer */}
           <div className="p-4 sm:p-6 border-t border-white/10 bg-[#0A0A0F] flex-shrink-0">
-            <button 
+            <button
               onClick={handleSubmit}
               disabled={isSaving}
-              className={`w-full py-3 sm:py-4 rounded-xl font-bold text-base sm:text-lg flex items-center justify-center gap-2 sm:gap-3 transition-all hover:opacity-90 disabled:opacity-50 ${
-                isIdea ? 'bg-[#FFD700] text-black' : 'bg-[#9945FF] text-white'
-              }`}
+              className={`w-full py-3 sm:py-4 rounded-xl font-bold text-base sm:text-lg flex items-center justify-center gap-2 sm:gap-3 transition-all hover:opacity-90 disabled:opacity-50 ${isIdea ? 'bg-[#FFD700] text-black' : 'bg-[#9945FF] text-white'
+                }`}
             >
               {isSaving ? (
                 <Loader2 className="w-4 h-4 sm:w-5 sm:h-5 animate-spin" />
