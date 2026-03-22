@@ -16,6 +16,7 @@ export function useNotifications() {
   const [unreadCount, setUnreadCount] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
   const subscriptionRef = useRef<any>(null);
+  const initialFetchDoneRef = useRef(false); // Guard to prevent duplicate initial fetches
 
   // Fetch notifications from API
   const fetchNotifications = useCallback(
@@ -157,12 +158,24 @@ export function useNotifications() {
     []
   );
 
+  // Reset initial fetch flag when user changes (logout/login)
+  useEffect(() => {
+    if (!user?.id) {
+      initialFetchDoneRef.current = false;
+      setNotifications([]);
+      setUnreadCount(0);
+    }
+  }, [user?.id]);
+
   // Setup realtime subscription
   useEffect(() => {
     if (featureFlags.disableRealtime) {
       // No realtime + no polling: just do a one-time fetch.
-      fetchNotifications();
-      fetchUnreadCount();
+      if (!initialFetchDoneRef.current) {
+        initialFetchDoneRef.current = true;
+        fetchNotifications();
+        fetchUnreadCount();
+      }
       return;
     }
 
@@ -173,9 +186,12 @@ export function useNotifications() {
       return;
     }
 
-    // Initial fetch
-    fetchNotifications();
-    fetchUnreadCount();
+    // Initial fetch - only do once per user
+    if (!initialFetchDoneRef.current) {
+      initialFetchDoneRef.current = true;
+      fetchNotifications();
+      fetchUnreadCount();
+    }
 
     // Use Supabase session user ID for realtime subscription if available
     // This ensures the subscription filter matches the RLS policy (auth.uid())
@@ -242,7 +258,7 @@ export function useNotifications() {
         supabase.removeChannel(subscriptionRef.current);
       }
     };
-  }, [user?.id, session?.user?.id, throttledFetchNotifications, throttledFetchUnreadCount]);
+  }, [user?.id, session?.user?.id]); // Only depend on user/session, not on callback functions
 
   return {
     notifications,
