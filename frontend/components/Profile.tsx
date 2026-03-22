@@ -5,8 +5,8 @@ import { useAppStore } from '../lib/store';
 import { useAuth } from '../contexts/AuthContext';
 import { useRouter, usePathname } from 'next/navigation';
 import { useWallet } from '@solana/wallet-adapter-react';
-import { motion } from 'framer-motion';
-import { Camera, Edit2, Save, X, Github, Twitter, Facebook, Send, Pencil, Trash2, ArrowLeft, Wallet, Check, Repeat, Loader2, Lightbulb, MessageSquare, Heart, Star, Calendar, Link as LinkIcon, ImageIcon, ThumbsUp, TrendingUp, Users, Rss, Bookmark } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Camera, Edit2, Save, X, Github, Twitter, Facebook, Send, Pencil, Trash2, ArrowLeft, Wallet, Check, Repeat, Loader2, Lightbulb, MessageSquare, Heart, Star, Calendar, Link as LinkIcon, ImageIcon, ThumbsUp, TrendingUp, Users, Rss, Bookmark, AlertTriangle } from 'lucide-react';
 import { ProjectCard } from './ProjectCard';
 import { WalletReminderBadge } from './WalletReminderBadge';
 import { WalletRequiredModal } from './WalletRequiredModal';
@@ -70,6 +70,9 @@ export const Profile = () => {
   // User's ideas state (fetched directly, not from global store)
   const [userIdeas, setUserIdeas] = useState<Project[]>([]);
   const [isLoadingIdeas, setIsLoadingIdeas] = useState(false);
+  const [ideaPendingDelete, setIdeaPendingDelete] = useState<Project | null>(null);
+  const [isDeletingIdea, setIsDeletingIdea] = useState(false);
+  const [deletingIdeaIds, setDeletingIdeaIds] = useState<Set<string>>(new Set());
 
   // Determine if this is the "My Profile" page (not viewing someone else)
   const isMyProfilePage = pathname === '/profile';
@@ -409,12 +412,28 @@ export const Profile = () => {
       setEditingProject(project);
   };
 
-  const handleDeleteProject = async (id: string) => {
-      if (window.confirm("Are you sure you want to delete this idea?")) {
-          await deleteProject(id);
-          // Also remove from local state
-          setUserIdeas(prev => prev.filter(p => p.id !== id));
+  const handleDeleteProject = async () => {
+      if (!ideaPendingDelete?.id) return;
+
+      const deletingId = ideaPendingDelete.id;
+      setIsDeletingIdea(true);
+      setDeletingIdeaIds(prev => new Set(prev).add(deletingId));
+      try {
+          await deleteProject(deletingId);
+          // Keep a short delay so the "deleting" animation is visible/responsive.
+          await new Promise(resolve => setTimeout(resolve, 180));
+          setUserIdeas(prev => prev.filter(p => p.id !== deletingId));
           toast.success("Idea deleted");
+          setIdeaPendingDelete(null);
+      } catch (error) {
+          setDeletingIdeaIds(prev => {
+              const next = new Set(prev);
+              next.delete(deletingId);
+              return next;
+          });
+          toast.error("Failed to delete idea. Please try again.");
+      } finally {
+          setIsDeletingIdea(false);
       }
   };
 
@@ -851,8 +870,21 @@ export const Profile = () => {
                             <LoadingSpinner isLoading={true} size="md" text="Loading ideas..." />
                         ) : userIdeas.length > 0 ? (
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <AnimatePresence mode="popLayout">
                                 {userIdeas.map(project => (
-                                    <div key={project.id} className="relative group">
+                                    <motion.div
+                                        key={project.id}
+                                        layout
+                                        initial={{ opacity: 0, y: 10 }}
+                                        animate={
+                                          deletingIdeaIds.has(project.id)
+                                            ? { opacity: 0.45, scale: 0.98, y: 4 }
+                                            : { opacity: 1, scale: 1, y: 0 }
+                                        }
+                                        exit={{ opacity: 0, scale: 0.9, y: 24 }}
+                                        transition={{ duration: 0.22, ease: 'easeOut' }}
+                                        className="relative group"
+                                    >
                                         <ProjectCard project={project} hideIdeaStageBadge={true} />
                                         {isOwnProfile && (
                                             <div className="absolute top-3 right-3 z-20 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -869,7 +901,7 @@ export const Profile = () => {
                                                 <button 
                                                     onClick={(e) => {
                                                         e.stopPropagation();
-                                                        handleDeleteProject(project.id);
+                                                        setIdeaPendingDelete(project);
                                                     }}
                                                     className="p-2 bg-black/80 hover:bg-red-900/80 text-white rounded-full border border-white/20 transition-all"
                                                     title="Delete"
@@ -878,8 +910,9 @@ export const Profile = () => {
                                                 </button>
                                             </div>
                                         )}
-                                    </div>
+                                    </motion.div>
                                 ))}
+                                </AnimatePresence>
                             </div>
                         ) : (
                             <div className="text-center py-16 bg-white/5 border border-dashed border-white/10 rounded-2xl">
@@ -973,6 +1006,68 @@ export const Profile = () => {
             }
           }}
         />
+
+        {/* Delete Idea Confirmation Modal */}
+        <AnimatePresence>
+          {ideaPendingDelete && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-[220] flex items-center justify-center bg-black/70 backdrop-blur-sm p-4"
+              onClick={() => !isDeletingIdea && setIdeaPendingDelete(null)}
+            >
+              <motion.div
+                initial={{ scale: 0.95, opacity: 0, y: 8 }}
+                animate={{ scale: 1, opacity: 1, y: 0 }}
+                exit={{ scale: 0.95, opacity: 0, y: 8 }}
+                onClick={(e) => e.stopPropagation()}
+                className="w-full max-w-md rounded-2xl border border-white/15 bg-[#111319] p-5 sm:p-6"
+              >
+                <div className="flex items-start gap-3">
+                  <div className="mt-0.5 p-2 rounded-full bg-red-500/15 border border-red-500/25">
+                    <AlertTriangle className="w-5 h-5 text-red-400" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-semibold text-white">Delete idea?</h3>
+                    <p className="text-sm text-gray-400 mt-1">This action cannot be undone.</p>
+                  </div>
+                </div>
+
+                <div className="mt-4 p-3 rounded-xl border border-white/10 bg-white/5">
+                  <p className="text-sm text-gray-300 line-clamp-2">{ideaPendingDelete.title}</p>
+                </div>
+
+                <div className="mt-5 flex flex-col-reverse sm:flex-row gap-2 sm:justify-end">
+                  <button
+                    onClick={() => setIdeaPendingDelete(null)}
+                    disabled={isDeletingIdea}
+                    className="px-4 py-2.5 rounded-lg text-sm text-gray-300 bg-white/5 hover:bg-white/10 border border-white/10 transition-colors disabled:opacity-50"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleDeleteProject}
+                    disabled={isDeletingIdea}
+                    className="px-4 py-2.5 rounded-lg text-sm font-medium text-white bg-red-500 hover:bg-red-600 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+                  >
+                    {isDeletingIdea ? (
+                      <>
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                        Deleting...
+                      </>
+                    ) : (
+                      <>
+                        <Trash2 className="w-4 h-4" />
+                        Delete idea
+                      </>
+                    )}
+                  </button>
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         {/* Wallet Required Modal */}
         <WalletRequiredModal
