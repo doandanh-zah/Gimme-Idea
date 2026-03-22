@@ -13,9 +13,10 @@ import { createUniqueSlug } from '../lib/slug-utils';
 
 interface ProjectCardProps {
   project: Project;
+  hideIdeaStageBadge?: boolean;
 }
 
-export const ProjectCard: React.FC<ProjectCardProps> = ({ project }) => {
+export const ProjectCard: React.FC<ProjectCardProps> = ({ project, hideIdeaStageBadge = false }) => {
   const { user, voteProject, openConnectReminder } = useAppStore();
   const router = useRouter();
   const [isHovered, setIsHovered] = useState(false);
@@ -155,13 +156,15 @@ export const ProjectCard: React.FC<ProjectCardProps> = ({ project }) => {
             <Lightbulb className="w-5 h-5 text-[#FFD700]" />
           </div>
           
-          <span className={`px-2.5 py-1 rounded-lg text-[9px] font-mono font-bold uppercase tracking-wider border ${
-            project.stage === 'Idea' 
-              ? 'bg-yellow-500/10 border-yellow-500/25 text-yellow-400/80' 
-              : 'bg-emerald-500/10 border-emerald-500/25 text-emerald-400/80'
-          }`}>
-            {project.stage}
-          </span>
+          {!hideIdeaStageBadge && (
+            <span className={`px-2.5 py-1 rounded-lg text-[9px] font-mono font-bold uppercase tracking-wider border ${
+              project.stage === 'Idea' 
+                ? 'bg-yellow-500/10 border-yellow-500/25 text-yellow-400/80' 
+                : 'bg-emerald-500/10 border-emerald-500/25 text-emerald-400/80'
+            }`}>
+              {project.stage}
+            </span>
+          )}
         </div>
       )}
 

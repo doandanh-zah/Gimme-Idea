@@ -853,7 +853,7 @@ export const Profile = () => {
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 {userIdeas.map(project => (
                                     <div key={project.id} className="relative group">
-                                        <ProjectCard project={project} />
+                                        <ProjectCard project={project} hideIdeaStageBadge={true} />
                                         {isOwnProfile && (
                                             <div className="absolute top-3 right-3 z-20 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                                                 <button 
