@@ -277,6 +277,11 @@ export const useAppStore = create<AppState>((set, get) => ({
       return;
     }
 
+    if (state.viewedUser?.username === author.username) {
+      set({ currentView: "profile" });
+      return;
+    }
+
     try {
       set({ isLoading: true });
       const response = await apiClient.getUserByUsername(author.username);

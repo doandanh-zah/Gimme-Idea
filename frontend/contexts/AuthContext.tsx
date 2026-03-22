@@ -399,10 +399,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setSupabaseUser(session?.user ?? null);
 
         if (event === 'SIGNED_IN' && session?.user) {
-          setIsLoading(true);
+          // Avoid flashing global loading on tab focus/session refresh.
+          const shouldShowLoading = !user;
+          if (shouldShowLoading) {
+            setIsLoading(true);
+          }
           // This is a NEW login - show popup if needed
           await processEmailLogin(session.user, true);
-          setIsLoading(false);
+          if (shouldShowLoading) {
+            setIsLoading(false);
+          }
         } else if (event === 'SIGNED_OUT') {
           setUser(null);
           setIsNewUser(false);
@@ -420,7 +426,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
       subscription.unsubscribe();
     };
-  }, [processEmailLogin]);
+  }, [processEmailLogin, user]);
 
   const signInWithGoogle = async () => {
     const isNativeApp = Capacitor.isNativePlatform && Capacitor.isNativePlatform();
