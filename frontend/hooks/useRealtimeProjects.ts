@@ -23,6 +23,12 @@ export function useRealtimeProjects({
   const onUpdateProjectRef = useRef(onUpdateProject);
   const onDeleteProjectRef = useRef(onDeleteProject);
 
+  // Keep refs for last call time to implement throttling within the callbacks
+  const lastNewProjectCallRef = useRef<number>(0);
+  const lastUpdateProjectCallRef = useRef<number>(0);
+  const lastDeleteProjectCallRef = useRef<number>(0);
+  const throttleDelayMs = 500; // Throttle to prevent cascade on tab focus
+
   // Update refs when callbacks change
   useEffect(() => {
     onNewProjectRef.current = onNewProject;
@@ -47,8 +53,13 @@ export function useRealtimeProjects({
             table: "projects",
           },
           (payload) => {
-            if (onNewProjectRef.current) {
-              onNewProjectRef.current(payload.new);
+            // Throttle to prevent cascade of callbacks on tab focus (Supabase reconnection)
+            const now = Date.now();
+            if (now - lastNewProjectCallRef.current >= throttleDelayMs) {
+              lastNewProjectCallRef.current = now;
+              if (onNewProjectRef.current) {
+                onNewProjectRef.current(payload.new);
+              }
             }
           }
         )
@@ -60,8 +71,13 @@ export function useRealtimeProjects({
             table: "projects",
           },
           (payload) => {
-            if (onUpdateProjectRef.current) {
-              onUpdateProjectRef.current(payload.new);
+            // Throttle to prevent cascade of callbacks on tab focus
+            const now = Date.now();
+            if (now - lastUpdateProjectCallRef.current >= throttleDelayMs) {
+              lastUpdateProjectCallRef.current = now;
+              if (onUpdateProjectRef.current) {
+                onUpdateProjectRef.current(payload.new);
+              }
             }
           }
         )
@@ -73,8 +89,13 @@ export function useRealtimeProjects({
             table: "projects",
           },
           (payload) => {
-            if (onDeleteProjectRef.current) {
-              onDeleteProjectRef.current(payload.old.id);
+            // Throttle to prevent cascade of callbacks on tab focus
+            const now = Date.now();
+            if (now - lastDeleteProjectCallRef.current >= throttleDelayMs) {
+              lastDeleteProjectCallRef.current = now;
+              if (onDeleteProjectRef.current) {
+                onDeleteProjectRef.current(payload.old.id);
+              }
             }
           }
         )

@@ -7,6 +7,7 @@ import { useAppStore } from "../lib/store";
 import { supabase } from "../lib/supabase";
 import { useAuth } from "../contexts/AuthContext";
 import { featureFlags } from "../lib/featureFlags";
+import { useThrottledCallback } from "./useDebounce";
 
 export function useNotifications() {
   const user = useAppStore((state) => state.user);
@@ -109,6 +110,18 @@ export function useNotifications() {
     }
   }, []);
 
+  // Throttled versions of fetch functions for realtime event handlers
+  // This prevents cascade of simultaneous refetches when tab regains focus
+  const throttledFetchNotifications = useThrottledCallback(
+    () => fetchNotifications(),
+    500 // 500ms throttle for realtime events
+  );
+
+  const throttledFetchUnreadCount = useThrottledCallback(
+    () => fetchUnreadCount(),
+    500 // 500ms throttle for realtime events
+  );
+
   // Get navigation path for notification
   const getNotificationPath = useCallback(
     (notification: Notification): string => {
@@ -181,8 +194,9 @@ export function useNotifications() {
         },
         () => {
           // Refetch to get full notification with actor info
-          fetchNotifications();
-          fetchUnreadCount();
+          // Use throttled functions to prevent cascade of refetches on tab focus
+          throttledFetchNotifications();
+          throttledFetchUnreadCount();
         }
       )
       .on(
@@ -228,7 +242,7 @@ export function useNotifications() {
         supabase.removeChannel(subscriptionRef.current);
       }
     };
-  }, [user?.id, session?.user?.id, fetchNotifications, fetchUnreadCount]);
+  }, [user?.id, session?.user?.id, throttledFetchNotifications, throttledFetchUnreadCount]);
 
   return {
     notifications,
