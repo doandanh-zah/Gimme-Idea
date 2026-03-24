@@ -251,6 +251,7 @@ This document provides a clear overview of which features are fully implemented,
 - ✅ Custom domain configured
 - ✅ SEO optimization
 - ✅ Analytics integration
+- ✅ Maintenance mode support (environment variable toggle)
 
 ### Backend ✅ FULLY DEPLOYED
 - ✅ NestJS API
@@ -358,6 +359,33 @@ This document provides a clear overview of which features are fully implemented,
 6. **Email Notifications** - No email alerts yet
 7. **Automated Bounties** - Manual bounty distribution
 8. **Dispute Resolution** - No mechanism for payment disputes
+
+---
+
+## Maintenance Mode
+
+The platform supports a maintenance mode that can be toggled via environment variable:
+
+### Configuration
+Add to `frontend/.env.local`:
+```env
+MAINTENANCE_MODE=true  # Enable maintenance mode
+MAINTENANCE_MODE=false # Disable maintenance mode
+```
+
+### Behavior
+- When enabled, all page requests redirect to `/maintenance`
+- API routes continue to function normally
+- Static files remain accessible
+- Professional "Under Maintenance" message displayed
+- No code changes required - just toggle the environment variable and restart
+
+### Usage
+1. Edit `frontend/.env.local`
+2. Set `MAINTENANCE_MODE=true`
+3. Restart the development/production server
+4. All pages will show maintenance page
+5. To disable, set to `false` and restart
 
 ---
 
