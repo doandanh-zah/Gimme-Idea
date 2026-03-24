@@ -60,6 +60,8 @@ export class ProjectsService {
 
     // OPTIMIZATION: Only select columns needed for list view to reduce egress
     // Full details (problem, solution, opportunity) are fetched in findOne
+    // Removed: pool_create_tx, pool_finalize_tx, pool_refs, final_decision, 
+    // finalized_at, author.wallet (audit/internal fields not used in list views)
     let supabaseQuery = supabase.from("projects").select(`
         id,
         slug,
@@ -83,17 +85,11 @@ export class ProjectsService {
         proposal_pubkey,
         pass_pool_address,
         fail_pool_address,
-        pool_create_tx,
-        pool_finalize_tx,
-        pool_refs,
-        final_decision,
-        finalized_at,
         total_pass_volume,
         total_fail_volume,
 
         author:users!projects_author_id_fkey(
           username,
-          wallet,
           avatar,
           slug
         )

@@ -206,45 +206,44 @@ export class UsersService {
       throw new NotFoundException("User not found");
     }
 
-    // Get ideas count (type = 'idea')
-    const { count: ideasCount } = await supabase
+    // OPTIMIZATION: Fetch all project stats in single query with aggregations
+    // Previously: 2 separate count queries + 1 full data fetch to sum votes = 3 queries
+    // Now: 1 query with all aggregations
+    const { data: projectStats } = await supabase
       .from("projects")
-      .select("*", { count: "exact", head: true })
+      .select(
+        `
+        count_idea:id.count(type.eq.idea),
+        count_project:id.count(type.eq.project),
+        total_votes:votes.sum()
+      `,
+        { count: "exact", head: false }
+      )
       .eq("author_id", user.id)
-      .eq("type", "idea");
+      .single();
 
-    // Get projects count (type = 'project') - currently locked, but still track
-    const { count: projectsCount } = await supabase
-      .from("projects")
-      .select("*", { count: "exact", head: true })
-      .eq("author_id", user.id)
-      .eq("type", "project");
+    const ideasCount = projectStats?.count_idea || 0;
+    const projectsCount = projectStats?.count_project || 0;
+    const votesReceived = projectStats?.total_votes || 0;
 
-    // Get feedback/comments count (total comments this user has made)
-    const { count: feedbackCount } = await supabase
+    // OPTIMIZATION: Fetch all comment stats in single query with aggregation
+    // Previously: 1 count query + 1 full data fetch to sum likes = 2 queries
+    // Now: 1 query with aggregations
+    const { count: feedbackCount, data: commentStats } = await supabase
       .from("comments")
-      .select("*", { count: "exact", head: true })
-      .eq("user_id", user.id);
+      .select(
+        `
+        total_likes:likes.sum()
+      `,
+        { count: "exact" }
+      )
+      .eq("user_id", user.id)
+      .single();
 
-    // Get total likes received on user's comments
-    const { data: userComments } = await supabase
-      .from("comments")
-      .select("id, likes")
-      .eq("user_id", user.id);
-
-    const likesReceived =
-      userComments?.reduce((sum, c) => sum + (c.likes || 0), 0) || 0;
-
-    // Get total votes received on user's ideas/projects
-    const { data: userProjects } = await supabase
-      .from("projects")
-      .select("id, votes")
-      .eq("author_id", user.id);
-
-    const votesReceived =
-      userProjects?.reduce((sum, p) => sum + (p.votes || 0), 0) || 0;
+    const likesReceived = commentStats?.total_likes || 0;
 
     // Get tips received count (transactions where user received tips)
+    // This already uses optimal count: exact query
     const { count: tipsCount } = await supabase
       .from("transactions")
       .select("*", { count: "exact", head: true })
@@ -259,7 +258,7 @@ export class UsersService {
     // - Likes received: 1 point each
     // - Tips received: 5 points per transaction
     const reputation =
-      (ideasCount || 0) * 10 +
+      ideasCount * 10 +
       (feedbackCount || 0) * 2 +
       likesReceived * 1 +
       (tipsCount || 0) * 5;
