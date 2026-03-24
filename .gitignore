@@ -56,3 +56,6 @@ temp/
 Thumbs.db
 
 hackathonLegacy
+
+# Thod's docs/files, dont include.
+devdocs/ 
