@@ -122,11 +122,7 @@ export const Profile = () => {
       try {
         const response = await apiClient.getUserStats(displayUser.username);
         if (response.success && response.data) {
-          const data = response.data as any;
-          setUserStats({
-            ...response.data,
-            votesReceived: data.votesReceived ?? 0,
-          });
+          setUserStats(response.data);
         }
       } catch (error) {
         console.error('Failed to fetch user stats:', error);

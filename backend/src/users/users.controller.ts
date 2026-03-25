@@ -12,6 +12,7 @@ interface UserStats {
   feedbackCount: number;
   tipsReceived: number;
   likesReceived: number;
+  votesReceived: number;
 }
 
 @Controller("users")

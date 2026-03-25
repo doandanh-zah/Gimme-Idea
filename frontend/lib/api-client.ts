@@ -336,6 +336,7 @@ export const apiClient = {
       feedbackCount: number;
       tipsReceived: number;
       likesReceived: number;
+      votesReceived: number;
     }>(`/users/${username}/stats`),
 
   getUserProjects: (username: string) =>

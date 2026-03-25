@@ -14,6 +14,12 @@ CREATE TABLE IF NOT EXISTS users (
   bio TEXT,
   avatar TEXT,
   reputation_score INTEGER DEFAULT 0,
+  ideas_count INTEGER NOT NULL DEFAULT 0,
+  projects_count INTEGER NOT NULL DEFAULT 0,
+  feedback_count INTEGER NOT NULL DEFAULT 0,
+  tips_received_count INTEGER NOT NULL DEFAULT 0,
+  likes_received_count INTEGER NOT NULL DEFAULT 0,
+  votes_received_count INTEGER NOT NULL DEFAULT 0,
   balance NUMERIC(18, 9) DEFAULT 0, -- Track tips received
   social_links JSONB DEFAULT '{}'::jsonb,
   last_login_at TIMESTAMP WITH TIME ZONE,
