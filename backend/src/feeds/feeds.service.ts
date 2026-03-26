@@ -99,48 +99,23 @@ export class FeedsService {
   }): Promise<ApiResponse<Feed[]>> {
     const supabase = this.supabaseService.getAdminClient();
 
-    let query = supabase
-      .from('feeds')
-      .select(`
-        *,
-        creator:users!feeds_creator_id_fkey(username, wallet, avatar)
-      `)
-      .eq('visibility', 'public')
-      .order('followers_count', { ascending: false });
-
-    if (options?.featured) {
-      query = query.eq('is_featured', true);
-    }
-
-    if (options?.limit) {
-      query = query.limit(options.limit);
-    }
-
-    if (options?.offset) {
-      query = query.range(options.offset, options.offset + (options.limit || 20) - 1);
-    }
-
-    const { data: feeds, error } = await query;
+    const { data: feeds, error } = await supabase.rpc(
+      'get_public_feeds_with_follow_status',
+      {
+        p_user_id: options?.userId || null,
+        p_featured: options?.featured || false,
+        p_limit: options?.limit || 20,
+        p_offset: options?.offset || 0,
+      }
+    );
 
     if (error) {
       throw new Error(`Failed to fetch feeds: ${error.message}`);
     }
 
-    // If user is logged in, check if they're following each feed
-    let feedsWithFollowStatus = feeds.map(f => this.mapFeed(f));
-
-    if (options?.userId) {
-      const { data: following } = await supabase
-        .from('feed_followers')
-        .select('feed_id')
-        .eq('user_id', options.userId);
-
-      const followingIds = new Set(following?.map(f => f.feed_id) || []);
-      feedsWithFollowStatus = feedsWithFollowStatus.map(feed => ({
-        ...feed,
-        isFollowing: followingIds.has(feed.id),
-      }));
-    }
+    const feedsWithFollowStatus = (feeds || []).map((feed: any) =>
+      this.mapFeedWithFollowStatus(feed)
+    );
 
     return {
       success: true,
@@ -637,6 +612,28 @@ export class FeedsService {
           avatar: creator.avatar,
         }
         : undefined,
+    };
+  }
+
+  /**
+   * Map RPC row to API response.
+   * The RPC flattens creator fields to avoid a second query for follow status.
+   */
+  private mapFeedWithFollowStatus(feed: any): Feed {
+    const mappedFeed = this.mapFeed({
+      ...feed,
+      creator: feed.creator_username
+        ? {
+            username: feed.creator_username,
+            wallet: feed.creator_wallet,
+            avatar: feed.creator_avatar,
+          }
+        : null,
+    });
+
+    return {
+      ...mappedFeed,
+      isFollowing: !!feed.is_following,
     };
   }
 
