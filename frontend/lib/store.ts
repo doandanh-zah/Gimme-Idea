@@ -20,6 +20,7 @@ interface AppState {
   isLoading: boolean;
   isLoadingMore: boolean;
   isNavigating: boolean;
+  isBackendMaintenance: boolean;
 
   // Connect Wallet Reminder State (for non-logged in users)
   isConnectReminderOpen: boolean;
@@ -64,6 +65,7 @@ interface AppState {
   hasMoreProjects: boolean;
   projectsOffset: number;
   fetchProjectById: (id: string) => Promise<Project | null>;
+  clearBackendMaintenance: () => void;
   addProject: (
     project: Omit<
       Project,
@@ -117,6 +119,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   isLoading: false,
   isLoadingMore: false,
   isNavigating: false,
+  isBackendMaintenance: false,
   isConnectReminderOpen: false,
   isSubmitModalOpen: false,
   submitType: "project",
@@ -141,6 +144,7 @@ export const useAppStore = create<AppState>((set, get) => ({
     set({ isSubmitModalOpen: true, submitType: type });
   },
   closeSubmitModal: () => set({ isSubmitModalOpen: false }),
+  clearBackendMaintenance: () => set({ isBackendMaintenance: false }),
 
   setUser: (user) => {
     set({ user });
@@ -352,6 +356,7 @@ export const useAppStore = create<AppState>((set, get) => ({
           set({
             projects: [...existingProjects, ...uniqueNewProjects],
             isLoadingMore: false,
+            isBackendMaintenance: false,
             hasMoreProjects: newProjects.length >= limit,
             projectsOffset: offset + newProjects.length,
           });
@@ -360,16 +365,22 @@ export const useAppStore = create<AppState>((set, get) => ({
           set({
             projects: newProjects,
             isLoading: false,
+            isBackendMaintenance: false,
             hasMoreProjects: newProjects.length >= limit,
             projectsOffset: newProjects.length,
           });
         }
       } else {
-        set({ isLoading: false, isLoadingMore: false, hasMoreProjects: false });
+        set({
+          isLoading: false,
+          isLoadingMore: false,
+          hasMoreProjects: false,
+          isBackendMaintenance: response.errorType === "backend_unavailable",
+        });
       }
     } catch (error) {
       console.error("Failed to fetch projects:", error);
-      set({ isLoading: false, isLoadingMore: false });
+      set({ isLoading: false, isLoadingMore: false, isBackendMaintenance: true });
     }
   },
 
@@ -436,11 +447,16 @@ export const useAppStore = create<AppState>((set, get) => ({
           }));
         }
 
+        set({ isBackendMaintenance: false });
         return project;
+      }
+      if (response.errorType === "backend_unavailable") {
+        set({ isBackendMaintenance: true });
       }
       return null;
     } catch (error) {
       console.error("Failed to fetch project by ID:", error);
+      set({ isBackendMaintenance: true });
       return null;
     }
   },

@@ -10,6 +10,7 @@ interface ApiResponse<T = any> {
   data?: T;
   error?: string;
   message?: string;
+  errorType?: "backend_unavailable";
 }
 
 /**
@@ -37,14 +38,28 @@ async function apiFetch<T>(
       headers,
     });
 
-    const data = await response.json();
+    let data: any = null;
+    try {
+      data = await response.json();
+    } catch {
+      data = null;
+    }
+
+    // Backend/server is up but unavailable for serving requests
+    if ([502, 503, 504].includes(response.status)) {
+      return {
+        success: false,
+        error: "Backend server in maintenance",
+        errorType: "backend_unavailable",
+      };
+    }
 
     // Handle 400 Bad Request - validation errors
     if (response.status === 400) {
       console.error("[API] 400 Bad Request:", data);
       return {
         success: false,
-        error: data.message || data.error || "Bad Request",
+        error: data?.message || data?.error || "Bad Request",
       };
     }
 
@@ -68,12 +83,12 @@ async function apiFetch<T>(
     if (response.status === 403) {
       return {
         success: false,
-        error: data.error || "Access denied.",
+        error: data?.error || "Access denied.",
       };
     }
 
     // If response contains token, save it
-    if (data.data?.token) {
+    if (data?.data?.token) {
       localStorage.setItem("auth_token", data.data.token);
     }
 
@@ -82,7 +97,8 @@ async function apiFetch<T>(
     console.error("API fetch error:", error);
     return {
       success: false,
-      error: error.message || "Network error",
+      error: "Backend server in maintenance",
+      errorType: "backend_unavailable",
     };
   }
 }

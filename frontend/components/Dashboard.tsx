@@ -13,6 +13,7 @@ import { useRealtimeProjects } from '../hooks/useRealtimeProjects';
 import { ComingSoonModal } from './ComingSoonModal';
 import { AIChatModal } from './AIChatModal';
 import { LoadingSpinner } from './LoadingSpinner';
+import BackendMaintenancePlaceholder from './BackendMaintenancePlaceholder';
 
 interface DashboardProps {
     mode: 'project' | 'idea';
@@ -29,6 +30,7 @@ export default function Dashboard({ mode }: DashboardProps) {
     hasMoreProjects,
     isLoading,
     isLoadingMore,
+    isBackendMaintenance,
     handleRealtimeNewProject,
     handleRealtimeUpdateProject,
     handleRealtimeDeleteProject,
@@ -218,6 +220,8 @@ export default function Dashboard({ mode }: DashboardProps) {
             size="lg" 
             text={`Loading ${mode}s...`}
           />
+        ) : isBackendMaintenance ? (
+          <BackendMaintenancePlaceholder description={`Không thể tải danh sách ${mode} vì backend đang bảo trì.`} />
         ) : (
           <>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 lg:gap-10 mt-6 sm:mt-10">
