@@ -371,11 +371,14 @@ export const useAppStore = create<AppState>((set, get) => ({
           });
         }
       } else {
+        const isBackendError =
+          response.errorType === "backend_unavailable" || !!response.error;
+
         set({
           isLoading: false,
           isLoadingMore: false,
           hasMoreProjects: false,
-          isBackendMaintenance: response.errorType === "backend_unavailable",
+          isBackendMaintenance: isBackendError,
         });
       }
     } catch (error) {

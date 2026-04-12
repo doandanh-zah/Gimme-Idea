@@ -9,8 +9,8 @@ interface BackendMaintenancePlaceholderProps {
 }
 
 export default function BackendMaintenancePlaceholder({
-  title = 'Backend server in maintenance',
-  description = 'Các tính năng cần dữ liệu từ server đang tạm thời không khả dụng. Vui lòng thử lại sau.',
+  title = 'Backend server under maintenance',
+  description = 'Features that depend on server data are temporarily unavailable. Please try again later.',
 }: BackendMaintenancePlaceholderProps) {
   return (
     <div className="rounded-2xl border border-amber-400/30 bg-amber-400/10 p-6 sm:p-8">

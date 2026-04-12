@@ -45,8 +45,8 @@ async function apiFetch<T>(
       data = null;
     }
 
-    // Backend/server is up but unavailable for serving requests
-    if ([502, 503, 504].includes(response.status)) {
+    // Backend/server is unavailable for serving requests
+    if (response.status >= 500) {
       return {
         success: false,
         error: "Backend server in maintenance",
