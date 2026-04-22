@@ -5,12 +5,13 @@ import { SupabaseService } from '../shared/supabase.service';
 import { AIService } from '../ai/ai.service';
 import { AuthGuard } from '../common/guards/auth.guard';
 import { AnyAuthGuard } from '../common/guards/any-auth.guard';
+import { PatScopeGuard } from '../common/guards/pat-scope.guard';
 import { ApiTokensModule } from '../api-tokens/api-tokens.module';
 
 @Module({
   imports: [ApiTokensModule],
   controllers: [ProjectsController],
-  providers: [ProjectsService, SupabaseService, AIService, AuthGuard, AnyAuthGuard],
+  providers: [ProjectsService, SupabaseService, AIService, AuthGuard, AnyAuthGuard, PatScopeGuard],
   exports: [ProjectsService],
 })
 export class ProjectsModule {}
