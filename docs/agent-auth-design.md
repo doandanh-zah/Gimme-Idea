@@ -36,6 +36,32 @@ New table: `agent_keys`
    - requires JWT
    - revoke provided key
 
+## PAT scope model
+
+Personal Access Tokens are for bounded automation, not full-account replacement.
+
+Available scopes today:
+- `post:read`
+- `post:write`
+- `comment:write`
+- `comment:reply`
+
+Intended route mapping:
+- project create/update/delete/vote/proposal/pool actions -> `post:write`
+- top-level comment create/update/delete/like -> `comment:write`
+- reply create -> `comment:reply`
+
+JWT user sessions still bypass PAT scope checks because the user is already acting as the full account owner.
+
+## Safe autonomous write checklist
+
+Before an agent performs a write:
+1. authenticate with PAT or agent secret key
+2. call `/auth/me` to confirm identity and account context
+3. verify the target resource belongs to the authenticated actor when ownership matters
+4. perform the write with the minimum needed scope
+5. log the resulting resource id or transaction signature for recovery
+
 ## Rotation / revoke strategy
 - Rotate = revoke current + mint new key.
 - Revoke = immediate deny for next login.
@@ -48,3 +74,4 @@ New table: `agent_keys`
 ## Notes
 - Existing Bearer JWT flow remains unchanged after agent login.
 - User-level APIs continue to work through existing guards.
+- PAT scopes should be treated as the primary safety boundary for autonomous scripts.
