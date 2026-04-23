@@ -11,8 +11,11 @@ import {
 } from '@nestjs/common';
 import { FeedsService } from './feeds.service';
 import { AuthGuard } from '../common/guards/auth.guard';
+import { AnyAuthGuard } from '../common/guards/any-auth.guard';
 import { OptionalAuthGuard } from '../common/guards/optional-auth.guard';
+import { RequirePatScope } from '../common/decorators/require-pat-scope.decorator';
 import { CurrentUser } from '../common/decorators/user.decorator';
+import { PatScopeGuard } from '../common/guards/pat-scope.guard';
 import { CreateFeedDto, UpdateFeedDto, AddFeedItemDto } from './dto/feed.dto';
 import { ApiResponse } from '../shared/types';
 
@@ -130,7 +133,8 @@ export class FeedsController {
    * Create a new feed
    */
   @Post()
-  @UseGuards(AuthGuard)
+  @UseGuards(AnyAuthGuard, PatScopeGuard)
+  @RequirePatScope('feed:write')
   async create(
     @CurrentUser('userId') userId: string,
     @Body() dto: CreateFeedDto
@@ -143,7 +147,8 @@ export class FeedsController {
    * Update a feed
    */
   @Patch(':id')
-  @UseGuards(AuthGuard)
+  @UseGuards(AnyAuthGuard, PatScopeGuard)
+  @RequirePatScope('feed:write')
   async update(
     @CurrentUser('userId') userId: string,
     @Param('id') id: string,
@@ -157,7 +162,8 @@ export class FeedsController {
    * Delete a feed
    */
   @Delete(':id')
-  @UseGuards(AuthGuard)
+  @UseGuards(AnyAuthGuard, PatScopeGuard)
+  @RequirePatScope('feed:write')
   async delete(
     @CurrentUser('userId') userId: string,
     @Param('id') id: string
@@ -170,7 +176,8 @@ export class FeedsController {
    * Follow a feed
    */
   @Post(':id/follow')
-  @UseGuards(AuthGuard)
+  @UseGuards(AnyAuthGuard, PatScopeGuard)
+  @RequirePatScope('feed:write')
   async follow(
     @CurrentUser('userId') userId: string,
     @Param('id') id: string
@@ -183,7 +190,8 @@ export class FeedsController {
    * Unfollow a feed
    */
   @Delete(':id/follow')
-  @UseGuards(AuthGuard)
+  @UseGuards(AnyAuthGuard, PatScopeGuard)
+  @RequirePatScope('feed:write')
   async unfollow(
     @CurrentUser('userId') userId: string,
     @Param('id') id: string
@@ -196,7 +204,8 @@ export class FeedsController {
    * Add item to feed (bookmark)
    */
   @Post(':id/items')
-  @UseGuards(AuthGuard)
+  @UseGuards(AnyAuthGuard, PatScopeGuard)
+  @RequirePatScope('feed:write')
   async addItem(
     @CurrentUser('userId') userId: string,
     @Param('id') id: string,
@@ -210,7 +219,8 @@ export class FeedsController {
    * Remove item from feed
    */
   @Delete(':id/items/:itemId')
-  @UseGuards(AuthGuard)
+  @UseGuards(AnyAuthGuard, PatScopeGuard)
+  @RequirePatScope('feed:write')
   async removeItem(
     @CurrentUser('userId') userId: string,
     @Param('id') id: string,

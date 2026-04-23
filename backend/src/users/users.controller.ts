@@ -2,7 +2,10 @@ import { Controller, Get, Patch, Body, Param, UseGuards, Query } from "@nestjs/c
 import { UsersService } from "./users.service";
 import { UpdateProfileDto } from "./dto/update-profile.dto";
 import { AuthGuard } from "../common/guards/auth.guard";
+import { AnyAuthGuard } from "../common/guards/any-auth.guard";
+import { RequirePatScope } from "../common/decorators/require-pat-scope.decorator";
 import { CurrentUser } from "../common/decorators/user.decorator";
+import { PatScopeGuard } from "../common/guards/pat-scope.guard";
 import { ApiResponse, User } from "../shared/types";
 
 interface UserStats {
@@ -72,7 +75,8 @@ export class UsersController {
    * Update current user's profile (requires authentication)
    */
   @Patch("profile")
-  @UseGuards(AuthGuard)
+  @UseGuards(AnyAuthGuard, PatScopeGuard)
+  @RequirePatScope("profile:write")
   async updateProfile(
     @CurrentUser("userId") userId: string,
     @Body() updateDto: UpdateProfileDto
@@ -120,7 +124,8 @@ export class UsersController {
    * Mark an announcement as read
    */
   @Patch("announcements/:id/read")
-  @UseGuards(AuthGuard)
+  @UseGuards(AnyAuthGuard, PatScopeGuard)
+  @RequirePatScope("profile:write")
   async markAnnouncementRead(
     @CurrentUser("userId") userId: string,
     @Param("id") announcementId: string
@@ -133,7 +138,8 @@ export class UsersController {
    * Dismiss an announcement
    */
   @Patch("announcements/:id/dismiss")
-  @UseGuards(AuthGuard)
+  @UseGuards(AnyAuthGuard, PatScopeGuard)
+  @RequirePatScope("profile:write")
   async dismissAnnouncement(
     @CurrentUser("userId") userId: string,
     @Param("id") announcementId: string

@@ -16,7 +16,10 @@ import {
   QuerySubmissionsDto,
 } from "./dto/submission.dto";
 import { AuthGuard } from "../common/guards/auth.guard";
+import { AnyAuthGuard } from "../common/guards/any-auth.guard";
+import { RequirePatScope } from "../common/decorators/require-pat-scope.decorator";
 import { CurrentUser } from "../common/decorators/user.decorator";
+import { PatScopeGuard } from "../common/guards/pat-scope.guard";
 
 @Controller("hackathons")
 export class HackathonsController {
@@ -87,7 +90,8 @@ export class HackathonsController {
    * POST /hackathons/submissions
    */
   @Post("submissions")
-  @UseGuards(AuthGuard)
+  @UseGuards(AnyAuthGuard, PatScopeGuard)
+  @RequirePatScope("hackathon:write")
   async createSubmission(
     @Body() dto: CreateSubmissionDto,
     @CurrentUser("userId") userId: string
@@ -104,7 +108,8 @@ export class HackathonsController {
    * PUT /hackathons/submissions/:id
    */
   @Put("submissions/:id")
-  @UseGuards(AuthGuard)
+  @UseGuards(AnyAuthGuard, PatScopeGuard)
+  @RequirePatScope("hackathon:write")
   async updateSubmission(
     @Param("id") id: string,
     @Body() dto: UpdateSubmissionDto,
@@ -118,7 +123,8 @@ export class HackathonsController {
    * DELETE /hackathons/submissions/:id
    */
   @Delete("submissions/:id")
-  @UseGuards(AuthGuard)
+  @UseGuards(AnyAuthGuard, PatScopeGuard)
+  @RequirePatScope("hackathon:write")
   async deleteSubmission(
     @Param("id") id: string,
     @CurrentUser("userId") userId: string
@@ -131,7 +137,8 @@ export class HackathonsController {
    * POST /hackathons/submissions/:id/vote
    */
   @Post("submissions/:id/vote")
-  @UseGuards(AuthGuard)
+  @UseGuards(AnyAuthGuard, PatScopeGuard)
+  @RequirePatScope("hackathon:write")
   async voteSubmission(
     @Param("id") id: string,
     @CurrentUser("userId") userId: string
@@ -148,7 +155,8 @@ export class HackathonsController {
    * POST /hackathons/:hackathonId/register
    */
   @Post(":hackathonId/register")
-  @UseGuards(AuthGuard)
+  @UseGuards(AnyAuthGuard, PatScopeGuard)
+  @RequirePatScope("hackathon:write")
   async registerForHackathon(
     @Param("hackathonId") hackathonId: string,
     @Body() body: { teamName?: string },
@@ -262,7 +270,8 @@ export class HackathonsController {
    * POST /hackathons/:hackathonId/teams
    */
   @Post(":hackathonId/teams")
-  @UseGuards(AuthGuard)
+  @UseGuards(AnyAuthGuard, PatScopeGuard)
+  @RequirePatScope("hackathon:write")
   async createTeam(
     @Param("hackathonId") hackathonId: string,
     @Body()
@@ -295,7 +304,8 @@ export class HackathonsController {
    * PUT /hackathons/teams/:teamId
    */
   @Put("teams/:teamId")
-  @UseGuards(AuthGuard)
+  @UseGuards(AnyAuthGuard, PatScopeGuard)
+  @RequirePatScope("hackathon:write")
   async updateTeam(
     @Param("teamId") teamId: string,
     @Body()
@@ -316,7 +326,8 @@ export class HackathonsController {
    * DELETE /hackathons/teams/:teamId
    */
   @Delete("teams/:teamId")
-  @UseGuards(AuthGuard)
+  @UseGuards(AnyAuthGuard, PatScopeGuard)
+  @RequirePatScope("hackathon:write")
   async deleteTeam(
     @Param("teamId") teamId: string,
     @CurrentUser("userId") userId: string
@@ -329,7 +340,8 @@ export class HackathonsController {
    * POST /hackathons/teams/:teamId/leave
    */
   @Post("teams/:teamId/leave")
-  @UseGuards(AuthGuard)
+  @UseGuards(AnyAuthGuard, PatScopeGuard)
+  @RequirePatScope("hackathon:write")
   async leaveTeam(
     @Param("teamId") teamId: string,
     @CurrentUser("userId") userId: string
@@ -342,7 +354,8 @@ export class HackathonsController {
    * DELETE /hackathons/teams/:teamId/members/:memberId
    */
   @Delete("teams/:teamId/members/:memberId")
-  @UseGuards(AuthGuard)
+  @UseGuards(AnyAuthGuard, PatScopeGuard)
+  @RequirePatScope("hackathon:write")
   async kickMember(
     @Param("teamId") teamId: string,
     @Param("memberId") memberId: string,
@@ -360,7 +373,8 @@ export class HackathonsController {
    * POST /hackathons/teams/:teamId/invite
    */
   @Post("teams/:teamId/invite")
-  @UseGuards(AuthGuard)
+  @UseGuards(AnyAuthGuard, PatScopeGuard)
+  @RequirePatScope("hackathon:write")
   async inviteToTeam(
     @Param("teamId") teamId: string,
     @Body() body: { inviteeId: string; message?: string },
@@ -389,7 +403,8 @@ export class HackathonsController {
    * POST /hackathons/teams/invites/:inviteId/accept
    */
   @Post("teams/invites/:inviteId/accept")
-  @UseGuards(AuthGuard)
+  @UseGuards(AnyAuthGuard, PatScopeGuard)
+  @RequirePatScope("hackathon:write")
   async acceptInvite(
     @Param("inviteId") inviteId: string,
     @CurrentUser("userId") userId: string
@@ -402,7 +417,8 @@ export class HackathonsController {
    * POST /hackathons/teams/invites/:inviteId/reject
    */
   @Post("teams/invites/:inviteId/reject")
-  @UseGuards(AuthGuard)
+  @UseGuards(AnyAuthGuard, PatScopeGuard)
+  @RequirePatScope("hackathon:write")
   async rejectInvite(
     @Param("inviteId") inviteId: string,
     @CurrentUser("userId") userId: string
@@ -415,7 +431,8 @@ export class HackathonsController {
    * DELETE /hackathons/teams/invites/:inviteId
    */
   @Delete("teams/invites/:inviteId")
-  @UseGuards(AuthGuard)
+  @UseGuards(AnyAuthGuard, PatScopeGuard)
+  @RequirePatScope("hackathon:write")
   async cancelInvite(
     @Param("inviteId") inviteId: string,
     @CurrentUser("userId") userId: string

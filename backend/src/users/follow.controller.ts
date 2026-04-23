@@ -9,8 +9,11 @@ import {
 } from "@nestjs/common";
 import { FollowService } from "./follow.service";
 import { AuthGuard } from "../common/guards/auth.guard";
+import { AnyAuthGuard } from "../common/guards/any-auth.guard";
+import { RequirePatScope } from "../common/decorators/require-pat-scope.decorator";
 import { CurrentUser } from "../common/decorators/user.decorator";
 import { GetFollowersDto } from "./dto/follow.dto";
+import { PatScopeGuard } from "../common/guards/pat-scope.guard";
 import { ApiResponse } from "../shared/types";
 
 @Controller("users")
@@ -22,7 +25,8 @@ export class FollowController {
    * Follow a user
    */
   @Post(":userId/follow")
-  @UseGuards(AuthGuard)
+  @UseGuards(AnyAuthGuard, PatScopeGuard)
+  @RequirePatScope("social:write")
   async followUser(
     @CurrentUser("userId") currentUserId: string,
     @Param("userId") userId: string
@@ -35,7 +39,8 @@ export class FollowController {
    * Unfollow a user
    */
   @Delete(":userId/follow")
-  @UseGuards(AuthGuard)
+  @UseGuards(AnyAuthGuard, PatScopeGuard)
+  @RequirePatScope("social:write")
   async unfollowUser(
     @CurrentUser("userId") currentUserId: string,
     @Param("userId") userId: string
