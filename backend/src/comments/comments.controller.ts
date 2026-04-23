@@ -60,7 +60,20 @@ export class CommentsController {
       this.apiTokensService.ensureScope(req.user?.scopes || [], neededScope);
     }
 
-    return this.commentsService.create(userId, createDto);
+    const result = await this.commentsService.create(userId, createDto);
+
+    await this.apiTokensService.auditPatAction(req, {
+      action: createDto.parentCommentId ? "comment.reply" : "comment.create",
+      resourceType: "comment",
+      resourceId: result.data?.id,
+      metadata: {
+        projectId: createDto.projectId,
+        parentCommentId: createDto.parentCommentId || null,
+        isAnonymous: createDto.isAnonymous || false,
+      },
+    });
+
+    return result;
   }
 
   /**
@@ -71,11 +84,23 @@ export class CommentsController {
   @UseGuards(AnyAuthGuard, PatScopeGuard)
   @RequirePatScope("comment:write")
   async update(
+    @Req() req: any,
     @Param("id") commentId: string,
     @CurrentUser("userId") userId: string,
     @Body("content") content: string
   ): Promise<ApiResponse<Comment>> {
-    return this.commentsService.update(commentId, userId, content);
+    const result = await this.commentsService.update(commentId, userId, content);
+
+    await this.apiTokensService.auditPatAction(req, {
+      action: "comment.update",
+      resourceType: "comment",
+      resourceId: commentId,
+      metadata: {
+        contentLength: content?.length || 0,
+      },
+    });
+
+    return result;
   }
 
   /**
@@ -86,10 +111,19 @@ export class CommentsController {
   @UseGuards(AnyAuthGuard, PatScopeGuard)
   @RequirePatScope("comment:write")
   async delete(
+    @Req() req: any,
     @Param("id") commentId: string,
     @CurrentUser("userId") userId: string
   ): Promise<ApiResponse<{ deleted: boolean }>> {
-    return this.commentsService.delete(commentId, userId);
+    const result = await this.commentsService.delete(commentId, userId);
+
+    await this.apiTokensService.auditPatAction(req, {
+      action: "comment.delete",
+      resourceType: "comment",
+      resourceId: commentId,
+    });
+
+    return result;
   }
 
   /**
@@ -100,9 +134,18 @@ export class CommentsController {
   @UseGuards(AnyAuthGuard, PatScopeGuard)
   @RequirePatScope("comment:write")
   async like(
+    @Req() req: any,
     @Param("id") commentId: string,
     @CurrentUser("userId") userId: string
   ): Promise<ApiResponse<{ likes: number }>> {
-    return this.commentsService.like(commentId, userId);
+    const result = await this.commentsService.like(commentId, userId);
+
+    await this.apiTokensService.auditPatAction(req, {
+      action: "comment.like",
+      resourceType: "comment",
+      resourceId: commentId,
+    });
+
+    return result;
   }
 }

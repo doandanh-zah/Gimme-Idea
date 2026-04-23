@@ -17,6 +17,7 @@ import { QueryProjectsDto } from "./dto/query-projects.dto";
 import { CreateDaoRequestDto } from "./dto/create-dao-request.dto";
 import { CreateProposalDto } from "./dto/create-proposal.dto";
 import { CreateIdeaPoolDto } from "./dto/create-idea-pool.dto";
+import { ApiTokensService } from "../api-tokens/api-tokens.service";
 import { RequirePatScope } from "../common/decorators/require-pat-scope.decorator";
 import { AnyAuthGuard } from "../common/guards/any-auth.guard";
 import { CurrentUser } from "../common/decorators/user.decorator";
@@ -26,7 +27,10 @@ import { ApiResponse, Project } from "../shared/types";
 
 @Controller("projects")
 export class ProjectsController {
-  constructor(private projectsService: ProjectsService) {}
+  constructor(
+    private projectsService: ProjectsService,
+    private apiTokensService: ApiTokensService
+  ) {}
 
   /**
    * GET /api/projects
@@ -74,10 +78,24 @@ export class ProjectsController {
   @UseGuards(AnyAuthGuard, PatScopeGuard)
   @RequirePatScope("post:write")
   async create(
+    @Req() req: any,
     @CurrentUser("userId") userId: string,
     @Body() createDto: CreateProjectDto
   ): Promise<ApiResponse<Project>> {
-    return this.projectsService.create(userId, createDto);
+    const result = await this.projectsService.create(userId, createDto);
+
+    await this.apiTokensService.auditPatAction(req, {
+      action: "project.create",
+      resourceType: createDto.type || "project",
+      resourceId: result.data?.id,
+      metadata: {
+        type: createDto.type || "project",
+        category: createDto.category,
+        stage: createDto.stage,
+      },
+    });
+
+    return result;
   }
 
   /**
@@ -88,11 +106,23 @@ export class ProjectsController {
   @UseGuards(AnyAuthGuard, PatScopeGuard)
   @RequirePatScope("post:write")
   async update(
+    @Req() req: any,
     @Param("id") id: string,
     @CurrentUser("userId") userId: string,
     @Body() updateDto: UpdateProjectDto
   ): Promise<ApiResponse<Project>> {
-    return this.projectsService.update(id, userId, updateDto);
+    const result = await this.projectsService.update(id, userId, updateDto);
+
+    await this.apiTokensService.auditPatAction(req, {
+      action: "project.update",
+      resourceType: "project",
+      resourceId: id,
+      metadata: {
+        updatedFields: Object.keys(updateDto || {}),
+      },
+    });
+
+    return result;
   }
 
   /**
@@ -103,10 +133,19 @@ export class ProjectsController {
   @UseGuards(AnyAuthGuard, PatScopeGuard)
   @RequirePatScope("post:write")
   async remove(
+    @Req() req: any,
     @Param("id") id: string,
     @CurrentUser("userId") userId: string
   ): Promise<ApiResponse<void>> {
-    return this.projectsService.remove(id, userId);
+    const result = await this.projectsService.remove(id, userId);
+
+    await this.apiTokensService.auditPatAction(req, {
+      action: "project.delete",
+      resourceType: "project",
+      resourceId: id,
+    });
+
+    return result;
   }
 
   /**
@@ -117,10 +156,22 @@ export class ProjectsController {
   @UseGuards(AnyAuthGuard, PatScopeGuard)
   @RequirePatScope("post:write")
   async vote(
+    @Req() req: any,
     @Param("id") id: string,
     @CurrentUser("userId") userId: string
   ): Promise<ApiResponse<{ votes: number }>> {
-    return this.projectsService.vote(id, userId);
+    const result = await this.projectsService.vote(id, userId);
+
+    await this.apiTokensService.auditPatAction(req, {
+      action: "project.vote",
+      resourceType: "project",
+      resourceId: id,
+      metadata: {
+        votes: result.data?.votes,
+      },
+    });
+
+    return result;
   }
 
   /**
@@ -131,11 +182,24 @@ export class ProjectsController {
   @UseGuards(AnyAuthGuard, PatScopeGuard)
   @RequirePatScope("post:write")
   async createDaoRequest(
+    @Req() req: any,
     @Param("id") id: string,
     @CurrentUser("userId") userId: string,
     @Body() dto: CreateDaoRequestDto
   ): Promise<ApiResponse<any>> {
-    return this.projectsService.createDaoRequest(id, userId, dto);
+    const result = await this.projectsService.createDaoRequest(id, userId, dto);
+
+    await this.apiTokensService.auditPatAction(req, {
+      action: "project.dao_request.create",
+      resourceType: "dao_request",
+      resourceId: result.data?.id || id,
+      metadata: {
+        projectId: id,
+        txSignature: dto.txSignature,
+      },
+    });
+
+    return result;
   }
 
   @Get(":id/proposals")
@@ -147,22 +211,49 @@ export class ProjectsController {
   @UseGuards(AnyAuthGuard, PatScopeGuard)
   @RequirePatScope("post:write")
   async createProposal(
+    @Req() req: any,
     @Param("id") id: string,
     @CurrentUser("userId") userId: string,
     @Body() dto: CreateProposalDto
   ): Promise<ApiResponse<any>> {
-    return this.projectsService.createProposal(id, userId, dto);
+    const result = await this.projectsService.createProposal(id, userId, dto);
+
+    await this.apiTokensService.auditPatAction(req, {
+      action: "project.proposal.create",
+      resourceType: "proposal",
+      resourceId: result.data?.id,
+      metadata: {
+        projectId: id,
+        onchainProposalPubkey: dto.onchainProposalPubkey,
+      },
+    });
+
+    return result;
   }
 
   @Post(":id/create-pool")
   @UseGuards(AnyAuthGuard, PatScopeGuard)
   @RequirePatScope("post:write")
   async createIdeaPool(
+    @Req() req: any,
     @Param("id") id: string,
     @CurrentUser("userId") userId: string,
     @Body() dto: CreateIdeaPoolDto
   ): Promise<ApiResponse<any>> {
-    return this.projectsService.createIdeaPool(id, userId, dto);
+    const result = await this.projectsService.createIdeaPool(id, userId, dto);
+
+    await this.apiTokensService.auditPatAction(req, {
+      action: "project.pool.create",
+      resourceType: "idea_pool",
+      resourceId: id,
+      metadata: {
+        projectId: id,
+        proposalPubkey: dto.proposalPubkey,
+        sponsor: !!dto.sponsor,
+      },
+    });
+
+    return result;
   }
 
   @Get(":id/market-stats")

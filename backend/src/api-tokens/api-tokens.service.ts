@@ -18,6 +18,17 @@ export type ApiTokenAuth = {
   scopes: TokenScope[];
 };
 
+export type AuthenticatedRequestLike = {
+  authType?: string;
+  ip?: string;
+  headers?: Record<string, string | string[] | undefined>;
+  user?: {
+    userId?: string;
+    tokenId?: string;
+    scopes?: TokenScope[];
+  };
+};
+
 @Injectable()
 export class ApiTokensService {
   constructor(private supabaseService: SupabaseService) {}
@@ -166,5 +177,32 @@ export class ApiTokensService {
       // do not throw hard on audit to avoid breaking main flow
       return;
     }
+  }
+
+  async auditPatAction(
+    request: AuthenticatedRequestLike,
+    params: {
+      action: string;
+      resourceType?: string;
+      resourceId?: string;
+      metadata?: any;
+    }
+  ) {
+    if (request?.authType !== 'pat') {
+      return;
+    }
+
+    const userAgent = request?.headers?.['user-agent'];
+
+    await this.audit({
+      actorUserId: request?.user?.userId || null,
+      tokenId: request?.user?.tokenId || null,
+      action: params.action,
+      resourceType: params.resourceType,
+      resourceId: params.resourceId,
+      metadata: params.metadata || {},
+      ip: request?.ip || null,
+      userAgent: Array.isArray(userAgent) ? userAgent.join(', ') : userAgent || null,
+    });
   }
 }
