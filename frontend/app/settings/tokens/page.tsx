@@ -10,6 +10,10 @@ const ALL_SCOPES = [
   { id: 'post:write', label: 'Create posts' },
   { id: 'comment:write', label: 'Create comments' },
   { id: 'comment:reply', label: 'Reply to comments' },
+  { id: 'feed:write', label: 'Manage feeds and bookmarks' },
+  { id: 'profile:write', label: 'Edit profile and announcements' },
+  { id: 'social:write', label: 'Follow and social actions' },
+  { id: 'hackathon:write', label: 'Manage hackathon participation' },
 ];
 
 export default function ApiTokensPage() {
@@ -21,7 +25,16 @@ export default function ApiTokensPage() {
   const [error, setError] = useState<string>('');
 
   const [name, setName] = useState('Agent Token');
-  const [scopes, setScopes] = useState<string[]>(['post:read', 'post:write', 'comment:write', 'comment:reply']);
+  const [scopes, setScopes] = useState<string[]>([
+    'post:read',
+    'post:write',
+    'comment:write',
+    'comment:reply',
+    'feed:write',
+    'profile:write',
+    'social:write',
+    'hackathon:write',
+  ]);
   const [expiresPreset, setExpiresPreset] = useState<string>('30d');
   const [customExpiresAt, setCustomExpiresAt] = useState<string>('');
 
@@ -41,6 +54,14 @@ Website: https://gimmeidea.com
 Base URL: ${apiBaseUrl}
 
 Use this Personal Access Token (PAT): <PASTE_PAT_HERE>
+
+Recommended scopes by workflow:
+- posting ideas/projects: post:write
+- commenting: comment:write
+- replying: comment:reply
+- managing feeds/bookmarks: feed:write
+- editing profile/follow graph: profile:write + social:write
+- hackathon team/submission actions: hackathon:write
 
 Core endpoints:
 - Create Idea: POST /projects (type=\"idea\")
@@ -146,7 +167,7 @@ If you are unsure about enum values, ask me. Category must be one of: DeFi, NFT,
       <div className="pt-28 px-6 max-w-4xl mx-auto">
         <h1 className="text-3xl font-bold mb-2">API Tokens</h1>
         <p className="text-gray-400 mb-8">
-          Create Personal Access Tokens (PAT) to allow trusted agents to post/comment as your user with scoped permissions.
+          Create Personal Access Tokens (PAT) to allow trusted agents to act as your user with workflow-scoped permissions.
         </p>
 
         {!canUse && (

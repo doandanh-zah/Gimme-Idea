@@ -6,7 +6,11 @@ export type TokenScope =
   | 'post:read'
   | 'post:write'
   | 'comment:write'
-  | 'comment:reply';
+  | 'comment:reply'
+  | 'feed:write'
+  | 'profile:write'
+  | 'social:write'
+  | 'hackathon:write';
 
 export type ApiTokenAuth = {
   userId: string;

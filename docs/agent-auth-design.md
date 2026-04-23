@@ -45,11 +45,19 @@ Available scopes today:
 - `post:write`
 - `comment:write`
 - `comment:reply`
+- `feed:write`
+- `profile:write`
+- `social:write`
+- `hackathon:write`
 
 Intended route mapping:
 - project create/update/delete/vote/proposal/pool actions -> `post:write`
 - top-level comment create/update/delete/like -> `comment:write`
 - reply create -> `comment:reply`
+- feed create/update/delete/follow/bookmark actions -> `feed:write`
+- profile edits and announcement actions -> `profile:write`
+- follow/unfollow actions -> `social:write`
+- hackathon submissions, teams, invites, and registration actions -> `hackathon:write`
 
 JWT user sessions still bypass PAT scope checks because the user is already acting as the full account owner.
 
