@@ -112,7 +112,8 @@ export class UsersController {
    * Get current user's active announcements
    */
   @Get("me/announcements")
-  @UseGuards(AuthGuard)
+  @UseGuards(AnyAuthGuard, PatScopeGuard)
+  @RequirePatScope("notification:read")
   async getMyAnnouncements(
     @CurrentUser("userId") userId: string
   ): Promise<ApiResponse<any[]>> {
@@ -125,7 +126,7 @@ export class UsersController {
    */
   @Patch("announcements/:id/read")
   @UseGuards(AnyAuthGuard, PatScopeGuard)
-  @RequirePatScope("profile:write")
+  @RequirePatScope("notification:write")
   async markAnnouncementRead(
     @CurrentUser("userId") userId: string,
     @Param("id") announcementId: string
@@ -139,7 +140,7 @@ export class UsersController {
    */
   @Patch("announcements/:id/dismiss")
   @UseGuards(AnyAuthGuard, PatScopeGuard)
-  @RequirePatScope("profile:write")
+  @RequirePatScope("notification:write")
   async dismissAnnouncement(
     @CurrentUser("userId") userId: string,
     @Param("id") announcementId: string

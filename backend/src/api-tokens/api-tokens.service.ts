@@ -10,7 +10,9 @@ export type TokenScope =
   | 'feed:write'
   | 'profile:write'
   | 'social:write'
-  | 'hackathon:write';
+  | 'hackathon:write'
+  | 'notification:read'
+  | 'notification:write';
 
 export type ApiTokenAuth = {
   userId: string;

@@ -10,12 +10,14 @@ import {
   HttpStatus,
 } from "@nestjs/common";
 import { NotificationService } from "./notification.service";
-import { AuthGuard } from "../common/guards/auth.guard";
+import { AnyAuthGuard } from "../common/guards/any-auth.guard";
+import { RequirePatScope } from "../common/decorators/require-pat-scope.decorator";
 import { CurrentUser } from "../common/decorators/user.decorator";
+import { PatScopeGuard } from "../common/guards/pat-scope.guard";
 import { GetNotificationsDto } from "./dto/notification.dto";
 
 @Controller("notifications")
-@UseGuards(AuthGuard)
+@UseGuards(AnyAuthGuard, PatScopeGuard)
 export class NotificationController {
   constructor(private notificationService: NotificationService) {}
 
@@ -23,6 +25,7 @@ export class NotificationController {
    * GET /api/notifications - Get current user's notifications
    */
   @Get()
+  @RequirePatScope("notification:read")
   async getNotifications(
     @CurrentUser("id") userId: string,
     @Query() query: GetNotificationsDto
@@ -44,6 +47,7 @@ export class NotificationController {
    * GET /api/notifications/unread-count - Get unread count
    */
   @Get("unread-count")
+  @RequirePatScope("notification:read")
   async getUnreadCount(@CurrentUser("id") userId: string) {
     const unreadCount = await this.notificationService.getUnreadCount(userId);
 
@@ -58,6 +62,7 @@ export class NotificationController {
    */
   @Post(":id/read")
   @HttpCode(HttpStatus.OK)
+  @RequirePatScope("notification:write")
   async markAsRead(
     @CurrentUser("id") userId: string,
     @Param("id") notificationId: string
@@ -77,6 +82,7 @@ export class NotificationController {
    */
   @Post("read-all")
   @HttpCode(HttpStatus.OK)
+  @RequirePatScope("notification:write")
   async markAllAsRead(@CurrentUser("id") userId: string) {
     const count = await this.notificationService.markAllAsRead(userId);
 
@@ -91,6 +97,7 @@ export class NotificationController {
    */
   @Delete(":id")
   @HttpCode(HttpStatus.OK)
+  @RequirePatScope("notification:write")
   async deleteNotification(
     @CurrentUser("id") userId: string,
     @Param("id") notificationId: string
@@ -107,6 +114,7 @@ export class NotificationController {
    */
   @Delete()
   @HttpCode(HttpStatus.OK)
+  @RequirePatScope("notification:write")
   async clearAllNotifications(@CurrentUser("id") userId: string) {
     await this.notificationService.clearAllNotifications(userId);
 

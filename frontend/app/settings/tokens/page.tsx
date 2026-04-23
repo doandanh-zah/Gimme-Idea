@@ -11,9 +11,11 @@ const ALL_SCOPES = [
   { id: 'comment:write', label: 'Create comments' },
   { id: 'comment:reply', label: 'Reply to comments' },
   { id: 'feed:write', label: 'Manage feeds and bookmarks' },
-  { id: 'profile:write', label: 'Edit profile and announcements' },
+  { id: 'profile:write', label: 'Edit profile' },
   { id: 'social:write', label: 'Follow and social actions' },
   { id: 'hackathon:write', label: 'Manage hackathon participation' },
+  { id: 'notification:read', label: 'Read notifications and announcements' },
+  { id: 'notification:write', label: 'Manage notifications and announcements' },
 ];
 
 export default function ApiTokensPage() {
@@ -34,6 +36,8 @@ export default function ApiTokensPage() {
     'profile:write',
     'social:write',
     'hackathon:write',
+    'notification:read',
+    'notification:write',
   ]);
   const [expiresPreset, setExpiresPreset] = useState<string>('30d');
   const [customExpiresAt, setCustomExpiresAt] = useState<string>('');
@@ -62,6 +66,8 @@ Recommended scopes by workflow:
 - managing feeds/bookmarks: feed:write
 - editing profile/follow graph: profile:write + social:write
 - hackathon team/submission actions: hackathon:write
+- reading notifications/announcements: notification:read
+- clearing or marking notifications: notification:write
 
 Core endpoints:
 - Create Idea: POST /projects (type=\"idea\")
