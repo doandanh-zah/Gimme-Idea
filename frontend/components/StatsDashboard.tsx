@@ -1,8 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
-import axios from 'axios';
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+import { apiClient } from '../lib/api-client';
 
 interface ActivityData {
   name: string;
@@ -19,39 +17,12 @@ const StatsDashboard: React.FC = () => {
   useEffect(() => {
     const fetchStats = async () => {
       try {
-        // Fetch all ideas to calculate stats
-        const response = await axios.get(`${API_URL}/projects?type=idea&limit=1000`);
-        const ideas = response.data.data || [];
-        
-        setTotalIdeas(ideas.length);
-        
-        // Calculate total feedback
-        const feedbackSum = ideas.reduce((sum: number, idea: any) => sum + (idea.feedbackCount || 0), 0);
-        setTotalFeedback(feedbackSum);
-        
-        // Group by day of week (based on creation date)
-        const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-        const dayMap: Record<string, { ideas: number; feedback: number }> = {};
-        days.forEach(day => { dayMap[day] = { ideas: 0, feedback: 0 }; });
-        
-        ideas.forEach((idea: any) => {
-          if (idea.createdAt) {
-            const date = new Date(idea.createdAt);
-            const dayName = days[date.getDay()];
-            dayMap[dayName].ideas += 1;
-            dayMap[dayName].feedback += idea.feedbackCount || 0;
-          }
-        });
-        
-        // Convert to chart data starting from Monday
-        const orderedDays = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-        const actData: ActivityData[] = orderedDays.map(day => ({
-          name: day,
-          ideas: dayMap[day].ideas,
-          feedback: dayMap[day].feedback
-        }));
-        
-        setActivityData(actData);
+        const response = await apiClient.getIdeaVelocityStats();
+        if (response.success && response.data) {
+          setTotalIdeas(response.data.totalIdeas);
+          setTotalFeedback(response.data.totalFeedback);
+          setActivityData(response.data.activity);
+        }
       } catch (error) {
         console.error('Failed to fetch stats:', error);
         // Fallback empty data
@@ -81,7 +52,7 @@ const StatsDashboard: React.FC = () => {
         <div className="flex justify-between items-center mb-6">
           <div>
             <h3 className="text-xl font-display font-bold text-white">Idea & Feedback Velocity</h3>
-            <p className="text-xs text-gray-500 mt-1">{totalIdeas} ideas • {totalFeedback} feedback</p>
+            <p className="text-xs text-gray-500 mt-1">{totalIdeas} ideas • {totalFeedback} feedback this week</p>
           </div>
           <div className="flex gap-4 text-xs">
             <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-gold"></span> Ideas</span>

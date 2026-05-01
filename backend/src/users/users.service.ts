@@ -26,11 +26,28 @@ export class UsersService {
    */
   async findByUsername(username: string): Promise<ApiResponse<User>> {
     const supabase = this.supabaseService.getAdminClient();
+    const userSelect = `
+      id,
+      wallet,
+      username,
+      bio,
+      avatar,
+      cover_image,
+      slug,
+      reputation_score,
+      balance,
+      social_links,
+      last_login_at,
+      login_count,
+      created_at,
+      followers_count,
+      following_count
+    `;
 
     // First try to find by slug (clean URL)
     let { data: user, error } = await supabase
       .from("users")
-      .select("*")
+      .select(userSelect)
       .eq("slug", username)
       .single();
 
@@ -38,7 +55,7 @@ export class UsersService {
     if (error || !user) {
       const result = await supabase
         .from("users")
-        .select("*")
+        .select(userSelect)
         .eq("username", username)
         .single();
 
@@ -50,7 +67,7 @@ export class UsersService {
     if (error || !user) {
       const result = await supabase
         .from("users")
-        .select("*")
+        .select(userSelect)
         .ilike("username", username)
         .single();
 
@@ -153,8 +170,15 @@ export class UsersService {
   /**
    * Get user's projects
    */
-  async getUserProjects(username: string): Promise<ApiResponse<any[]>> {
+  async getUserProjects(
+    username: string,
+    options?: { type?: "project" | "idea"; limit?: number; offset?: number }
+  ): Promise<ApiResponse<any[]>> {
     const supabase = this.supabaseService.getAdminClient();
+    const requestedLimit = Number.isFinite(options?.limit) ? options?.limit || 24 : 24;
+    const requestedOffset = Number.isFinite(options?.offset) ? options?.offset || 0 : 0;
+    const limit = Math.min(Math.max(requestedLimit, 1), 50);
+    const offset = Math.max(requestedOffset, 0);
 
     // Get user first
     const { data: user } = await supabase
@@ -168,11 +192,40 @@ export class UsersService {
     }
 
     // Get user's projects
-    const { data: projects, error } = await supabase
+    let projectsQuery = supabase
       .from("projects")
-      .select("*")
+      .select(`
+        id,
+        slug,
+        type,
+        title,
+        description,
+        category,
+        votes,
+        feedback_count,
+        stage,
+        tags,
+        image_url,
+        is_anonymous,
+        created_at,
+        ai_score,
+        pool_status,
+        governance_treasury_address,
+        author:users!projects_author_id_fkey(
+          username,
+          avatar,
+          slug
+        )
+      `)
       .eq("author_id", user.id)
-      .order("created_at", { ascending: false });
+      .order("created_at", { ascending: false })
+      .range(offset, offset + limit - 1);
+
+    if (options?.type) {
+      projectsQuery = projectsQuery.eq("type", options.type);
+    }
+
+    const { data: projects, error } = await projectsQuery;
 
     if (error) {
       throw new Error(`Failed to fetch projects: ${error.message}`);
@@ -180,7 +233,35 @@ export class UsersService {
 
     return {
       success: true,
-      data: projects,
+      data: (projects || []).map((p: any) => {
+        const authorData = Array.isArray(p.author) ? p.author[0] : p.author;
+        return {
+          id: p.id,
+          slug: p.slug,
+          type: p.type || "project",
+          title: p.title,
+          description: p.description,
+          category: p.category,
+          votes: p.votes || 0,
+          feedbackCount: p.feedback_count || 0,
+          stage: p.stage,
+          tags: p.tags || [],
+          imageUrl: p.image_url,
+          isAnonymous: p.is_anonymous,
+          createdAt: p.created_at,
+          aiScore: p.ai_score,
+          poolStatus: p.pool_status,
+          governanceTreasuryAddress: p.governance_treasury_address,
+          author:
+            p.is_anonymous || !authorData
+              ? null
+              : {
+                  username: authorData.username,
+                  avatar: authorData.avatar,
+                  slug: authorData.slug,
+                },
+        };
+      }),
     };
   }
 
@@ -230,11 +311,13 @@ export class UsersService {
       likesReceived * 1 +
       tipsReceived * 5;
 
-    // Keep the stored reputation score aligned with the cached counters.
-    await supabase
-      .from("users")
-      .update({ reputation_score: reputation })
-      .eq("id", user.id);
+    // Avoid a write on every profile view; only repair drift when needed.
+    if ((user.reputation_score || 0) !== reputation) {
+      await supabase
+        .from("users")
+        .update({ reputation_score: reputation })
+        .eq("id", user.id);
+    }
 
     return {
       success: true,

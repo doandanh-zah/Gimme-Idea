@@ -239,6 +239,13 @@ export const apiClient = {
       updatedAt: string;
     }>(`/projects/${projectId}/market-stats`),
 
+  getIdeaVelocityStats: () =>
+    apiFetch<{
+      totalIdeas: number;
+      totalFeedback: number;
+      activity: Array<{ name: string; ideas: number; feedback: number }>;
+    }>("/projects/idea-velocity"),
+
   // Comments
   getProjectComments: (projectId: string) =>
     apiFetch<any[]>(`/comments/project/${projectId}`),
@@ -355,8 +362,21 @@ export const apiClient = {
       votesReceived: number;
     }>(`/users/${username}/stats`),
 
-  getUserProjects: (username: string) =>
-    apiFetch<any[]>(`/users/${username}/projects`),
+  getUserProjects: (
+    username: string,
+    params?: { type?: "project" | "idea"; limit?: number; offset?: number }
+  ) => {
+    const query = params
+      ? new URLSearchParams(
+        Object.entries(params)
+          .filter(([, v]) => v !== undefined)
+          .map(([k, v]) => [k, String(v)])
+      ).toString()
+      : "";
+    return apiFetch<any[]>(
+      `/users/${username}/projects${query ? `?${query}` : ""}`
+    );
+  },
 
   updateUserProfile: (data: {
     username?: string;

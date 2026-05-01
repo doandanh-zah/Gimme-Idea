@@ -59,5 +59,7 @@ hackathonLegacy
 
 # Thod's docs/files, dont include.
 devdocs/ 
+
+# Personal documents
+dev-docs
 AGENTS.md
-dev-docs/

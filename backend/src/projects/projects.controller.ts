@@ -9,6 +9,7 @@ import {
   Query,
   UseGuards,
   UseInterceptors,
+  Req,
 } from "@nestjs/common";
 import { ProjectsService } from "./projects.service";
 import { CreateProjectDto } from "./dto/create-project.dto";
@@ -57,6 +58,12 @@ export class ProjectsController {
     @Query("category") category?: string
   ): Promise<ApiResponse<Project[]>> {
     return this.projectsService.getRecommendedIdeas(limit || 3, category);
+  }
+
+  @Get("idea-velocity")
+  @UseInterceptors(new CacheControlInterceptor(300, 60))
+  async getIdeaVelocityStats(): Promise<ApiResponse<any>> {
+    return this.projectsService.getIdeaVelocityStats();
   }
 
   /**

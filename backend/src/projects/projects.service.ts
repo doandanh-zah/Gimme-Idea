@@ -41,6 +41,8 @@ export class ProjectsService {
    * Get all projects with filters
    */
   async findAll(query: QueryProjectsDto): Promise<ApiResponse<Project[]>> {
+    const limit = Math.min(query.limit || 20, 100);
+    const offset = query.offset || 0;
     // Cache key includes all query params that affect output.
     const cacheKey = JSON.stringify({
       type: query.type,
@@ -50,8 +52,8 @@ export class ProjectsService {
       sortBy: query.sortBy,
       sortOrder: query.sortOrder,
       poolStatus: query.poolStatus,
-      limit: query.limit,
-      offset: query.offset,
+      limit,
+      offset,
     });
     const cached = this.listCache.get(cacheKey);
     if (cached) return cached;
@@ -143,8 +145,8 @@ export class ProjectsService {
 
     // Apply pagination
     supabaseQuery = supabaseQuery.range(
-      query.offset,
-      query.offset + query.limit - 1
+      offset,
+      offset + limit - 1
     );
 
     const { data, error } = await supabaseQuery;
@@ -237,31 +239,15 @@ export class ProjectsService {
         feedback_count,
         stage,
         tags,
-        website,
-        bounty,
         image_url,
         is_anonymous,
         created_at,
         ai_score,
 
-        pool_status,
-        governance_treasury_address,
-        proposal_pubkey,
-        pass_pool_address,
-        fail_pool_address,
-        pool_create_tx,
-        pool_finalize_tx,
-        pool_refs,
-        final_decision,
-        finalized_at,
-        total_pass_volume,
-        total_fail_volume,
-
         problem,
         solution,
         author:users!projects_author_id_fkey(
           username,
-          wallet,
           avatar,
           slug
         )
@@ -295,16 +281,15 @@ export class ProjectsService {
         feedbackCount: p.feedback_count || 0,
         stage: p.stage,
         tags: p.tags || [],
-        website: p.website,
+        website: undefined,
         author:
           p.is_anonymous || !authorData
             ? null
             : {
               username: authorData.username,
-              wallet: authorData.wallet,
               avatar: authorData.avatar,
             },
-        bounty: p.bounty,
+        bounty: undefined,
         imageUrl: p.image_url,
         problem: p.problem, // Include for recommended cards preview
         solution: p.solution, // Include for recommended cards preview
@@ -312,26 +297,70 @@ export class ProjectsService {
         createdAt: p.created_at,
 
         // Commit-to-Build (Phase 1)
-        poolStatus: p.pool_status,
-        governanceTreasuryAddress: p.governance_treasury_address,
-        proposalPubkey: p.proposal_pubkey,
-        passPoolAddress: p.pass_pool_address,
-        failPoolAddress: p.fail_pool_address,
-        poolCreateTx: p.pool_create_tx,
-        poolFinalizeTx: p.pool_finalize_tx,
-        poolRefs: p.pool_refs,
-        finalDecision: p.final_decision,
-        finalizedAt: p.finalized_at,
-        totalPassVolume:
-          p.total_pass_volume == null ? undefined : Number(p.total_pass_volume),
-        totalFailVolume:
-          p.total_fail_volume == null ? undefined : Number(p.total_fail_volume),
       };
     });
 
     return {
       success: true,
       data: projects,
+    };
+  }
+
+  async getIdeaVelocityStats(): Promise<ApiResponse<{
+    totalIdeas: number;
+    totalFeedback: number;
+    activity: Array<{ name: string; ideas: number; feedback: number }>;
+  }>> {
+    const supabase = this.supabaseService.getAdminClient();
+    const since = new Date();
+    since.setDate(since.getDate() - 6);
+    since.setHours(0, 0, 0, 0);
+
+    const [{ count: totalIdeas, error: countError }, { data: recentIdeas, error: recentError }] =
+      await Promise.all([
+        supabase
+          .from("projects")
+          .select("id", { count: "exact", head: true })
+          .eq("type", "idea"),
+        supabase
+          .from("projects")
+          .select("created_at, feedback_count")
+          .eq("type", "idea")
+          .gte("created_at", since.toISOString())
+          .order("created_at", { ascending: true })
+          .limit(500),
+      ]);
+
+    if (countError) {
+      throw new Error(`Failed to count ideas: ${countError.message}`);
+    }
+    if (recentError) {
+      throw new Error(`Failed to fetch idea activity: ${recentError.message}`);
+    }
+
+    const days = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+    const orderedDays = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+    const dayMap = orderedDays.reduce(
+      (acc, day) => ({ ...acc, [day]: { ideas: 0, feedback: 0 } }),
+      {} as Record<string, { ideas: number; feedback: number }>
+    );
+
+    let totalFeedback = 0;
+    for (const idea of recentIdeas || []) {
+      const dayName = days[new Date(idea.created_at).getDay()];
+      const feedback = Number(idea.feedback_count || 0);
+      dayMap[dayName].ideas += 1;
+      dayMap[dayName].feedback += feedback;
+      totalFeedback += feedback;
+    }
+
+    return {
+      success: true,
+      data: {
+        totalIdeas: totalIdeas || 0,
+        totalFeedback,
+        activity: orderedDays.map((name) => ({ name, ...dayMap[name] })),
+      },
     };
   }
 

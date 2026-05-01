@@ -160,11 +160,13 @@ export const Profile = () => {
       
       setIsLoadingIdeas(true);
       try {
-        const response = await apiClient.getUserProjects(displayUser.username);
+        const response = await apiClient.getUserProjects(displayUser.username, {
+          type: 'idea',
+          limit: 24,
+        });
         if (response.success && response.data) {
-          // Filter to only show ideas and map data
+          // Map data for card compatibility. The API already filters to ideas.
           const ideas = response.data
-            .filter((p: any) => p.type === 'idea')
             .map((p: any) => ({
               ...p,
               image: p.imageUrl || p.image,

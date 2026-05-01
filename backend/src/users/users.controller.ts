@@ -65,9 +65,16 @@ export class UsersController {
    */
   @Get(":username/projects")
   async getUserProjects(
-    @Param("username") username: string
+    @Param("username") username: string,
+    @Query("type") type?: "project" | "idea",
+    @Query("limit") limit?: string,
+    @Query("offset") offset?: string
   ): Promise<ApiResponse<any[]>> {
-    return this.usersService.getUserProjects(username);
+    return this.usersService.getUserProjects(username, {
+      type,
+      limit: limit ? parseInt(limit, 10) : 24,
+      offset: offset ? parseInt(offset, 10) : 0,
+    });
   }
 
   /**

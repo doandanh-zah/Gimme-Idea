@@ -13,6 +13,25 @@ type View =
   | "profile"
   | "donate";
 
+const updateCommentById = (
+  comments: Comment[] = [],
+  commentId: string,
+  updater: (comment: Comment) => Comment
+): Comment[] =>
+  comments.map((comment) => {
+    const updatedComment =
+      comment.id === commentId ? updater(comment) : comment;
+
+    if (!updatedComment.replies?.length) {
+      return updatedComment;
+    }
+
+    return {
+      ...updatedComment,
+      replies: updateCommentById(updatedComment.replies, commentId, updater),
+    };
+  });
+
 interface AppState {
   user: User | null;
   viewedUser: User | null;
@@ -932,27 +951,31 @@ export const useAppStore = create<AppState>((set, get) => ({
 
   likeComment: async (projectId, commentId) => {
     try {
-      await apiClient.likeComment(commentId);
-      // Refresh project to get updated comment likes
-      const projectResponse = await apiClient.getProject(projectId);
-      if (projectResponse.success && projectResponse.data) {
-        // Transform flat comments to nested structure
-        if (
-          projectResponse.data.comments &&
-          projectResponse.data.comments.length > 0
-        ) {
-          projectResponse.data.comments = buildCommentTree(
-            projectResponse.data.comments
-          );
-        }
+      const response = await apiClient.likeComment(commentId);
+      if (response.success && response.data) {
+        const likes = response.data.likes;
         set((state) => ({
-          projects: state.projects.map((p) =>
-            p.id === projectId ? projectResponse.data : p
+          projects: state.projects.map((project) =>
+            project.id === projectId
+              ? {
+                  ...project,
+                  comments: updateCommentById(project.comments || [], commentId, (comment) => ({
+                    ...comment,
+                    likes,
+                  })),
+                }
+              : project
           ),
-          // Also update selectedProject if it's the same project
           selectedProject:
             state.selectedProject?.id === projectId
-              ? projectResponse.data
+              ? {
+                  ...state.selectedProject,
+                  comments: updateCommentById(
+                    state.selectedProject.comments || [],
+                    commentId,
+                    (comment) => ({ ...comment, likes })
+                  ),
+                }
               : state.selectedProject,
         }));
       }
@@ -964,27 +987,31 @@ export const useAppStore = create<AppState>((set, get) => ({
 
   dislikeComment: async (projectId, commentId) => {
     try {
-      await apiClient.dislikeComment(commentId);
-      // Refresh project to get updated comment dislikes
-      const projectResponse = await apiClient.getProject(projectId);
-      if (projectResponse.success && projectResponse.data) {
-        // Transform flat comments to nested structure
-        if (
-          projectResponse.data.comments &&
-          projectResponse.data.comments.length > 0
-        ) {
-          projectResponse.data.comments = buildCommentTree(
-            projectResponse.data.comments
-          );
-        }
+      const response = await apiClient.dislikeComment(commentId);
+      if (response.success && response.data) {
+        const dislikes = response.data.dislikes;
         set((state) => ({
-          projects: state.projects.map((p) =>
-            p.id === projectId ? projectResponse.data : p
+          projects: state.projects.map((project) =>
+            project.id === projectId
+              ? {
+                  ...project,
+                  comments: updateCommentById(project.comments || [], commentId, (comment) => ({
+                    ...comment,
+                    dislikes,
+                  })),
+                }
+              : project
           ),
-          // Also update selectedProject if it's the same project
           selectedProject:
             state.selectedProject?.id === projectId
-              ? projectResponse.data
+              ? {
+                  ...state.selectedProject,
+                  comments: updateCommentById(
+                    state.selectedProject.comments || [],
+                    commentId,
+                    (comment) => ({ ...comment, dislikes })
+                  ),
+                }
               : state.selectedProject,
         }));
       }

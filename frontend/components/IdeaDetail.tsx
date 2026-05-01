@@ -795,7 +795,7 @@ export const IdeaDetail = () => {
 
     // Fetch related projects count on mount and when modal closes
     useEffect(() => {
-        if (project?.id) {
+        if (project?.id && !showRelatedProjectsModal) {
             fetchRelatedProjectsCount();
         }
     }, [project?.id, showRelatedProjectsModal]); // Refresh when modal closes
