@@ -22,8 +22,8 @@ Gimme Idea lets users publish ideas/projects, receive AI + community feedback, d
 backend/      NestJS API + Supabase integration
 frontend/     Next.js app (App Router)
 programs/     Solana programs/scripts (where applicable)
-docs/         Product/feature documentation
-devdocs/      Additional technical references
+docs/         Shareable project documentation
+dev-docs/     Private developer notes
 mcp/          Agent/automation guides
 ```
 
@@ -71,11 +71,7 @@ Frontend default: `http://localhost:3000`
 
 ## Environment variables
 
-See:
-- `REQUIRED_ENV_VARS.md`
-- `ENV_VARS_CHECKLIST.md`
-- `backend/.env.example`
-- `frontend/.env.example`
+The repository does not currently include committed `.env.example` files. Use the variable summary in `docs/README.md` as a starting point and confirm required values against the code before deployment.
 
 ## Key API groups
 
@@ -102,6 +98,7 @@ Reference docs:
 
 ## Status and planning docs
 
+- `docs/README.md`
 - `docs/FEATURE_STATUS.md`
 - `BUILZER.md`
 - `REPORT_BUILZER.md`
