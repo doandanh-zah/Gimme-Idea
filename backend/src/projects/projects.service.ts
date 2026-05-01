@@ -62,8 +62,8 @@ export class ProjectsService {
 
     // OPTIMIZATION: Only select columns needed for list view to reduce egress
     // Full details (problem, solution, opportunity) are fetched in findOne
-    // Removed: pool_create_tx, pool_finalize_tx, pool_refs, final_decision, 
-    // finalized_at, author.wallet (audit/internal fields not used in list views)
+    // Removed: pool_create_tx, pool_finalize_tx, pool_refs, final_decision,
+    // finalized_at (audit/internal fields not used in list views)
     let supabaseQuery = supabase.from("projects").select(`
         id,
         slug,
@@ -92,6 +92,7 @@ export class ProjectsService {
 
         author:users!projects_author_id_fkey(
           username,
+          wallet,
           avatar,
           slug
         )
@@ -178,6 +179,7 @@ export class ProjectsService {
               username: authorData.username,
               wallet: authorData.wallet,
               avatar: authorData.avatar,
+              slug: authorData.slug,
             },
         bounty: p.bounty,
         imageUrl: p.image_url,
@@ -192,11 +194,6 @@ export class ProjectsService {
         proposalPubkey: p.proposal_pubkey,
         passPoolAddress: p.pass_pool_address,
         failPoolAddress: p.fail_pool_address,
-        poolCreateTx: p.pool_create_tx,
-        poolFinalizeTx: p.pool_finalize_tx,
-        poolRefs: p.pool_refs,
-        finalDecision: p.final_decision,
-        finalizedAt: p.finalized_at,
         totalPassVolume:
           p.total_pass_volume == null ? undefined : Number(p.total_pass_volume),
         totalFailVolume:
@@ -248,6 +245,7 @@ export class ProjectsService {
         solution,
         author:users!projects_author_id_fkey(
           username,
+          wallet,
           avatar,
           slug
         )
@@ -287,7 +285,9 @@ export class ProjectsService {
             ? null
             : {
               username: authorData.username,
+              wallet: authorData.wallet,
               avatar: authorData.avatar,
+              slug: authorData.slug,
             },
         bounty: undefined,
         imageUrl: p.image_url,
