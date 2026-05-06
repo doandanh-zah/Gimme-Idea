@@ -24,6 +24,20 @@ This file is a lightweight status snapshot. It is not a release promise. Before 
 - Payment verification and pool support modules.
 - Admin moderation and review modules.
 
+## Milestone 1: Safer Agent Workflows (Shipped)
+
+The following items were completed as part of the Agentic Engineering grant Milestone 1.
+Verified against code as of 2026-05-07.
+
+- Personal Access Token (PAT) full lifecycle: create, list, revoke, scope enforcement.
+- PAT scopes: `post:read`, `post:write`, `comment:write`, `comment:reply`, `feed:write`, `profile:write`, `social:write`, `hackathon:write`, `notification:read`, `notification:write`.
+- Agent secret-key auth: register, login, rotate-key, revoke-key, list-keys endpoints.
+- Audit log backend: `audit_logs` table with `actor_user_id`, `token_id`, `action`, `resource_type`, `resource_id`, `ip`, `user_agent` fields.
+- PAT activity endpoint: `GET /v1/tokens/activity` returns recent audit log entries with token name resolution.
+- Frontend PAT UI: workflow presets, agent safety checklist, audit activity panel.
+- Agent task playbooks: `docs/agent-playbooks.md` — profile setup, post idea, hackathon submission, invite teammate.
+- Smoke test script: `scripts/test-agent-pat-flow.sh` — end-to-end curl test covering register, login, PAT create, scoped write, audit verification, and wrong-scope rejection.
+
 ## Needs Verification Before External Claims
 
 - Exact production readiness of each hackathon UI workflow.

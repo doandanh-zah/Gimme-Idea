@@ -18,15 +18,60 @@ const ALL_SCOPES = [
   { id: 'notification:write', label: 'Manage notifications and announcements' },
 ];
 
+const WORKFLOW_PRESETS = [
+  {
+    id: 'idea-drafting',
+    name: 'Idea drafting',
+    description: 'Let an agent create ideas, add comments, and read notification context.',
+    tokenName: 'Idea Drafting Agent',
+    scopes: ['post:read', 'post:write', 'comment:write', 'notification:read'],
+  },
+  {
+    id: 'profile-setup',
+    name: 'Profile setup',
+    description: 'Let an agent polish your profile and manage basic social actions.',
+    tokenName: 'Profile Setup Agent',
+    scopes: ['profile:write', 'social:write', 'notification:read'],
+  },
+  {
+    id: 'hackathon-team',
+    name: 'Hackathon team workflow',
+    description: 'Let an agent prepare submissions, manage team actions, and comment on coordination threads.',
+    tokenName: 'Hackathon Team Agent',
+    scopes: ['post:read', 'post:write', 'comment:write', 'comment:reply', 'profile:write', 'social:write', 'hackathon:write', 'notification:read'],
+  },
+  {
+    id: 'full-builder',
+    name: 'Full builder workflow',
+    description: 'Broad builder access for trusted agents. Review this one carefully.',
+    tokenName: 'Full Builder Agent',
+    scopes: ALL_SCOPES.map((scope) => scope.id),
+  },
+];
+
+const formatDateTime = (value?: string | null) => {
+  if (!value) return '-';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+  return date.toLocaleString();
+};
+
+const describeAction = (action: string) =>
+  action
+    .split('.')
+    .map((part) => part.replace(/_/g, ' '))
+    .join(' / ');
+
 export default function ApiTokensPage() {
   const { user } = useAppStore();
 
   const [loading, setLoading] = useState(false);
   const [creating, setCreating] = useState(false);
   const [tokens, setTokens] = useState<any[]>([]);
+  const [activity, setActivity] = useState<any[]>([]);
   const [error, setError] = useState<string>('');
 
-  const [name, setName] = useState('Agent Token');
+  const [name, setName] = useState('Full Builder Agent');
   const [scopes, setScopes] = useState<string[]>([
     'post:read',
     'post:write',
@@ -47,6 +92,7 @@ export default function ApiTokensPage() {
   const [showGuide, setShowGuide] = useState(false);
   const [showCreateConfirm, setShowCreateConfirm] = useState(false);
   const [acknowledgeRisk, setAcknowledgeRisk] = useState(false);
+  const [selectedPreset, setSelectedPreset] = useState('full-builder');
 
   const canUse = !!user;
 
@@ -94,9 +140,14 @@ If you are unsure about enum values, ask me. Category must be one of: DeFi, NFT,
     setError('');
     setLoading(true);
     try {
-      const res = await apiClient.listApiTokens();
-      if (!res.success) throw new Error(res.error || 'Failed to load tokens');
-      setTokens(res.data || []);
+      const [tokensRes, activityRes] = await Promise.all([
+        apiClient.listApiTokens(),
+        apiClient.listApiTokenActivity(),
+      ]);
+      if (!tokensRes.success) throw new Error(tokensRes.error || 'Failed to load tokens');
+      if (!activityRes.success) throw new Error(activityRes.error || 'Failed to load token activity');
+      setTokens(tokensRes.data || []);
+      setActivity(activityRes.data || []);
     } catch (e: any) {
       setError(e?.message || 'Failed to load tokens');
     } finally {
@@ -110,6 +161,15 @@ If you are unsure about enum values, ask me. Category must be one of: DeFi, NFT,
 
   const onToggleScope = (id: string) => {
     setScopes((prev) => (prev.includes(id) ? prev.filter((s) => s !== id) : [...prev, id]));
+  };
+
+  const applyPreset = (presetId: string) => {
+    const preset = WORKFLOW_PRESETS.find((item) => item.id === presetId);
+    if (!preset) return;
+
+    setSelectedPreset(preset.id);
+    setName(preset.tokenName);
+    setScopes(preset.scopes);
   };
 
   const onCreate = async () => {
@@ -371,6 +431,48 @@ If you are unsure about enum values, ask me. Category must be one of: DeFi, NFT,
             <div className="glass p-6 rounded-xl border border-white/10 mb-8">
               <h2 className="text-lg font-bold mb-3">Create Token</h2>
 
+              <div className="mb-5">
+                <label className="text-xs text-gray-400 font-mono">Workflow preset</label>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-2">
+                  {WORKFLOW_PRESETS.map((preset) => (
+                    <button
+                      key={preset.id}
+                      type="button"
+                      onClick={() => applyPreset(preset.id)}
+                      className={`text-left p-4 rounded-xl border transition-all ${
+                        selectedPreset === preset.id
+                          ? 'bg-gold/10 border-gold/40 text-white'
+                          : 'bg-white/5 border-white/10 text-gray-300 hover:bg-white/10'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between gap-3">
+                        <span className="text-sm font-bold">{preset.name}</span>
+                        <span className="text-[10px] font-mono text-gray-500">{preset.scopes.length} scopes</span>
+                      </div>
+                      <p className="mt-2 text-xs text-gray-400 leading-relaxed">{preset.description}</p>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="mb-5 rounded-xl bg-black/20 border border-white/10 p-4">
+                <h3 className="text-sm font-bold text-white mb-3">Agent safety checklist</h3>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs text-gray-300">
+                  <div className="rounded-lg bg-white/5 border border-white/10 p-3">
+                    <div className="font-bold text-gray-100 mb-1">Verify identity</div>
+                    <p className="text-gray-400">Ask the agent to call <span className="font-mono">GET /auth/me</span> before any write.</p>
+                  </div>
+                  <div className="rounded-lg bg-white/5 border border-white/10 p-3">
+                    <div className="font-bold text-gray-100 mb-1">Use the narrowest scope</div>
+                    <p className="text-gray-400">Start from a preset and remove permissions the workflow does not need.</p>
+                  </div>
+                  <div className="rounded-lg bg-white/5 border border-white/10 p-3">
+                    <div className="font-bold text-gray-100 mb-1">Review activity</div>
+                    <p className="text-gray-400">Check recent agent actions below and revoke tokens that look wrong.</p>
+                  </div>
+                </div>
+              </div>
+
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="text-xs text-gray-400 font-mono">Name</label>
@@ -467,7 +569,7 @@ If you are unsure about enum values, ask me. Category must be one of: DeFi, NFT,
               {error && <p className="text-red-400 text-sm mt-4">{error}</p>}
             </div>
 
-            <div className="glass p-6 rounded-xl border border-white/10">
+            <div className="glass p-6 rounded-xl border border-white/10 mb-8">
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-lg font-bold">Your Tokens</h2>
                 <button
@@ -517,6 +619,57 @@ If you are unsure about enum values, ask me. Category must be one of: DeFi, NFT,
                           <span className="text-red-300">Revoked:</span>{' '}
                           <span className={t.revoked_at ? 'font-mono text-red-200' : 'font-mono'}>{t.revoked_at || '-'}</span>
                         </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <div className="glass p-6 rounded-xl border border-white/10">
+              <div className="flex items-center justify-between mb-4">
+                <div>
+                  <h2 className="text-lg font-bold">Recent Agent Activity</h2>
+                  <p className="text-xs text-gray-400 mt-1">
+                    PAT writes and agent key events for your account.
+                  </p>
+                </div>
+                <button
+                  onClick={load}
+                  disabled={loading}
+                  className="px-3 py-1.5 bg-white/10 border border-white/10 rounded-full text-xs hover:bg-white/15"
+                >
+                  {loading ? 'Refreshing...' : 'Refresh'}
+                </button>
+              </div>
+
+              {activity.length === 0 ? (
+                <p className="text-gray-400 text-sm">No agent activity recorded yet.</p>
+              ) : (
+                <div className="space-y-3">
+                  {activity.map((item) => (
+                    <div key={item.id} className="p-4 rounded-xl bg-white/5 border border-white/10">
+                      <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-2">
+                        <div>
+                          <p className="text-white font-bold capitalize">{describeAction(item.action)}</p>
+                          <p className="text-xs text-gray-400 mt-1">
+                            {item.tokenName ? (
+                              <>Token: <span className="font-mono">{item.tokenName}</span></>
+                            ) : item.action?.startsWith('agent.') ? (
+                              <span>Agent secret-key event</span>
+                            ) : (
+                              <span>Account event</span>
+                            )}
+                          </p>
+                        </div>
+                        <p className="text-xs text-gray-500 font-mono">{formatDateTime(item.createdAt)}</p>
+                      </div>
+
+                      <div className="mt-3 grid grid-cols-1 md:grid-cols-2 gap-2 text-xs text-gray-400">
+                        <div>Resource: <span className="font-mono">{item.resourceType || '-'}</span></div>
+                        <div>Resource ID: <span className="font-mono break-all">{item.resourceId || '-'}</span></div>
+                        <div>Token ID: <span className="font-mono break-all">{item.tokenId || '-'}</span></div>
+                        <div>User agent: <span className="font-mono break-all">{item.userAgent || '-'}</span></div>
                       </div>
                     </div>
                   ))}

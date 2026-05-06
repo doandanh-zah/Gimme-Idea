@@ -31,6 +31,19 @@ export type AuthenticatedRequestLike = {
   };
 };
 
+export type ApiTokenActivity = {
+  id: string;
+  action: string;
+  resourceType?: string | null;
+  resourceId?: string | null;
+  tokenId?: string | null;
+  tokenName?: string | null;
+  metadata?: any;
+  ip?: string | null;
+  userAgent?: string | null;
+  createdAt: string;
+};
+
 @Injectable()
 export class ApiTokensService {
   constructor(private supabaseService: SupabaseService) {}
@@ -81,6 +94,50 @@ export class ApiTokensService {
 
     if (error) throw new Error(`Failed to list tokens: ${error.message}`);
     return data;
+  }
+
+  async listActivity(userId: string, limit = 25): Promise<ApiTokenActivity[]> {
+    const supabase = this.supabaseService.getAdminClient();
+    const safeLimit = Math.min(Math.max(Number(limit) || 25, 1), 100);
+
+    const { data: logs, error } = await supabase
+      .from('audit_logs')
+      .select('id, action, resource_type, resource_id, token_id, metadata, ip, user_agent, created_at')
+      .eq('actor_user_id', userId)
+      .order('created_at', { ascending: false })
+      .limit(safeLimit);
+
+    if (error) throw new Error(`Failed to list token activity: ${error.message}`);
+
+    const tokenIds = Array.from(
+      new Set((logs || []).map((log) => log.token_id).filter(Boolean))
+    );
+    const tokenNameById = new Map<string, string>();
+
+    if (tokenIds.length > 0) {
+      const { data: tokens } = await supabase
+        .from('api_tokens')
+        .select('id, name')
+        .eq('user_id', userId)
+        .in('id', tokenIds);
+
+      for (const token of tokens || []) {
+        tokenNameById.set(token.id, token.name);
+      }
+    }
+
+    return (logs || []).map((log) => ({
+      id: log.id,
+      action: log.action,
+      resourceType: log.resource_type,
+      resourceId: log.resource_id,
+      tokenId: log.token_id,
+      tokenName: log.token_id ? tokenNameById.get(log.token_id) || null : null,
+      metadata: log.metadata || {},
+      ip: log.ip,
+      userAgent: log.user_agent,
+      createdAt: log.created_at,
+    }));
   }
 
   async revokeToken(userId: string, tokenId: string) {

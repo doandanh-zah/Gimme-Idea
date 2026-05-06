@@ -36,6 +36,13 @@ export class ApiTokensController {
     return { success: true, data };
   }
 
+  @Get('activity')
+  @UseGuards(AuthGuard)
+  async activity(@CurrentUser('userId') userId: string) {
+    const data = await this.apiTokensService.listActivity(userId);
+    return { success: true, data };
+  }
+
   @Delete(':id')
   @UseGuards(AuthGuard)
   async revoke(@CurrentUser('userId') userId: string, @Param('id') id: string) {

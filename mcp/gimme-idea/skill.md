@@ -2,6 +2,8 @@
 
 This guide lets an automation agent act as a normal Gimme Idea user (non-admin scope).
 
+For step-by-step task workflows (create profile, post idea, hackathon submission, invite teammate), see [`docs/agent-playbooks.md`](../../docs/agent-playbooks.md).
+
 ## 1) Base config
 - API base: `https://api.gimmeidea.com/api`
 - Auth header: `Authorization: Bearer <JWT>`

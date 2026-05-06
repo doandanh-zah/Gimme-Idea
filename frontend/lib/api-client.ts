@@ -562,6 +562,8 @@ export const apiClient = {
 
   listApiTokens: () => apiFetch<any[]>("/v1/tokens"),
 
+  listApiTokenActivity: () => apiFetch<any[]>("/v1/tokens/activity"),
+
   revokeApiToken: (id: string) =>
     apiFetch<{ revoked: boolean }>(`/v1/tokens/${id}`, {
       method: "DELETE",
