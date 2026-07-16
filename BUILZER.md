@@ -11,6 +11,7 @@ Prepare and execute a winning application for Superteam bounty:
 
 Listing: `https://superteam.fun/earn/listing/openclaw-instances-for-investors-spark-hackathon-1`
 
+
 ## Key facts extracted from listing
 - Prize/Treasury reference: **$3,260**
 - Deadline: **2026-03-01 16:59:59Z**
