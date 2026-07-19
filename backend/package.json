@@ -4,7 +4,7 @@
   "description": "Gimme Idea Backend - Solana Feedback Platform API",
   "main": "dist/main.js",
   "scripts": {
-    "build": "nest build",
+    "build": "npm install --omit=dev --no-audit --no-fund && node ./node_modules/@nestjs/cli/bin/nest.js build",
     "start": "nest start",
     "start:dev": "nest start --watch",
     "start:prod": "node dist/main",
