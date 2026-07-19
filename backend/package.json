@@ -48,5 +48,11 @@
     "ts-loader": "^9.5.1",
     "ts-node": "^10.9.1",
     "tsconfig-paths": "^4.2.0"
+  },
+  "overrides": {
+    "rpc-websockets": {
+      "uuid": "8.3.2"
+    },
+    "uuid": "8.3.2"
   }
 }
