@@ -9,6 +9,7 @@ import { SupabaseService } from "../shared/supabase.service";
 import { ApiTokensModule } from "../api-tokens/api-tokens.module";
 import { AnyAuthGuard } from "../common/guards/any-auth.guard";
 import { AuthGuard } from "../common/guards/auth.guard";
+import { OptionalAuthGuard } from "../common/guards/optional-auth.guard";
 import { PatScopeGuard } from "../common/guards/pat-scope.guard";
 
 @Module({
@@ -21,6 +22,7 @@ import { PatScopeGuard } from "../common/guards/pat-scope.guard";
     SupabaseService,
     AuthGuard,
     AnyAuthGuard,
+    OptionalAuthGuard,
     PatScopeGuard,
   ],
   exports: [UsersService, FollowService, NotificationService],

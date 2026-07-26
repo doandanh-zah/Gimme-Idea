@@ -1,7 +1,6 @@
 'use client';
 
-import React, { useEffect } from 'react';
-import Navbar from './components/Navbar';
+import React from 'react';
 import Hero from './components/Hero';
 import StatsDashboard from './components/StatsDashboard';
 import JourneyMap from './components/JourneyMap';
@@ -10,21 +9,13 @@ import { useAuth } from './contexts/AuthContext';
 import Dashboard from './components/Dashboard';
 import { ProjectDetail } from './components/ProjectDetail';
 import { IdeaDetail } from './components/IdeaDetail';
-import { SubmissionModal } from './components/SubmissionModal';
 import { Donate } from './components/Donate';
 import { LoadingLightbulb } from './components/LoadingLightbulb';
 import { Profile } from './components/Profile';
-import { ConnectReminderModal } from './components/ConnectReminderModal';
-import { ConnectWalletPopup } from './components/ConnectWalletPopup';
 
 function App() {
-  const { currentView, isNavigating, openSubmitModal, setUser } = useAppStore();
-  const { user: authUser, isLoading: authLoading } = useAuth();
-
-  // Sync AuthContext user with Store
-  useEffect(() => {
-    setUser(authUser);
-  }, [authUser, setUser]);
+  const { currentView, isNavigating, openSubmitModal } = useAppStore();
+  const { isLoading: authLoading } = useAuth();
 
   const renderContent = () => {
     switch (currentView) {
@@ -89,11 +80,6 @@ function App() {
         </div>
       )}
 
-      <Navbar />
-      <ConnectWalletPopup />
-      <ConnectReminderModal />
-      <SubmissionModal />
-      
       {renderContent()}
 
       <footer className="border-t border-white/10 py-8 px-6 bg-black/90 backdrop-blur-xl">

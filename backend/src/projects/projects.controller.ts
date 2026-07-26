@@ -23,7 +23,10 @@ import { RequirePatScope } from "../common/decorators/require-pat-scope.decorato
 import { AnyAuthGuard } from "../common/guards/any-auth.guard";
 import { CurrentUser } from "../common/decorators/user.decorator";
 import { PatScopeGuard } from "../common/guards/pat-scope.guard";
-import { CacheControlInterceptor } from "../common/interceptors/cache-control.interceptor";
+import {
+  CacheControlInterceptor,
+  NoCacheInterceptor,
+} from "../common/interceptors/cache-control.interceptor";
 import { ApiResponse, Project } from "../shared/types";
 
 @Controller("projects")
@@ -69,10 +72,10 @@ export class ProjectsController {
   /**
    * GET /api/projects/:id
    * Get single project by ID
-   * Cached for 1 minute at edge
+   * Contains mutable comments, so freshness is managed by the client query cache.
    */
   @Get(":id")
-  @UseInterceptors(new CacheControlInterceptor(60, 30)) // 1 min cache, 30s stale
+  @UseInterceptors(new NoCacheInterceptor())
   async findOne(@Param("id") id: string): Promise<ApiResponse<Project>> {
     return this.projectsService.findOne(id);
   }

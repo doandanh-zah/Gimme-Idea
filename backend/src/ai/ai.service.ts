@@ -1476,105 +1476,178 @@ Respond with JSON only:
     }
 
     try {
-      // ---- Quota check (DISABLED for testing) ----
-      const quota = {
-        canSearch: true,
-        remaining: 999,
-        used: 0,
-        max: 999,
-      };
-
-      // ---- Build queries ----
-      const { primary, fallback } = this.buildSearchQueries(
-        ideaTitle, ideaProblem, ideaSolution, category, tags,
-      );
-      this.logger.log(`Primary query: ${primary}`);
-      this.logger.log(`Fallback query: ${fallback}`);
-
-      // ---- Execute primary search ----
-      let allResults: RelatedProjectResult[] = [];
-      let aiSummary: string | undefined;
-      let fallbackUsed = false;
-      let rawCount = 0;
-
-      const primaryData = await this.callTavilySearch(tavilyApiKey, primary);
-      aiSummary = primaryData.answer || undefined;
-      rawCount += primaryData.results?.length || 0;
-
-      if (primaryData.results?.length) {
-        const transformed = this.transformTavilyResults(primaryData.results);
-        allResults = this.postFilterResults(transformed);
-        this.logger.log(`Primary: ${primaryData.results.length} raw → ${allResults.length} filtered`);
+      const { data: idea, error: ideaError } = await supabase
+        .from("projects")
+        .select("author_id")
+        .eq("id", ideaId)
+        .single();
+      if (ideaError || !idea) {
+        return { success: false, error: "Idea not found" };
+      }
+      if (idea.author_id !== userId) {
+        return {
+          success: false,
+          error: "Only the idea uploader can search for related projects",
+        };
       }
 
-      // ---- Fallback if too few quality results ----
-      if (allResults.length < 2 && fallback !== primary) {
-        this.logger.log('Too few results, executing fallback query…');
-        fallbackUsed = true;
-        const fallbackData = await this.callTavilySearch(tavilyApiKey, fallback);
-        rawCount += fallbackData.results?.length || 0;
+      // Reserve one daily search (conditional increment is race-safe for max).
+      // On any failed paid attempt after reserve, refund in finally.
+      const { data: quotaData, error: quotaError } = await supabase.rpc(
+        "can_user_search_projects",
+        { p_user_id: userId },
+      );
+      if (quotaError || !quotaData) {
+        throw quotaError || new Error("Failed to check search quota");
+      }
+      const quota = quotaData as {
+        canSearch: boolean;
+        remaining: number;
+        used: number;
+        max: number;
+      };
+      if (!quota.canSearch) {
+        return {
+          success: false,
+          error: `Daily search limit reached (${quota.max} searches per day)`,
+          quotaInfo: quota,
+        };
+      }
 
-        if (!aiSummary && fallbackData.answer) {
-          aiSummary = fallbackData.answer;
+      let reserved = false;
+      let completed = false;
+
+      try {
+        const { data: reservedOk, error: reserveError } = await supabase.rpc(
+          "increment_search_usage",
+          { p_user_id: userId },
+        );
+        if (reserveError || !reservedOk) {
+          return {
+            success: false,
+            error: "Daily search limit reached. Try again tomorrow.",
+            quotaInfo: { ...quota, remaining: 0 },
+          };
+        }
+        reserved = true;
+
+        // ---- Build queries ----
+        const { primary, fallback } = this.buildSearchQueries(
+          ideaTitle, ideaProblem, ideaSolution, category, tags,
+        );
+        this.logger.log(`Primary query: ${primary}`);
+        this.logger.log(`Fallback query: ${fallback}`);
+
+        // ---- Execute primary search ----
+        let allResults: RelatedProjectResult[] = [];
+        let aiSummary: string | undefined;
+        let fallbackUsed = false;
+        let rawCount = 0;
+
+        const primaryData = await this.callTavilySearch(tavilyApiKey, primary);
+        aiSummary = primaryData.answer || undefined;
+        rawCount += primaryData.results?.length || 0;
+
+        if (primaryData.results?.length) {
+          const transformed = this.transformTavilyResults(primaryData.results);
+          allResults = this.postFilterResults(transformed);
+          this.logger.log(`Primary: ${primaryData.results.length} raw → ${allResults.length} filtered`);
         }
 
-        if (fallbackData.results?.length) {
-          const fallbackTransformed = this.transformTavilyResults(fallbackData.results);
-          const fallbackFiltered = this.postFilterResults(fallbackTransformed);
-          this.logger.log(`Fallback: ${fallbackData.results.length} raw → ${fallbackFiltered.length} filtered`);
+        // ---- Fallback if too few quality results ----
+        if (allResults.length < 2 && fallback !== primary) {
+          this.logger.log('Too few results, executing fallback query…');
+          fallbackUsed = true;
+          const fallbackData = await this.callTavilySearch(tavilyApiKey, fallback);
+          rawCount += fallbackData.results?.length || 0;
 
-          // Merge & deduplicate by domain
-          const seenDomains = new Set(allResults.map(r => r.source));
-          for (const r of fallbackFiltered) {
-            if (!seenDomains.has(r.source)) {
-              allResults.push(r);
-              seenDomains.add(r.source);
+          if (!aiSummary && fallbackData.answer) {
+            aiSummary = fallbackData.answer;
+          }
+
+          if (fallbackData.results?.length) {
+            const fallbackTransformed = this.transformTavilyResults(fallbackData.results);
+            const fallbackFiltered = this.postFilterResults(fallbackTransformed);
+            this.logger.log(`Fallback: ${fallbackData.results.length} raw → ${fallbackFiltered.length} filtered`);
+
+            // Merge & deduplicate by domain
+            const seenDomains = new Set(allResults.map(r => r.source));
+            for (const r of fallbackFiltered) {
+              if (!seenDomains.has(r.source)) {
+                allResults.push(r);
+                seenDomains.add(r.source);
+              }
             }
           }
         }
-      }
 
-      // ---- Final sort & cap at 6 ----
-      allResults.sort((a, b) => b.score - a.score);
-      allResults = allResults.slice(0, 6);
+        // ---- Final sort & cap at 6 ----
+        allResults.sort((a, b) => b.score - a.score);
+        allResults = allResults.slice(0, 6);
 
-      // ---- Persist to DB ----
-      if (allResults.length > 0) {
-        const insertData = allResults.map((r) => ({
-          idea_id: ideaId,
-          title: r.title,
-          url: r.url,
-          snippet: r.snippet,
-          source: r.source,
-          score: r.score,
-          search_query: primary,
-        }));
+        // Zero-result success still consumes quota (paid provider was called).
+        // ---- Persist to DB ----
+        if (allResults.length > 0) {
+          const insertData = allResults.map((r) => ({
+            idea_id: ideaId,
+            title: r.title,
+            url: r.url,
+            snippet: r.snippet,
+            source: r.source,
+            score: r.score,
+            search_query: primary,
+          }));
 
-        const { error: insertError } = await supabase
-          .from('related_projects')
-          .insert(insertData);
+          const { error: insertError } = await supabase
+            .from('related_projects')
+            .insert(insertData);
 
-        if (insertError) {
-          this.logger.error('Failed to store search results:', insertError);
+          if (insertError) {
+            this.logger.error('Failed to store search results:', insertError);
+            // Provider succeeded; do not refund solely for DB insert failure.
+          }
+        }
+
+        completed = true;
+        this.logger.log(`Found ${allResults.length} related projects for idea ${ideaId}`);
+
+        return {
+          success: true,
+          results: allResults,
+          aiSummary,
+          quotaInfo: {
+            remaining: Math.max(0, quota.remaining - 1),
+            used: quota.used + 1,
+            max: quota.max,
+          },
+          searchMeta: { query: primary, fallbackUsed, rawCount },
+        };
+      } catch (error: any) {
+        this.logger.error('Failed to search related projects:', error);
+        return { success: false, error: error.message || 'Search failed' };
+      } finally {
+        if (reserved && !completed) {
+          try {
+            const { error: refundError } = await supabase.rpc(
+              "refund_search_usage",
+              { p_user_id: userId },
+            );
+            if (refundError) {
+              this.logger.error(
+                `Failed to refund search usage for ${userId}:`,
+                refundError,
+              );
+            } else {
+              this.logger.log(`Refunded search usage for user ${userId}`);
+            }
+          } catch (refundErr) {
+            this.logger.error(
+              `Refund search usage threw for ${userId}:`,
+              refundErr,
+            );
+          }
         }
       }
-
-      // ---- Increment quota (disabled for testing) ----
-      // await supabase.rpc('increment_search_usage', { p_user_id: userId });
-
-      this.logger.log(`Found ${allResults.length} related projects for idea ${ideaId}`);
-
-      return {
-        success: true,
-        results: allResults,
-        aiSummary,
-        quotaInfo: {
-          remaining: quota.remaining - 1,
-          used: quota.used + 1,
-          max: quota.max,
-        },
-        searchMeta: { query: primary, fallbackUsed, rawCount },
-      };
     } catch (error: any) {
       this.logger.error('Failed to search related projects:', error);
       return { success: false, error: error.message || 'Search failed' };
@@ -1911,13 +1984,14 @@ Respond with JSON only:
     used: number;
     max: number;
   }> {
-    // TESTING: Return unlimited quota
-    return {
-      canSearch: true,
-      remaining: 999,
-      used: 0,
-      max: 999,
-    };
+    const supabase = this.supabaseService.getAdminClient();
+    const { data, error } = await supabase.rpc("can_user_search_projects", {
+      p_user_id: userId,
+    });
+    if (error || !data) {
+      throw error || new Error("Failed to check search quota");
+    }
+    return data;
   }
 
   /**

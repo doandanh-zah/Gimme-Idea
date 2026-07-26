@@ -6,7 +6,7 @@ import {
   Mail, 
   Send, 
   MessageCircle, 
-  Twitter, 
+  AtSign as Twitter,
   CheckCircle,
   Loader2,
   User,

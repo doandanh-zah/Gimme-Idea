@@ -1,113 +1,111 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import {
+  useInfiniteQuery,
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from "@tanstack/react-query";
 import { apiClient } from "../lib/api-client";
 import { FollowUser, FollowStats } from "../lib/types";
+import { queryKeys } from "../lib/query-keys";
+import { unwrapApi } from "../lib/api-unwrap";
+import { useAuth } from "../contexts/AuthContext";
 import toast from "react-hot-toast";
 
 interface UseFollowOptions {
   targetUserId: string;
-  onFollowChange?: (isFollowing: boolean) => void;
+  initialStats?: FollowStats;
 }
 
-export function useFollow({ targetUserId, onFollowChange }: UseFollowOptions) {
-  const [isFollowing, setIsFollowing] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
-  const [stats, setStats] = useState<FollowStats | null>(null);
+export function useFollow({ targetUserId, initialStats }: UseFollowOptions) {
+  const { user } = useAuth();
+  const viewerId = user?.id ?? null;
+  const queryClient = useQueryClient();
+  const queryKey = queryKeys.profile.follow(targetUserId, viewerId);
 
-  // Fetch follow stats on mount
-  useEffect(() => {
-    if (targetUserId) {
-      fetchStats();
-    }
-  }, [targetUserId]);
+  const statsQuery = useQuery({
+    queryKey,
+    enabled: Boolean(targetUserId),
+    // placeholderData (not initialData) so a network fetch still runs
+    placeholderData: initialStats,
+    staleTime: 30_000,
+    queryFn: async ({ signal }) =>
+      unwrapApi(
+        await apiClient.getFollowStats(targetUserId, signal),
+        "Failed to fetch follow stats"
+      ) as FollowStats,
+  });
 
-  const fetchStats = async () => {
-    try {
-      const response = await apiClient.getFollowStats(targetUserId);
-      if (response.success && response.data) {
-        setStats(response.data);
-        setIsFollowing(response.data.isFollowing);
+  const stats = statsQuery.data ?? null;
+  const isFollowing = stats?.isFollowing ?? false;
+
+  const mutation = useMutation({
+    mutationFn: async (next: "follow" | "unfollow") => {
+      const res =
+        next === "follow"
+          ? await apiClient.followUser(targetUserId)
+          : await apiClient.unfollowUser(targetUserId);
+      if (!res.success) {
+        throw new Error(res.error || res.message || `Failed to ${next}`);
       }
-    } catch (error) {
-      console.error("Failed to fetch follow stats:", error);
-    }
+      return next;
+    },
+    onMutate: async (next) => {
+      await queryClient.cancelQueries({ queryKey });
+      const previous = queryClient.getQueryData<FollowStats>(queryKey);
+      const base: FollowStats = previous ?? {
+        followersCount: initialStats?.followersCount ?? 0,
+        followingCount: initialStats?.followingCount ?? 0,
+        isFollowing: false,
+        isFollowedBy: initialStats?.isFollowedBy ?? false,
+      };
+      const following = next === "follow";
+      queryClient.setQueryData<FollowStats>(queryKey, {
+        ...base,
+        isFollowing: following,
+        followersCount: Math.max(
+          0,
+          base.followersCount + (following ? 1 : -1)
+        ),
+      });
+      return { previous };
+    },
+    onError: (err, _next, ctx) => {
+      if (ctx?.previous !== undefined) {
+        queryClient.setQueryData(queryKey, ctx.previous);
+      }
+      toast.error(
+        err instanceof Error ? err.message : "Failed to update follow"
+      );
+    },
+    onSuccess: (next) => {
+      toast.success(next === "follow" ? "Followed!" : "Unfollowed");
+      void queryClient.invalidateQueries({
+        queryKey: queryKeys.profile.followLists,
+      });
+      void queryClient.invalidateQueries({ queryKey });
+      if (viewerId) {
+        void queryClient.invalidateQueries({
+          queryKey: queryKeys.profile.follow(viewerId, viewerId),
+        });
+      }
+    },
+  });
+
+  const toggleFollow = () => {
+    if (mutation.isPending) return;
+    mutation.mutate(isFollowing ? "unfollow" : "follow");
   };
-
-  const follow = useCallback(async () => {
-    if (isLoading) return;
-
-    setIsLoading(true);
-    try {
-      const response = await apiClient.followUser(targetUserId);
-      if (response.success) {
-        setIsFollowing(true);
-        setStats((prev) =>
-          prev
-            ? {
-                ...prev,
-                followersCount: prev.followersCount + 1,
-                isFollowing: true,
-              }
-            : null
-        );
-        toast.success(response.message || "Followed!");
-        onFollowChange?.(true);
-      } else {
-        toast.error(response.error || "Failed to follow");
-      }
-    } catch (error) {
-      toast.error("Failed to follow");
-    } finally {
-      setIsLoading(false);
-    }
-  }, [targetUserId, isLoading, onFollowChange]);
-
-  const unfollow = useCallback(async () => {
-    if (isLoading) return;
-
-    setIsLoading(true);
-    try {
-      const response = await apiClient.unfollowUser(targetUserId);
-      if (response.success) {
-        setIsFollowing(false);
-        setStats((prev) =>
-          prev
-            ? {
-                ...prev,
-                followersCount: Math.max(0, prev.followersCount - 1),
-                isFollowing: false,
-              }
-            : null
-        );
-        toast.success("Unfollowed");
-        onFollowChange?.(false);
-      } else {
-        toast.error(response.error || "Failed to unfollow");
-      }
-    } catch (error) {
-      toast.error("Failed to unfollow");
-    } finally {
-      setIsLoading(false);
-    }
-  }, [targetUserId, isLoading, onFollowChange]);
-
-  const toggleFollow = useCallback(() => {
-    if (isFollowing) {
-      unfollow();
-    } else {
-      follow();
-    }
-  }, [isFollowing, follow, unfollow]);
 
   return {
     isFollowing,
-    isLoading,
+    isLoading: mutation.isPending || (statsQuery.isLoading && !stats),
     stats,
-    follow,
-    unfollow,
+    follow: () => mutation.mutate("follow"),
+    unfollow: () => mutation.mutate("unfollow"),
     toggleFollow,
-    refetch: fetchStats,
+    refetch: statsQuery.refetch,
   };
 }
 
@@ -122,67 +120,44 @@ export function useFollowList({
   type,
   limit = 20,
 }: UseFollowListOptions) {
-  const [users, setUsers] = useState<FollowUser[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [hasMore, setHasMore] = useState(true);
-  const [offset, setOffset] = useState(0);
+  const { user } = useAuth();
+  const viewerId = user?.id ?? null;
 
-  const fetchUsers = useCallback(
-    async (reset = false) => {
-      if (isLoading) return;
-
-      setIsLoading(true);
-      try {
-        const currentOffset = reset ? 0 : offset;
-        const fetcher =
-          type === "followers"
-            ? apiClient.getFollowers
-            : apiClient.getFollowing;
-
-        const response = await fetcher(userId, {
-          limit,
-          offset: currentOffset,
-        });
-
-        if (response.success && response.data) {
-          if (reset) {
-            setUsers(response.data);
-          } else {
-            setUsers((prev) => [...prev, ...response.data!]);
-          }
-          setHasMore(response.data.length === limit);
-          setOffset(currentOffset + response.data.length);
-        }
-      } catch (error) {
-        console.error(`Failed to fetch ${type}:`, error);
-      } finally {
-        setIsLoading(false);
-      }
+  const listQuery = useInfiniteQuery({
+    queryKey: queryKeys.profile.followList(userId, type, limit, viewerId),
+    enabled: Boolean(userId),
+    initialPageParam: 0,
+    queryFn: async ({ pageParam, signal }) => {
+      const fetcher =
+        type === "followers" ? apiClient.getFollowers : apiClient.getFollowing;
+      const response = await fetcher(
+        userId,
+        { limit, offset: pageParam },
+        signal
+      );
+      return unwrapApi(
+        response,
+        `Failed to fetch ${type}`
+      ) as FollowUser[];
     },
-    [userId, type, limit, offset, isLoading]
-  );
+    getNextPageParam: (lastPage, pages) =>
+      lastPage.length === limit
+        ? pages.reduce((count, page) => count + page.length, 0)
+        : undefined,
+  });
 
-  // Fetch on mount
-  useEffect(() => {
-    fetchUsers(true);
-  }, [userId, type]);
-
+  const users = listQuery.data?.pages.flat() || [];
   const loadMore = () => {
-    if (!isLoading && hasMore) {
-      fetchUsers();
+    if (!listQuery.isFetchingNextPage && listQuery.hasNextPage) {
+      void listQuery.fetchNextPage();
     }
-  };
-
-  const refresh = () => {
-    setOffset(0);
-    fetchUsers(true);
   };
 
   return {
     users,
-    isLoading,
-    hasMore,
+    isLoading: listQuery.isLoading || listQuery.isFetchingNextPage,
+    hasMore: Boolean(listQuery.hasNextPage),
     loadMore,
-    refresh,
+    refresh: listQuery.refetch,
   };
 }

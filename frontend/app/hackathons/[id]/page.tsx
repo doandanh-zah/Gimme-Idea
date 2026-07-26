@@ -5,10 +5,10 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
    Trophy, Calendar, Users, Clock, ChevronRight,
    Target, MessageSquare, FileText, CheckCircle2,
-   AlertCircle, MoreHorizontal, Github, Disc, Link as LinkIcon,
+   AlertCircle, MoreHorizontal, GitBranch as Github, Disc, Link as LinkIcon,
    Monitor, Mic, SwatchBook, Code, ShieldCheck, Smartphone, UserPlus,
    RefreshCw, Lock, Search, Plus, Settings, LogOut, UserMinus,
-   LayoutDashboard, Rocket, BookOpen, Menu as MenuIcon, X, Sparkles, Activity, Send, CheckSquare, Globe, Video, Youtube, ThumbsUp, ArrowLeft, FileUp, Lightbulb, Edit3, Trash2, Filter, SortDesc,
+   LayoutDashboard, Rocket, BookOpen, Menu as MenuIcon, X, Sparkles, Activity, Send, CheckSquare, Globe, Video, ThumbsUp, ArrowLeft, FileUp, Lightbulb, Edit3, Trash2, Filter, SortDesc,
    Loader2, Zap, Award
 } from 'lucide-react';
 import Image from 'next/image';
@@ -23,6 +23,9 @@ import { useAppStore } from '@/lib/store';
 import { Project } from '@/lib/types';
 import { apiClient } from '@/lib/api-client';
 import ConstellationBackground from '@/components/ConstellationBackground';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { queryKeys } from '@/lib/query-keys';
+import type { TeamInvite } from '@/hooks/useTeamInvites';
 
 // Map icon names from mock data to Lucide React components
 const LucideIconMap: { [key: string]: React.ElementType } = {
@@ -69,11 +72,6 @@ export default function HackathonDashboard({ params }: { params: { id: string } 
    const mockDate = searchParams.get('mockDate') || searchParams.get('mockdate');
    const now = mockDate ? new Date(mockDate) : new Date();
 
-   // Hackathon data from API
-   const [hackathon, setHackathon] = useState<any>(null);
-   const [isLoadingHackathon, setIsLoadingHackathon] = useState(true);
-   const [hackathonError, setHackathonError] = useState<string | null>(null);
-
    // App Store
    const { openSubmitModal } = useAppStore();
 
@@ -114,29 +112,8 @@ export default function HackathonDashboard({ params }: { params: { id: string } 
       setStars(newStars);
    }, []);
 
-   // Timeline Logic
-   const dynamicTimeline = hackathon?.timeline.map((step, index) => {
-      const start = new Date(step.startDate);
-      const end = step.endDate ? new Date(step.endDate) : null;
-      const nextStart = hackathon.timeline[index + 1] ? new Date(hackathon.timeline[index + 1].startDate) : null;
-
-      let status = 'pending';
-      if (isBefore(now, start)) {
-         status = 'pending';
-      } else if (end) {
-         if (isBefore(now, end)) status = 'active';
-         else status = 'done';
-      } else {
-         if (nextStart && !isBefore(now, nextStart)) status = 'done';
-         else status = 'active';
-      }
-      return { ...step, status };
-   }) || [];
-
    // Team Invite States
    const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
-   const [pendingInvitations, setPendingInvitations] = useState<any[]>([]); // Pending invites from API
-
    // Data States
    const [userTeam, setUserTeam] = useState<any>(null);
    const [userTeamRole, setUserTeamRole] = useState<'leader' | 'member' | null>(null);
@@ -160,21 +137,33 @@ export default function HackathonDashboard({ params }: { params: { id: string } 
 
    // Get user from store
    const { user } = useAppStore();
+   const queryClient = useQueryClient();
+   const teamInvitesQueryKey = queryKeys.teamInvites(user?.id || 'anonymous');
+   const teamInvitesQuery = useQuery({
+      queryKey: teamInvitesQueryKey,
+      enabled: Boolean(user?.id),
+      queryFn: async ({ signal }) => {
+         const response = await apiClient.getMyInvites(undefined, signal);
+         if (!response.success) throw new Error(response.error || 'Failed to fetch team invites');
+         return (response.data || []) as TeamInvite[];
+      },
+   });
+   const pendingInvitations = (teamInvitesQuery.data || []).filter(
+      invite => invite.hackathonId === id
+   );
 
-   // Fetch hackathon data from API
-   useEffect(() => {
-      const fetchHackathon = async () => {
-         setIsLoadingHackathon(true);
-         setHackathonError(null);
-         try {
-            const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
-            const res = await fetch(`${API_URL}/hackathons/${id}`);
-            const data = await res.json();
+   const hackathonQuery = useQuery({
+      queryKey: queryKeys.hackathons.detail(id),
+      enabled: Boolean(id),
+      staleTime: 5 * 60_000,
+      queryFn: async ({ signal }) => {
+         const response = await apiClient.getHackathon(id, signal);
+         if (!response.success || !response.data) {
+            throw new Error(response.error || 'Hackathon not found');
+         }
 
-            if (data.success && data.data) {
-               // Transform API data to match expected format
-               const h = data.data;
-               setHackathon({
+         const h = response.data;
+         return {
                   id: h.id,
                   slug: h.slug,
                   title: h.title,
@@ -221,22 +210,33 @@ export default function HackathonDashboard({ params }: { params: { id: string } 
                   tracks: [],
                   announcements: [],
                   resources: [],
-               });
-            } else {
-               setHackathonError(data.error || 'Hackathon not found');
-            }
-         } catch (error) {
-            console.error('Failed to fetch hackathon:', error);
-            setHackathonError('Failed to load hackathon');
-         } finally {
-            setIsLoadingHackathon(false);
-         }
-      };
+         };
+      },
+   });
+   const hackathon: any = hackathonQuery.data || null;
+   const isLoadingHackathon = hackathonQuery.isLoading;
+   const hackathonError = hackathonQuery.error instanceof Error
+      ? hackathonQuery.error.message
+      : null;
 
-      if (id) {
-         fetchHackathon();
+   // Timeline Logic
+   const dynamicTimeline = hackathon?.timeline.map((step: any, index: number) => {
+      const start = new Date(step.startDate);
+      const end = step.endDate ? new Date(step.endDate) : null;
+      const nextStart = hackathon.timeline[index + 1] ? new Date(hackathon.timeline[index + 1].startDate) : null;
+
+      let status = 'pending';
+      if (isBefore(now, start)) {
+         status = 'pending';
+      } else if (end) {
+         if (isBefore(now, end)) status = 'active';
+         else status = 'done';
+      } else {
+         if (nextStart && !isBefore(now, nextStart)) status = 'done';
+         else status = 'active';
       }
-   }, [id]);
+      return { ...step, status };
+   }) || [];
 
    // Load registration status
    const loadRegistrationStatus = async () => {
@@ -260,7 +260,7 @@ export default function HackathonDashboard({ params }: { params: { id: string } 
       if (user) {
          loadRegistrationStatus();
       }
-   }, [id, user]);
+   }, [id, user?.id]);
 
    const handleRegister = async () => {
       if (!user) {
@@ -330,29 +330,14 @@ export default function HackathonDashboard({ params }: { params: { id: string } 
       }
    };
 
-   // Load pending invites for current user
-   const loadMyInvites = async () => {
-      if (!id || !user) return;
-      try {
-         const response = await apiClient.getMyInvites(id);
-         if (response.success && response.data) {
-            // Filter invites for this hackathon only
-            const hackathonInvites = response.data.filter(inv => inv.hackathonId === id);
-            setPendingInvitations(hackathonInvites);
-         }
-      } catch (err) {
-         console.error('Failed to load invites:', err);
-      }
-   };
-
-   // Load team data on mount
+   // Team data is only needed once the team workspace is opened.
    useEffect(() => {
+      if (activeSection !== 'project') return;
       if (user) {
          loadMyTeam();
-         loadMyInvites();
       }
       loadAllTeams();
-   }, [id, user]);
+   }, [activeSection, id, user?.id]);
 
    // Create a new team
    const handleCreateTeam = async () => {
@@ -436,7 +421,9 @@ export default function HackathonDashboard({ params }: { params: { id: string } 
          const response = await apiClient.acceptInvite(id, inviteId);
          if (response.success) {
             await loadMyTeam();
-            await loadMyInvites();
+            queryClient.setQueryData<TeamInvite[]>(teamInvitesQueryKey, (current = []) =>
+               current.filter(invite => invite.id !== inviteId)
+            );
             await loadAllTeams();
             alert('You have joined the team!');
          } else {
@@ -453,7 +440,9 @@ export default function HackathonDashboard({ params }: { params: { id: string } 
       try {
          const response = await apiClient.rejectInvite(id, inviteId);
          if (response.success) {
-            await loadMyInvites();
+            queryClient.setQueryData<TeamInvite[]>(teamInvitesQueryKey, (current = []) =>
+               current.filter(invite => invite.id !== inviteId)
+            );
             alert('Invitation rejected');
          } else {
             alert(response.error || 'Failed to reject invitation');

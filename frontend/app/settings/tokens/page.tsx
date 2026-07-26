@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import Navbar from '../../../components/Navbar';
 import { useAppStore } from '../../../lib/store';
 import { apiClient } from '../../../lib/api-client';
 
@@ -168,7 +167,6 @@ If you are unsure about enum values, ask me. Category must be one of: DeFi, NFT,
 
   return (
     <main className="min-h-screen pb-20">
-      <Navbar />
 
       <div className="pt-28 px-6 max-w-4xl mx-auto">
         <h1 className="text-3xl font-bold mb-2">API Tokens</h1>

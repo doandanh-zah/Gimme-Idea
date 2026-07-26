@@ -14,6 +14,33 @@ export class FollowService {
 
   constructor(private supabaseService: SupabaseService) {}
 
+  private async addCurrentUserFollowStatus(
+    users: FollowUser[],
+    currentUserId?: string
+  ): Promise<FollowUser[]> {
+    if (!currentUserId || users.length === 0) {
+      return users.map((user) => ({ ...user, isFollowing: false }));
+    }
+
+    const supabase = this.supabaseService.getAdminClient();
+    const { data, error } = await supabase
+      .from("follows")
+      .select("following_id")
+      .eq("follower_id", currentUserId)
+      .in("following_id", users.map((user) => user.userId));
+
+    if (error) {
+      this.logger.warn(`Failed to batch follow status: ${error.message}`);
+      return users;
+    }
+
+    const followingIds = new Set((data || []).map((row) => row.following_id));
+    return users.map((user) => ({
+      ...user,
+      isFollowing: followingIds.has(user.userId),
+    }));
+  }
+
   /**
    * Follow a user
    */
@@ -195,7 +222,7 @@ export class FollowService {
 
     return {
       success: true,
-      data: followers,
+      data: await this.addCurrentUserFollowStatus(followers, currentUserId),
     };
   }
 
@@ -204,7 +231,8 @@ export class FollowService {
    */
   async getFollowing(
     userId: string,
-    query: GetFollowersDto
+    query: GetFollowersDto,
+    currentUserId?: string
   ): Promise<ApiResponse<FollowUser[]>> {
     const supabase = this.supabaseService.getAdminClient();
 
@@ -232,7 +260,7 @@ export class FollowService {
 
     return {
       success: true,
-      data: following,
+      data: await this.addCurrentUserFollowStatus(following, currentUserId),
     };
   }
 

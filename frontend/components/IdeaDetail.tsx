@@ -25,6 +25,7 @@ import { ProposalSendModal } from './ProposalSendModal';
 import { CreatePoolButton } from './ideas/CreatePoolButton';
 import { useWallet, useConnection } from '@solana/wallet-adapter-react';
 import { PublicKey, Transaction, SystemProgram, LAMPORTS_PER_SOL } from '@solana/web3.js';
+import { useRelatedProjects } from '../hooks/useRelatedProjects';
 
 // AI Bot display name
 const AI_BOT_NAME = 'Gimme Sensei';
@@ -388,7 +389,7 @@ const CommentItem: React.FC<CommentItemProps> = ({ comment, projectId, isReply =
                 toast.success('Comment updated!');
                 setIsEditing(false);
                 // Refresh project to get updated comments
-                fetchProjectById(projectId);
+                fetchProjectById(projectId, { force: true });
             } else {
                 toast.error(response.error || 'Failed to update comment');
             }
@@ -407,7 +408,7 @@ const CommentItem: React.FC<CommentItemProps> = ({ comment, projectId, isReply =
             if (response.success) {
                 toast.success('Comment deleted');
                 // Refresh project to get updated comments
-                fetchProjectById(projectId);
+                fetchProjectById(projectId, { force: true });
             } else {
                 toast.error(response.error || 'Failed to delete comment');
             }
@@ -477,7 +478,7 @@ const CommentItem: React.FC<CommentItemProps> = ({ comment, projectId, isReply =
                             // Don't show anything - user's comment was posted, AI just didn't need to reply
                         } else {
                             // Refresh to get the new AI reply
-                            await fetchProjectById(projectId);
+                            await fetchProjectById(projectId, { force: true });
                             toast.success('AI has replied!', { icon: '🤖' });
                         }
                     }
@@ -777,7 +778,6 @@ export const IdeaDetail = () => {
 
     // Related Projects Modal State
     const [showRelatedProjectsModal, setShowRelatedProjectsModal] = useState(false);
-    const [relatedProjectsCount, setRelatedProjectsCount] = useState(0);
     const [viewGate, setViewGate] = useState<{ blocked: boolean; message?: string } | null>(null);
     const [monetization, setMonetization] = useState<any>(null);
     const [isBuyingPack, setIsBuyingPack] = useState(false);
@@ -792,13 +792,10 @@ export const IdeaDetail = () => {
     const { connection } = useConnection();
 
     const project = selectedProject;
-
-    // Fetch related projects count on mount and when modal closes
-    useEffect(() => {
-        if (project?.id && !showRelatedProjectsModal) {
-            fetchRelatedProjectsCount();
-        }
-    }, [project?.id, showRelatedProjectsModal]); // Refresh when modal closes
+    const relatedProjectsQuery = useRelatedProjects(project?.id || '', Boolean(project?.id));
+    const relatedProjectsCount =
+        (relatedProjectsQuery.data?.aiDetected?.length || 0) +
+        (relatedProjectsQuery.data?.userPinned?.length || 0);
 
     // Daily limiter: authenticated users via backend, guests via localStorage (persists across reload)
     useEffect(() => {
@@ -871,20 +868,6 @@ export const IdeaDetail = () => {
         run();
     }, [user]);
 
-    const fetchRelatedProjectsCount = async () => {
-        if (!project?.id) return;
-        try {
-            const response = await apiClient.getRelatedProjects(project.id);
-            if (response.success && response.data) {
-                const aiCount = response.data.aiDetected?.length || 0;
-                const userCount = response.data.userPinned?.length || 0;
-                setRelatedProjectsCount(aiCount + userCount);
-            }
-        } catch (error) {
-            console.error('Failed to fetch related projects count:', error);
-        }
-    };
-
     // Subscribe to realtime comment updates for this project
     useRealtimeComments({
         projectId: project?.id || '',
@@ -907,7 +890,7 @@ export const IdeaDetail = () => {
 
     const refreshIdeaAndProposals = async () => {
         if (!project?.id) return;
-        await fetchProjectById(project.id);
+        await fetchProjectById(project.id, { force: true });
     };
 
     if (!project) return null;

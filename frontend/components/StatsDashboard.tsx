@@ -1,6 +1,8 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { apiClient } from '../lib/api-client';
+import { useQuery } from '@tanstack/react-query';
+import { queryKeys } from '../lib/query-keys';
 
 interface ActivityData {
   name: string;
@@ -9,33 +11,22 @@ interface ActivityData {
 }
 
 const StatsDashboard: React.FC = () => {
-  const [activityData, setActivityData] = useState<ActivityData[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [totalIdeas, setTotalIdeas] = useState(0);
-  const [totalFeedback, setTotalFeedback] = useState(0);
-
-  useEffect(() => {
-    const fetchStats = async () => {
-      try {
-        const response = await apiClient.getIdeaVelocityStats();
-        if (response.success && response.data) {
-          setTotalIdeas(response.data.totalIdeas);
-          setTotalFeedback(response.data.totalFeedback);
-          setActivityData(response.data.activity);
-        }
-      } catch (error) {
-        console.error('Failed to fetch stats:', error);
-        // Fallback empty data
-        setActivityData([]);
-      } finally {
-        setLoading(false);
+  const statsQuery = useQuery({
+    queryKey: queryKeys.ideaVelocity,
+    staleTime: 5 * 60_000,
+    queryFn: async () => {
+      const response = await apiClient.getIdeaVelocityStats();
+      if (!response.success || !response.data) {
+        throw new Error(response.error || 'Failed to fetch stats');
       }
-    };
-    
-    fetchStats();
-  }, []);
+      return response.data;
+    },
+  });
+  const activityData = (statsQuery.data?.activity || []) as ActivityData[];
+  const totalIdeas = statsQuery.data?.totalIdeas || 0;
+  const totalFeedback = statsQuery.data?.totalFeedback || 0;
 
-  if (loading) {
+  if (statsQuery.isLoading) {
     return (
       <div className="w-full p-6">
         <div className="glass-panel rounded-2xl p-6 h-80 animate-pulse bg-white/5" />

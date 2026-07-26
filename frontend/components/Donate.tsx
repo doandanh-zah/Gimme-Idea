@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Heart, Send, Twitter, Copy, Check, ExternalLink, Sparkles, Coffee, Zap, Wallet, Shield } from 'lucide-react';
+import { Heart, Send, AtSign as Twitter, Copy, Check, ExternalLink, Sparkles, Coffee, Zap, Wallet, Shield } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useAppStore } from '../lib/store';
 import { apiClient } from '../lib/api-client';
