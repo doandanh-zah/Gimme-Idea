@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Calendar, Users, Trophy, ArrowRight, Zap, Loader2, 
@@ -9,6 +9,9 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import ConstellationBackground from '@/components/ConstellationBackground';
+import { useQuery } from '@tanstack/react-query';
+import { apiClient } from '@/lib/api-client';
+import { queryKeys } from '@/lib/query-keys';
 
 interface HackathonRound {
   roundNumber: number;
@@ -349,28 +352,19 @@ const PartnerHackathonCard = ({ hackathon, index }: { hackathon: Hackathon; inde
 };
 
 export default function HackathonsList() {
-  const [hackathons, setHackathons] = useState<Hackathon[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-
-  useEffect(() => {
-    const fetchHackathons = async () => {
-      try {
-        const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
-        const res = await fetch(`${API_URL}/hackathons`);
-        const data = await res.json();
-        
-        if (data.success && data.data) {
-          setHackathons(data.data);
-        }
-      } catch (error) {
-        console.error('Failed to fetch hackathons:', error);
-      } finally {
-        setIsLoading(false);
+  const hackathonsQuery = useQuery({
+    queryKey: queryKeys.hackathons.list,
+    staleTime: 5 * 60_000,
+    queryFn: async ({ signal }) => {
+      const response = await apiClient.getPublicHackathons(signal);
+      if (!response.success || !response.data) {
+        throw new Error(response.error || 'Failed to fetch hackathons');
       }
-    };
-
-    fetchHackathons();
-  }, []);
+      return response.data as Hackathon[];
+    },
+  });
+  const hackathons = hackathonsQuery.data || [];
+  const isLoading = hackathonsQuery.isLoading;
 
   // Separate featured (Gimme Idea's own) and partner hackathons
   const featuredHackathon = hackathons.find(h => h.status === 'active' || h.status === 'upcoming');
