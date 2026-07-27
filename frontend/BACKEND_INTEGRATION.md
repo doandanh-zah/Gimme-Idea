@@ -1,51 +1,15 @@
 # Hackathon Feature: Backend Integration Status
 
-## Overview
-The Hackathon module currently operates on **Mock Data** (`HACKATHONS_MOCK_DATA` and local constants `MOCK_TEAMS`, `MOCK_TEAMMATES`). The UI logic for Tabs, Timeline, and Team Formation is fully implemented but isolated from the database.
+> **Status (cleanup Phase 1):** This note is historical. Live hackathon list/detail use API + React Query (`useTeamInvites`, `apiClient` hackathon methods, Nest `hackathons` module). The old `HACKATHONS_MOCK_DATA` module was removed as unused.
+>
+> Remaining mock **UI stubs** may still exist inside large pages (e.g. local `MOCK_SUBMITTED_IDEAS` in `app/hackathons/[id]/page.tsx`). Treat those as product debt for Phase 2 file splits, not as the primary data source for hackathons.
 
-## Current "Team Formation" Logic
-The "Find your Squad" section allows users to:
-1.  **Toggle Mode:** Switch between finding existing **Teams** and finding individual **Teammates**.
-2.  **Search:** Filter results by name, tags, or skills using a local search bar.
-3.  **View Cards:** Display team details (members, roles needed) or user profiles (skills, bio).
+## What is real today
 
-## Required Backend Integration
+- Registration, teams, invites, submissions: backend routes under `/api/hackathons/*`
+- Frontend detail page is large (~2.4k lines) and mixes real fetches with some local stubs
+- Prefer extending API hooks over reintroducing global mock modules
 
-To make this functional with real users who have **registered** for the hackathon:
+## Follow-up
 
-### 1. Database Schema Extensions
-We need tables to track hackathon participation and team structures.
-*   **`HackathonParticipants`**: Links `UserId` to `HackathonId`.
-    *   *Constraint:* Only users in this table should appear in "Find Teammates".
-*   **`Teams`**: Groups participants.
-    *   Columns: `id`, `name`, `hackathon_id`, `leader_id`, `tags`, `looking_for_roles`, `is_open`.
-*   **`TeamMembers`**: Links `UserId` to `TeamId`.
-
-### 2. API Endpoints Needed
-
-#### A. Registration
-*   `POST /api/hackathons/:id/register`
-    *   **Action:** Adds user to `HackathonParticipants`.
-    *   **Logic:** Check if already registered.
-
-#### B. Team Discovery (The "Find Teams" Tab)
-*   `GET /api/hackathons/:id/teams`
-    *   **Query Params:** `search` (name/tags), `limit`, `offset`.
-    *   **Response:** List of teams with `member_count` and `looking_for` arrays.
-
-#### C. Teammate Discovery (The "Find Teammates" Tab)
-*   `GET /api/hackathons/:id/participants`
-    *   **Query Params:** `search` (name/skills), `filter_looking_for_team=true`.
-    *   **Logic:** **CRITICAL** - Only return users who are:
-        1.  Registered for *this* specific hackathon.
-        2.  NOT already in a full team (or explicitly marked as "Looking for team").
-
-#### D. Actions
-*   `POST /api/teams` (Create Team)
-*   `POST /api/teams/:id/join_request` (Request to join)
-*   `POST /api/teams/requests/:id/accept` (Leader accepts member)
-
-## Next Steps
-1.  Create the backend module `Hackathon` (NestJS).
-2.  Implement the Schema in Prisma/Postgres.
-3.  Replace `MOCK_TEAMS` map in `page.tsx` with `useQuery` or `useEffect` fetch calls to the new endpoints.
+See `docs/CODE_CLEANUP_PLAN.md` Phase 2 (split `hackathons/[id]/page.tsx`, replace remaining inline mocks).

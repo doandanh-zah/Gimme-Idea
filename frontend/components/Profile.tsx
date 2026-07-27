@@ -6,21 +6,24 @@ import { useAuth } from '../contexts/AuthContext';
 import { useRouter, usePathname } from 'next/navigation';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Camera, Edit2, Save, X, Github, Twitter, Facebook, Send, Pencil, Trash2, ArrowLeft, Wallet, Check, Repeat, Loader2, Lightbulb, MessageSquare, Heart, Star, Calendar, Link as LinkIcon, ImageIcon, ThumbsUp, TrendingUp, Users, Rss, Bookmark, AlertTriangle } from 'lucide-react';
+import { Camera, Edit2, Save, X, Send, Pencil, Trash2, ArrowLeft, Wallet, Check, Repeat, Loader2, Lightbulb, MessageSquare, Heart, Star, Calendar, Link as LinkIcon, ImageIcon, ThumbsUp, TrendingUp, Users, Rss, Bookmark, AlertTriangle } from 'lucide-react';
+import { FacebookIcon as Facebook, GithubIcon as Github, TwitterIcon as Twitter } from './icons/SocialBrandIcons';
 import { ProjectCard } from './ProjectCard';
 import { WalletReminderBadge } from './WalletReminderBadge';
 import { WalletRequiredModal } from './WalletRequiredModal';
 import { EditProjectModal } from './EditProjectModal';
 import { ImageCropper } from './ImageCropper';
-import { FollowButton, FollowStats } from './FollowButton';
+import { FollowButton } from './FollowButton';
 import { FollowListModal } from './FollowListModal';
 import { LoadingSpinner } from './LoadingSpinner';
-import { useFollow } from '../hooks/useFollow';
 import toast from 'react-hot-toast';
 import { Project, Feed } from '../lib/types';
 import { apiClient } from '../lib/api-client';
 import { uploadAvatar, uploadCoverImage } from '../lib/imgbb';
 import { createUsernameSlug } from '../lib/slug-utils';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { queryKeys } from '../lib/query-keys';
+import { useFollow } from '../hooks/useFollow';
 
 interface UserStats {
   reputation: number;
@@ -33,7 +36,7 @@ interface UserStats {
 }
 
 export const Profile = () => {
-  const { user, viewedUser, projects, updateUserProfile, updateProject, deleteProject, openSubmitModal, setViewedUser } = useAppStore();
+  const { user, viewedUser, updateUserProfile, updateProject, deleteProject, openSubmitModal, setViewedUser } = useAppStore();
   const { setShowWalletPopup, refreshUser, isLoading: authLoading } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
@@ -41,8 +44,6 @@ export const Profile = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [editingProject, setEditingProject] = useState<Project | null>(null);
   const [isReconnecting, setIsReconnecting] = useState(false);
-  const [userStats, setUserStats] = useState<UserStats | null>(null);
-  const [isLoadingStats, setIsLoadingStats] = useState(false);
   const [showWalletModal, setShowWalletModal] = useState(false);
   const [walletModalMode, setWalletModalMode] = useState<'reconnect' | 'connect' | 'change'>('reconnect');
   const [activeTab, setActiveTab] = useState<'ideas' | 'feeds'>('ideas');
@@ -60,16 +61,8 @@ export const Profile = () => {
   // Follow system state
   const [showFollowModal, setShowFollowModal] = useState(false);
   const [followModalTab, setFollowModalTab] = useState<'followers' | 'following'>('followers');
-  const [localFollowersCount, setLocalFollowersCount] = useState(0);
-  const [localFollowingCount, setLocalFollowingCount] = useState(0);
   
-  // Feeds state
-  const [userFeeds, setUserFeeds] = useState<Feed[]>([]);
-  const [isLoadingFeeds, setIsLoadingFeeds] = useState(false);
-  
-  // User's ideas state (fetched directly, not from global store)
-  const [userIdeas, setUserIdeas] = useState<Project[]>([]);
-  const [isLoadingIdeas, setIsLoadingIdeas] = useState(false);
+  const queryClient = useQueryClient();
   const [ideaPendingDelete, setIdeaPendingDelete] = useState<Project | null>(null);
   const [isDeletingIdea, setIsDeletingIdea] = useState(false);
   const [deletingIdeaIds, setDeletingIdeaIds] = useState<Set<string>>(new Set());
@@ -114,108 +107,67 @@ export const Profile = () => {
       }
   }, [displayUser]);
 
-  useEffect(() => {
-    const fetchStats = async () => {
-      if (!displayUser?.username) return;
-      
-      setIsLoadingStats(true);
-      try {
-        const response = await apiClient.getUserStats(displayUser.username);
-        if (response.success && response.data) {
-          setUserStats(response.data);
-        }
-      } catch (error) {
-        console.error('Failed to fetch user stats:', error);
-      } finally {
-        setIsLoadingStats(false);
+  const profileStatsQuery = useQuery({
+    queryKey: queryKeys.profile.stats(displayUser?.username || 'anonymous'),
+    enabled: Boolean(displayUser?.username),
+    queryFn: async ({ signal }) => {
+      const response = await apiClient.getUserStats(displayUser!.username, signal);
+      if (!response.success || !response.data) {
+        throw new Error(response.error || 'Failed to fetch user stats');
       }
-    };
+      return response.data as UserStats;
+    },
+  });
+  const userStats = profileStatsQuery.data || null;
+  const isLoadingStats = profileStatsQuery.isLoading;
 
-    fetchStats();
-  }, [displayUser?.username]);
+  // Single source of truth for follow counts (shared key with FollowButton)
+  const { stats: followStats } = useFollow({
+    targetUserId: displayUser?.id || '',
+  });
+  const followersCount = followStats?.followersCount ?? 0;
+  const followingCount = followStats?.followingCount ?? 0;
 
-  // Fetch follow stats for displayUser
-  useEffect(() => {
-    const fetchFollowStats = async () => {
-      if (!displayUser?.id) return;
-      
-      try {
-        const response = await apiClient.getFollowStats(displayUser.id);
-        if (response.success && response.data) {
-          setLocalFollowersCount(response.data.followersCount);
-          setLocalFollowingCount(response.data.followingCount);
-        }
-      } catch (error) {
-        console.error('Failed to fetch follow stats:', error);
+  const profileIdeasKey = queryKeys.profile.ideas(displayUser?.username || 'anonymous');
+  const profileIdeasQuery = useQuery({
+    queryKey: profileIdeasKey,
+    enabled: Boolean(displayUser?.username),
+    queryFn: async ({ signal }) => {
+      const response = await apiClient.getUserProjects(
+        displayUser!.username,
+        { type: 'idea', limit: 24 },
+        signal,
+      );
+      if (!response.success || !response.data) {
+        throw new Error(response.error || 'Failed to fetch user ideas');
       }
-    };
+      return response.data.map((project: any) => ({
+        ...project,
+        image: project.imageUrl || project.image,
+      })) as Project[];
+    },
+  });
+  const userIdeas = profileIdeasQuery.data || [];
+  const isLoadingIdeas = profileIdeasQuery.isLoading;
 
-    fetchFollowStats();
-  }, [displayUser?.id]);
-
-  // Fetch user's ideas/projects directly from API
-  useEffect(() => {
-    const fetchUserIdeas = async () => {
-      if (!displayUser?.username) return;
-      
-      setIsLoadingIdeas(true);
-      try {
-        const response = await apiClient.getUserProjects(displayUser.username, {
-          type: 'idea',
-          limit: 24,
-        });
-        if (response.success && response.data) {
-          // Map data for card compatibility. The API already filters to ideas.
-          const ideas = response.data
-            .map((p: any) => ({
-              ...p,
-              image: p.imageUrl || p.image,
-            }));
-          setUserIdeas(ideas);
-        }
-      } catch (error) {
-        console.error('Failed to fetch user ideas:', error);
-      } finally {
-        setIsLoadingIdeas(false);
+  const profileFeedsKey = isOwnProfile && displayUser?.id
+    ? queryKeys.feeds.mine(displayUser.id)
+    : queryKeys.profile.feeds(displayUser?.id || 'anonymous', false);
+  const profileFeedsQuery = useQuery({
+    queryKey: profileFeedsKey,
+    enabled: activeTab === 'feeds' && Boolean(displayUser?.id),
+    queryFn: async ({ signal }) => {
+      const response = isOwnProfile
+        ? await apiClient.getMyFeeds(signal)
+        : await apiClient.getUserFeeds(displayUser!.id!, signal);
+      if (!response.success || !response.data) {
+        throw new Error(response.error || 'Failed to fetch user feeds');
       }
-    };
-
-    fetchUserIdeas();
-  }, [displayUser?.username]);
-
-  // Fetch user's public feeds
-  useEffect(() => {
-    const fetchUserFeeds = async () => {
-      if (!displayUser?.id) return;
-      
-      setIsLoadingFeeds(true);
-      try {
-        // If own profile, get all feeds; otherwise get public feeds only
-        if (isOwnProfile) {
-          const response = await apiClient.getMyFeeds();
-          if (response.success && response.data) {
-            setUserFeeds(response.data);
-          }
-        } else {
-          const response = await apiClient.getUserFeeds(displayUser.id);
-          if (response.success && response.data) {
-            setUserFeeds(response.data);
-          }
-        }
-      } catch (error) {
-        console.error('Failed to fetch user feeds:', error);
-      } finally {
-        setIsLoadingFeeds(false);
-      }
-    };
-
-    fetchUserFeeds();
-  }, [displayUser?.id, isOwnProfile]);
-
-  // Handler for when follow status changes
-  const handleFollowChange = (isFollowing: boolean) => {
-    setLocalFollowersCount(prev => isFollowing ? prev + 1 : Math.max(0, prev - 1));
-  };
+      return response.data as Feed[];
+    },
+  });
+  const userFeeds = profileFeedsQuery.data || [];
+  const isLoadingFeeds = profileFeedsQuery.isLoading;
 
   const isWalletConnected = connected && publicKey && displayUser?.wallet && 
     publicKey.toBase58() === displayUser.wallet;
@@ -420,7 +372,9 @@ export const Profile = () => {
           await deleteProject(deletingId);
           // Keep a short delay so the "deleting" animation is visible/responsive.
           await new Promise(resolve => setTimeout(resolve, 180));
-          setUserIdeas(prev => prev.filter(p => p.id !== deletingId));
+          queryClient.setQueryData<Project[]>(profileIdeasKey, (current = []) =>
+            current.filter(project => project.id !== deletingId)
+          );
           toast.success("Idea deleted");
           setIdeaPendingDelete(null);
       } catch (error) {
@@ -586,7 +540,6 @@ export const Profile = () => {
                                 <FollowButton
                                     targetUserId={displayUser.id}
                                     targetUsername={displayUser.username}
-                                    onFollowChange={handleFollowChange}
                                 />
                             )}
                         </div>
@@ -636,7 +589,7 @@ export const Profile = () => {
                             className="flex items-center gap-1.5 hover:text-purple-400 transition-colors group"
                         >
                             <span className="font-bold text-white group-hover:text-purple-400">
-                                {localFollowersCount}
+                                {followersCount}
                             </span>
                             <span className="text-gray-400 text-sm">Followers</span>
                         </button>
@@ -648,7 +601,7 @@ export const Profile = () => {
                             className="flex items-center gap-1.5 hover:text-purple-400 transition-colors group"
                         >
                             <span className="font-bold text-white group-hover:text-purple-400">
-                                {localFollowingCount}
+                                {followingCount}
                             </span>
                             <span className="text-gray-400 text-sm">Following</span>
                         </button>
@@ -996,10 +949,16 @@ export const Profile = () => {
           onClose={() => setEditingProject(null)}
           onSave={(updatedData) => {
             if (editingProject) {
+              const editingId = editingProject.id;
               updateProject({
-                id: editingProject.id,
+                id: editingId,
                 ...updatedData
               });
+              queryClient.setQueryData<Project[]>(profileIdeasKey, (current = []) =>
+                current.map(project => project.id === editingId
+                  ? { ...project, ...updatedData }
+                  : project)
+              );
               setEditingProject(null);
             }
           }}

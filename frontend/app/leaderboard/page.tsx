@@ -4,15 +4,12 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import { Trophy, Star, TrendingUp, Users, ArrowLeft } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import Navbar from '@/components/Navbar';
 
 export default function LeaderboardPage() {
   const router = useRouter();
 
   return (
     <div className="min-h-screen bg-[#0A0A0A] text-white">
-      <Navbar />
-      
       {/* Background Effects */}
       <div className="fixed inset-0 pointer-events-none overflow-hidden">
         <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-purple-600/10 rounded-full blur-3xl" />

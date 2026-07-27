@@ -1,11 +1,14 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useCallback, useEffect, useMemo, useRef } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiClient } from "../lib/api-client";
-import { useAppStore } from "../lib/store";
 import { supabase } from "../lib/supabase";
 import { useAuth } from "../contexts/AuthContext";
 import { featureFlags } from "../lib/featureFlags";
+import { queryKeys } from "../lib/query-keys";
+import { unwrapApi } from "../lib/api-unwrap";
+import { useDebouncedCallback } from "./useDebounce";
 
 export interface Announcement {
   id: string;
@@ -24,142 +27,93 @@ export interface Announcement {
 }
 
 export function useAnnouncements() {
-  const user = useAppStore((state) => state.user);
-  const { session } = useAuth(); // Get Supabase session for realtime auth
-  const [announcements, setAnnouncements] = useState<Announcement[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
+  const { user, session } = useAuth();
+  const userId = user?.id || "";
+  const queryClient = useQueryClient();
   const subscriptionRef = useRef<any>(null);
+  const queryKey = useMemo(() => queryKeys.announcements(userId), [userId]);
 
-  // Fetch announcements
-  const fetchAnnouncements = useCallback(async () => {
-    if (!user) return;
+  const announcementsQuery = useQuery({
+    queryKey,
+    enabled: Boolean(userId),
+    queryFn: async ({ signal }) =>
+      unwrapApi(
+        await apiClient.getAnnouncements(signal),
+        "Failed to fetch announcements"
+      ) as Announcement[],
+  });
 
-    setIsLoading(true);
-    try {
-      const response = await apiClient.getAnnouncements();
-      if (response.success && response.data) {
-        setAnnouncements(response.data);
-      }
-    } catch (error) {
-      console.error("Failed to fetch announcements:", error);
-    } finally {
-      setIsLoading(false);
-    }
-  }, [user]);
-
-  // Mark as read
-  const markAsRead = useCallback(async (announcementId: string) => {
-    try {
-      await apiClient.markAnnouncementRead(announcementId);
-      setAnnouncements((prev) =>
-        prev.map((a) => (a.id === announcementId ? { ...a, isRead: true } : a))
-      );
-    } catch (error) {
-      console.error("Failed to mark announcement as read:", error);
-    }
-  }, []);
-
-  // Dismiss announcement
-  const dismissAnnouncement = useCallback(async (announcementId: string) => {
-    try {
-      await apiClient.dismissAnnouncement(announcementId);
-      setAnnouncements((prev) => prev.filter((a) => a.id !== announcementId));
-    } catch (error) {
-      console.error("Failed to dismiss announcement:", error);
-    }
-  }, []);
-
-  // Get unread count
-  const unreadCount = announcements.filter((a) => !a.isRead).length;
-
-  // Get high priority announcements
-  const urgentAnnouncements = announcements.filter(
-    (a) => a.priority === "urgent" || a.priority === "high"
+  const fetchAnnouncements = useCallback(
+    () => announcementsQuery.refetch(),
+    [announcementsQuery.refetch],
   );
 
-  // Setup realtime subscription
+  const markAsRead = useCallback(
+    async (announcementId: string) => {
+      const response = await apiClient.markAnnouncementRead(announcementId);
+      if (!response.success) return;
+      queryClient.setQueryData<Announcement[]>(queryKey, (current = []) =>
+        current.map((announcement) =>
+          announcement.id === announcementId
+            ? { ...announcement, isRead: true }
+            : announcement,
+        ),
+      );
+    },
+    [queryClient, queryKey],
+  );
+
+  const dismissAnnouncement = useCallback(
+    async (announcementId: string) => {
+      const response = await apiClient.dismissAnnouncement(announcementId);
+      if (!response.success) return;
+      queryClient.setQueryData<Announcement[]>(queryKey, (current = []) =>
+        current.filter((announcement) => announcement.id !== announcementId),
+      );
+    },
+    [queryClient, queryKey],
+  );
+
+  const invalidateAnnouncements = useCallback(() => {
+    void queryClient.invalidateQueries({ queryKey });
+  }, [queryClient, queryKey]);
+  const refreshFromRealtime = useDebouncedCallback(invalidateAnnouncements, 500);
+
   useEffect(() => {
-    if (featureFlags.disableRealtime) {
-      fetchAnnouncements();
-      return;
-    }
-    if (!user?.id) {
-      setAnnouncements([]);
-      return;
-    }
+    if (featureFlags.disableRealtime || !userId) return;
 
-    // Initial fetch
-    fetchAnnouncements();
-
-    // Use Supabase session user ID if available, fallback to store user ID
-    const subscriptionUserId = session?.user?.id || user.id;
-
-    // Subscribe to realtime updates
+    const subscriptionUserId = session?.user?.id || userId;
     const channel = supabase
       .channel(`announcements:${subscriptionUserId}`)
       .on(
         "postgres_changes",
         {
-          event: "INSERT",
+          event: "*",
           schema: "public",
           table: "user_announcements",
           filter: `user_id=eq.${subscriptionUserId}`,
         },
-        () => {
-          // New announcement - refetch
-          fetchAnnouncements();
-        }
-      )
-      .on(
-        "postgres_changes",
-        {
-          event: "UPDATE",
-          schema: "public",
-          table: "user_announcements",
-          filter: `user_id=eq.${subscriptionUserId}`,
-        },
-        (payload) => {
-          const updated = payload.new as any;
-          if (updated.is_dismissed) {
-            setAnnouncements((prev) => prev.filter((a) => a.id !== updated.id));
-          } else {
-            setAnnouncements((prev) =>
-              prev.map((a) =>
-                a.id === updated.id ? { ...a, isRead: updated.is_read } : a
-              )
-            );
-          }
-        }
-      )
-      .on(
-        "postgres_changes",
-        {
-          event: "DELETE",
-          schema: "public",
-          table: "user_announcements",
-          filter: `user_id=eq.${subscriptionUserId}`,
-        },
-        (payload) => {
-          const deleted = payload.old as any;
-          setAnnouncements((prev) => prev.filter((a) => a.id !== deleted.id));
-        }
+        refreshFromRealtime,
       )
       .subscribe();
 
     subscriptionRef.current = channel;
-
     return () => {
-      if (subscriptionRef.current) {
-        supabase.removeChannel(subscriptionRef.current);
+      if (subscriptionRef.current === channel) {
+        subscriptionRef.current = null;
       }
+      void supabase.removeChannel(channel);
     };
-  }, [user?.id, session?.user?.id, fetchAnnouncements]);
+  }, [refreshFromRealtime, session?.user?.id, userId]);
 
+  const announcements = announcementsQuery.data || [];
   return {
     announcements,
-    unreadCount,
-    urgentAnnouncements,
-    isLoading,
+    unreadCount: announcements.filter((announcement) => !announcement.isRead).length,
+    urgentAnnouncements: announcements.filter(
+      (announcement) => announcement.priority === "urgent" || announcement.priority === "high",
+    ),
+    isLoading: announcementsQuery.isLoading,
     fetchAnnouncements,
     markAsRead,
     dismissAnnouncement,

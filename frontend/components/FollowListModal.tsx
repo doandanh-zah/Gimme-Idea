@@ -7,6 +7,7 @@ import { useFollowList } from '../hooks/useFollow';
 import { FollowButton } from './FollowButton';
 import { AuthorLink, AuthorAvatar } from './AuthorLink';
 import { FollowUser } from '../lib/types';
+import { useAuth } from '../contexts/AuthContext';
 
 interface FollowListModalProps {
   isOpen: boolean;
@@ -24,6 +25,8 @@ export const FollowListModal: React.FC<FollowListModalProps> = ({
   initialTab = 'followers',
 }) => {
   const [activeTab, setActiveTab] = useState<'followers' | 'following'>(initialTab);
+  const { user: currentUser } = useAuth();
+  const isOwnProfileList = Boolean(currentUser?.id && currentUser.id === userId);
 
   if (!isOpen) return null;
 
@@ -83,6 +86,7 @@ export const FollowListModal: React.FC<FollowListModalProps> = ({
             <FollowListContent
               userId={userId}
               type={activeTab}
+              isOwnProfileList={isOwnProfileList}
             />
           </div>
         </motion.div>
@@ -94,9 +98,14 @@ export const FollowListModal: React.FC<FollowListModalProps> = ({
 interface FollowListContentProps {
   userId: string;
   type: 'followers' | 'following';
+  isOwnProfileList: boolean;
 }
 
-const FollowListContent: React.FC<FollowListContentProps> = ({ userId, type }) => {
+const FollowListContent: React.FC<FollowListContentProps> = ({
+  userId,
+  type,
+  isOwnProfileList,
+}) => {
   const { users, isLoading, hasMore, loadMore } = useFollowList({
     userId,
     type,
@@ -125,7 +134,11 @@ const FollowListContent: React.FC<FollowListContentProps> = ({ userId, type }) =
   return (
     <div className="divide-y divide-white/5">
       {users.map((user) => (
-        <FollowUserItem key={user.userId} user={user} showFollowBack={type === 'followers'} />
+        <FollowUserItem
+          key={user.userId}
+          user={user}
+          showFollowBack={type === 'followers' && isOwnProfileList}
+        />
       ))}
       
       {hasMore && (
@@ -180,6 +193,13 @@ const FollowUserItem: React.FC<FollowUserItemProps> = ({ user, showFollowBack })
       <FollowButton
         targetUserId={user.userId}
         variant="compact"
+        initialStats={{
+          followersCount: user.followersCount,
+          followingCount: user.followingCount,
+          isFollowing: Boolean(user.isFollowing),
+          // isFollowingBack is profile-owner-relative, not viewer-relative
+          isFollowedBy: false,
+        }}
       />
     </div>
   );

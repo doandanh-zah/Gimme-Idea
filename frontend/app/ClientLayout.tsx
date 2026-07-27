@@ -19,6 +19,8 @@ import Script from 'next/script';
 import React, { useEffect, useRef, useState } from 'react';
 import { usePathname } from 'next/navigation';
 import { useAppStore } from '../lib/store';
+import { QueryProvider } from '../providers/QueryProvider';
+import { AuthQueryCacheBridge } from '../components/AuthQueryCacheBridge';
 
 // Component to sync AuthContext user with Zustand store
 function AuthStoreSync() {
@@ -102,31 +104,34 @@ export default function ClientLayout({ children }: ClientLayoutProps) {
 
       <ErrorBoundary>
         <WalletProvider>
-          <LazorkitProvider>
-            <AuthProvider>
-              <AuthStoreSync />
-              <CommitDebugLogger />
-              {/* Global Constellation Background */}
-              <ConstellationBackground opacity={0.25} showShootingStars={true} showGradientOrbs={true} />
-              <Navbar />
-              <ConnectReminderModal />
-              <ConnectWalletPopup />
-              <WalletEmailPopup />
-              <SubmissionModal />
-              {children}
-              <Toaster
-                position="bottom-right"
-                toastOptions={{
-                  style: {
-                    background: '#1A1A1A',
-                    color: '#fff',
-                    border: '1px solid rgba(255,255,255,0.1)',
-                    borderRadius: '12px',
-                  },
-                }}
-              />
-            </AuthProvider>
-          </LazorkitProvider>
+          <QueryProvider>
+            <LazorkitProvider>
+              <AuthProvider>
+                <AuthStoreSync />
+                <AuthQueryCacheBridge />
+                <CommitDebugLogger />
+                {/* Global Constellation Background */}
+                <ConstellationBackground opacity={0.25} showShootingStars={true} showGradientOrbs={true} />
+                <Navbar />
+                <ConnectReminderModal />
+                <ConnectWalletPopup />
+                <WalletEmailPopup />
+                <SubmissionModal />
+                {children}
+                <Toaster
+                  position="bottom-right"
+                  toastOptions={{
+                    style: {
+                      background: '#1A1A1A',
+                      color: '#fff',
+                      border: '1px solid rgba(255,255,255,0.1)',
+                      borderRadius: '12px',
+                    },
+                  }}
+                />
+              </AuthProvider>
+            </LazorkitProvider>
+          </QueryProvider>
         </WalletProvider>
       </ErrorBoundary>
     </body>

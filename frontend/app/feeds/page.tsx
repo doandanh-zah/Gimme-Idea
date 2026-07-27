@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Rss, Plus, TrendingUp, Star, Sparkles, Gem, Users, 
   Bookmark, ChevronRight, Loader2, Search, X, Lock,
-  Globe, Eye, MoreHorizontal, Link2, ChevronDown, Share2, Copy, Twitter
+  Globe, Eye, MoreHorizontal, Link2, ChevronDown, Share2, Copy
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
@@ -15,6 +15,8 @@ import Image from 'next/image';
 import toast from 'react-hot-toast';
 import { CreateFeedModal } from '@/components/CreateFeedModal';
 import { LoadingSpinner } from '@/components/LoadingSpinner';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { queryKeys } from '@/lib/query-keys';
 
 // Feed type icons and colors
 const FEED_TYPE_CONFIG = {
@@ -35,60 +37,46 @@ const VISIBILITY_CONFIG = {
 export default function FeedsPage() {
   const router = useRouter();
   const { user } = useAuth();
-  
-  const [discoverFeeds, setDiscoverFeeds] = useState<Feed[]>([]);
-  const [allPublicFeeds, setAllPublicFeeds] = useState<Feed[]>([]);
-  const [myFeeds, setMyFeeds] = useState<Feed[]>([]);
-  const [followingFeeds, setFollowingFeeds] = useState<Feed[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const queryClient = useQueryClient();
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showAllPublicFeeds, setShowAllPublicFeeds] = useState(false);
 
-  useEffect(() => {
-    loadFeeds();
-  }, [user]);
+  const publicFeedsQuery = useQuery({
+    queryKey: queryKeys.feeds.public(50),
+    staleTime: 2 * 60_000,
+    queryFn: async ({ signal }) => {
+      const response = await apiClient.getFeeds({ limit: 50 }, signal);
+      if (!response.success || !response.data) throw new Error(response.error || 'Failed to load feeds');
+      return response.data;
+    },
+  });
 
-  const loadFeeds = async () => {
-    setIsLoading(true);
-    try {
-      // Load all data in parallel for better performance
-      const promises: Promise<any>[] = [
-        apiClient.getFeeds({ limit: 50 })
-      ];
+  const myFeedsQuery = useQuery({
+    queryKey: queryKeys.feeds.mine(user?.id || 'anonymous'),
+    enabled: Boolean(user?.id),
+    queryFn: async ({ signal }) => {
+      const response = await apiClient.getMyFeeds(signal);
+      if (!response.success || !response.data) throw new Error(response.error || 'Failed to load your feeds');
+      return response.data;
+    },
+  });
 
-      // Add user-specific requests if logged in
-      if (user) {
-        promises.push(apiClient.getMyFeeds());
-        promises.push(apiClient.getFollowingFeeds());
-      }
+  const followingFeedsQuery = useQuery({
+    queryKey: queryKeys.feeds.following(user?.id || 'anonymous'),
+    enabled: Boolean(user?.id),
+    queryFn: async ({ signal }) => {
+      const response = await apiClient.getFollowingFeeds(signal);
+      if (!response.success || !response.data) throw new Error(response.error || 'Failed to load followed feeds');
+      return response.data;
+    },
+  });
 
-      const results = await Promise.all(promises);
-
-      // Process public feeds
-      const publicRes = results[0];
-      if (publicRes.success && publicRes.data) {
-        setAllPublicFeeds(publicRes.data);
-        setDiscoverFeeds(publicRes.data.slice(0, 3));
-      }
-
-      // Process user feeds if logged in
-      if (user) {
-        const myRes = results[1];
-        const followingRes = results[2];
-
-        if (myRes?.success && myRes.data) {
-          setMyFeeds(myRes.data);
-        }
-        if (followingRes?.success && followingRes.data) {
-          setFollowingFeeds(followingRes.data);
-        }
-      }
-    } catch (error) {
-      console.error('Failed to load feeds:', error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  const allPublicFeeds = publicFeedsQuery.data || [];
+  const discoverFeeds = allPublicFeeds.slice(0, 3);
+  const myFeeds = myFeedsQuery.data || [];
+  const followingFeeds = followingFeedsQuery.data || [];
+  const isLoading = publicFeedsQuery.isLoading
+    || (Boolean(user?.id) && (myFeedsQuery.isLoading || followingFeedsQuery.isLoading));
 
   const handleFollowFeed = async (feedId: string, isFollowing: boolean) => {
     if (!user) {
@@ -97,31 +85,34 @@ export default function FeedsPage() {
     }
 
     try {
+      const response = isFollowing
+        ? await apiClient.unfollowFeed(feedId)
+        : await apiClient.followFeed(feedId);
+      if (!response.success) {
+        throw new Error(response.error || 'Failed to update follow status');
+      }
+
       if (isFollowing) {
-        await apiClient.unfollowFeed(feedId);
         toast.success('Unfollowed feed');
       } else {
-        await apiClient.followFeed(feedId);
         toast.success('Following feed!');
       }
-      loadFeeds(); // Reload to update state
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: queryKeys.feeds.public(50) }),
+        queryClient.invalidateQueries({ queryKey: queryKeys.feeds.following(user.id) }),
+      ]);
     } catch (error) {
       toast.error('Failed to update follow status');
     }
   };
 
   const handleFeedCreated = (newFeed: Feed) => {
-    // Add to My Feeds
-    setMyFeeds(prev => [newFeed, ...prev]);
+    if (user?.id) {
+      queryClient.setQueryData<Feed[]>(queryKeys.feeds.mine(user.id), (current = []) => [newFeed, ...current]);
+    }
     
-    // If public, also add to Discover and All Public Feeds
     if (newFeed.visibility === 'public') {
-      setAllPublicFeeds(prev => [newFeed, ...prev]);
-      setDiscoverFeeds(prev => {
-        // Keep max 4 feeds in discover section
-        const updated = [newFeed, ...prev];
-        return updated.slice(0, 4);
-      });
+      queryClient.setQueryData<Feed[]>(queryKeys.feeds.public(50), (current = []) => [newFeed, ...current]);
     }
     
     setShowCreateModal(false);

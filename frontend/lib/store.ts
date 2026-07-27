@@ -1,7 +1,8 @@
 import { create } from "zustand";
-import { Project, User, Comment, Notification } from "./types";
+import { Project, User, Comment } from "./types";
 import { apiClient } from "./api-client";
 import { buildCommentTree } from "./comment-utils";
+import { normalizeProject } from "./project-normalize";
 import { supabase } from "./supabase";
 
 type View =
@@ -32,6 +33,48 @@ const updateCommentById = (
     };
   });
 
+const REALTIME_AUTHOR_TTL_MS = 5 * 60_000;
+const projectDetailRequests = new Map<string, Promise<Project | null>>();
+const profileRequests = new Map<string, Promise<void>>();
+type RealtimeCommentAuthor = NonNullable<Comment["author"]>;
+const realtimeAuthorCache = new Map<
+  string,
+  { author: RealtimeCommentAuthor | null; expiresAt: number }
+>();
+const realtimeAuthorRequests = new Map<
+  string,
+  Promise<RealtimeCommentAuthor | null>
+>();
+
+const getRealtimeCommentAuthor = async (
+  userId: string
+): Promise<RealtimeCommentAuthor | null> => {
+  const cached = realtimeAuthorCache.get(userId);
+  if (cached && cached.expiresAt > Date.now()) return cached.author;
+
+  const existingRequest = realtimeAuthorRequests.get(userId);
+  if (existingRequest) return existingRequest;
+
+  const request = (async () => {
+    const { data, error } = await supabase
+      .from("users")
+      .select("username, wallet, avatar")
+      .eq("id", userId)
+      .single();
+
+    if (error) throw error;
+    const author = data as RealtimeCommentAuthor | null;
+    realtimeAuthorCache.set(userId, {
+      author,
+      expiresAt: Date.now() + REALTIME_AUTHOR_TTL_MS,
+    });
+    return author;
+  })().finally(() => realtimeAuthorRequests.delete(userId));
+
+  realtimeAuthorRequests.set(userId, request);
+  return request;
+};
+
 interface AppState {
   user: User | null;
   viewedUser: User | null;
@@ -53,7 +96,6 @@ interface AppState {
   selectedProjectId: string | null;
   selectedProject: Project | null;
   searchQuery: string;
-  notifications: Notification[];
 
   // Actions
   openConnectReminder: () => void;
@@ -83,7 +125,15 @@ interface AppState {
   fetchMoreProjects: () => Promise<void>;
   hasMoreProjects: boolean;
   projectsOffset: number;
-  fetchProjectById: (id: string) => Promise<Project | null>;
+  /**
+   * Upsert project into projects[] and set selectedProject.
+   * Required for ProjectDetail (reads list) and IdeaDetail (reads selection).
+   */
+  hydrateProjectDetail: (project: Project) => void;
+  fetchProjectById: (
+    id: string,
+    options?: { force?: boolean }
+  ) => Promise<Project | null>;
   clearBackendMaintenance: () => void;
   addProject: (
     project: Omit<
@@ -127,8 +177,6 @@ interface AppState {
   setView: (view: View) => void;
   navigateToProject: (id: string, type: "project" | "idea") => Promise<void>;
   setSearchQuery: (query: string) => void;
-  markNotificationRead: (id: string) => void;
-  clearNotifications: () => void;
 }
 
 export const useAppStore = create<AppState>((set, get) => ({
@@ -146,7 +194,6 @@ export const useAppStore = create<AppState>((set, get) => ({
   selectedProjectId: null,
   selectedProject: null,
   searchQuery: "",
-  notifications: [],
   hasMoreProjects: true,
   projectsOffset: 0,
 
@@ -300,42 +347,58 @@ export const useAppStore = create<AppState>((set, get) => ({
       return;
     }
 
-    if (state.viewedUser?.username === author.username) {
+    if (
+      state.viewedUser?.username === author.username ||
+      state.viewedUser?.slug === author.username
+    ) {
       set({ currentView: "profile" });
       return;
     }
 
-    try {
-      set({ isLoading: true });
-      const response = await apiClient.getUserByUsername(author.username);
-      if (response.success && response.data) {
-        const userData = response.data;
-        const displayedUser: User = {
-          id: userData.id, // Include user ID for follow functionality
-          username: userData.username,
-          wallet: userData.wallet,
-          avatar:
-            userData.avatar ||
-            `https://api.dicebear.com/7.x/avataaars/svg?seed=${userData.username}`,
-          coverImage: userData.coverImage,
-          reputation: userData.reputationScore || 0,
-          balance: userData.balance || 0,
-          projects: [],
-          bio: userData.bio || "Builder on Solana",
-          socials: userData.socialLinks || {},
-          followersCount: userData.followersCount || 0,
-          followingCount: userData.followingCount || 0,
-        };
-        set({
-          viewedUser: displayedUser,
-          currentView: "profile",
-          isLoading: false,
-        });
+    const existingRequest = profileRequests.get(author.username);
+    if (existingRequest) return existingRequest;
+
+    const request = (async () => {
+      try {
+        set({ isLoading: true });
+        const response = await apiClient.getUserByUsername(author.username);
+        if (response.success && response.data) {
+          const userData = response.data;
+          const displayedUser: User = {
+            id: userData.id,
+            username: userData.username,
+            slug: userData.slug,
+            wallet: userData.wallet,
+            avatar:
+              userData.avatar ||
+              `https://api.dicebear.com/7.x/avataaars/svg?seed=${userData.username}`,
+            coverImage: userData.coverImage,
+            reputation: userData.reputationScore || 0,
+            balance: userData.balance || 0,
+            projects: [],
+            bio: userData.bio || "Builder on Solana",
+            socials: userData.socialLinks || {},
+            followersCount: userData.followersCount || 0,
+            followingCount: userData.followingCount || 0,
+          };
+          set({
+            viewedUser: displayedUser,
+            currentView: "profile",
+            isLoading: false,
+          });
+        } else {
+          set({ isLoading: false });
+        }
+      } catch (error) {
+        console.error("Failed to fetch user profile:", error);
+        set({ isLoading: false });
+      } finally {
+        profileRequests.delete(author.username);
       }
-    } catch (error) {
-      console.error("Failed to fetch user profile:", error);
-      set({ isLoading: false });
-    }
+    })();
+
+    profileRequests.set(author.username, request);
+    return request;
   },
 
   fetchProjects: async (filters) => {
@@ -420,67 +483,64 @@ export const useAppStore = create<AppState>((set, get) => ({
     });
   },
 
-  fetchProjectById: async (idOrPrefix) => {
-    try {
-      const state = get();
+  hydrateProjectDetail: (project) => {
+    set((current) => {
+      const alreadyStored = current.projects.some((p) => p.id === project.id);
+      return {
+        projects: alreadyStored
+          ? current.projects.map((p) => (p.id === project.id ? project : p))
+          : [project, ...current.projects],
+        selectedProject: project,
+        selectedProjectId: project.id,
+        isBackendMaintenance: false,
+      };
+    });
+  },
 
-      // First try exact match, then try prefix match (for slug URLs with 8-char ID suffix)
-      let existingProject = state.projects.find((p) => p.id === idOrPrefix);
-      if (!existingProject && idOrPrefix.length === 8) {
-        existingProject = state.projects.find((p) =>
-          p.id.startsWith(idOrPrefix)
-        );
-      }
-
-      // Return existing project if it has comments already loaded
-      if (
-        existingProject &&
-        existingProject.comments &&
-        existingProject.comments.length > 0
-      ) {
-        return existingProject;
-      }
-
-      // Use existing project's full ID if found, otherwise use the provided ID
-      const projectId = existingProject?.id || idOrPrefix;
-
-      // Fetch full project data with comments
-      const response = await apiClient.getProject(projectId);
-      if (response.success && response.data) {
-        // Map imageUrl to image for frontend compatibility
-        const project = {
-          ...response.data,
-          image: response.data.imageUrl || response.data.image,
-        };
-        // Transform flat comments to nested structure
-        if (project.comments && project.comments.length > 0) {
-          project.comments = buildCommentTree(project.comments);
-        }
-
-        // Update or add project to store
-        const id = project.id;
-        if (existingProject) {
-          set((state) => ({
-            projects: state.projects.map((p) => (p.id === id ? project : p)),
-          }));
-        } else {
-          set((state) => ({
-            projects: [project, ...state.projects],
-          }));
-        }
-
-        set({ isBackendMaintenance: false });
-        return project;
-      }
-      if (response.errorType === "backend_unavailable") {
-        set({ isBackendMaintenance: true });
-      }
-      return null;
-    } catch (error) {
-      console.error("Failed to fetch project by ID:", error);
-      set({ isBackendMaintenance: true });
-      return null;
+  /**
+   * Network fetch + hydrate. Prefer useProjectDetail + hydrateProjectDetail
+   * on detail pages; this remains for navigateToProject / force-refresh paths.
+   */
+  fetchProjectById: async (idOrPrefix, options = {}) => {
+    const state = get();
+    let existingProject = state.projects.find((p) => p.id === idOrPrefix);
+    if (!existingProject && idOrPrefix.length === 8) {
+      existingProject = state.projects.find((p) => p.id.startsWith(idOrPrefix));
     }
+
+    const projectId = existingProject?.id || idOrPrefix;
+
+    // Soft cache via selected/list only when not forcing — no separate TTL map
+    if (!options.force && existingProject && state.selectedProject?.id === existingProject.id) {
+      return existingProject;
+    }
+
+    const existingRequest = projectDetailRequests.get(projectId);
+    if (existingRequest) return existingRequest;
+
+    const request = (async () => {
+      try {
+        const response = await apiClient.getProject(projectId);
+        if (response.success && response.data) {
+          const project = normalizeProject(response.data);
+          get().hydrateProjectDetail(project);
+          return project;
+        }
+        if (response.errorType === "backend_unavailable") {
+          set({ isBackendMaintenance: true });
+        }
+        return null;
+      } catch (error) {
+        console.error("Failed to fetch project by ID:", error);
+        set({ isBackendMaintenance: true });
+        return null;
+      } finally {
+        projectDetailRequests.delete(projectId);
+      }
+    })();
+
+    projectDetailRequests.set(projectId, request);
+    return request;
   },
 
   setSelectedProject: (project) => {
@@ -656,14 +716,7 @@ export const useAppStore = create<AppState>((set, get) => ({
     let author = null;
     if (!commentData.is_anonymous && commentData.user_id) {
       try {
-        const { data: userData } = await supabase
-          .from("users")
-          .select("username, wallet, avatar")
-          .eq("id", commentData.user_id)
-          .single();
-        if (userData) {
-          author = userData;
-        }
+        author = await getRealtimeCommentAuthor(commentData.user_id);
       } catch (error) {
         console.error("Failed to fetch author for realtime comment:", error);
       }
@@ -1047,57 +1100,7 @@ export const useAppStore = create<AppState>((set, get) => ({
     set({ isNavigating: true });
 
     try {
-      // Fetch project details if not already in store OR if it doesn't have comments
-      const state = get();
-      const existingProject = state.projects.find((p) => p.id === id);
-      const needsFetch =
-        !existingProject ||
-        !existingProject.comments ||
-        existingProject.comments.length === 0;
-
-      if (needsFetch) {
-        // Fetch full project data with comments
-        const response = await apiClient.getProject(id);
-        if (response.success && response.data) {
-          // Map imageUrl to image for frontend compatibility
-          const project = {
-            ...response.data,
-            image: response.data.imageUrl || response.data.image,
-          };
-          // Transform flat comments to nested structure
-          if (project.comments && project.comments.length > 0) {
-            project.comments = buildCommentTree(project.comments);
-          }
-
-          if (existingProject) {
-            // Update existing project with full data
-            set((state) => ({
-              projects: state.projects.map((p) => (p.id === id ? project : p)),
-            }));
-          } else {
-            // Add new project to store
-            set((state) => ({
-              projects: [project, ...state.projects],
-            }));
-          }
-        }
-      } else {
-        // Transform existing project's comments if not already transformed
-        const hasNestedReplies = existingProject.comments.some(
-          (c) => c.replies && c.replies.length > 0
-        );
-        if (!hasNestedReplies) {
-          const transformedProject = {
-            ...existingProject,
-            comments: buildCommentTree(existingProject.comments),
-          };
-          set((state) => ({
-            projects: state.projects.map((p) =>
-              p.id === id ? transformedProject : p
-            ),
-          }));
-        }
-      }
+      await get().fetchProjectById(id);
 
       set({
         currentView: type === "project" ? "project-detail" : "idea-detail",
@@ -1111,13 +1114,4 @@ export const useAppStore = create<AppState>((set, get) => ({
   },
 
   setSearchQuery: (query) => set({ searchQuery: query }),
-
-  markNotificationRead: (id) =>
-    set((state) => ({
-      notifications: state.notifications.map((n) =>
-        n.id === id ? { ...n, read: true } : n
-      ),
-    })),
-
-  clearNotifications: () => set({ notifications: [] }),
 }));

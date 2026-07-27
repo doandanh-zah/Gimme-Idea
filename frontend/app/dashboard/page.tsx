@@ -1,7 +1,6 @@
 'use client';
 
 import { useState } from 'react';
-import Navbar from '../../components/Navbar';
 import { ProjectCard } from '../../components/ProjectCard';
 import { useAppStore } from '../../lib/store';
 import { Filter, Plus, TrendingUp, Activity } from 'lucide-react';
@@ -15,8 +14,6 @@ export default function Dashboard() {
 
   return (
     <main className="min-h-screen bg-background pb-20">
-      <Navbar />
-      
       <div className="pt-28 px-6 max-w-7xl mx-auto">
         
         {/* Dashboard Header */}

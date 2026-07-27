@@ -1,12 +1,14 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Loader2, Plus, Check, Bookmark, Rss } from 'lucide-react';
 import { apiClient } from '@/lib/api-client';
 import { Feed } from '@/lib/types';
 import { useAuth } from '@/contexts/AuthContext';
 import toast from 'react-hot-toast';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { queryKeys } from '@/lib/query-keys';
 
 interface BookmarkModalProps {
   isOpen: boolean;
@@ -22,32 +24,26 @@ export const BookmarkModal: React.FC<BookmarkModalProps> = ({
   projectTitle,
 }) => {
   const { user } = useAuth();
-  const [feeds, setFeeds] = useState<(Feed & { hasItem: boolean })[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const queryClient = useQueryClient();
   const [savingFeedId, setSavingFeedId] = useState<string | null>(null);
   const [showCreateNew, setShowCreateNew] = useState(false);
   const [newFeedName, setNewFeedName] = useState('');
   const [isCreating, setIsCreating] = useState(false);
 
-  useEffect(() => {
-    if (isOpen && user) {
-      loadFeeds();
-    }
-  }, [isOpen, user, projectId]);
-
-  const loadFeeds = async () => {
-    setIsLoading(true);
-    try {
-      const response = await apiClient.getFeedsForBookmark(projectId);
-      if (response.success && response.data) {
-        setFeeds(response.data);
+  const bookmarkQueryKey = queryKeys.feeds.bookmark(projectId, user?.id || 'anonymous');
+  const feedsQuery = useQuery({
+    queryKey: bookmarkQueryKey,
+    enabled: isOpen && Boolean(user?.id),
+    queryFn: async ({ signal }) => {
+      const response = await apiClient.getFeedsForBookmark(projectId, signal);
+      if (!response.success || !response.data) {
+        throw new Error(response.error || 'Failed to load feeds');
       }
-    } catch (error) {
-      console.error('Failed to load feeds:', error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
+      return response.data as (Feed & { hasItem: boolean })[];
+    },
+  });
+  const feeds = feedsQuery.data || [];
+  const isLoading = feedsQuery.isLoading;
 
   const handleToggleBookmark = async (feed: Feed & { hasItem: boolean }) => {
     setSavingFeedId(feed.id);
@@ -58,8 +54,8 @@ export const BookmarkModal: React.FC<BookmarkModalProps> = ({
       } else {
         const response = await apiClient.addItemToFeed(feed.id, { projectId });
         if (response.success) {
-          setFeeds(prev =>
-            prev.map(f =>
+          queryClient.setQueryData<(Feed & { hasItem: boolean })[]>(bookmarkQueryKey, (current = []) =>
+            current.map(f =>
               f.id === feed.id ? { ...f, hasItem: true, itemsCount: f.itemsCount + 1 } : f
             )
           );
@@ -91,10 +87,19 @@ export const BookmarkModal: React.FC<BookmarkModalProps> = ({
 
       if (createRes.success && createRes.data) {
         // Add item to the new feed
-        await apiClient.addItemToFeed(createRes.data.id, { projectId });
+        const addRes = await apiClient.addItemToFeed(createRes.data.id, { projectId });
+        if (!addRes.success) {
+          throw new Error(addRes.error || 'Failed to add idea to the new feed');
+        }
         
-        // Update local state
-        setFeeds(prev => [{ ...createRes.data, hasItem: true }, ...prev]);
+        queryClient.setQueryData<(Feed & { hasItem: boolean })[]>(bookmarkQueryKey, (current = []) =>
+          [{ ...createRes.data, hasItem: true }, ...current]
+        );
+        if (user?.id) {
+          queryClient.setQueryData<Feed[]>(queryKeys.feeds.mine(user.id), (current = []) =>
+            [createRes.data, ...current]
+          );
+        }
         setNewFeedName('');
         setShowCreateNew(false);
         toast.success(`Created "${createRes.data.name}" and added idea!`);

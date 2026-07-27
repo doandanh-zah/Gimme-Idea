@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
+import React, { createContext, useContext, useEffect, useState, useCallback, useRef } from 'react';
 import { User as SupabaseUser, Session } from '@supabase/supabase-js';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { WalletReadyState } from '@solana/wallet-adapter-base';
@@ -46,6 +46,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [showWalletPopup, setShowWalletPopup] = useState(false);
   const [showWalletEmailPopup, setShowWalletEmailPopup] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
+  const userRef = useRef<User | null>(null);
+  const authInitializationStartedRef = useRef(false);
+
+  useEffect(() => {
+    userRef.current = user;
+  }, [user]);
 
   const {
     wallets,
@@ -390,7 +396,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
     };
 
-    initializeAuth();
+    if (!authInitializationStartedRef.current) {
+      authInitializationStartedRef.current = true;
+      void initializeAuth();
+    }
 
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
@@ -402,7 +411,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           // Supabase can emit SIGNED_IN on tab focus/session refresh.
           // If app user + backend token are already present, skip re-login to prevent UI flicker.
           const hasBackendToken = !!localStorage.getItem('auth_token');
-          const hasHydratedUser = !!user;
+          const hasHydratedUser = !!userRef.current;
           if (hasHydratedUser && hasBackendToken) {
             return;
           }
@@ -433,7 +442,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
       subscription.unsubscribe();
     };
-  }, [processEmailLogin, user]);
+  }, [checkAdminStatus, processEmailLogin]);
 
   const signInWithGoogle = async () => {
     const isNativeApp = Capacitor.isNativePlatform && Capacitor.isNativePlatform();

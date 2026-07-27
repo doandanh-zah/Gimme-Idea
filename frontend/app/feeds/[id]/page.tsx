@@ -18,6 +18,8 @@ import Image from 'next/image';
 import toast from 'react-hot-toast';
 import { createUsernameSlug } from '@/lib/slug-utils';
 import { LoadingSpinner } from '@/components/LoadingSpinner';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { queryKeys } from '@/lib/query-keys';
 
 // Feed type icons
 const FEED_TYPE_CONFIG = {
@@ -33,11 +35,8 @@ export default function FeedDetailPage() {
   const params = useParams();
   const feedId = params.id as string;
   const { user } = useAuth();
+  const queryClient = useQueryClient();
 
-  const [feed, setFeed] = useState<Feed | null>(null);
-  const [items, setItems] = useState<FeedItem[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [isFollowing, setIsFollowing] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -58,35 +57,31 @@ export default function FeedDetailPage() {
     setStars(newStars);
   }, []);
 
-  useEffect(() => {
-    if (feedId) {
-      loadFeed();
-    }
-  }, [feedId, user?.id]);
-
-  const loadFeed = async () => {
-    setIsLoading(true);
-    try {
-      const [feedRes, itemsRes] = await Promise.all([
-        apiClient.getFeed(feedId),
-        apiClient.getFeedItems(feedId),
-      ]);
-
-      if (feedRes.success && feedRes.data) {
-        setFeed(feedRes.data);
-        setIsFollowing(feedRes.data.isFollowing || false);
-      }
-
-      if (itemsRes.success && itemsRes.data) {
-        setItems(itemsRes.data);
-      }
-    } catch (error) {
-      console.error('Failed to load feed:', error);
-      toast.error('Failed to load feed');
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  const feedQueryKey = queryKeys.feeds.detail(feedId, user?.id);
+  const itemsQueryKey = queryKeys.feeds.items(feedId);
+  const feedQuery = useQuery({
+    queryKey: feedQueryKey,
+    enabled: Boolean(feedId),
+    queryFn: async ({ signal }) => {
+      const response = await apiClient.getFeed(feedId, signal);
+      if (!response.success || !response.data) throw new Error(response.error || 'Failed to load feed');
+      return response.data;
+    },
+  });
+  const itemsQuery = useQuery({
+    queryKey: itemsQueryKey,
+    enabled: Boolean(feedId),
+    staleTime: 60_000,
+    queryFn: async ({ signal }) => {
+      const response = await apiClient.getFeedItems(feedId, undefined, signal);
+      if (!response.success || !response.data) throw new Error(response.error || 'Failed to load feed items');
+      return response.data;
+    },
+  });
+  const feed = feedQuery.data || null;
+  const items = itemsQuery.data || [];
+  const isLoading = feedQuery.isLoading || itemsQuery.isLoading;
+  const isFollowing = feed?.isFollowing || false;
 
   const handleFollow = async () => {
     if (!user || !feed) {
@@ -96,16 +91,21 @@ export default function FeedDetailPage() {
 
     try {
       if (isFollowing) {
-        await apiClient.unfollowFeed(feed.id); // Use actual UUID
-        setIsFollowing(false);
-        setFeed(prev => prev ? { ...prev, followersCount: prev.followersCount - 1 } : null);
+        const response = await apiClient.unfollowFeed(feed.id);
+        if (!response.success) throw new Error(response.error || 'Failed to unfollow feed');
+        queryClient.setQueryData<Feed>(feedQueryKey, current => current
+          ? { ...current, isFollowing: false, followersCount: Math.max(0, current.followersCount - 1) }
+          : current);
         toast.success('Unfollowed feed');
       } else {
-        await apiClient.followFeed(feed.id); // Use actual UUID
-        setIsFollowing(true);
-        setFeed(prev => prev ? { ...prev, followersCount: prev.followersCount + 1 } : null);
+        const response = await apiClient.followFeed(feed.id);
+        if (!response.success) throw new Error(response.error || 'Failed to follow feed');
+        queryClient.setQueryData<Feed>(feedQueryKey, current => current
+          ? { ...current, isFollowing: true, followersCount: current.followersCount + 1 }
+          : current);
         toast.success('Following feed!');
       }
+      void queryClient.invalidateQueries({ queryKey: queryKeys.feeds.following(user.id) });
     } catch (error) {
       toast.error('Failed to update follow status');
     }
@@ -171,8 +171,10 @@ export default function FeedDetailPage() {
     try {
       const response = await apiClient.removeItemFromFeed(feed.id, itemId); // Use actual UUID
       if (response.success) {
-        setItems(prev => prev.filter(i => i.id !== itemId));
-        setFeed(prev => prev ? { ...prev, itemsCount: prev.itemsCount - 1 } : null);
+        queryClient.setQueryData<FeedItem[]>(itemsQueryKey, current => (current || []).filter(i => i.id !== itemId));
+        queryClient.setQueryData<Feed>(feedQueryKey, current => current
+          ? { ...current, itemsCount: Math.max(0, current.itemsCount - 1) }
+          : current);
         toast.success('Idea removed from feed');
       } else {
         toast.error(response.error || 'Failed to remove idea');
@@ -510,7 +512,7 @@ export default function FeedDetailPage() {
           isOpen={showEditModal}
           onClose={() => setShowEditModal(false)}
           feed={feed}
-          onUpdate={(updatedFeed) => setFeed(updatedFeed)}
+          onUpdate={(updatedFeed) => queryClient.setQueryData(feedQueryKey, updatedFeed)}
         />
       )}
 

@@ -8,8 +8,8 @@ import {
   UseGuards,
 } from "@nestjs/common";
 import { FollowService } from "./follow.service";
-import { AuthGuard } from "../common/guards/auth.guard";
 import { AnyAuthGuard } from "../common/guards/any-auth.guard";
+import { OptionalAuthGuard } from "../common/guards/optional-auth.guard";
 import { RequirePatScope } from "../common/decorators/require-pat-scope.decorator";
 import { CurrentUser } from "../common/decorators/user.decorator";
 import { GetFollowersDto } from "./dto/follow.dto";
@@ -50,9 +50,11 @@ export class FollowController {
 
   /**
    * GET /api/users/:userId/follow-stats
-   * Get follow stats for a user
+   * Get follow stats for a user.
+   * Optional auth so isFollowing/isFollowedBy reflect the viewer when JWT is present.
    */
   @Get(":userId/follow-stats")
+  @UseGuards(OptionalAuthGuard)
   async getFollowStats(
     @Param("userId") userId: string,
     @CurrentUser("userId") currentUserId?: string
@@ -62,9 +64,11 @@ export class FollowController {
 
   /**
    * GET /api/users/:userId/followers
-   * Get followers of a user
+   * Get followers of a user.
+   * Optional auth so each row's isFollowing is viewer-relative when JWT is present.
    */
   @Get(":userId/followers")
+  @UseGuards(OptionalAuthGuard)
   async getFollowers(
     @Param("userId") userId: string,
     @Query() query: GetFollowersDto,
@@ -75,14 +79,17 @@ export class FollowController {
 
   /**
    * GET /api/users/:userId/following
-   * Get users that a user is following
+   * Get users that a user is following.
+   * Optional auth so each row's isFollowing is viewer-relative when JWT is present.
    */
   @Get(":userId/following")
+  @UseGuards(OptionalAuthGuard)
   async getFollowing(
     @Param("userId") userId: string,
-    @Query() query: GetFollowersDto
+    @Query() query: GetFollowersDto,
+    @CurrentUser("userId") currentUserId?: string
   ): Promise<ApiResponse<any>> {
-    return this.followService.getFollowing(userId, query);
+    return this.followService.getFollowing(userId, query, currentUserId);
   }
 
   /**

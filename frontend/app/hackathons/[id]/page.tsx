@@ -5,10 +5,10 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
    Trophy, Calendar, Users, Clock, ChevronRight,
    Target, MessageSquare, FileText, CheckCircle2,
-   AlertCircle, MoreHorizontal, Github, Disc, Link as LinkIcon,
+   AlertCircle, MoreHorizontal, Disc, Link as LinkIcon,
    Monitor, Mic, SwatchBook, Code, ShieldCheck, Smartphone, UserPlus,
    RefreshCw, Lock, Search, Plus, Settings, LogOut, UserMinus,
-   LayoutDashboard, Rocket, BookOpen, Menu as MenuIcon, X, Sparkles, Activity, Send, CheckSquare, Globe, Video, Youtube, ThumbsUp, ArrowLeft, FileUp, Lightbulb, Edit3, Trash2, Filter, SortDesc,
+   LayoutDashboard, Rocket, BookOpen, Menu as MenuIcon, X, Sparkles, Activity, Send, CheckSquare, Globe, Video, ThumbsUp, ArrowLeft, FileUp, Lightbulb, Edit3, Trash2, Filter, SortDesc,
    Loader2, Zap, Award
 } from 'lucide-react';
 import Image from 'next/image';
@@ -23,12 +23,13 @@ import { useAppStore } from '@/lib/store';
 import { Project } from '@/lib/types';
 import { apiClient } from '@/lib/api-client';
 import ConstellationBackground from '@/components/ConstellationBackground';
+import { GithubIcon } from '@/components/icons/SocialBrandIcons';
 
 // Map icon names from mock data to Lucide React components
 const LucideIconMap: { [key: string]: React.ElementType } = {
    Trophy, Calendar, Users, Clock, ChevronRight,
    Target, MessageSquare, FileText, CheckCircle2,
-   AlertCircle, MoreHorizontal, Github, Disc, LinkIcon,
+   AlertCircle, MoreHorizontal, Github: GithubIcon, Disc, LinkIcon,
    Monitor, Mic, SwatchBook, Code, ShieldCheck, Smartphone, UserPlus, RefreshCw
 };
 
@@ -334,7 +335,7 @@ export default function HackathonDashboard({ params }: { params: { id: string } 
    const loadMyInvites = async () => {
       if (!id || !user) return;
       try {
-         const response = await apiClient.getMyInvites(id);
+         const response = await apiClient.getMyInvites();
          if (response.success && response.data) {
             // Filter invites for this hackathon only
             const hackathonInvites = response.data.filter(inv => inv.hackathonId === id);

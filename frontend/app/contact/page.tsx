@@ -6,7 +6,6 @@ import {
   Mail, 
   Send, 
   MessageCircle, 
-  Twitter, 
   CheckCircle,
   Loader2,
   User,
@@ -19,6 +18,7 @@ import {
   Globe,
   Heart
 } from 'lucide-react';
+import { TwitterIcon as Twitter } from '../../components/icons/SocialBrandIcons';
 import toast from 'react-hot-toast';
 import Link from 'next/link';
 
