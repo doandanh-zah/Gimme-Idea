@@ -31,6 +31,7 @@ export interface FollowUser {
   followingCount: number;
   followedAt: string;
   isFollowingBack?: boolean;
+  isFollowing?: boolean;
 }
 
 export interface FollowStats {

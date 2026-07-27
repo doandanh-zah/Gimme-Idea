@@ -4,15 +4,16 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import { UserPlus, UserMinus, Loader2, UserCheck } from 'lucide-react';
 import { useFollow } from '../hooks/useFollow';
-import { useAppStore } from '../lib/store';
+import { useAuth } from '../contexts/AuthContext';
 import toast from 'react-hot-toast';
+import type { FollowStats as FollowStatsData } from '../lib/types';
 
 interface FollowButtonProps {
   targetUserId: string;
   targetUsername?: string;
   variant?: 'default' | 'compact' | 'icon';
   className?: string;
-  onFollowChange?: (isFollowing: boolean) => void;
+  initialStats?: FollowStatsData;
 }
 
 export const FollowButton: React.FC<FollowButtonProps> = ({
@@ -20,12 +21,12 @@ export const FollowButton: React.FC<FollowButtonProps> = ({
   targetUsername,
   variant = 'default',
   className = '',
-  onFollowChange,
+  initialStats,
 }) => {
-  const { user } = useAppStore();
-  const { isFollowing, isLoading, toggleFollow, stats } = useFollow({
+  const { user } = useAuth();
+  const { isFollowing, isLoading, toggleFollow } = useFollow({
     targetUserId,
-    onFollowChange,
+    initialStats,
   });
 
   // Don't show follow button for own profile
