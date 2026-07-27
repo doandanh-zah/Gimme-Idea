@@ -5,7 +5,7 @@
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001/api";
 
-interface ApiResponse<T = any> {
+export interface ApiResponse<T = any> {
   success: boolean;
   data?: T;
   error?: string;
@@ -13,29 +13,67 @@ interface ApiResponse<T = any> {
   errorType?: "backend_unavailable";
 }
 
+interface ApiFetchOptions extends RequestInit {
+  /** Public endpoints should opt out so their responses remain cacheable. */
+  auth?: boolean;
+  timeoutMs?: number;
+}
+
+let unauthorizedNotificationPending = false;
+
+function notifyUnauthorized() {
+  if (typeof window === "undefined" || unauthorizedNotificationPending) return;
+
+  unauthorizedNotificationPending = true;
+  localStorage.removeItem("auth_token");
+  localStorage.removeItem("gimme_ai_chat_sessions");
+  window.dispatchEvent(new CustomEvent("auth:unauthorized"));
+}
+
 /**
  * Base fetch wrapper with auth token
  */
 async function apiFetch<T>(
   endpoint: string,
-  options: RequestInit = {}
+  options: ApiFetchOptions = {}
 ): Promise<ApiResponse<T>> {
+  const {
+    auth = true,
+    timeoutMs = 20_000,
+    signal: callerSignal,
+    ...requestOptions
+  } = options;
   const token =
     typeof window !== "undefined" ? localStorage.getItem("auth_token") : null;
 
-  const headers: HeadersInit = {
-    "Content-Type": "application/json",
-    ...options.headers,
-  };
+  const headers = new Headers(requestOptions.headers);
 
-  if (token) {
-    headers["Authorization"] = `Bearer ${token}`;
+  if (
+    requestOptions.body != null &&
+    !(requestOptions.body instanceof FormData) &&
+    !headers.has("Content-Type")
+  ) {
+    headers.set("Content-Type", "application/json");
   }
+
+  if (auth && token) {
+    headers.set("Authorization", `Bearer ${token}`);
+  }
+
+  const controller = new AbortController();
+  const abortFromCaller = () => controller.abort(callerSignal?.reason);
+  if (callerSignal?.aborted) {
+    abortFromCaller();
+  } else {
+    callerSignal?.addEventListener("abort", abortFromCaller, { once: true });
+  }
+  const timeout = setTimeout(() => controller.abort("timeout"), timeoutMs);
 
   try {
     const response = await fetch(`${API_URL}${endpoint}`, {
-      ...options,
+      ...requestOptions,
       headers,
+      signal: controller.signal,
     });
 
     let data: any = null;
@@ -65,14 +103,8 @@ async function apiFetch<T>(
 
     // Handle 401 Unauthorized - clear token and trigger re-auth
     if (response.status === 401) {
-      console.warn("[API] 401 Unauthorized - clearing token");
-      if (typeof window !== "undefined") {
-        localStorage.removeItem("auth_token");
-        // Clear any other auth-related storage
-        localStorage.removeItem("gimme_ai_chat_sessions");
-        // Dispatch custom event to notify auth context
-        window.dispatchEvent(new CustomEvent("auth:unauthorized"));
-      }
+      console.warn("[API] 401 Unauthorized - requesting one auth recovery");
+      notifyUnauthorized();
       return {
         success: false,
         error: "Session expired. Please sign in again.",
@@ -90,16 +122,23 @@ async function apiFetch<T>(
     // If response contains token, save it
     if (data?.data?.token) {
       localStorage.setItem("auth_token", data.data.token);
+      unauthorizedNotificationPending = false;
     }
 
     return data;
   } catch (error: any) {
+    if (callerSignal?.aborted) {
+      throw error;
+    }
     console.error("API fetch error:", error);
     return {
       success: false,
       error: "Backend server in maintenance",
       errorType: "backend_unavailable",
     };
+  } finally {
+    clearTimeout(timeout);
+    callerSignal?.removeEventListener("abort", abortFromCaller);
   }
 }
 
@@ -134,7 +173,7 @@ export const apiClient = {
     poolStatus?: string;
     limit?: number;
     offset?: number;
-  }) => {
+  }, signal?: AbortSignal) => {
     const searchParams = new URLSearchParams();
     if (params) {
       Object.entries(params).forEach(([key, value]) => {
@@ -144,10 +183,14 @@ export const apiClient = {
       });
     }
     const query = searchParams.toString();
-    return apiFetch<any[]>(`/projects${query ? `?${query}` : ""}`);
+    return apiFetch<any[]>(`/projects${query ? `?${query}` : ""}`, {
+      auth: false,
+      signal,
+    });
   },
 
-  getProject: (id: string) => apiFetch<any>(`/projects/${id}`),
+  getProject: (id: string, signal?: AbortSignal) =>
+    apiFetch<any>(`/projects/${id}`, { auth: false, signal }),
 
   createProject: (data: {
     title: string;
@@ -244,7 +287,7 @@ export const apiClient = {
       totalIdeas: number;
       totalFeedback: number;
       activity: Array<{ name: string; ideas: number; feedback: number }>;
-    }>("/projects/idea-velocity"),
+    }>("/projects/idea-velocity", { auth: false }),
 
   // Comments
   getProjectComments: (projectId: string) =>
@@ -342,7 +385,8 @@ export const apiClient = {
     ),
 
   // Users
-  getUserByUsername: (username: string) => apiFetch<any>(`/users/${username}`),
+  getUserByUsername: (username: string) =>
+    apiFetch<any>(`/users/${username}`, { auth: false }),
 
   consumeIdeaView: () =>
     apiFetch<any>("/users/me/consume-idea-view", {
@@ -351,7 +395,7 @@ export const apiClient = {
 
   getMonetizationStatus: () => apiFetch<any>("/users/me/monetization"),
 
-  getUserStats: (username: string) =>
+  getUserStats: (username: string, signal?: AbortSignal) =>
     apiFetch<{
       reputation: number;
       ideasCount: number;
@@ -360,11 +404,12 @@ export const apiClient = {
       tipsReceived: number;
       likesReceived: number;
       votesReceived: number;
-    }>(`/users/${username}/stats`),
+    }>(`/users/${username}/stats`, { auth: false, signal }),
 
   getUserProjects: (
     username: string,
-    params?: { type?: "project" | "idea"; limit?: number; offset?: number }
+    params?: { type?: "project" | "idea"; limit?: number; offset?: number },
+    signal?: AbortSignal
   ) => {
     const query = params
       ? new URLSearchParams(
@@ -374,7 +419,8 @@ export const apiClient = {
       ).toString()
       : "";
     return apiFetch<any[]>(
-      `/users/${username}/projects${query ? `?${query}` : ""}`
+      `/users/${username}/projects${query ? `?${query}` : ""}`,
+      { auth: false, signal }
     );
   },
 
@@ -583,38 +629,42 @@ export const apiClient = {
       method: "DELETE",
     }),
 
-  // Get follow stats for a user
-  getFollowStats: (userId: string) =>
+  // Get follow stats for a user (JWT optional; backend OptionalAuthGuard)
+  getFollowStats: (userId: string, signal?: AbortSignal) =>
     apiFetch<{
       followersCount: number;
       followingCount: number;
       isFollowing: boolean;
       isFollowedBy: boolean;
-    }>(`/users/${userId}/follow-stats`),
+    }>(`/users/${userId}/follow-stats`, { signal }),
 
   // Get followers of a user
   getFollowers: (
     userId: string,
-    params?: { limit?: number; offset?: number }
+    params?: { limit?: number; offset?: number },
+    signal?: AbortSignal
   ) => {
     const query = new URLSearchParams(
       params as Record<string, string>
     ).toString();
     return apiFetch<any[]>(
-      `/users/${userId}/followers${query ? `?${query}` : ""}`
+      `/users/${userId}/followers${query ? `?${query}` : ""}`,
+      { signal }
     );
   },
 
   // Get users that a user is following
   getFollowing: (
     userId: string,
-    params?: { limit?: number; offset?: number }
+    params?: { limit?: number; offset?: number },
+    signal?: AbortSignal
   ) => {
     const query = new URLSearchParams(
       params as Record<string, string>
     ).toString();
     return apiFetch<any[]>(
-      `/users/${userId}/following${query ? `?${query}` : ""}`
+      `/users/${userId}/following${query ? `?${query}` : ""}`,
+      { signal }
     );
   },
 
@@ -633,7 +683,7 @@ export const apiClient = {
     limit?: number;
     offset?: number;
     unreadOnly?: boolean;
-  }) => {
+  }, signal?: AbortSignal) => {
     const query = params
       ? new URLSearchParams(
         Object.entries(params)
@@ -644,13 +694,14 @@ export const apiClient = {
     return apiFetch<{
       success: boolean;
       notifications: any[];
-    }>(`/notifications${query ? `?${query}` : ""}`);
+    }>(`/notifications${query ? `?${query}` : ""}`, { signal });
   },
 
   // Get unread notification count
-  getUnreadNotificationCount: () =>
+  getUnreadNotificationCount: (signal?: AbortSignal) =>
     apiFetch<{ success: boolean; unreadCount: number }>(
-      "/notifications/unread-count"
+      "/notifications/unread-count",
+      { signal }
     ),
 
   // Mark notification as read
@@ -689,7 +740,7 @@ export const apiClient = {
     featured?: boolean;
     limit?: number;
     offset?: number;
-  }) => {
+  }, signal?: AbortSignal) => {
     const query = params
       ? new URLSearchParams(
         Object.entries(params)
@@ -697,32 +748,36 @@ export const apiClient = {
           .map(([k, v]) => [k, String(v)])
       ).toString()
       : "";
-    return apiFetch<any>(`/feeds${query ? `?${query}` : ""}`);
+    return apiFetch<any>(`/feeds${query ? `?${query}` : ""}`, { signal });
   },
 
   // Get featured feeds for discovery
   getDiscoverFeeds: () => apiFetch<any>("/feeds/discover"),
 
   // Get current user's created feeds
-  getMyFeeds: () => apiFetch<any>("/feeds/my"),
+  getMyFeeds: (signal?: AbortSignal) => apiFetch<any>("/feeds/my", { signal }),
 
   // Get a specific user's public feeds
-  getUserFeeds: (userId: string) => apiFetch<any>(`/feeds/user/${userId}`),
+  getUserFeeds: (userId: string, signal?: AbortSignal) =>
+    apiFetch<any>(`/feeds/user/${userId}`, { auth: false, signal }),
 
   // Get feeds user is following
-  getFollowingFeeds: () => apiFetch<any>("/feeds/following"),
+  getFollowingFeeds: (signal?: AbortSignal) =>
+    apiFetch<any>("/feeds/following", { signal }),
 
   // Get user's feeds for bookmark selection
-  getFeedsForBookmark: (projectId: string) =>
-    apiFetch<any>(`/feeds/for-bookmark/${projectId}`),
+  getFeedsForBookmark: (projectId: string, signal?: AbortSignal) =>
+    apiFetch<any>(`/feeds/for-bookmark/${projectId}`, { signal }),
 
   // Get single feed by ID or slug
-  getFeed: (feedIdOrSlug: string) => apiFetch<any>(`/feeds/${feedIdOrSlug}`),
+  getFeed: (feedIdOrSlug: string, signal?: AbortSignal) =>
+    apiFetch<any>(`/feeds/${feedIdOrSlug}`, { signal }),
 
   // Get items in a feed
   getFeedItems: (
     feedIdOrSlug: string,
-    params?: { limit?: number; offset?: number }
+    params?: { limit?: number; offset?: number },
+    signal?: AbortSignal
   ) => {
     const query = params
       ? new URLSearchParams(
@@ -732,7 +787,8 @@ export const apiClient = {
       ).toString()
       : "";
     return apiFetch<any>(
-      `/feeds/${feedIdOrSlug}/items${query ? `?${query}` : ""}`
+      `/feeds/${feedIdOrSlug}/items${query ? `?${query}` : ""}`,
+      { auth: false, signal }
     );
   },
 
@@ -854,6 +910,13 @@ export const apiClient = {
 
   // Get all hackathons (admin view)
   getHackathons: () => apiFetch<any[]>("/admin/hackathons"),
+
+  // Public hackathon discovery and detail
+  getPublicHackathons: (signal?: AbortSignal) =>
+    apiFetch<any[]>("/hackathons", { auth: false, signal }),
+
+  getHackathon: (hackathonIdOrSlug: string, signal?: AbortSignal) =>
+    apiFetch<any>(`/hackathons/${hackathonIdOrSlug}`, { auth: false, signal }),
 
   // Create hackathon
   createHackathon: (data: {
@@ -1172,7 +1235,7 @@ export const apiClient = {
     }),
 
   // Get all pending invites for current user
-  getMyInvites: (hackathonId?: string) =>
+  getMyInvites: (signal?: AbortSignal) =>
     apiFetch<Array<{
       id: string;
       teamId: string;
@@ -1185,11 +1248,11 @@ export const apiClient = {
       status: string;
       createdAt: string;
       expiresAt: string;
-    }>>(`/hackathons/teams/invites/my`),
+    }>>(`/hackathons/teams/invites/my`, { signal }),
 
   // ==================== ANNOUNCEMENTS ====================
   // Get user's active announcements
-  getAnnouncements: () =>
+  getAnnouncements: (signal?: AbortSignal) =>
     apiFetch<Array<{
       id: string;
       type: string;
@@ -1204,7 +1267,7 @@ export const apiClient = {
       createdAt: string;
       expiresAt?: string;
       metadata?: Record<string, any>;
-    }>>(`/users/me/announcements`),
+    }>>(`/users/me/announcements`, { signal }),
 
   // Mark announcement as read
   markAnnouncementRead: (announcementId: string) =>
@@ -1257,7 +1320,7 @@ export const apiClient = {
     }),
 
   // Get all related projects for an idea
-  getRelatedProjects: (ideaId: string) =>
+  getRelatedProjects: (ideaId: string, signal?: AbortSignal) =>
     apiFetch<{
       aiDetected: Array<{
         id: string;
@@ -1281,7 +1344,7 @@ export const apiClient = {
           avatar?: string;
         };
       }>;
-    }>(`/ai/related-projects/${ideaId}`),
+    }>(`/ai/related-projects/${ideaId}`, { auth: false, signal }),
 
   // Pin user's own project to an idea
   pinProject: (data: {
