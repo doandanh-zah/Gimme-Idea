@@ -20,6 +20,9 @@ import {
 } from 'lucide-react';
 import { apiClient } from '../lib/api-client';
 import { useAuth } from '../contexts/AuthContext';
+import { useQueryClient } from '@tanstack/react-query';
+import { useRelatedProjects } from '../hooks/useRelatedProjects';
+import { queryKeys } from '../lib/query-keys';
 import toast from 'react-hot-toast';
 
 interface RelatedProject {
@@ -72,10 +75,8 @@ export const RelatedProjectsModal: React.FC<RelatedProjectsModalProps> = ({
     ideaUploaderName,
 }) => {
     const { user } = useAuth();
-    const [isLoading, setIsLoading] = useState(true);
+    const queryClient = useQueryClient();
     const [isSearching, setIsSearching] = useState(false);
-    const [aiDetected, setAiDetected] = useState<RelatedProject[]>([]);
-    const [userPinned, setUserPinned] = useState<UserPinnedProject[]>([]);
     const [showPinForm, setShowPinForm] = useState(false);
     const [pinFormData, setPinFormData] = useState({
         title: '',
@@ -86,11 +87,18 @@ export const RelatedProjectsModal: React.FC<RelatedProjectsModalProps> = ({
     const [aiSummary, setAiSummary] = useState<string>('');
     const [sourceFilter, setSourceFilter] = useState<string>('all');
     const canPinAsUploader = isIdeaUploader;
+    const relatedProjectsQuery = useRelatedProjects(ideaId, isOpen);
+    const aiDetected = (relatedProjectsQuery.data?.aiDetected || []) as RelatedProject[];
+    const userPinned = (relatedProjectsQuery.data?.userPinned || []) as UserPinnedProject[];
+    const isLoading = relatedProjectsQuery.isLoading;
 
-    // Fetch related projects on mount
     useEffect(() => {
-        if (isOpen && ideaId) {
-            fetchRelatedProjects();
+        if (!isOpen || !ideaId) return;
+
+        try {
+            setAiSummary(localStorage.getItem(`aiSummary_${ideaId}`) || '');
+        } catch {
+            setAiSummary('');
         }
     }, [isOpen, ideaId]);
 
@@ -100,37 +108,15 @@ export const RelatedProjectsModal: React.FC<RelatedProjectsModalProps> = ({
         }
     }, [canPinAsUploader, showPinForm]);
 
-    const fetchRelatedProjects = async () => {
-        setIsLoading(true);
-        try {
-            const response = await apiClient.getRelatedProjects(ideaId);
-            if (response.success && response.data) {
-                const aiResults = response.data.aiDetected || [];
-                const userResults = response.data.userPinned || [];
-
-                setAiDetected(aiResults);
-                setUserPinned(userResults);
-
-                // Restore cached AI summary if available
-                try {
-                    const cached = localStorage.getItem(`aiSummary_${ideaId}`);
-                    if (cached) setAiSummary(cached);
-                } catch { /* ignore */ }
-
-                // If no AI-detected results exist, trigger a search automatically
-                if (aiResults.length === 0 && ideaTitle && ideaProblem && ideaSolution) {
-                    await searchForRelatedProjects();
-                }
-            }
-        } catch (error) {
-            console.error('Failed to fetch related projects:', error);
-            toast.error('Failed to load related projects');
-        } finally {
-            setIsLoading(false);
-        }
-    };
+    const refreshRelatedProjects = () =>
+        queryClient.invalidateQueries({ queryKey: queryKeys.relatedProjects(ideaId) });
 
     const searchForRelatedProjects = async () => {
+        if (!user || !canPinAsUploader) {
+            toast.error('Only the idea uploader can run a related-project search.');
+            return;
+        }
+
         setIsSearching(true);
         try {
             const searchResponse = await apiClient.searchRelatedProjects({
@@ -144,7 +130,6 @@ export const RelatedProjectsModal: React.FC<RelatedProjectsModalProps> = ({
 
             if (searchResponse.success && searchResponse.data) {
                 const results = searchResponse.data.results || [];
-                setAiDetected(results);
 
                 // Store AI summary
                 if (searchResponse.data.aiSummary) {
@@ -152,11 +137,8 @@ export const RelatedProjectsModal: React.FC<RelatedProjectsModalProps> = ({
                     try { localStorage.setItem(`aiSummary_${ideaId}`, searchResponse.data.aiSummary); } catch { /* ignore */ }
                 }
 
-                if (searchResponse.data.quotaInfo) {
-                    toast.success(`Found ${results.length} related projects!`);
-                } else {
-                    toast.success(`Found ${results.length} related projects!`);
-                }
+                await refreshRelatedProjects();
+                toast.success(`Found ${results.length} related projects!`);
             } else {
                 console.error('❌ Search failed:', searchResponse.error);
                 if (searchResponse.error?.includes('Daily search limit')) {
@@ -207,7 +189,7 @@ export const RelatedProjectsModal: React.FC<RelatedProjectsModalProps> = ({
                 toast.success('Your project has been pinned!');
                 setPinFormData({ title: '', url: '', description: '' });
                 setShowPinForm(false);
-                fetchRelatedProjects(); // Refresh the list
+                await refreshRelatedProjects();
             } else {
                 toast.error(response.error || 'Failed to pin project');
             }
@@ -223,7 +205,7 @@ export const RelatedProjectsModal: React.FC<RelatedProjectsModalProps> = ({
             const response = await apiClient.unpinProject(ideaId);
             if (response.success) {
                 toast.success('Project unpinned');
-                fetchRelatedProjects();
+                await refreshRelatedProjects();
             } else {
                 toast.error(response.error || 'Failed to unpin project');
             }
@@ -233,6 +215,11 @@ export const RelatedProjectsModal: React.FC<RelatedProjectsModalProps> = ({
     };
 
     const handleClearProjects = async () => {
+        if (!user || !canPinAsUploader) {
+            toast.error('Only the idea uploader can clear related-project results.');
+            return;
+        }
+
         if (!confirm('⚠️ Clear all AI-detected projects for this idea?\n\nThis will delete all search results but keep user-pinned projects.')) {
             return;
         }
@@ -241,7 +228,9 @@ export const RelatedProjectsModal: React.FC<RelatedProjectsModalProps> = ({
             const response = await apiClient.clearRelatedProjects(ideaId);
             if (response.success) {
                 toast.success(`🗑️ Cleared ${response.data.deletedCount} AI-detected projects`);
-                await fetchRelatedProjects(); // Refresh the list
+                setAiSummary('');
+                try { localStorage.removeItem(`aiSummary_${ideaId}`); } catch { /* ignore */ }
+                await refreshRelatedProjects();
             } else {
                 toast.error(response.error || 'Failed to clear projects');
             }
@@ -346,23 +335,27 @@ export const RelatedProjectsModal: React.FC<RelatedProjectsModalProps> = ({
                                         Pin Your Project
                                     </button>
                                 )}
-                                <button
-                                    onClick={handleClearProjects}
-                                    disabled={aiDetected.length === 0}
-                                    className="inline-flex items-center gap-2 rounded-full border border-red-400/20 bg-red-400/10 px-4 py-2 text-sm font-medium text-red-200 transition-all hover:bg-red-400/15 disabled:cursor-not-allowed disabled:border-white/10 disabled:bg-white/5 disabled:text-slate-500"
-                                    title="Clear all AI-detected projects"
-                                >
-                                    <Trash2 className="h-4 w-4" />
-                                    Clear AI Results
-                                </button>
-                                <button
-                                    onClick={searchForRelatedProjects}
-                                    disabled={isSearching}
-                                    className="inline-flex items-center gap-2 rounded-full border border-cyan-400/20 bg-cyan-400/10 px-4 py-2 text-sm font-medium text-cyan-100 transition-all hover:bg-cyan-400/15 disabled:cursor-not-allowed disabled:opacity-50"
-                                >
-                                    {isSearching ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
-                                    Refresh Search
-                                </button>
+                                {user && canPinAsUploader && (
+                                    <>
+                                        <button
+                                            onClick={handleClearProjects}
+                                            disabled={aiDetected.length === 0}
+                                            className="inline-flex items-center gap-2 rounded-full border border-red-400/20 bg-red-400/10 px-4 py-2 text-sm font-medium text-red-200 transition-all hover:bg-red-400/15 disabled:cursor-not-allowed disabled:border-white/10 disabled:bg-white/5 disabled:text-slate-500"
+                                            title="Clear all AI-detected projects"
+                                        >
+                                            <Trash2 className="h-4 w-4" />
+                                            Clear AI Results
+                                        </button>
+                                        <button
+                                            onClick={searchForRelatedProjects}
+                                            disabled={isSearching}
+                                            className="inline-flex items-center gap-2 rounded-full border border-cyan-400/20 bg-cyan-400/10 px-4 py-2 text-sm font-medium text-cyan-100 transition-all hover:bg-cyan-400/15 disabled:cursor-not-allowed disabled:opacity-50"
+                                        >
+                                            {isSearching ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
+                                            Search the web
+                                        </button>
+                                    </>
+                                )}
                                 <button
                                     onClick={onClose}
                                     className="ml-auto inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/10 bg-white/5 transition-colors hover:bg-white/10"
@@ -534,7 +527,13 @@ export const RelatedProjectsModal: React.FC<RelatedProjectsModalProps> = ({
                                             <Globe className="mx-auto h-12 w-12 text-slate-600" />
                                             <p className="mt-4 text-base font-medium text-slate-200">No AI matches in this view</p>
                                             <p className="mt-2 text-sm text-slate-500">
-                                                Try another source filter or run a fresh search.
+                                                {sourceFilter !== 'all'
+                                                    ? 'Try another source filter or clear the filter to see all matches.'
+                                                    : aiDetected.length === 0
+                                                      ? canPinAsUploader
+                                                        ? 'Run a search to find related projects (uses your daily search quota).'
+                                                        : "Uploader hasn't run a search yet. Only the idea uploader can run paid search."
+                                                      : 'No results match this filter.'}
                                             </p>
                                         </div>
                                     ) : (

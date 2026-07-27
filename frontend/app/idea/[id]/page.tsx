@@ -7,48 +7,53 @@ import { useAppStore } from '../../../lib/store';
 import { extractIdFromSlug } from '../../../lib/slug-utils';
 import { LoadingSpinner } from '../../../components/LoadingSpinner';
 import BackendMaintenancePlaceholder from '../../../components/BackendMaintenancePlaceholder';
+import {
+  isBackendUnavailableError,
+  useProjectDetail,
+} from '../../../hooks/useProjectDetail';
 
 export default function IdeaDetailPage() {
   const params = useParams();
-  const [notFound, setNotFound] = useState(false);
   const {
     selectedProject,
     setSelectedProject,
-    fetchProjectById,
-    isLoading,
-    isBackendMaintenance,
+    hydrateProjectDetail,
     clearBackendMaintenance,
   } = useAppStore();
   const slugOrId = params.id as string;
 
   // Extract ID prefix from slug (e.g. "my-idea-abc12345" -> "abc12345").
   // Or use the full value if it is already a UUID.
-  const ideaId = extractIdFromSlug(slugOrId) || slugOrId;
+  const routeKey = extractIdFromSlug(slugOrId) || slugOrId;
+
+  const detailQuery = useProjectDetail(routeKey);
+  const isMaintenance =
+    detailQuery.isError && isBackendUnavailableError(detailQuery.error);
+  const [notFound, setNotFound] = useState(false);
+
+  // Clear working copy on route change (prevents painting project A under B)
+  useEffect(() => {
+    setSelectedProject(null);
+    setNotFound(false);
+    clearBackendMaintenance();
+  }, [routeKey, setSelectedProject, clearBackendMaintenance]);
+
+  // Trust active RQ key: hydrate on success for this query only
+  useEffect(() => {
+    if (!detailQuery.isSuccess || !detailQuery.data) return;
+    hydrateProjectDetail(detailQuery.data);
+  }, [detailQuery.isSuccess, detailQuery.data, hydrateProjectDetail]);
 
   useEffect(() => {
-    if (ideaId) {
-      setNotFound(false);
-      clearBackendMaintenance();
-
-      // Clear old project immediately to prevent showing stale data.
-      setSelectedProject(null);
-
-      fetchProjectById(ideaId)
-        .then((project) => {
-          if (project) {
-            setSelectedProject(project);
-          } else {
-            setNotFound(true);
-          }
-        })
-        .catch(() => {
-          setNotFound(true);
-        });
+    if (
+      detailQuery.isError &&
+      !isBackendUnavailableError(detailQuery.error)
+    ) {
+      setNotFound(true);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [ideaId]);
+  }, [detailQuery.isError, detailQuery.error]);
 
-  if (isBackendMaintenance) {
+  if (isMaintenance) {
     return (
       <div className="min-h-screen px-4 sm:px-6 pt-28 sm:pt-32">
         <div className="max-w-5xl mx-auto">
@@ -58,7 +63,7 @@ export default function IdeaDetailPage() {
     );
   }
 
-  if (notFound && !isLoading) {
+  if (notFound && !detailQuery.isLoading) {
     return (
       <div className="min-h-screen px-4 sm:px-6 pt-28 sm:pt-32">
         <div className="max-w-5xl mx-auto rounded-2xl border border-white/10 bg-white/5 p-6 sm:p-8 text-white/90">
@@ -68,7 +73,8 @@ export default function IdeaDetailPage() {
     );
   }
 
-  if (isLoading || !ideaId || !selectedProject) {
+  const showDetail = Boolean(selectedProject) && !detailQuery.isError;
+  if (!showDetail || !routeKey) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <LoadingSpinner isLoading={true} size="lg" text="Loading idea..." />

@@ -25,6 +25,9 @@ import { ProposalSendModal } from './ProposalSendModal';
 import { CreatePoolButton } from './ideas/CreatePoolButton';
 import { useWallet, useConnection } from '@solana/wallet-adapter-react';
 import { PublicKey, Transaction, SystemProgram, LAMPORTS_PER_SOL } from '@solana/web3.js';
+import { useRelatedProjects } from '../hooks/useRelatedProjects';
+import { useQueryClient } from '@tanstack/react-query';
+import { syncProjectDetailCache } from '../hooks/useProjectDetail';
 
 // AI Bot display name
 const AI_BOT_NAME = 'Gimme Sensei';
@@ -359,6 +362,7 @@ interface CommentItemProps {
 
 const CommentItem: React.FC<CommentItemProps> = ({ comment, projectId, isReply = false, onTip, ideaOwnerUsername, ideaContext, parentAIComment, parentCommentAuthor, isParentAI, activeReplyId, setActiveReplyId }) => {
     const { user, likeComment, dislikeComment, replyComment, fetchProjectById } = useAppStore();
+    const queryClient = useQueryClient();
     const [replyText, setReplyText] = useState('');
     const [isAnonReply, setIsAnonReply] = useState(false);
     const [showBurst, setShowBurst] = useState(false);
@@ -376,6 +380,11 @@ const CommentItem: React.FC<CommentItemProps> = ({ comment, projectId, isReply =
 
     const isOwnComment = user && !comment.isAnonymous && comment.author?.username === user.username;
 
+    const refreshProjectDetail = async () => {
+        const project = await fetchProjectById(projectId, { force: true });
+        if (project) syncProjectDetailCache(queryClient, project);
+    };
+
     const handleEditSave = async () => {
         if (!editText.trim()) {
             toast.error('Comment cannot be empty');
@@ -387,8 +396,7 @@ const CommentItem: React.FC<CommentItemProps> = ({ comment, projectId, isReply =
             if (response.success) {
                 toast.success('Comment updated!');
                 setIsEditing(false);
-                // Refresh project to get updated comments
-                fetchProjectById(projectId);
+                await refreshProjectDetail();
             } else {
                 toast.error(response.error || 'Failed to update comment');
             }
@@ -406,8 +414,7 @@ const CommentItem: React.FC<CommentItemProps> = ({ comment, projectId, isReply =
             const response = await apiClient.deleteComment(comment.id);
             if (response.success) {
                 toast.success('Comment deleted');
-                // Refresh project to get updated comments
-                fetchProjectById(projectId);
+                await refreshProjectDetail();
             } else {
                 toast.error(response.error || 'Failed to delete comment');
             }
@@ -476,8 +483,7 @@ const CommentItem: React.FC<CommentItemProps> = ({ comment, projectId, isReply =
                         if (response.data.skipped) {
                             // Don't show anything - user's comment was posted, AI just didn't need to reply
                         } else {
-                            // Refresh to get the new AI reply
-                            await fetchProjectById(projectId);
+                            await refreshProjectDetail();
                             toast.success('AI has replied!', { icon: '🤖' });
                         }
                     }
@@ -753,6 +759,7 @@ export const IdeaDetail = () => {
         handleRealtimeDeleteComment,
         fetchProjectById,
     } = useAppStore();
+    const queryClient = useQueryClient();
     const { isAdmin } = useAuth();
     const router = useRouter();
     const [commentText, setCommentText] = useState('');
@@ -777,7 +784,6 @@ export const IdeaDetail = () => {
 
     // Related Projects Modal State
     const [showRelatedProjectsModal, setShowRelatedProjectsModal] = useState(false);
-    const [relatedProjectsCount, setRelatedProjectsCount] = useState(0);
     const [viewGate, setViewGate] = useState<{ blocked: boolean; message?: string } | null>(null);
     const [monetization, setMonetization] = useState<any>(null);
     const [isBuyingPack, setIsBuyingPack] = useState(false);
@@ -792,13 +798,10 @@ export const IdeaDetail = () => {
     const { connection } = useConnection();
 
     const project = selectedProject;
-
-    // Fetch related projects count on mount and when modal closes
-    useEffect(() => {
-        if (project?.id && !showRelatedProjectsModal) {
-            fetchRelatedProjectsCount();
-        }
-    }, [project?.id, showRelatedProjectsModal]); // Refresh when modal closes
+    const relatedProjectsQuery = useRelatedProjects(project?.id || '', Boolean(project?.id));
+    const relatedProjectsCount =
+        (relatedProjectsQuery.data?.aiDetected?.length || 0) +
+        (relatedProjectsQuery.data?.userPinned?.length || 0);
 
     // Daily limiter: authenticated users via backend, guests via localStorage (persists across reload)
     useEffect(() => {
@@ -871,20 +874,6 @@ export const IdeaDetail = () => {
         run();
     }, [user]);
 
-    const fetchRelatedProjectsCount = async () => {
-        if (!project?.id) return;
-        try {
-            const response = await apiClient.getRelatedProjects(project.id);
-            if (response.success && response.data) {
-                const aiCount = response.data.aiDetected?.length || 0;
-                const userCount = response.data.userPinned?.length || 0;
-                setRelatedProjectsCount(aiCount + userCount);
-            }
-        } catch (error) {
-            console.error('Failed to fetch related projects count:', error);
-        }
-    };
-
     // Subscribe to realtime comment updates for this project
     useRealtimeComments({
         projectId: project?.id || '',
@@ -907,7 +896,8 @@ export const IdeaDetail = () => {
 
     const refreshIdeaAndProposals = async () => {
         if (!project?.id) return;
-        await fetchProjectById(project.id);
+        const next = await fetchProjectById(project.id, { force: true });
+        if (next) syncProjectDetailCache(queryClient, next);
     };
 
     if (!project) return null;
