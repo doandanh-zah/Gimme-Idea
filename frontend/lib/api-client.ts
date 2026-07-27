@@ -127,8 +127,24 @@ async function apiFetch<T>(
 
     return data;
   } catch (error: any) {
+    // Caller cancelled the request — surface as abort, not maintenance.
     if (callerSignal?.aborted) {
       throw error;
+    }
+    // Our timeout abort is not backend maintenance; return a distinct error.
+    const isTimeout =
+      controller.signal.aborted &&
+      (controller.signal.reason === "timeout" ||
+        error?.name === "AbortError" ||
+        String(error?.message || "")
+          .toLowerCase()
+          .includes("abort"));
+    if (isTimeout) {
+      console.warn("[API] request timed out:", endpoint);
+      return {
+        success: false,
+        error: "Request timed out. Please try again.",
+      };
     }
     console.error("API fetch error:", error);
     return {

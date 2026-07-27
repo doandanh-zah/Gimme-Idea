@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import { IdeaDetail } from '../../../components/IdeaDetail';
 import { useAppStore } from '../../../lib/store';
@@ -27,31 +27,23 @@ export default function IdeaDetailPage() {
   const routeKey = extractIdFromSlug(slugOrId) || slugOrId;
 
   const detailQuery = useProjectDetail(routeKey);
+  // Only treat as hard failure when there is no usable data (not a background refetch error)
+  const hardError =
+    detailQuery.isError && !detailQuery.data && !detailQuery.isFetching;
   const isMaintenance =
-    detailQuery.isError && isBackendUnavailableError(detailQuery.error);
-  const [notFound, setNotFound] = useState(false);
+    hardError && isBackendUnavailableError(detailQuery.error);
 
   // Clear working copy on route change (prevents painting project A under B)
   useEffect(() => {
     setSelectedProject(null);
-    setNotFound(false);
     clearBackendMaintenance();
   }, [routeKey, setSelectedProject, clearBackendMaintenance]);
 
   // Trust active RQ key: hydrate on success for this query only
   useEffect(() => {
-    if (!detailQuery.isSuccess || !detailQuery.data) return;
+    if (!detailQuery.data) return;
     hydrateProjectDetail(detailQuery.data);
-  }, [detailQuery.isSuccess, detailQuery.data, hydrateProjectDetail]);
-
-  useEffect(() => {
-    if (
-      detailQuery.isError &&
-      !isBackendUnavailableError(detailQuery.error)
-    ) {
-      setNotFound(true);
-    }
-  }, [detailQuery.isError, detailQuery.error]);
+  }, [detailQuery.data, hydrateProjectDetail]);
 
   if (isMaintenance) {
     return (
@@ -63,7 +55,7 @@ export default function IdeaDetailPage() {
     );
   }
 
-  if (notFound && !detailQuery.isLoading) {
+  if (hardError && !isBackendUnavailableError(detailQuery.error)) {
     return (
       <div className="min-h-screen px-4 sm:px-6 pt-28 sm:pt-32">
         <div className="max-w-5xl mx-auto rounded-2xl border border-white/10 bg-white/5 p-6 sm:p-8 text-white/90">
@@ -73,7 +65,8 @@ export default function IdeaDetailPage() {
     );
   }
 
-  const showDetail = Boolean(selectedProject) && !detailQuery.isError;
+  // Keep showing selection while refetch errors if we already hydrated
+  const showDetail = Boolean(selectedProject);
   if (!showDetail || !routeKey) {
     return (
       <div className="min-h-screen flex items-center justify-center">

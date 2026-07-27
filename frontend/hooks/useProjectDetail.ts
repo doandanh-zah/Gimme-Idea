@@ -11,15 +11,20 @@ export { normalizeProject } from "../lib/project-normalize";
 
 /**
  * Keep RQ detail entries in sync when Zustand force-refreshes (comments, AI).
- * Writes under both id and slug so routeKey variants stay warm.
+ * Writes under id, slug, 8-char id prefix (idea routes), and optional routeKey.
  */
 export function syncProjectDetailCache(
   queryClient: QueryClient,
-  project: Project
+  project: Project,
+  routeKey?: string
 ) {
-  const keys = [project.id, project.slug].filter(
-    (k): k is string => Boolean(k)
-  );
+  const keys = new Set<string>();
+  if (project.id) {
+    keys.add(project.id);
+    if (project.id.length >= 8) keys.add(project.id.slice(0, 8));
+  }
+  if (project.slug) keys.add(project.slug);
+  if (routeKey) keys.add(routeKey);
   for (const key of keys) {
     queryClient.setQueryData(queryKeys.projects.detail(key), project);
   }

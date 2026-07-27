@@ -23,8 +23,10 @@ export default function ProjectDetailPage() {
   // Pass slug raw — backend resolves by slug or id
   const routeKey = params.id as string;
   const detailQuery = useProjectDetail(routeKey);
+  const hardError =
+    detailQuery.isError && !detailQuery.data && !detailQuery.isFetching;
   const isMaintenance =
-    detailQuery.isError && isBackendUnavailableError(detailQuery.error);
+    hardError && isBackendUnavailableError(detailQuery.error);
 
   useEffect(() => {
     setSelectedProject(null);
@@ -32,19 +34,15 @@ export default function ProjectDetailPage() {
   }, [routeKey, setSelectedProject, clearBackendMaintenance]);
 
   useEffect(() => {
-    if (!detailQuery.isSuccess || !detailQuery.data) return;
+    if (!detailQuery.data) return;
     hydrateProjectDetail(detailQuery.data);
-  }, [detailQuery.isSuccess, detailQuery.data, hydrateProjectDetail]);
+  }, [detailQuery.data, hydrateProjectDetail]);
 
   useEffect(() => {
-    if (
-      detailQuery.isError &&
-      !isBackendUnavailableError(detailQuery.error) &&
-      !detailQuery.isLoading
-    ) {
+    if (hardError && !isBackendUnavailableError(detailQuery.error)) {
       router.push('/projects');
     }
-  }, [detailQuery.isError, detailQuery.error, detailQuery.isLoading, router]);
+  }, [hardError, detailQuery.error, router]);
 
   if (isMaintenance) {
     return (
@@ -56,7 +54,7 @@ export default function ProjectDetailPage() {
     );
   }
 
-  const showDetail = Boolean(selectedProject) && !detailQuery.isError;
+  const showDetail = Boolean(selectedProject);
   if (!showDetail || !routeKey) {
     return (
       <div className="min-h-screen flex items-center justify-center">

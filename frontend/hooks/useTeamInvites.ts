@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiClient } from "../lib/api-client";
-import { useAppStore } from "../lib/store";
+import { useAuth } from "../contexts/AuthContext";
 import { supabase } from "../lib/supabase";
 import { featureFlags } from "../lib/featureFlags";
 import { queryKeys } from "../lib/query-keys";
@@ -24,7 +24,8 @@ export interface TeamInvite {
 }
 
 export function useTeamInvites() {
-  const userId = useAppStore((state) => state.user?.id || "");
+  const { user } = useAuth();
+  const userId = user?.id || "";
   const queryClient = useQueryClient();
   const subscriptionRef = useRef<any>(null);
   const queryKey = useMemo(() => queryKeys.teamInvites(userId), [userId]);
