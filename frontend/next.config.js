@@ -11,17 +11,38 @@ function getGitCommitSha() {
 }
 
 function ensureNextPackageJson() {
-  const nextDir = path.join(__dirname, '.next');
-  fs.mkdirSync(nextDir, { recursive: true });
-  fs.writeFileSync(path.join(nextDir, 'package.json'), `${JSON.stringify({ type: 'commonjs' })}\n`);
+  const nextDirs = new Set([
+    path.join(__dirname, '.next'),
+    path.join(process.cwd(), '.next'),
+  ]);
+
+  if (path.basename(__dirname) === 'frontend') {
+    nextDirs.add(path.join(path.dirname(__dirname), '.next'));
+  }
+
+  for (const nextDir of nextDirs) {
+    fs.mkdirSync(nextDir, { recursive: true });
+    fs.writeFileSync(path.join(nextDir, 'package.json'), `${JSON.stringify({ type: 'commonjs' })}\n`);
+  }
 }
 
 class EnsureNextPackageJsonPlugin {
   apply(compiler) {
-    compiler.hooks.beforeCompile.tap('EnsureNextPackageJsonPlugin', ensureNextPackageJson);
-    compiler.hooks.afterEmit.tap('EnsureNextPackageJsonPlugin', ensureNextPackageJson);
+    [
+      'beforeRun',
+      'run',
+      'beforeCompile',
+      'emit',
+      'afterEmit',
+      'done',
+      'afterDone',
+    ].forEach((hookName) => {
+      compiler.hooks[hookName]?.tap('EnsureNextPackageJsonPlugin', ensureNextPackageJson);
+    });
   }
 }
+
+ensureNextPackageJson();
 
 function getOrigin(value) {
   try {
