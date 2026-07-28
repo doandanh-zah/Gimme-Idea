@@ -54,6 +54,7 @@ function ensureRootAliases() {
       path.join(__dirname, 'package.json'),
       'file'
     );
+    ensureSymlink(path.join(repoRoot, 'public'), path.join(__dirname, 'public'));
     ensureSymlink(
       path.join(repoRoot, 'node_modules'),
       path.join(__dirname, 'node_modules')
