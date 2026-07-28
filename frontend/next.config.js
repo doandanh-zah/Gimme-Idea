@@ -23,6 +23,14 @@ class EnsureNextPackageJsonPlugin {
   }
 }
 
+function getOrigin(value) {
+  try {
+    return value ? new URL(value).origin : null;
+  } catch {
+    return null;
+  }
+}
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   outputFileTracingRoot: __dirname,
@@ -33,6 +41,12 @@ const nextConfig = {
   },
 
   async headers() {
+    const apiOrigin = getOrigin(process.env.NEXT_PUBLIC_API_URL);
+    const backendOrigins = [
+      apiOrigin,
+      "https://gimme-idea-c53h.onrender.com",
+    ].filter(Boolean);
+
     const csp = [
       "default-src 'self'",
       "base-uri 'self'",
@@ -58,6 +72,7 @@ const nextConfig = {
         "https://*.helius.xyz",
         "https://kora.lazorkit.com",
         "https://portal.lazor.sh",
+        ...backendOrigins,
       ].join(" "),
       [
         "frame-src 'self'",
