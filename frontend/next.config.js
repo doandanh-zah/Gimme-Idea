@@ -42,10 +42,10 @@ const nextConfig = {
 
   async headers() {
     const apiOrigin = getOrigin(process.env.NEXT_PUBLIC_API_URL);
-    const backendOrigins = [
+    const backendOrigins = Array.from(new Set([
       apiOrigin,
       "https://gimme-idea-c53h.onrender.com",
-    ].filter(Boolean);
+    ].filter(Boolean)));
 
     const csp = [
       "default-src 'self'",
