@@ -1,10 +1,25 @@
 const { execSync } = require('child_process');
+const fs = require('fs');
+const path = require('path');
 
 function getGitCommitSha() {
   try {
     return execSync('git rev-parse --short HEAD', { encoding: 'utf8' }).trim();
   } catch {
     return 'unknown';
+  }
+}
+
+function ensureNextPackageJson() {
+  const nextDir = path.join(__dirname, '.next');
+  fs.mkdirSync(nextDir, { recursive: true });
+  fs.writeFileSync(path.join(nextDir, 'package.json'), `${JSON.stringify({ type: 'commonjs' })}\n`);
+}
+
+class EnsureNextPackageJsonPlugin {
+  apply(compiler) {
+    compiler.hooks.beforeCompile.tap('EnsureNextPackageJsonPlugin', ensureNextPackageJson);
+    compiler.hooks.afterEmit.tap('EnsureNextPackageJsonPlugin', ensureNextPackageJson);
   }
 }
 
@@ -81,6 +96,11 @@ const nextConfig = {
     config.ignoreWarnings = [
       { module: /node_modules\/pino/ },
       { module: /node_modules\/@walletconnect/ },
+    ];
+
+    config.plugins = [
+      ...config.plugins,
+      new EnsureNextPackageJsonPlugin(),
     ];
 
     // Fallback for browser-only wallet/web3 chunks.
