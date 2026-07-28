@@ -58,7 +58,7 @@ export class ProjectsService {
     const cached = this.listCache.get(cacheKey);
     if (cached) return cached;
 
-    const supabase = this.supabaseService.getAdminClient();
+    const supabase = this.supabaseService.getReadClient();
 
     // OPTIMIZATION: Only select columns needed for list view to reduce egress
     // Full details (problem, solution, opportunity) are fetched in findOne
@@ -218,7 +218,7 @@ export class ProjectsService {
     limit: number = 3,
     category?: string
   ): Promise<ApiResponse<Project[]>> {
-    const supabase = this.supabaseService.getAdminClient();
+    const supabase = this.supabaseService.getReadClient();
 
     // OPTIMIZATION: Only select columns needed for recommended cards
     // Include 'problem' and 'solution' for preview text in recommended idea cards
@@ -311,7 +311,7 @@ export class ProjectsService {
     totalFeedback: number;
     activity: Array<{ name: string; ideas: number; feedback: number }>;
   }>> {
-    const supabase = this.supabaseService.getAdminClient();
+    const supabase = this.supabaseService.getReadClient();
     const since = new Date();
     since.setDate(since.getDate() - 6);
     since.setHours(0, 0, 0, 0);
@@ -368,7 +368,7 @@ export class ProjectsService {
    * Get single project by ID or slug
    */
   async findOne(idOrSlug: string): Promise<ApiResponse<Project>> {
-    const supabase = this.supabaseService.getAdminClient();
+    const supabase = this.supabaseService.getReadClient();
 
     const selectQuery = `
       *,

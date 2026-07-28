@@ -32,6 +32,13 @@ export class SupabaseService implements OnModuleInit {
     return this.supabase;
   }
 
+  // Get a read client for public API responses.
+  // Prefer the admin client when configured, but do not make public reads
+  // depend on the service-role key being present in production.
+  getReadClient(): SupabaseClient {
+    return this.supabaseAdmin || this.supabase;
+  }
+
   // Get admin client (bypass Row Level Security)
   getAdminClient(): SupabaseClient {
     if (!this.supabaseAdmin) {
