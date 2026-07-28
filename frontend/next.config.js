@@ -16,14 +16,34 @@ function ensureNextPackageJson() {
     path.join(process.cwd(), '.next'),
   ]);
 
-  if (path.basename(__dirname) === 'frontend') {
-    nextDirs.add(path.join(path.dirname(__dirname), '.next'));
-  }
-
   for (const nextDir of nextDirs) {
     fs.mkdirSync(nextDir, { recursive: true });
     fs.writeFileSync(path.join(nextDir, 'package.json'), `${JSON.stringify({ type: 'commonjs' })}\n`);
   }
+}
+
+function ensureRootNextAlias() {
+  if (path.basename(__dirname) !== 'frontend') return;
+
+  const appNextDir = path.join(__dirname, '.next');
+  const rootNextDir = path.join(path.dirname(__dirname), '.next');
+
+  try {
+    const stat = fs.lstatSync(rootNextDir);
+    if (stat.isSymbolicLink()) {
+      const target = fs.readlinkSync(rootNextDir);
+      if (path.resolve(path.dirname(rootNextDir), target) === appNextDir) {
+        return;
+      }
+      fs.unlinkSync(rootNextDir);
+    } else {
+      fs.rmSync(rootNextDir, { recursive: true, force: true });
+    }
+  } catch (error) {
+    if (error.code !== 'ENOENT') return;
+  }
+
+  fs.symlinkSync(appNextDir, rootNextDir, 'dir');
 }
 
 class EnsureNextPackageJsonPlugin {
@@ -37,11 +57,15 @@ class EnsureNextPackageJsonPlugin {
       'done',
       'afterDone',
     ].forEach((hookName) => {
-      compiler.hooks[hookName]?.tap('EnsureNextPackageJsonPlugin', ensureNextPackageJson);
+      compiler.hooks[hookName]?.tap('EnsureNextPackageJsonPlugin', () => {
+        ensureRootNextAlias();
+        ensureNextPackageJson();
+      });
     });
   }
 }
 
+ensureRootNextAlias();
 ensureNextPackageJson();
 
 function getOrigin(value) {
