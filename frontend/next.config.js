@@ -22,7 +22,7 @@ function ensureNextPackageJson() {
   }
 }
 
-function ensureSymlink(linkPath, targetPath) {
+function ensureSymlink(linkPath, targetPath, type = 'dir') {
   try {
     const stat = fs.lstatSync(linkPath);
     if (stat.isSymbolicLink()) {
@@ -38,16 +38,22 @@ function ensureSymlink(linkPath, targetPath) {
     if (error.code !== 'ENOENT') return;
   }
 
-  fs.symlinkSync(targetPath, linkPath, 'dir');
+  fs.symlinkSync(targetPath, linkPath, type);
 }
 
 function ensureRootAliases() {
   if (path.basename(__dirname) !== 'frontend') return;
+  if (!process.env.VERCEL) return;
 
   const repoRoot = path.dirname(__dirname);
   ensureSymlink(path.join(repoRoot, '.next'), path.join(__dirname, '.next'));
 
   if (!fs.existsSync(path.join(repoRoot, 'package.json'))) {
+    ensureSymlink(
+      path.join(repoRoot, 'package.json'),
+      path.join(__dirname, 'package.json'),
+      'file'
+    );
     ensureSymlink(
       path.join(repoRoot, 'node_modules'),
       path.join(__dirname, 'node_modules')
