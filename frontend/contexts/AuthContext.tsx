@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
+import React, { createContext, useContext, useEffect, useState, useCallback, useRef } from 'react';
 import { User as SupabaseUser, Session } from '@supabase/supabase-js';
 import { supabase } from '@/lib/supabase';
 import { apiClient } from '@/lib/api-client';
@@ -69,15 +69,45 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+const authUsersAreEquivalent = (a: User | null, b: User | null): boolean => {
+  if (a === b) return true;
+  if (!a || !b) return a === b;
+
+  return (
+    a.id === b.id &&
+    a.wallet === b.wallet &&
+    a.username === b.username &&
+    a.reputation === b.reputation &&
+    a.balance === b.balance &&
+    a.avatar === b.avatar &&
+    a.coverImage === b.coverImage &&
+    a.bio === b.bio &&
+    a.email === b.email &&
+    a.authProvider === b.authProvider &&
+    a.authId === b.authId &&
+    a.needsWalletConnect === b.needsWalletConnect
+  );
+};
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [supabaseUser, setSupabaseUser] = useState<SupabaseUser | null>(null);
   const [session, setSession] = useState<Session | null>(null);
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUserState] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isNewUser, setIsNewUser] = useState(false);
   const [showWalletPopup, setShowWalletPopup] = useState(false);
   const [showWalletEmailPopup, setShowWalletEmailPopup] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
+  const userRef = useRef<User | null>(null);
+  const setUser = useCallback((nextUser: User | null) => {
+    setUserState((currentUser) =>
+      authUsersAreEquivalent(currentUser, nextUser) ? currentUser : nextUser
+    );
+  }, []);
+
+  useEffect(() => {
+    userRef.current = user;
+  }, [user]);
 
   // Check if current user is admin
   const checkAdminStatus = useCallback(async () => {
@@ -161,7 +191,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       clearBackendSessionHints();
       return null;
     }
-  }, [checkAdminStatus]);
+  }, [checkAdminStatus, setUser]);
 
   const refreshUser = useCallback(async () => {
     if (!supabaseUser) return;
@@ -190,7 +220,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } catch (error) {
       console.error('Refresh user error:', error);
     }
-  }, [supabaseUser]);
+  }, [supabaseUser, setUser]);
 
   // Handle auth:unauthorized event from API client
   // This means the backend JWT is invalid/expired
@@ -438,7 +468,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           // Supabase can emit SIGNED_IN on tab focus/session refresh.
           // If app user + backend token are already present, skip re-login to prevent UI flicker.
           const hasBackendSession = hasBackendSessionHint() || hasLegacyAuthToken();
-          const hasHydratedUser = !!user;
+          const hasHydratedUser = !!userRef.current;
           if (hasHydratedUser && hasBackendSession) {
             return;
           }
@@ -470,7 +500,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
       subscription.unsubscribe();
     };
-  }, [processEmailLogin, user]);
+  }, [processEmailLogin]);
 
   const signInWithGoogle = async () => {
     const nativeBridge = await loadNativeBridge();

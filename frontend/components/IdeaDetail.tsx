@@ -959,8 +959,8 @@ export const IdeaDetail = () => {
     };
 
     const handleShareToX = () => {
-        // Create shareable URL with slug format
-        const slug = createUniqueSlug(project.title, project.id);
+      // Create shareable URL with slug format
+        const slug = project.slug || createUniqueSlug(project.title, project.id);
         const ideaUrl = `${window.location.origin}/idea/${slug}`;
 
         // Create engaging tweet text

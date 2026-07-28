@@ -13,6 +13,7 @@ import ErrorBoundary from '../components/ErrorBoundary';
 import Script from 'next/script';
 import React, { useEffect } from 'react';
 import { useAppStore } from '../lib/store';
+import { AuthQueryCacheBridge } from '../components/AuthQueryCacheBridge';
 
 // Component to sync AuthContext user with Zustand store
 function AuthStoreSync() {
@@ -79,6 +80,7 @@ export default function ClientLayout({ children }: ClientLayoutProps) {
         <QueryProvider>
           <AuthProvider>
             <AuthStoreSync />
+            <AuthQueryCacheBridge />
             <CommitDebugLogger />
             <Navbar />
             <ConnectReminderModal />

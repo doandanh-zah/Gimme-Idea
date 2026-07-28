@@ -20,11 +20,11 @@ import { ApiTokensModule } from "./api-tokens/api-tokens.module";
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
-    // Rate limiting: 100 requests per 60 seconds per IP
+    // Rate limiting: 300 requests per 60 seconds per route/client IP
     ThrottlerModule.forRoot([
       {
         ttl: 60000, // 60 seconds
-        limit: 100, // 100 requests
+        limit: 300,
       },
     ]),
     AuthModule,

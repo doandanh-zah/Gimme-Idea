@@ -56,6 +56,7 @@ function AdminGateMessage({
 
 export default function AdminDashboardShell() {
   const { user, isLoading: authLoading } = useAuth();
+  const userId = user?.id;
   const router = useRouter();
   const [isAdmin, setIsAdmin] = useState<boolean | null>(null);
 
@@ -65,7 +66,7 @@ export default function AdminDashboardShell() {
     const checkAdminStatus = async () => {
       if (authLoading) return;
 
-      if (!user) {
+      if (!userId) {
         setIsAdmin(false);
         return;
       }
@@ -81,7 +82,7 @@ export default function AdminDashboardShell() {
     return () => {
       cancelled = true;
     };
-  }, [authLoading, user]);
+  }, [authLoading, userId]);
 
   if (authLoading || isAdmin === null) {
     return (

@@ -33,7 +33,7 @@ export function syncProjectDetailCache(
 /**
  * Network owner for project/idea detail. Pass the same routeKey the page uses:
  * - projects/[id]: raw params.id (slug or UUID)
- * - idea/[id]: extractIdFromSlug(...) || slugOrId
+ * - idea/[id]: raw params.id (slug, UUID, or title-shortId)
  *
  * Do not use keepPreviousData / placeholderData — pages clear selection on
  * route change and trust this query key for hydrate.

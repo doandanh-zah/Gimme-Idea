@@ -147,6 +147,7 @@ export default function HackathonDashboard() {
 
    // Get user from store
    const user = useAppStore((state) => state.user);
+   const userId = user?.id;
 
    // Fetch hackathon data from API
    useEffect(() => {
@@ -227,7 +228,7 @@ export default function HackathonDashboard() {
 
    // Load registration status
    const loadRegistrationStatus = async () => {
-      if (!id || !user) return;
+      if (!id || !userId) return;
       setIsLoadingRegistration(true);
       try {
          const response = await apiClient.getMyRegistration(id);
@@ -244,10 +245,10 @@ export default function HackathonDashboard() {
 
    // Load registration on mount
    useEffect(() => {
-      if (user) {
+      if (userId) {
          loadRegistrationStatus();
       }
-   }, [id, user]);
+   }, [id, userId]);
 
    const handleRegister = async () => {
       if (!user) {
@@ -281,7 +282,7 @@ export default function HackathonDashboard() {
 
    // Load user's team for this hackathon
    const loadMyTeam = async () => {
-      if (!id || !user) return;
+      if (!id || !userId) return;
       setIsLoadingTeam(true);
       setTeamError(null);
       try {
@@ -319,7 +320,7 @@ export default function HackathonDashboard() {
 
    // Load pending invites for current user
    const loadMyInvites = async () => {
-      if (!id || !user) return;
+      if (!id || !userId) return;
       try {
          const response = await apiClient.getMyInvites(id);
          if (response.success && response.data) {
@@ -334,12 +335,12 @@ export default function HackathonDashboard() {
 
    // Load team data on mount
    useEffect(() => {
-      if (user) {
+      if (userId) {
          loadMyTeam();
          loadMyInvites();
       }
       loadAllTeams();
-   }, [id, user]);
+   }, [id, userId]);
 
    // Create a new team
    const handleCreateTeam = async () => {

@@ -6,7 +6,6 @@ import Link from 'next/link';
 import { AlertTriangle, ArrowLeft, Loader2, RefreshCw } from 'lucide-react';
 import { IdeaDetail } from '../../../components/IdeaDetail';
 import { useAppStore } from '../../../lib/store';
-import { extractIdFromSlug } from '../../../lib/slug-utils';
 import BackendMaintenancePlaceholder from '../../../components/BackendMaintenancePlaceholder';
 import { WalletRouteBoundary } from '../../../components/wallet/WalletRouteBoundary';
 import { useProjectDetailQuery } from '../../../hooks/useProjectsQuery';
@@ -40,18 +39,18 @@ export default function IdeaDetailPage() {
   const clearBackendMaintenance = useAppStore((state) => state.clearBackendMaintenance);
   const slugOrId = params.id as string;
 
-  // Extract ID prefix from slug (e.g. "my-idea-abc12345" -> "abc12345").
-  // Or use the full value if it is already a UUID.
-  const ideaId = extractIdFromSlug(slugOrId) || slugOrId;
-  const detailQuery = useProjectDetailQuery(ideaId, !!ideaId);
+  // Pass the original route key through. The backend owns slug, UUID, and
+  // title-shortId resolution, so the client does not collapse URLs to 8 chars.
+  const ideaRouteKey = slugOrId;
+  const detailQuery = useProjectDetailQuery(ideaRouteKey, !!ideaRouteKey);
 
   useEffect(() => {
-    if (ideaId) {
+    if (ideaRouteKey) {
       setNotFound(false);
       clearBackendMaintenance();
       setSelectedProject(null);
     }
-  }, [ideaId, clearBackendMaintenance, setSelectedProject]);
+  }, [ideaRouteKey, clearBackendMaintenance, setSelectedProject]);
 
   useEffect(() => {
     if (detailQuery.data) {
@@ -94,7 +93,7 @@ export default function IdeaDetailPage() {
     );
   }
 
-  if (detailQuery.isLoading || !ideaId || !selectedProject) {
+  if (detailQuery.isLoading || !ideaRouteKey || !selectedProject) {
     return <IdeaDetailSkeleton />;
   }
 

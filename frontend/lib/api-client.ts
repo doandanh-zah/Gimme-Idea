@@ -16,7 +16,23 @@ export interface ApiResponse<T = any> {
   data?: T;
   error?: string;
   message?: string;
-  errorType?: "backend_unavailable";
+  errorType?: "backend_unavailable" | "rate_limited";
+}
+
+const DEDUPED_GET_TTL_MS = 15_000;
+const DEDUPED_RATE_LIMIT_TTL_MS = 5_000;
+const DEDUPED_GET_ENDPOINTS = new Set([
+  "/auth/me",
+  "/admin/status",
+  "/hackathons/teams/invites/my",
+]);
+
+const responseCache = new Map<string, { expiresAt: number; response: ApiResponse<any> }>();
+const inFlightRequests = new Map<string, Promise<ApiResponse<any>>>();
+
+function clearDedupedApiCache() {
+  responseCache.clear();
+  inFlightRequests.clear();
 }
 
 /**
@@ -59,6 +75,27 @@ async function apiFetch<T>(
 ): Promise<ApiResponse<T>> {
   const { suppressAuthEvent = false, ...fetchOptions } = options;
   const token = getLegacyAuthToken();
+  const method = (fetchOptions.method || "GET").toUpperCase();
+  const dedupeKey =
+    method === "GET" && !fetchOptions.signal && DEDUPED_GET_ENDPOINTS.has(endpoint)
+      ? `${endpoint}|${token || "cookie"}`
+      : null;
+
+  if (method !== "GET") {
+    clearDedupedApiCache();
+  }
+
+  if (dedupeKey) {
+    const cached = responseCache.get(dedupeKey);
+    if (cached && cached.expiresAt > Date.now()) {
+      return cached.response as ApiResponse<T>;
+    }
+
+    const inFlight = inFlightRequests.get(dedupeKey);
+    if (inFlight) {
+      return inFlight as Promise<ApiResponse<T>>;
+    }
+  }
 
   const headers = mergeHeaders(fetchOptions.headers);
 
@@ -66,79 +103,123 @@ async function apiFetch<T>(
     headers["Authorization"] = `Bearer ${token}`;
   }
 
-  try {
-    const response = await fetch(`${API_URL}${endpoint}`, {
-      ...fetchOptions,
-      credentials: fetchOptions.credentials ?? "include",
-      headers,
-    });
-
-    let data: any = null;
+  const request = (async (): Promise<ApiResponse<T>> => {
     try {
-      data = await response.json();
-    } catch {
-      data = null;
-    }
+      const response = await fetch(`${API_URL}${endpoint}`, {
+        ...fetchOptions,
+        credentials: fetchOptions.credentials ?? "include",
+        headers,
+      });
 
-    // Backend/server is unavailable for serving requests
-    if (response.status >= 500) {
+      let data: any = null;
+      try {
+        data = await response.json();
+      } catch {
+        data = null;
+      }
+
+      // Backend/server is unavailable for serving requests
+      if (response.status >= 500) {
+        return {
+          success: false,
+          error: "Backend server in maintenance",
+          errorType: "backend_unavailable",
+        };
+      }
+
+      if (response.status === 429) {
+        return {
+          success: false,
+          error:
+            data?.message ||
+            data?.error ||
+            "Too many requests. Please wait a moment.",
+          errorType: "rate_limited",
+        };
+      }
+
+      // Handle 400 Bad Request - validation errors
+      if (response.status === 400) {
+        console.error("[API] 400 Bad Request:", data);
+        return {
+          success: false,
+          error: data?.message || data?.error || "Bad Request",
+        };
+      }
+
+      // Handle 401 Unauthorized - clear token and trigger re-auth
+      if (response.status === 401) {
+        console.warn("[API] 401 Unauthorized - clearing token");
+        if (typeof window !== "undefined") {
+          clearBackendSessionHints();
+          clearDedupedApiCache();
+          // Clear any other auth-related storage
+          localStorage.removeItem("gimme_ai_chat_sessions");
+          // Dispatch custom event to notify auth context
+          if (!suppressAuthEvent) {
+            window.dispatchEvent(new CustomEvent("auth:unauthorized"));
+          }
+        }
+        return {
+          success: false,
+          error: "Session expired. Please sign in again.",
+        };
+      }
+
+      // Handle 403 Forbidden - also might indicate auth issues
+      if (response.status === 403) {
+        return {
+          success: false,
+          error: data?.error || "Access denied.",
+        };
+      }
+
+      // If response contains a token, the backend also set the httpOnly cookie.
+      // Keep only a non-sensitive session hint client-side.
+      if (data?.data?.token) {
+        clearDedupedApiCache();
+        markBackendSessionPresent();
+      }
+
+      return data;
+    } catch (error: any) {
+      console.error("API fetch error:", error);
       return {
         success: false,
         error: "Backend server in maintenance",
         errorType: "backend_unavailable",
       };
     }
+  })();
 
-    // Handle 400 Bad Request - validation errors
-    if (response.status === 400) {
-      console.error("[API] 400 Bad Request:", data);
-      return {
-        success: false,
-        error: data?.message || data?.error || "Bad Request",
-      };
-    }
-
-    // Handle 401 Unauthorized - clear token and trigger re-auth
-    if (response.status === 401) {
-      console.warn("[API] 401 Unauthorized - clearing token");
-      if (typeof window !== "undefined") {
-        clearBackendSessionHints();
-        // Clear any other auth-related storage
-        localStorage.removeItem("gimme_ai_chat_sessions");
-        // Dispatch custom event to notify auth context
-        if (!suppressAuthEvent) {
-          window.dispatchEvent(new CustomEvent("auth:unauthorized"));
-        }
-      }
-      return {
-        success: false,
-        error: "Session expired. Please sign in again.",
-      };
-    }
-
-    // Handle 403 Forbidden - also might indicate auth issues
-    if (response.status === 403) {
-      return {
-        success: false,
-        error: data?.error || "Access denied.",
-      };
-    }
-
-    // If response contains a token, the backend also set the httpOnly cookie.
-    // Keep only a non-sensitive session hint client-side.
-    if (data?.data?.token) {
-      markBackendSessionPresent();
-    }
-
-    return data;
-  } catch (error: any) {
-    console.error("API fetch error:", error);
-    return {
-      success: false,
-      error: "Backend server in maintenance",
-      errorType: "backend_unavailable",
-    };
+  if (!dedupeKey) {
+    return request;
   }
+
+  const trackedRequest = request
+    .then((result) => {
+      const ttl =
+        result.errorType === "rate_limited"
+          ? DEDUPED_RATE_LIMIT_TTL_MS
+          : result.success
+            ? DEDUPED_GET_TTL_MS
+            : 0;
+
+      if (ttl > 0) {
+        responseCache.set(dedupeKey, {
+          expiresAt: Date.now() + ttl,
+          response: result,
+        });
+      }
+
+      return result;
+    })
+    .finally(() => {
+      inFlightRequests.delete(dedupeKey);
+    });
+
+  inFlightRequests.set(dedupeKey, trackedRequest);
+  return trackedRequest;
 }
 
 // =====================================

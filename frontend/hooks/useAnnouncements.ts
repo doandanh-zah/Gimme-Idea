@@ -27,7 +27,7 @@ export interface Announcement {
 }
 
 export function useAnnouncements() {
-  const user = useAppStore((state) => state.user);
+  const userId = useAppStore((state) => state.user?.id);
   const { session } = useAuth(); // Get Supabase session for realtime auth
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -35,7 +35,7 @@ export function useAnnouncements() {
 
   // Fetch announcements
   const fetchAnnouncements = useCallback(async () => {
-    if (!user) return;
+    if (!userId) return;
 
     setIsLoading(true);
     try {
@@ -48,7 +48,7 @@ export function useAnnouncements() {
     } finally {
       setIsLoading(false);
     }
-  }, [user]);
+  }, [userId]);
 
   // Mark as read
   const markAsRead = useCallback(async (announcementId: string) => {
@@ -82,12 +82,13 @@ export function useAnnouncements() {
 
   // Setup realtime subscription
   useEffect(() => {
-    if (!isRealtimeChannelEnabled("announcements")) {
-      fetchAnnouncements();
+    if (!userId) {
+      setAnnouncements([]);
       return;
     }
-    if (!user?.id) {
-      setAnnouncements([]);
+
+    if (!isRealtimeChannelEnabled("announcements")) {
+      fetchAnnouncements();
       return;
     }
 
@@ -95,7 +96,7 @@ export function useAnnouncements() {
     fetchAnnouncements();
 
     // Use Supabase session user ID if available, fallback to store user ID
-    const subscriptionUserId = session?.user?.id || user.id;
+    const subscriptionUserId = session?.user?.id || userId;
     const channelName = `announcements:${subscriptionUserId}`;
 
     // Subscribe to realtime updates
@@ -165,7 +166,7 @@ export function useAnnouncements() {
         subscriptionRef.current = null;
       }
     };
-  }, [user?.id, session?.user?.id, fetchAnnouncements]);
+  }, [userId, session?.user?.id, fetchAnnouncements]);
 
   return {
     announcements,

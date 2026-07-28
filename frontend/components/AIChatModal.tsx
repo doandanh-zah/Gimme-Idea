@@ -464,8 +464,7 @@ export const AIChatModal: React.FC<AIChatModalProps> = ({ isOpen, onClose }) => 
   };
 
   const handleIdeaClick = (idea: Project) => {
-    // Create clean URL slug from title + short ID
-    const slug = createUniqueSlug(idea.title, idea.id);
+    const slug = idea.slug || createUniqueSlug(idea.title, idea.id);
     router.push(`/idea/${slug}`);
     onClose();
   };

@@ -163,6 +163,7 @@ export class ProjectsService {
 
       return {
         id: p.id,
+        slug: p.slug,
         type: p.type || "project",
         title: p.title,
         description: p.description,
@@ -271,6 +272,7 @@ export class ProjectsService {
 
       return {
         id: p.id,
+        slug: p.slug,
         type: p.type || "project",
         title: p.title,
         description: p.description,
@@ -383,18 +385,27 @@ export class ProjectsService {
     let project = null;
     let error = null;
 
-    // Check if it's a UUID format first (most common case)
-    const isUUID =
-      /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
-        idOrSlug
-      );
+    const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    const uuidSuffix = idOrSlug.match(
+      /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+    )?.[0];
+    const shortIdSuffix = idOrSlug.match(/(?:^|-)([a-f0-9]{8})$/i)?.[1];
+    const slugWithoutIdSuffix = uuidSuffix
+      ? idOrSlug.slice(0, -(uuidSuffix.length + 1))
+      : shortIdSuffix && idOrSlug.length > shortIdSuffix.length
+        ? idOrSlug.slice(0, -(shortIdSuffix.length + 1))
+        : null;
 
-    if (isUUID) {
+    // Check if it's a UUID format first (most common case), or a slug-fullUuid fallback.
+    const isUUID = uuidPattern.test(idOrSlug);
+    const directId = isUUID ? idOrSlug : uuidSuffix;
+
+    if (directId) {
       // Direct UUID lookup
       const result = await supabase
         .from("projects")
         .select(selectQuery)
-        .eq("id", idOrSlug)
+        .eq("id", directId)
         .single();
 
       project = result.data;
@@ -415,34 +426,35 @@ export class ProjectsService {
       }
     }
 
-    // Fallback: try ID prefix match (for URLs like "my-idea-abc12345" or just "abc12345")
-    if (!project) {
-      const parts = idOrSlug.split("-");
-      const lastPart = parts[parts.length - 1];
+    // Legacy fallback: URLs used to be generated as "title-shortId".
+    // Resolve by the slug part first because UUID prefix filtering is not
+    // supported reliably on Postgres UUID columns through PostgREST.
+    if (!project && slugWithoutIdSuffix) {
+      const result = await supabase
+        .from("projects")
+        .select(selectQuery)
+        .eq("slug", slugWithoutIdSuffix)
+        .single();
 
-      // Check if lastPart looks like UUID prefix (8 hex chars)
-      if (/^[a-f0-9]{8}$/i.test(lastPart)) {
-        // Search for projects where ID starts with this prefix using database filter
-        const { data: projects } = await supabase
-          .from("projects")
-          .select(selectQuery)
-          .like("id", lastPart + "%");
-
-        if (projects && projects.length > 0) {
-          project = projects[0]; // Use first match since DB filters prefix
-        }
+      if (result.data) {
+        project = result.data;
+        error = null;
       }
     }
 
-    // Final fallback: if idOrSlug itself is 8 chars, try direct prefix match
-    if (!project && /^[a-f0-9]{8}$/i.test(idOrSlug)) {
+    if (!project && shortIdSuffix) {
+      const legacySlugPrefix = slugWithoutIdSuffix || idOrSlug;
       const { data: projects } = await supabase
         .from("projects")
         .select(selectQuery)
-        .like("id", idOrSlug + "%");
+        .like("slug", `${legacySlugPrefix}%`)
+        .limit(2);
 
-      if (projects && projects.length > 0) {
-        project = projects[0]; // Use first match since DB filters prefix
+      if (projects?.length === 1) {
+        project = projects[0];
+        error = null;
+      } else if (projects && projects.length > 1) {
+        throw new BadRequestException("Ambiguous project slug");
       }
     }
 

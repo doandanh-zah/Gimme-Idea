@@ -14,7 +14,7 @@ import {
 import { useThrottledCallback } from "./useDebounce";
 
 export function useNotifications() {
-  const user = useAppStore((state) => state.user);
+  const userId = useAppStore((state) => state.user?.id);
   const { session } = useAuth(); // Get Supabase session for realtime auth
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
@@ -22,7 +22,7 @@ export function useNotifications() {
   const subscriptionRef = useRef<any>(null);
 
   const notificationsQuery = useQuery({
-    queryKey: ["notifications", user?.id],
+    queryKey: ["notifications", userId],
     queryFn: async () => {
       const response = await apiClient.getNotifications({ limit: 20, offset: 0 });
       if (!response.success) {
@@ -31,13 +31,13 @@ export function useNotifications() {
 
       return ((response as any).notifications || []) as Notification[];
     },
-    enabled: !!user?.id,
+    enabled: !!userId,
     staleTime: 30_000,
     refetchOnWindowFocus: false,
   });
 
   const unreadCountQuery = useQuery({
-    queryKey: ["notifications", user?.id, "unread-count"],
+    queryKey: ["notifications", userId, "unread-count"],
     queryFn: async () => {
       const response = await apiClient.getUnreadNotificationCount();
       if (!response.success) {
@@ -46,7 +46,7 @@ export function useNotifications() {
 
       return (response as any).unreadCount || 0;
     },
-    enabled: !!user?.id,
+    enabled: !!userId,
     staleTime: 30_000,
     refetchOnWindowFocus: false,
   });
@@ -66,7 +66,7 @@ export function useNotifications() {
   // Fetch notifications from API
   const fetchNotifications = useCallback(
     async (limit = 20, offset = 0) => {
-      if (!user) return;
+      if (!userId) return;
 
       setIsLoading(true);
       try {
@@ -86,12 +86,12 @@ export function useNotifications() {
         setIsLoading(false);
       }
     },
-    [user]
+    [userId]
   );
 
   // Fetch unread count
   const fetchUnreadCount = useCallback(async () => {
-    if (!user) return;
+    if (!userId) return;
 
     try {
       const response = await apiClient.getUnreadNotificationCount();
@@ -102,7 +102,7 @@ export function useNotifications() {
     } catch (error) {
       console.error("Failed to fetch unread count:", error);
     }
-  }, [user]);
+  }, [userId]);
 
   // Mark single notification as read
   const markAsRead = useCallback(async (notificationId: string) => {
@@ -205,11 +205,11 @@ export function useNotifications() {
 
   // Reset initial fetch flag when user changes (logout/login)
   useEffect(() => {
-    if (!user?.id) {
+    if (!userId) {
       setNotifications([]);
       setUnreadCount(0);
     }
-  }, [user?.id]);
+  }, [userId]);
 
   // Setup realtime subscription
   useEffect(() => {
@@ -218,7 +218,7 @@ export function useNotifications() {
     }
 
     // Need both user (for API calls) and session (for realtime auth)
-    if (!user?.id) {
+    if (!userId) {
       setNotifications([]);
       setUnreadCount(0);
       return;
@@ -226,7 +226,7 @@ export function useNotifications() {
 
     // Use Supabase session user ID for realtime subscription if available
     // This ensures the subscription filter matches the RLS policy (auth.uid())
-    const subscriptionUserId = session?.user?.id || user.id;
+    const subscriptionUserId = session?.user?.id || userId;
     const channelName = `notifications:${subscriptionUserId}`;
 
     // Subscribe to realtime updates
@@ -298,7 +298,7 @@ export function useNotifications() {
         subscriptionRef.current = null;
       }
     };
-  }, [user?.id, session?.user?.id]); // Only depend on user/session, not on callback functions
+  }, [userId, session?.user?.id]); // Only depend on user/session, not on callback functions
 
   return {
     notifications,

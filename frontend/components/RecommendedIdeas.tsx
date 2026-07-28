@@ -69,7 +69,7 @@ export const RecommendedIdeas = () => {
   }, [selectedCategory]);
 
   const handleViewIdea = (idea: Project) => {
-    const slug = createUniqueSlug(idea.title, idea.id);
+    const slug = idea.slug || createUniqueSlug(idea.title, idea.id);
     router.push(`/idea/${slug}`);
   };
 

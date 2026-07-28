@@ -1,11 +1,16 @@
 import { NestFactory } from "@nestjs/core";
 import { ValidationPipe } from "@nestjs/common";
+import { NestExpressApplication } from "@nestjs/platform-express";
 import { AppModule } from "./app.module";
 import { json, urlencoded } from "express";
 const helmet = require("helmet");
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create<NestExpressApplication>(AppModule);
+
+  // Render/Cloudflare/Vercel sit in front of the API. Trusting the first proxy
+  // lets Express expose the real client IP to Nest throttling via req.ip.
+  app.set("trust proxy", 1);
 
   // Security headers with Helmet
   app.use(
@@ -68,7 +73,7 @@ async function bootstrap() {
     console.log(`🚀 Backend server is running on: http://localhost:${port}`);
     console.log(`📡 API available at: http://localhost:${port}/api`);
     console.log(`🌐 CORS enabled for: ${Array.from(allowedOrigins).join(", ")}`);
-    console.log(`Security: Helmet enabled, Rate limit: 100 req/min`);
+    console.log(`Security: Helmet enabled, Rate limit: 300 req/min`);
   }
 }
 

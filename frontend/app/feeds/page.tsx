@@ -1,7 +1,7 @@
 'use client';
 
 import type { ComponentType } from 'react';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import {
@@ -368,6 +368,7 @@ function FeedSection({
 
 export default function FeedsPage() {
   const { user } = useAuth();
+  const userId = user?.id;
 
   const [discoverFeeds, setDiscoverFeeds] = useState<Feed[]>([]);
   const [allPublicFeeds, setAllPublicFeeds] = useState<Feed[]>([]);
@@ -378,14 +379,14 @@ export default function FeedsPage() {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showAllPublicFeeds, setShowAllPublicFeeds] = useState(false);
 
-  const loadFeeds = async () => {
+  const loadFeeds = useCallback(async () => {
     setIsLoading(true);
     setError('');
 
     try {
       const requests: Promise<any>[] = [apiClient.getFeeds({ limit: 50 })];
 
-      if (user) {
+      if (userId) {
         requests.push(apiClient.getMyFeeds(), apiClient.getFollowingFeeds());
       }
 
@@ -399,7 +400,7 @@ export default function FeedsPage() {
       setAllPublicFeeds(publicRes.data);
       setDiscoverFeeds(publicRes.data.slice(0, 3));
 
-      if (user) {
+      if (userId) {
         const myRes = results[1];
         const followingRes = results[2];
 
@@ -419,11 +420,11 @@ export default function FeedsPage() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [userId]);
 
   useEffect(() => {
     loadFeeds();
-  }, [user]);
+  }, [loadFeeds]);
 
   const visibleDiscoverFeeds = useMemo(
     () => (showAllPublicFeeds ? allPublicFeeds : discoverFeeds),

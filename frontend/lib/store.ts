@@ -32,6 +32,26 @@ const updateCommentById = (
     };
   });
 
+const usersAreEquivalent = (a: User | null, b: User | null): boolean => {
+  if (a === b) return true;
+  if (!a || !b) return a === b;
+
+  return (
+    a.id === b.id &&
+    a.wallet === b.wallet &&
+    a.username === b.username &&
+    a.reputation === b.reputation &&
+    a.balance === b.balance &&
+    a.avatar === b.avatar &&
+    a.coverImage === b.coverImage &&
+    a.bio === b.bio &&
+    a.email === b.email &&
+    a.authProvider === b.authProvider &&
+    a.authId === b.authId &&
+    a.needsWalletConnect === b.needsWalletConnect
+  );
+};
+
 interface AppState {
   user: User | null;
   viewedUser: User | null;
@@ -172,7 +192,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   clearBackendMaintenance: () => set({ isBackendMaintenance: false }),
 
   setUser: (user) => {
-    set({ user });
+    set((state) => (usersAreEquivalent(state.user, user) ? state : { user }));
   },
 
   setViewedUser: (user) => {

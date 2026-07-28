@@ -25,14 +25,13 @@ export function createUsernameSlug(username: string): string {
 }
 
 /**
- * Create a unique slug with ID suffix for guaranteed uniqueness
- * Example: "My Idea" with id "abc123" -> "my-idea-abc123"
- * @deprecated Use createSlug instead - slugs are now stored in database
+ * Create a fallback route key with full ID suffix for guaranteed lookup.
+ * Prefer database slugs when present; this is only for records without a slug.
+ * Example: "My Idea" with UUID -> "my-idea-00000000-0000-0000-0000-000000000000"
  */
 export function createUniqueSlug(text: string, id: string): string {
   const slug = createSlug(text);
-  const shortId = id.slice(0, 8); // Use first 8 chars of ID
-  return `${slug}-${shortId}`;
+  return `${slug}-${id}`;
 }
 
 /**
@@ -48,6 +47,11 @@ export function createIdeaSlug(title: string): string {
  * Example: "my-idea-abc12345" -> "abc12345" (assuming 8 char ID)
  */
 export function extractIdFromSlug(slug: string): string | null {
+  const uuidSuffix = slug.match(
+    /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+  )?.[0];
+  if (uuidSuffix) return uuidSuffix;
+
   // The ID is the last segment after the final hyphen, if it looks like a UUID prefix
   const parts = slug.split("-");
   if (parts.length < 2) return null;

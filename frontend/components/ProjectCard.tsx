@@ -41,8 +41,7 @@ export const ProjectCard: React.FC<ProjectCardProps> = ({ project, hideIdeaStage
   };
 
   const handleCardClick = () => {
-    // Create clean URL slug from title + short ID
-    const slug = createUniqueSlug(project.title, project.id);
+    const slug = project.slug || createUniqueSlug(project.title, project.id);
     const route = isIdea ? `/idea/${slug}` : `/projects/${slug}`;
     router.push(route);
   };

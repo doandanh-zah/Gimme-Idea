@@ -364,19 +364,15 @@ function AdminDashboardContent() {
   // Check if user is admin in database
   useEffect(() => {
     const checkAdminStatus = async () => {
-      if (!user) {
+      if (!user?.id) {
         setCheckingAdmin(false);
         setIsAdmin(false);
         return;
       }
 
       try {
-        const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
-        const res = await fetch(`${API_URL}/admin/status`, {
-          credentials: 'include',
-        });
-        const data = await res.json();
-        setIsAdmin(data.success && data.data?.isAdmin === true);
+        const response = await apiClient.getAdminStatus();
+        setIsAdmin(response.success && response.data?.isAdmin === true);
       } catch (error) {
         console.error('Failed to check admin status:', error);
         setIsAdmin(false);
@@ -387,7 +383,7 @@ function AdminDashboardContent() {
     if (!authLoading) {
       checkAdminStatus();
     }
-  }, [user, authLoading]);
+  }, [user?.id, authLoading]);
 
   // Fetch data
   useEffect(() => {
