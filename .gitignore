@@ -1,4 +1,5 @@
 # Dependencies
+node_modules
 node_modules/
 package-lock.json
 yarn.lock
@@ -12,6 +13,7 @@ backend/.env
 frontend/.env.local
 
 # Build output
+.next
 dist/
 build/
 .next/

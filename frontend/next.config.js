@@ -22,28 +22,37 @@ function ensureNextPackageJson() {
   }
 }
 
-function ensureRootNextAlias() {
-  if (path.basename(__dirname) !== 'frontend') return;
-
-  const appNextDir = path.join(__dirname, '.next');
-  const rootNextDir = path.join(path.dirname(__dirname), '.next');
-
+function ensureSymlink(linkPath, targetPath) {
   try {
-    const stat = fs.lstatSync(rootNextDir);
+    const stat = fs.lstatSync(linkPath);
     if (stat.isSymbolicLink()) {
-      const target = fs.readlinkSync(rootNextDir);
-      if (path.resolve(path.dirname(rootNextDir), target) === appNextDir) {
+      const target = fs.readlinkSync(linkPath);
+      if (path.resolve(path.dirname(linkPath), target) === targetPath) {
         return;
       }
-      fs.unlinkSync(rootNextDir);
+      fs.unlinkSync(linkPath);
     } else {
-      fs.rmSync(rootNextDir, { recursive: true, force: true });
+      fs.rmSync(linkPath, { recursive: true, force: true });
     }
   } catch (error) {
     if (error.code !== 'ENOENT') return;
   }
 
-  fs.symlinkSync(appNextDir, rootNextDir, 'dir');
+  fs.symlinkSync(targetPath, linkPath, 'dir');
+}
+
+function ensureRootAliases() {
+  if (path.basename(__dirname) !== 'frontend') return;
+
+  const repoRoot = path.dirname(__dirname);
+  ensureSymlink(path.join(repoRoot, '.next'), path.join(__dirname, '.next'));
+
+  if (!fs.existsSync(path.join(repoRoot, 'package.json'))) {
+    ensureSymlink(
+      path.join(repoRoot, 'node_modules'),
+      path.join(__dirname, 'node_modules')
+    );
+  }
 }
 
 class EnsureNextPackageJsonPlugin {
@@ -58,14 +67,14 @@ class EnsureNextPackageJsonPlugin {
       'afterDone',
     ].forEach((hookName) => {
       compiler.hooks[hookName]?.tap('EnsureNextPackageJsonPlugin', () => {
-        ensureRootNextAlias();
+        ensureRootAliases();
         ensureNextPackageJson();
       });
     });
   }
 }
 
-ensureRootNextAlias();
+ensureRootAliases();
 ensureNextPackageJson();
 
 function getOrigin(value) {
