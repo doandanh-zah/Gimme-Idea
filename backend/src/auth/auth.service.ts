@@ -855,7 +855,7 @@ export class AuthService {
   async checkWalletExists(
     walletAddress: string
   ): Promise<ApiResponse<{ exists: boolean; userId?: string }>> {
-    const supabase = this.supabaseService.getAdminClient();
+    const supabase = this.supabaseService.getReadClient();
 
     const { data: user, error } = await supabase
       .from("users")
