@@ -1,26 +1,18 @@
 'use client';
 
-// CRITICAL: Import polyfills FIRST before any other imports
-import '../polyfills';
-
-import { Inter, JetBrains_Mono, Space_Grotesk, Quantico } from 'next/font/google';
+import { Inter, JetBrains_Mono } from 'next/font/google';
 import { Toaster } from 'react-hot-toast';
-import { WalletProvider } from '../components/WalletProvider';
 import { AuthProvider, useAuth } from '../contexts/AuthContext';
-import { LazorkitProvider } from '../contexts/LazorkitContext';
 import Navbar from '../components/Navbar';
 import { ConnectReminderModal } from '../components/ConnectReminderModal';
-import { ConnectWalletPopup } from '../components/ConnectWalletPopup';
 import { SubmissionModal } from '../components/SubmissionModal';
 import { WalletEmailPopup } from '../components/WalletEmailPopup';
+import { WalletSurfaceHost } from '../components/wallet/WalletSurfaceHost';
+import { QueryProvider } from '../components/QueryProvider';
 import ErrorBoundary from '../components/ErrorBoundary';
-import ConstellationBackground from '../components/ConstellationBackground';
 import Script from 'next/script';
-import React, { useEffect, useRef, useState } from 'react';
-import { usePathname } from 'next/navigation';
+import React, { useEffect } from 'react';
 import { useAppStore } from '../lib/store';
-import { QueryProvider } from '../providers/QueryProvider';
-import { AuthQueryCacheBridge } from '../components/AuthQueryCacheBridge';
 
 // Component to sync AuthContext user with Zustand store
 function AuthStoreSync() {
@@ -54,39 +46,20 @@ function CommitDebugLogger() {
   return null;
 }
 
-// Note: Global polyfills are now handled via webpack ProvidePlugin in next.config.js
-// and synchronous inline script in layout.tsx
-
 const inter = Inter({ subsets: ['latin'], variable: '--font-inter' });
 const mono = JetBrains_Mono({ subsets: ['latin'], variable: '--font-mono' });
-const space = Space_Grotesk({ subsets: ['latin'], variable: '--font-space' });
-const quantico = Quantico({ weight: ['400', '700'], subsets: ['latin'], variable: '--font-quantico' });
 
 interface ClientLayoutProps {
   children: React.ReactNode;
 }
 
 export default function ClientLayout({ children }: ClientLayoutProps) {
-  const pathname = usePathname();
-  const previousPath = useRef(pathname);
-  const [routeLoading, setRouteLoading] = useState(false);
-
-  useEffect(() => {
-    if (previousPath.current !== pathname) {
-      setRouteLoading(true);
-      const t = setTimeout(() => setRouteLoading(false), 550);
-      previousPath.current = pathname;
-      return () => clearTimeout(t);
-    }
-  }, [pathname]);
-
   return (
-    <body className={`${inter.variable} ${mono.variable} ${space.variable} ${quantico.variable} font-sans bg-background text-white min-h-screen selection:bg-accent selection:text-black`}>
-      {routeLoading && (
-        <div className="fixed inset-0 z-[210] bg-black/45 backdrop-blur-[1px] flex items-center justify-center pointer-events-none">
-          <div className="w-10 h-10 rounded-full border-2 border-[#FFD700]/30 border-t-[#FFD700] animate-spin" />
-        </div>
-      )}
+    <body
+      className={`${inter.variable} ${mono.variable} font-sans bg-background text-white min-h-screen selection:bg-accent selection:text-black`}
+    >
+      {/* Static light wash — no constellation DOM / animated orbs */}
+      <div className="page-wash" aria-hidden="true" />
 
       {/* Google Analytics */}
       <Script
@@ -103,36 +76,29 @@ export default function ClientLayout({ children }: ClientLayoutProps) {
       </Script>
 
       <ErrorBoundary>
-        <WalletProvider>
-          <QueryProvider>
-            <LazorkitProvider>
-              <AuthProvider>
-                <AuthStoreSync />
-                <AuthQueryCacheBridge />
-                <CommitDebugLogger />
-                {/* Global Constellation Background */}
-                <ConstellationBackground opacity={0.25} showShootingStars={true} showGradientOrbs={true} />
-                <Navbar />
-                <ConnectReminderModal />
-                <ConnectWalletPopup />
-                <WalletEmailPopup />
-                <SubmissionModal />
-                {children}
-                <Toaster
-                  position="bottom-right"
-                  toastOptions={{
-                    style: {
-                      background: '#1A1A1A',
-                      color: '#fff',
-                      border: '1px solid rgba(255,255,255,0.1)',
-                      borderRadius: '12px',
-                    },
-                  }}
-                />
-              </AuthProvider>
-            </LazorkitProvider>
-          </QueryProvider>
-        </WalletProvider>
+        <QueryProvider>
+          <AuthProvider>
+            <AuthStoreSync />
+            <CommitDebugLogger />
+            <Navbar />
+            <ConnectReminderModal />
+            <WalletSurfaceHost />
+            <WalletEmailPopup />
+            <SubmissionModal />
+            {children}
+            <Toaster
+              position="bottom-right"
+              toastOptions={{
+                style: {
+                  background: '#1A1A1A',
+                  color: '#fff',
+                  border: '1px solid rgba(255,255,255,0.1)',
+                  borderRadius: '12px',
+                },
+              }}
+            />
+          </AuthProvider>
+        </QueryProvider>
       </ErrorBoundary>
     </body>
   );

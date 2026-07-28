@@ -22,7 +22,8 @@ export const MarketAssessment: React.FC<MarketAssessmentProps> = ({
   projectId,
   ideaData,
 }) => {
-  const { user, openConnectReminder } = useAppStore();
+  const user = useAppStore((state) => state.user);
+  const openConnectReminder = useAppStore((state) => state.openConnectReminder);
   const [assessment, setAssessment] = useState<MarketAssessmentType | null>(null);
   const [loading, setLoading] = useState(false);
   const [expanded, setExpanded] = useState(false);

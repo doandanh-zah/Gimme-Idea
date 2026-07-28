@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, type ElementType } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
    Trophy, Calendar, Users, Clock, ChevronRight,
@@ -14,7 +14,7 @@ import {
 import Image from 'next/image';
 import Link from 'next/link';
 
-import { useSearchParams } from 'next/navigation';
+import { useParams, useSearchParams } from 'next/navigation';
 import { format, isBefore, isSameDay } from 'date-fns';
 import InviteMemberModal from '@/components/InviteMemberModal';
 import ImportIdeaModal from '@/components/ImportIdeaModal';
@@ -22,14 +22,12 @@ import { EditProjectModal } from '@/components/EditProjectModal';
 import { useAppStore } from '@/lib/store';
 import { Project } from '@/lib/types';
 import { apiClient } from '@/lib/api-client';
-import ConstellationBackground from '@/components/ConstellationBackground';
-import { GithubIcon } from '@/components/icons/SocialBrandIcons';
 
 // Map icon names from mock data to Lucide React components
-const LucideIconMap: { [key: string]: React.ElementType } = {
+const LucideIconMap: { [key: string]: ElementType } = {
    Trophy, Calendar, Users, Clock, ChevronRight,
    Target, MessageSquare, FileText, CheckCircle2,
-   AlertCircle, MoreHorizontal, Github: GithubIcon, Disc, LinkIcon,
+   AlertCircle, MoreHorizontal, Github: Code, Disc, LinkIcon,
    Monitor, Mic, SwatchBook, Code, ShieldCheck, Smartphone, UserPlus, RefreshCw
 };
 
@@ -49,23 +47,25 @@ const DEFAULT_NEW_TEAM = {
 
 // Moved SidebarItem definition outside the component
 const SidebarItem = ({ id, label, icon: Icon, activeSection, setActiveSection, setIsMobileMenuOpen }:
-   { id: string, label: string, icon: any, activeSection: string, setActiveSection: (id: string) => void, setIsMobileMenuOpen: (isOpen: boolean) => void }) => (
+   { id: string, label: string, icon: ElementType, activeSection: string, setActiveSection: (id: string) => void, setIsMobileMenuOpen: (isOpen: boolean) => void }) => (
    <button
+      type="button"
       onClick={() => { setActiveSection(id); setIsMobileMenuOpen(false); }}
-      className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-all duration-200
+      className={`flex min-h-[44px] w-full items-center gap-3 border px-4 py-3 text-sm font-medium transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#FFD700]
       ${activeSection === id
-            ? 'bg-gold/10 text-gold border border-gold/20'
-            : 'text-gray-400 hover:text-white hover:bg-white/5 border border-transparent'
+            ? 'border-[#FFD700]/30 bg-[#FFD700]/10 text-[#FFD700]'
+            : 'border-transparent text-gray-400 hover:bg-white/[0.04] hover:text-white'
          }`}
    >
-      <Icon className={`w-4 h-4 ${activeSection === id ? 'text-gold' : 'text-gray-500'}`} />
+      <Icon className={`w-4 h-4 ${activeSection === id ? 'text-[#FFD700]' : 'text-gray-500'}`} aria-hidden="true" />
       {label}
    </button>
 );
 
 
-export default function HackathonDashboard({ params }: { params: { id: string } }) {
-   const { id } = params;
+export default function HackathonDashboard() {
+   const params = useParams();
+   const id = params.id as string;
    const searchParams = useSearchParams();
    const mockDate = searchParams.get('mockDate') || searchParams.get('mockdate');
    const now = mockDate ? new Date(mockDate) : new Date();
@@ -76,7 +76,7 @@ export default function HackathonDashboard({ params }: { params: { id: string } 
    const [hackathonError, setHackathonError] = useState<string | null>(null);
 
    // App Store
-   const { openSubmitModal } = useAppStore();
+   const openSubmitModal = useAppStore((state) => state.openSubmitModal);
 
    // Layout State
    const [activeSection, setActiveSection] = useState('overview');
@@ -100,20 +100,6 @@ export default function HackathonDashboard({ params }: { params: { id: string } 
    const [ideasSortBy, setIdeasSortBy] = useState<'newest' | 'votes' | 'comments'>('newest');
    const [showMyIdeasOnly, setShowMyIdeasOnly] = useState(false);
    const [editingIdeaId, setEditingIdeaId] = useState<string | null>(null);
-
-   // Background Stars
-   const [stars, setStars] = useState<{ id: number; top: string; left: string; size: number; duration: string; opacity: number }[]>([]);
-   useEffect(() => {
-      const newStars = Array.from({ length: 40 }).map((_, i) => ({
-         id: i,
-         top: `${Math.random() * 100}%`,
-         left: `${Math.random() * 100}%`,
-         size: Math.random() * 2 + 1,
-         duration: `${Math.random() * 3 + 2}s`,
-         opacity: Math.random()
-      }));
-      setStars(newStars);
-   }, []);
 
    // Timeline Logic
    const dynamicTimeline = hackathon?.timeline.map((step, index) => {
@@ -160,7 +146,7 @@ export default function HackathonDashboard({ params }: { params: { id: string } 
    const [isSavingTeam, setIsSavingTeam] = useState(false);
 
    // Get user from store
-   const { user } = useAppStore();
+   const user = useAppStore((state) => state.user);
 
    // Fetch hackathon data from API
    useEffect(() => {
@@ -335,7 +321,7 @@ export default function HackathonDashboard({ params }: { params: { id: string } 
    const loadMyInvites = async () => {
       if (!id || !user) return;
       try {
-         const response = await apiClient.getMyInvites();
+         const response = await apiClient.getMyInvites(id);
          if (response.success && response.data) {
             // Filter invites for this hackathon only
             const hackathonInvites = response.data.filter(inv => inv.hackathonId === id);
@@ -739,54 +725,50 @@ export default function HackathonDashboard({ params }: { params: { id: string } 
    // Loading state
    if (isLoadingHackathon) {
       return (
-         <div className="min-h-screen flex items-center justify-center bg-[#0a0a0a]">
-            <ConstellationBackground opacity={0.2} />
-            <div className="text-center">
-               <Loader2 className="w-8 h-8 animate-spin text-[#FFD700] mx-auto mb-4" />
-               <p className="text-gray-400">Loading hackathon...</p>
+         <main className="min-h-screen px-4 pb-16 pt-28 sm:px-6">
+            <div className="mx-auto max-w-7xl">
+               <div className="flex items-center gap-3 text-sm text-gray-400">
+                  <Loader2 className="h-4 w-4 animate-spin text-[#FFD700]" aria-hidden="true" />
+                  Loading hackathon
+               </div>
+               <section className="mt-6 border border-white/10 bg-white/[0.03] p-5 sm:p-7">
+                  <div className="h-4 w-28 animate-pulse bg-white/10" />
+                  <div className="mt-5 h-10 w-full max-w-2xl animate-pulse bg-white/10" />
+                  <div className="mt-4 h-4 w-full max-w-3xl animate-pulse bg-white/10" />
+                  <div className="mt-2 h-4 w-2/3 animate-pulse bg-white/10" />
+               </section>
             </div>
-         </div>
+         </main>
       );
    }
 
    // Error/Not Found state
    if (hackathonError || !hackathon) {
       return (
-         <div className="min-h-screen flex items-center justify-center bg-[#0a0a0a]">
-            <ConstellationBackground opacity={0.2} />
-            <div className="text-center max-w-md mx-auto p-8">
-               <div className="w-16 h-16 rounded-full bg-red-500/10 flex items-center justify-center mx-auto mb-4">
-                  <AlertCircle className="w-8 h-8 text-red-400" />
-               </div>
-               <h1 className="text-2xl font-bold text-white mb-2">Hackathon Not Found</h1>
-               <p className="text-gray-400 mb-6">
+         <main className="flex min-h-screen items-center justify-center px-4 py-20 text-gray-300 sm:px-6">
+            <section className="w-full max-w-lg border border-white/10 bg-white/[0.03] p-6 text-center sm:p-8">
+               <AlertCircle className="mx-auto h-11 w-11 text-red-200" aria-hidden="true" />
+               <h1 className="mt-4 text-2xl font-semibold text-white">Hackathon not found</h1>
+               <p className="mt-2 text-sm leading-6 text-gray-400">
                   {hackathonError || "The hackathon you're looking for doesn't exist or has been removed."}
                </p>
                <Link
                   href="/hackathons"
-                  className="inline-flex items-center gap-2 px-6 py-3 bg-[#FFD700] text-black font-bold rounded-lg hover:bg-[#FFD700]/90 transition-colors"
+                  className="btn-primary mx-auto mt-6"
                >
-                  <ArrowLeft className="w-4 h-4" />
-                  Back to Hackathons
+                  <ArrowLeft className="w-4 h-4" aria-hidden="true" />
+                  Back to hackathons
                </Link>
-            </div>
-         </div>
+            </section>
+         </main>
       );
    }
 
    return (
-      <div className="h-screen w-screen text-gray-300 font-sans text-sm relative selection:bg-gold/30 overflow-hidden flex flex-col">
+      <div className="h-screen w-screen text-gray-300 font-sans text-sm relative selection:bg-[#FFD700]/30 overflow-hidden flex flex-col">
          {/* Background */}
-         <div className="fixed inset-0 z-[-1] pointer-events-none overflow-hidden bg-[#0a0a0a]">
-            <div className="bg-grid opacity-20"></div>
-            <div className="stars-container">
-               {stars.map((star) => (
-                  <div key={star.id} className="star" style={{
-                     top: star.top, left: star.left, width: `${star.size}px`, height: `${star.size}px`,
-                     '--duration': star.duration, '--opacity': star.opacity
-                  } as React.CSSProperties} />
-               ))}
-            </div>
+         <div className="fixed inset-0 z-[-1] pointer-events-none overflow-hidden bg-[#0a0a0a]" aria-hidden="true">
+            <div className="bg-grid opacity-10" />
          </div>
 
 
@@ -797,63 +779,69 @@ export default function HackathonDashboard({ params }: { params: { id: string } 
                {/* Back to Home Button */}
                <Link
                   href="/home"
-                  className="flex flex-col items-center gap-1 px-3 py-2 text-gray-500 hover:text-gold transition-colors"
+                  className="flex min-h-[44px] flex-col items-center justify-center gap-1 px-3 py-2 text-gray-500 transition-colors hover:text-[#FFD700] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#FFD700]"
                >
-                  <ArrowLeft className="w-5 h-5" />
+                  <ArrowLeft className="w-5 h-5" aria-hidden="true" />
                   <span className="text-[9px] font-medium">Home</span>
                </Link>
 
                {/* Overview Tab */}
                <button
+                  type="button"
                   onClick={() => setActiveSection('overview')}
-                  className={`flex flex-col items-center gap-1 px-3 py-2 transition-colors ${activeSection === 'overview' ? 'text-gold' : 'text-gray-500 hover:text-white'}`}
+                  className={`flex min-h-[44px] flex-col items-center justify-center gap-1 px-3 py-2 transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#FFD700] ${activeSection === 'overview' ? 'text-[#FFD700]' : 'text-gray-500 hover:text-white'}`}
                >
-                  <LayoutDashboard className="w-5 h-5" />
+                  <LayoutDashboard className="w-5 h-5" aria-hidden="true" />
                   <span className="text-[9px] font-medium">Overview</span>
                </button>
 
                {/* Details Tab */}
                <button
+                  type="button"
                   onClick={() => setActiveSection('details')}
-                  className={`flex flex-col items-center gap-1 px-3 py-2 transition-colors ${activeSection === 'details' ? 'text-gold' : 'text-gray-500 hover:text-white'}`}
+                  className={`flex min-h-[44px] flex-col items-center justify-center gap-1 px-3 py-2 transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#FFD700] ${activeSection === 'details' ? 'text-[#FFD700]' : 'text-gray-500 hover:text-white'}`}
                >
-                  <FileText className="w-5 h-5" />
+                  <FileText className="w-5 h-5" aria-hidden="true" />
                   <span className="text-[9px] font-medium">Details</span>
                </button>
 
                {/* Ideas Tab */}
                <button
+                  type="button"
                   onClick={() => setActiveSection('ideas')}
-                  className={`flex flex-col items-center gap-1 px-3 py-2 transition-colors ${activeSection === 'ideas' ? 'text-gold' : 'text-gray-500 hover:text-white'}`}
+                  className={`flex min-h-[44px] flex-col items-center justify-center gap-1 px-3 py-2 transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#FFD700] ${activeSection === 'ideas' ? 'text-[#FFD700]' : 'text-gray-500 hover:text-white'}`}
                >
-                  <Lightbulb className="w-5 h-5" />
+                  <Lightbulb className="w-5 h-5" aria-hidden="true" />
                   <span className="text-[9px] font-medium">Ideas</span>
                </button>
 
                {/* Submission Tab */}
                <button
+                  type="button"
                   onClick={() => setActiveSection('submission')}
-                  className={`flex flex-col items-center gap-1 px-3 py-2 transition-colors ${activeSection === 'submission' ? 'text-gold' : 'text-gray-500 hover:text-white'}`}
+                  className={`flex min-h-[44px] flex-col items-center justify-center gap-1 px-3 py-2 transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#FFD700] ${activeSection === 'submission' ? 'text-[#FFD700]' : 'text-gray-500 hover:text-white'}`}
                >
-                  <Send className="w-5 h-5" />
+                  <Send className="w-5 h-5" aria-hidden="true" />
                   <span className="text-[9px] font-medium">Submit</span>
                </button>
 
                {/* Team Tab */}
                <button
+                  type="button"
                   onClick={() => setActiveSection('project')}
-                  className={`flex flex-col items-center gap-1 px-3 py-2 transition-colors ${activeSection === 'project' ? 'text-gold' : 'text-gray-500 hover:text-white'}`}
+                  className={`flex min-h-[44px] flex-col items-center justify-center gap-1 px-3 py-2 transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#FFD700] ${activeSection === 'project' ? 'text-[#FFD700]' : 'text-gray-500 hover:text-white'}`}
                >
-                  <Users className="w-5 h-5" />
+                  <Users className="w-5 h-5" aria-hidden="true" />
                   <span className="text-[9px] font-medium">Team</span>
                </button>
 
                {/* Resources Tab */}
                <button
+                  type="button"
                   onClick={() => setActiveSection('resources')}
-                  className={`flex flex-col items-center gap-1 px-3 py-2 transition-colors ${activeSection === 'resources' ? 'text-gold' : 'text-gray-500 hover:text-white'}`}
+                  className={`flex min-h-[44px] flex-col items-center justify-center gap-1 px-3 py-2 transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#FFD700] ${activeSection === 'resources' ? 'text-[#FFD700]' : 'text-gray-500 hover:text-white'}`}
                >
-                  <BookOpen className="w-5 h-5" />
+                  <BookOpen className="w-5 h-5" aria-hidden="true" />
                   <span className="text-[9px] font-medium">Docs</span>
                </button>
             </div>
@@ -863,14 +851,14 @@ export default function HackathonDashboard({ params }: { params: { id: string } 
             {/* Sidebar - Hidden on mobile */}
             <aside className="hidden md:flex md:relative md:bg-transparent md:border-white/5 md:z-auto md:w-56 flex-col border-r border-white/10">
                <div className="p-4 flex flex-col gap-6">
-                  <Link href="/home" className="flex items-center gap-2 text-gray-500 hover:text-gold transition-colors group">
-                     <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
+                  <Link href="/home" className="group flex min-h-[40px] items-center gap-2 text-gray-500 transition-colors hover:text-[#FFD700] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#FFD700]">
+                     <ArrowLeft className="w-4 h-4 transition-transform group-hover:-translate-x-1" aria-hidden="true" />
                      <span className="text-[10px] font-bold uppercase tracking-[0.2em]">Back to Hub</span>
                   </Link>
 
                   <div>
                      <div className="flex items-center gap-2 text-white font-quantico font-bold text-lg mb-1">
-                        <div className="w-8 h-8 bg-gradient-to-br from-gold to-yellow-600 rounded flex items-center justify-center text-black text-xs">H</div>
+                        <div className="flex h-8 w-8 items-center justify-center bg-[#FFD700] text-xs text-black">H</div>
                         HACKATHON
                      </div>
                      <p className="text-[10px] text-gray-500 uppercase tracking-widest pl-10">Workspace</p>
@@ -2396,15 +2384,19 @@ export default function HackathonDashboard({ params }: { params: { id: string } 
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   exit={{ opacity: 0 }}
-                  className="fixed inset-0 bg-black/70 z-50 flex justify-center items-center p-4"
-                  onClick={() => setIsTeamSettingsOpen(false)}
+                  className="fixed inset-0 z-50 flex items-center justify-center p-4"
                >
+                  <button
+                     type="button"
+                     aria-label="Close team settings"
+                     className="absolute inset-0 bg-black/70"
+                     onClick={() => setIsTeamSettingsOpen(false)}
+                  />
                   <motion.div
                      initial={{ scale: 0.9, y: 50 }}
                      animate={{ scale: 1, y: 0 }}
                      exit={{ scale: 0.9, y: 50 }}
-                     className="bg-surface border border-white/10 rounded-xl shadow-lg w-full max-w-lg relative overflow-hidden"
-                     onClick={(e) => e.stopPropagation()}
+                     className="relative w-full max-w-lg overflow-hidden border border-white/10 bg-surface shadow-lg"
                   >
                      {/* Header */}
                      <div className="flex items-center justify-between p-4 border-b border-white/10">

@@ -19,7 +19,7 @@ export function unwrapApi<T>(
  * Build an Error that preserves backend errorType (e.g. backend_unavailable).
  */
 export function toApiError(
-  response: Pick<ApiResponse<unknown>, "error" | "message" | "errorType">,
+  response: Partial<Pick<ApiResponse<unknown>, "error" | "message" | "errorType">>,
   fallback = "Request failed"
 ): ApiError {
   const err = new Error(

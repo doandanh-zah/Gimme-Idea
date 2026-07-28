@@ -1,8 +1,7 @@
 'use client';
 
-import React, { useState } from 'react';
+import { useState } from 'react';
 import Link from 'next/link';
-import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Lightbulb, 
   Rocket, 
@@ -12,7 +11,6 @@ import {
   HelpCircle, 
   Map, 
   Shield, 
-  ChevronRight,
   Sparkles,
   Target,
   Zap,
@@ -22,7 +20,7 @@ import {
   CheckCircle,
   Globe,
   Code,
-  TrendingUp
+  Languages,
 } from 'lucide-react';
 
 // Language content
@@ -91,7 +89,7 @@ const content = {
 
     // User Guide
     userGuide: 'User Guide',
-    gettingStarted: '🚀 Getting Started',
+    gettingStarted: 'Getting Started',
     step1Title: 'Step 1: Create Your Account',
     step1Desc: 'Click "Sign In" in the top right corner and authenticate with your Google account. This creates your Gimme Idea profile automatically.',
     step2Title: 'Step 2: Connect Your Wallet (Optional)',
@@ -104,14 +102,14 @@ const content = {
     ],
     step3Title: 'Step 3: Complete Your Profile',
     step3Desc: 'Add a username, bio, avatar, and social links to build your credibility in the community.',
-    howToSubmit: '💡 How to Submit an Idea',
+    howToSubmit: 'How to Submit an Idea',
     submitSteps: [
       { title: 'Click "Submit Idea"', desc: 'Find the submit button in the navigation bar or homepage' },
       { title: 'Fill in the Details', desc: 'Provide a compelling title, detailed description, select a category (DeFi, NFT, Gaming, etc.), and add relevant tags' },
       { title: 'Add Context (Optional)', desc: 'Include the problem you\'re solving, your proposed solution, and any supporting links or images' },
       { title: 'Submit & Share', desc: 'Click submit and share your idea with the community. Get feedback, tips, and AI analysis!' },
     ],
-    tipsForSuccess: '⭐ Tips for a Great Submission',
+    tipsForSuccess: 'Tips for a Great Submission',
     successTips: [
       { tip: 'Be Specific', desc: 'Clearly explain what makes your idea unique' },
       { tip: 'Show the Problem', desc: 'Explain the pain point you\'re solving' },
@@ -138,7 +136,7 @@ const content = {
 
     // Roadmap
     roadmapTitle: 'Product Roadmap',
-    weAreHere: '← We are here',
+    weAreHere: 'Current',
     phases: [
       {
         phase: 'Phase 1', title: 'Foundation', status: 'completed', date: 'Q4 2025',
@@ -232,7 +230,7 @@ const content = {
 
     // User Guide
     userGuide: 'Hướng dẫn Sử dụng',
-    gettingStarted: '🚀 Bắt đầu',
+    gettingStarted: 'Bắt đầu',
     step1Title: 'Bước 1: Tạo Tài khoản',
     step1Desc: 'Nhấp "Đăng nhập" ở góc trên bên phải và xác thực bằng tài khoản Google. Profile Gimme Idea sẽ được tạo tự động.',
     step2Title: 'Bước 2: Kết nối Ví (Tùy chọn)',
@@ -245,14 +243,14 @@ const content = {
     ],
     step3Title: 'Bước 3: Hoàn thiện Hồ sơ',
     step3Desc: 'Thêm username, bio, avatar và liên kết mạng xã hội để xây dựng uy tín trong cộng đồng.',
-    howToSubmit: '💡 Cách Đăng Ý tưởng',
+    howToSubmit: 'Cách Đăng Ý tưởng',
     submitSteps: [
       { title: 'Nhấp "Đăng Ý tưởng"', desc: 'Tìm nút đăng trên thanh điều hướng hoặc trang chủ' },
       { title: 'Điền thông tin', desc: 'Cung cấp tiêu đề hấp dẫn, mô tả chi tiết, chọn danh mục (DeFi, NFT, Gaming, v.v.) và thêm tags' },
       { title: 'Thêm Ngữ cảnh (Tùy chọn)', desc: 'Bao gồm vấn đề bạn đang giải quyết, giải pháp đề xuất và các link hoặc hình ảnh hỗ trợ' },
       { title: 'Gửi & Chia sẻ', desc: 'Nhấp gửi và chia sẻ ý tưởng với cộng đồng. Nhận phản hồi, tip và phân tích AI!' },
     ],
-    tipsForSuccess: '⭐ Mẹo để Thành công',
+    tipsForSuccess: 'Mẹo để Thành công',
     successTips: [
       { tip: 'Cụ thể', desc: 'Giải thích rõ điều gì làm ý tưởng của bạn độc đáo' },
       { tip: 'Nêu Vấn đề', desc: 'Giải thích pain point bạn đang giải quyết' },
@@ -279,7 +277,7 @@ const content = {
 
     // Roadmap
     roadmapTitle: 'Lộ trình Sản phẩm',
-    weAreHere: '← Chúng tôi đang ở đây',
+    weAreHere: 'Đang thực hiện',
     phases: [
       {
         phase: 'Giai đoạn 1', title: 'Nền tảng', status: 'completed', date: 'Q4 2025',
@@ -327,99 +325,76 @@ const DocsPage = () => {
     { id: 'roadmap', title: t.sections.roadmap, icon: Map },
   ];
 
-  // Language Toggle Component
-  const LanguageToggle = () => (
-    <button
-      onClick={() => setLang(lang === 'en' ? 'vi' : 'en')}
-      className="relative flex items-center w-20 h-9 bg-white/10 rounded-full p-1 cursor-pointer border border-white/10 hover:border-white/20 transition-colors"
-    >
-      <motion.div
-        className="absolute w-8 h-7 bg-gradient-to-r from-[#FFD700] to-[#FDB931] rounded-full shadow-lg"
-        animate={{ x: lang === 'en' ? 2 : 42 }}
-        transition={{ type: 'spring', stiffness: 500, damping: 30 }}
-      />
-      <span className={`relative z-10 flex-1 text-center text-xs font-bold transition-colors ${lang === 'en' ? 'text-black' : 'text-gray-400'}`}>
-        EN
-      </span>
-      <span className={`relative z-10 flex-1 text-center text-xs font-bold transition-colors ${lang === 'vi' ? 'text-black' : 'text-gray-400'}`}>
-        VI
-      </span>
-    </button>
-  );
+  const featureIcons = [Sparkles, Heart, Star, Users, Code, Shield];
+  const valueColumns = [
+    { title: t.forCreators, icon: Zap, items: t.creatorBenefits, tone: 'text-cyan-200' },
+    { title: t.forCommunity, icon: Globe, items: t.communityBenefits, tone: 'text-[#FFD700]' },
+  ];
 
   return (
-    <div className="min-h-screen bg-black text-white">
-      {/* Language Toggle - Fixed Position */}
-      <div className="fixed top-24 right-4 z-50">
-        <LanguageToggle />
-      </div>
-
-      {/* Hero Section */}
-      <div className="relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-b from-purple-900/20 via-black to-black" />
-        <div className="absolute inset-0">
-          <div className="absolute top-20 left-1/4 w-96 h-96 bg-purple-500/10 rounded-full blur-3xl" />
-          <div className="absolute top-40 right-1/4 w-80 h-80 bg-yellow-500/10 rounded-full blur-3xl" />
-        </div>
-        
-        <div className="relative max-w-6xl mx-auto px-4 pt-28 pb-12">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="text-center"
-          >
-            <h1 className="text-4xl md:text-6xl font-bold mb-6">
-              {t.heroTitle}{' '}
-              <span className="bg-gradient-to-r from-[#FFD700] to-[#FDB931] bg-clip-text text-transparent">
-                Gimme Idea
-              </span>
-            </h1>
-            
-            <p className="text-xl text-gray-400 max-w-2xl mx-auto mb-8">
-              {t.heroSubtitle}
-            </p>
-
-            <div className="flex flex-wrap gap-4 justify-center">
-              <Link href="/idea">
-                <motion.button
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  className="px-6 py-3 bg-gradient-to-r from-[#FFD700] to-[#FDB931] text-black font-bold rounded-full flex items-center gap-2"
-                >
+    <main className="min-h-screen text-gray-300">
+      <section className="border-b border-white/10 px-4 pb-10 pt-28 sm:px-6">
+        <div className="mx-auto max-w-7xl">
+          <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
+            <div className="max-w-3xl">
+              <p className="ui-eyebrow">{t.badge}</p>
+              <h1 className="mt-4 text-4xl font-semibold tracking-tight text-white sm:text-5xl">
+                {t.heroTitle}{' '}
+                <span className="text-[#FFD700]">Gimme Idea</span>
+              </h1>
+              <p className="mt-4 max-w-2xl text-base leading-7 text-gray-400">
+                {t.heroSubtitle}
+              </p>
+              <div className="mt-7 flex flex-col gap-2 sm:flex-row">
+                <Link href="/idea" className="btn-primary">
                   <Rocket className="w-5 h-5" />
                   {t.exploreBtn}
-                </motion.button>
-              </Link>
-              <Link href="/privacy">
-                <motion.button
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  className="px-6 py-3 bg-white/10 border border-white/20 rounded-full flex items-center gap-2 hover:bg-white/20 transition-colors"
-                >
+                </Link>
+                <Link href="/privacy" className="btn-ghost">
                   <Shield className="w-5 h-5" />
                   {t.privacyBtn}
-                </motion.button>
-              </Link>
+                </Link>
+              </div>
             </div>
-          </motion.div>
-        </div>
-      </div>
 
-      {/* Navigation Tabs */}
-      <div className="sticky top-0 z-40 bg-black/80 backdrop-blur-xl border-b border-white/10">
-        <div className="max-w-6xl mx-auto px-4">
-          <div className="flex overflow-x-auto gap-1 py-4 scrollbar-hide">
+            <div className="w-full border border-white/10 bg-white/[0.03] p-3 sm:w-auto">
+              <div className="mb-2 flex items-center gap-2 px-1 text-xs font-semibold uppercase text-gray-500">
+                <Languages className="h-4 w-4" aria-hidden="true" />
+                Language
+              </div>
+              <div className="grid grid-cols-2 gap-1">
+                {(['en', 'vi'] as Language[]).map((option) => (
+                  <button
+                    key={option}
+                    type="button"
+                    onClick={() => setLang(option)}
+                    aria-pressed={lang === option}
+                    className={`min-h-[40px] border px-4 text-xs font-semibold uppercase transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#FFD700] ${
+                      lang === option
+                        ? 'border-[#FFD700]/40 bg-[#FFD700] text-black'
+                        : 'border-white/10 bg-white/[0.03] text-gray-400 hover:text-white'
+                    }`}
+                  >
+                    {option}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <div className="sticky top-16 z-40 border-b border-white/10 bg-black/90 backdrop-blur-xl">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6">
+          <div className="flex overflow-x-auto gap-0 py-4 scrollbar-hide">
             {sections.map((section) => (
               <button
+                type="button"
                 key={section.id}
                 onClick={() => setActiveSection(section.id)}
-                className={`flex items-center gap-2 px-4 py-2 rounded-full whitespace-nowrap transition-all ${
-                  activeSection === section.id
-                    ? 'bg-gradient-to-r from-[#FFD700] to-[#FDB931] text-black font-bold'
-                    : 'text-gray-400 hover:text-white hover:bg-white/10'
-                }`}
+                className={`ui-tab ${activeSection === section.id ? 'ui-tab-active' : ''}`}
               >
-                <section.icon className="w-4 h-4" />
+                <section.icon className="w-4 h-4" aria-hidden="true" />
                 {section.title}
               </button>
             ))}
@@ -427,361 +402,253 @@ const DocsPage = () => {
         </div>
       </div>
 
-      {/* Content Sections */}
-      <div className="max-w-6xl mx-auto px-4 py-12">
-        {/* Overview Section */}
+      <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6">
         {activeSection === 'overview' && (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            key={`overview-${lang}`}
-            className="space-y-12"
-          >
-            <div>
-              <h2 className="text-3xl font-bold mb-6 flex items-center gap-3">
-                <Lightbulb className="w-8 h-8 text-[#FFD700]" />
+          <section className="space-y-10">
+            <div className="border border-white/10 bg-white/[0.03] p-5 sm:p-7">
+              <h2 className="flex items-center gap-3 text-2xl font-semibold text-white">
+                <Lightbulb className="w-7 h-7 text-[#FFD700]" aria-hidden="true" />
                 {t.whatIs}
               </h2>
-              
-              <div className="bg-white/5 border border-white/10 rounded-2xl p-6 md:p-8">
-                <p className="text-lg text-gray-300 leading-relaxed mb-6">
-                  <strong className="text-white">Gimme Idea</strong> {t.whatIsDesc.replace('Gimme Idea is a', 'is a')}
-                </p>
-                
-                <div className="grid md:grid-cols-3 gap-6">
-                  <div className="bg-white/5 rounded-xl p-5">
-                    <div className="w-12 h-12 bg-purple-500/20 rounded-xl flex items-center justify-center mb-4">
-                      <Sparkles className="w-6 h-6 text-purple-400" />
-                    </div>
-                    <h3 className="font-bold text-white mb-2">{t.shareIdeas}</h3>
-                    <p className="text-sm text-gray-400">
-                      {t.shareIdeasDesc}
-                    </p>
-                  </div>
-                  
-                  <div className="bg-white/5 rounded-xl p-5">
-                    <div className="w-12 h-12 bg-green-500/20 rounded-xl flex items-center justify-center mb-4">
-                      <Users className="w-6 h-6 text-green-400" />
-                    </div>
-                    <h3 className="font-bold text-white mb-2">{t.getFeedback}</h3>
-                    <p className="text-sm text-gray-400">
-                      {t.getFeedbackDesc}
-                    </p>
-                  </div>
-                  
-                  <div className="bg-white/5 rounded-xl p-5">
-                    <div className="w-12 h-12 bg-[#FFD700]/20 rounded-xl flex items-center justify-center mb-4">
-                      <Wallet className="w-6 h-6 text-[#FFD700]" />
-                    </div>
-                    <h3 className="font-bold text-white mb-2">{t.earnRewards}</h3>
-                    <p className="text-sm text-gray-400">
-                      {t.earnRewardsDesc}
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* How It Works */}
-            <div>
-              <h2 className="text-2xl font-bold mb-6">{t.howItWorks}</h2>
-              <div className="grid md:grid-cols-4 gap-4">
-                {t.steps.map((item, index) => (
-                  <div key={index} className="relative">
-                    <div className="bg-white/5 border border-white/10 rounded-xl p-5 h-full">
-                      <div className="w-10 h-10 bg-gradient-to-r from-[#FFD700] to-[#FDB931] rounded-full flex items-center justify-center text-black font-bold mb-4">
-                        {item.step}
-                      </div>
-                      <h3 className="font-bold text-white mb-2">{item.title}</h3>
-                      <p className="text-sm text-gray-400">{item.desc}</p>
-                    </div>
-                    {index < 3 && (
-                      <div className="hidden md:block absolute top-1/2 -right-2 transform -translate-y-1/2 z-10">
-                        <ChevronRight className="w-4 h-4 text-gray-600" />
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
-            </div>
-          </motion.div>
-        )}
-
-        {/* Value Proposition Section */}
-        {activeSection === 'value' && (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            key={`value-${lang}`}
-            className="space-y-12"
-          >
-            <div>
-              <h2 className="text-3xl font-bold mb-6 flex items-center gap-3">
-                <Target className="w-8 h-8 text-[#FFD700]" />
-                {t.whyGimme}
-              </h2>
-              
-              <div className="grid md:grid-cols-2 gap-6 mb-8">
-                <div className="bg-gradient-to-br from-purple-900/30 to-purple-900/10 border border-purple-500/20 rounded-2xl p-6">
-                  <h3 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
-                    <Zap className="w-5 h-5 text-purple-400" />
-                    {t.forCreators}
-                  </h3>
-                  <ul className="space-y-3">
-                    {t.creatorBenefits.map((item, i) => (
-                      <li key={i} className="flex items-start gap-3 text-gray-300">
-                        <CheckCircle className="w-5 h-5 text-purple-400 flex-shrink-0 mt-0.5" />
-                        {item}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-
-                <div className="bg-gradient-to-br from-[#FFD700]/20 to-[#FFD700]/5 border border-[#FFD700]/20 rounded-2xl p-6">
-                  <h3 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
-                    <Globe className="w-5 h-5 text-[#FFD700]" />
-                    {t.forCommunity}
-                  </h3>
-                  <ul className="space-y-3">
-                    {t.communityBenefits.map((item, i) => (
-                      <li key={i} className="flex items-start gap-3 text-gray-300">
-                        <CheckCircle className="w-5 h-5 text-[#FFD700] flex-shrink-0 mt-0.5" />
-                        {item}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              </div>
-
-              {/* Key Features */}
-              <h3 className="text-2xl font-bold mb-6">{t.keyFeatures}</h3>
-              <div className="grid md:grid-cols-3 gap-4">
+              <p className="mt-4 max-w-4xl text-base leading-7 text-gray-400">{t.whatIsDesc}</p>
+              <div className="mt-6 grid gap-4 md:grid-cols-3">
                 {[
-                  { icon: Sparkles, color: 'purple' },
-                  { icon: Heart, color: 'red' },
-                  { icon: Star, color: 'yellow' },
-                  { icon: Users, color: 'blue' },
-                  { icon: Code, color: 'green' },
-                  { icon: Shield, color: 'gray' },
-                ].map((feature, i) => (
-                  <div key={i} className="bg-white/5 border border-white/10 rounded-xl p-5 hover:bg-white/10 transition-colors">
-                    <div className={`w-10 h-10 bg-${feature.color}-500/20 rounded-lg flex items-center justify-center mb-3`}>
-                      <feature.icon className={`w-5 h-5 text-${feature.color}-400`} />
+                  { icon: Sparkles, title: t.shareIdeas, text: t.shareIdeasDesc },
+                  { icon: Users, title: t.getFeedback, text: t.getFeedbackDesc },
+                  { icon: Wallet, title: t.earnRewards, text: t.earnRewardsDesc },
+                ].map((item) => {
+                  const Icon = item.icon;
+                  return (
+                    <div key={item.title} className="border border-white/10 bg-black/20 p-4">
+                      <Icon className="h-5 w-5 text-[#FFD700]" aria-hidden="true" />
+                      <h3 className="mt-4 text-sm font-semibold text-white">{item.title}</h3>
+                      <p className="mt-2 text-sm leading-6 text-gray-400">{item.text}</p>
                     </div>
-                    <h4 className="font-bold text-white mb-1">{t.features[i].title}</h4>
-                    <p className="text-sm text-gray-400">{t.features[i].desc}</p>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div>
+              <h2 className="mb-4 text-xl font-semibold text-white">{t.howItWorks}</h2>
+              <div className="grid gap-4 md:grid-cols-4">
+                {t.steps.map((item) => (
+                  <div key={item.step} className="border border-white/10 bg-white/[0.03] p-4">
+                    <span className="inline-flex h-8 w-8 items-center justify-center bg-[#FFD700] text-sm font-semibold text-black">{item.step}</span>
+                    <h3 className="mt-4 text-sm font-semibold text-white">{item.title}</h3>
+                    <p className="mt-2 text-sm leading-6 text-gray-400">{item.desc}</p>
                   </div>
                 ))}
               </div>
             </div>
-          </motion.div>
+          </section>
         )}
 
-        {/* User Guide Section */}
-        {activeSection === 'guide' && (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            key={`guide-${lang}`}
-            className="space-y-12"
-          >
-            <div>
-              <h2 className="text-3xl font-bold mb-6 flex items-center gap-3">
-                <FileText className="w-8 h-8 text-[#FFD700]" />
-                {t.userGuide}
-              </h2>
+        {activeSection === 'value' && (
+          <section className="space-y-8">
+            <h2 className="flex items-center gap-3 text-2xl font-semibold text-white">
+              <Target className="w-7 h-7 text-[#FFD700]" aria-hidden="true" />
+                {t.whyGimme}
+            </h2>
+            <div className="grid gap-4 md:grid-cols-2">
+              {valueColumns.map((column) => {
+                const Icon = column.icon;
+                return (
+                  <div key={column.title} className="border border-white/10 bg-white/[0.03] p-5 sm:p-6">
+                    <h3 className="mb-4 flex items-center gap-2 text-lg font-semibold text-white">
+                      <Icon className={`h-5 w-5 ${column.tone}`} aria-hidden="true" />
+                      {column.title}
+                    </h3>
+                    <ul className="space-y-3">
+                      {column.items.map((item) => (
+                        <li key={item} className="flex items-start gap-3 text-sm leading-6 text-gray-300">
+                          <CheckCircle className={`mt-0.5 h-4 w-4 flex-shrink-0 ${column.tone}`} aria-hidden="true" />
+                        {item}
+                      </li>
+                    ))}
+                  </ul>
+                  </div>
+                );
+              })}
+            </div>
 
-              {/* Getting Started */}
-              <div className="bg-white/5 border border-white/10 rounded-2xl p-6 md:p-8 mb-8">
-                <h3 className="text-xl font-bold text-white mb-4">{t.gettingStarted}</h3>
-                
-                <div className="space-y-6">
-                  <div>
-                    <h4 className="font-bold text-[#FFD700] mb-2">{t.step1Title}</h4>
-                    <p className="text-gray-300 mb-2">
+            <div>
+              <h3 className="mb-4 text-xl font-semibold text-white">{t.keyFeatures}</h3>
+              <div className="grid gap-4 md:grid-cols-3">
+                {t.features.map((feature, index) => {
+                  const Icon = featureIcons[index] || Sparkles;
+                  return (
+                    <div key={feature.title} className="border border-white/10 bg-white/[0.03] p-5">
+                      <Icon className="h-5 w-5 text-[#FFD700]" aria-hidden="true" />
+                      <h4 className="mt-4 text-sm font-semibold text-white">{feature.title}</h4>
+                      <p className="mt-2 text-sm leading-6 text-gray-400">{feature.desc}</p>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </section>
+        )}
+
+        {activeSection === 'guide' && (
+          <section className="space-y-8">
+            <h2 className="flex items-center gap-3 text-2xl font-semibold text-white">
+              <FileText className="w-7 h-7 text-[#FFD700]" aria-hidden="true" />
+                {t.userGuide}
+            </h2>
+            <div className="border border-white/10 bg-white/[0.03] p-5 sm:p-6">
+              <h3 className="text-lg font-semibold text-white">{t.gettingStarted}</h3>
+              <div className="mt-5 space-y-6">
+                <div>
+                  <h4 className="font-semibold text-[#FFD700]">{t.step1Title}</h4>
+                  <p className="mt-2 text-sm leading-6 text-gray-400">
                       {t.step1Desc}
                     </p>
-                  </div>
-
-                  <div>
-                    <h4 className="font-bold text-[#FFD700] mb-2">{t.step2Title}</h4>
-                    <p className="text-gray-300 mb-2">
+                </div>
+                <div>
+                  <h4 className="font-semibold text-[#FFD700]">{t.step2Title}</h4>
+                  <p className="mt-2 text-sm leading-6 text-gray-400">
                       {t.step2Desc}
                     </p>
-                    <ul className="list-disc list-inside text-gray-400 space-y-1 ml-4">
-                      {t.step2Items.map((item, i) => (
-                        <li key={i}>{item}</li>
+                  <ul className="mt-3 space-y-2 text-sm text-gray-400">
+                    {t.step2Items.map((item) => (
+                      <li key={item} className="flex items-start gap-2">
+                        <CheckCircle className="mt-0.5 h-4 w-4 flex-shrink-0 text-[#FFD700]" aria-hidden="true" />
+                        {item}
+                      </li>
                       ))}
                     </ul>
-                  </div>
-
-                  <div>
-                    <h4 className="font-bold text-[#FFD700] mb-2">{t.step3Title}</h4>
-                    <p className="text-gray-300">
+                </div>
+                <div>
+                  <h4 className="font-semibold text-[#FFD700]">{t.step3Title}</h4>
+                  <p className="mt-2 text-sm leading-6 text-gray-400">
                       {t.step3Desc}
                     </p>
-                  </div>
                 </div>
               </div>
+            </div>
 
-              {/* Submitting Ideas */}
-              <div className="bg-white/5 border border-white/10 rounded-2xl p-6 md:p-8 mb-8">
-                <h3 className="text-xl font-bold text-white mb-4">{t.howToSubmit}</h3>
-                
-                <div className="space-y-4">
+            <div className="grid gap-4 lg:grid-cols-[1.1fr_0.9fr]">
+              <div className="border border-white/10 bg-white/[0.03] p-5 sm:p-6">
+                <h3 className="text-lg font-semibold text-white">{t.howToSubmit}</h3>
+                <div className="mt-5 space-y-4">
                   {t.submitSteps.map((step, index) => (
-                    <div key={index} className="flex gap-4">
-                      <div className="w-8 h-8 bg-[#FFD700] rounded-full flex items-center justify-center text-black font-bold flex-shrink-0">{index + 1}</div>
+                    <div key={step.title} className="flex gap-4">
+                      <span className="flex h-8 w-8 flex-shrink-0 items-center justify-center bg-[#FFD700] text-sm font-semibold text-black">{index + 1}</span>
                       <div>
-                        <h4 className="font-bold text-white">{step.title}</h4>
-                        <p className="text-gray-400">{step.desc}</p>
+                        <h4 className="text-sm font-semibold text-white">{step.title}</h4>
+                        <p className="mt-1 text-sm leading-6 text-gray-400">{step.desc}</p>
                       </div>
                     </div>
                   ))}
                 </div>
               </div>
 
-              {/* Tips for Success */}
-              <div className="bg-gradient-to-r from-[#FFD700]/10 to-purple-500/10 border border-[#FFD700]/20 rounded-2xl p-6 md:p-8">
-                <h3 className="text-xl font-bold text-white mb-4">{t.tipsForSuccess}</h3>
-                <div className="grid md:grid-cols-2 gap-4">
-                  {t.successTips.map((item, i) => (
-                    <div key={i} className="flex items-start gap-3">
-                      <CheckCircle className="w-5 h-5 text-[#FFD700] flex-shrink-0 mt-0.5" />
+              <div className="border border-[#FFD700]/25 bg-[#FFD700]/10 p-5 sm:p-6">
+                <h3 className="text-lg font-semibold text-white">{t.tipsForSuccess}</h3>
+                <div className="mt-5 space-y-4">
+                  {t.successTips.map((item) => (
+                    <div key={item.tip} className="flex items-start gap-3">
+                      <CheckCircle className="mt-0.5 h-4 w-4 flex-shrink-0 text-[#FFD700]" aria-hidden="true" />
                       <div>
-                        <span className="font-bold text-white">{item.tip}:</span>
-                        <span className="text-gray-400 ml-1">{item.desc}</span>
+                        <span className="text-sm font-semibold text-white">{item.tip}</span>
+                        <p className="mt-1 text-sm leading-6 text-gray-400">{item.desc}</p>
                       </div>
                     </div>
                   ))}
                 </div>
               </div>
             </div>
-          </motion.div>
+          </section>
         )}
 
-        {/* FAQ Section */}
         {activeSection === 'faq' && (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            key={`faq-${lang}`}
-            className="space-y-6"
-          >
-            <h2 className="text-3xl font-bold mb-6 flex items-center gap-3">
-              <HelpCircle className="w-8 h-8 text-[#FFD700]" />
+          <section className="space-y-4">
+            <h2 className="mb-6 flex items-center gap-3 text-2xl font-semibold text-white">
+              <HelpCircle className="w-7 h-7 text-[#FFD700]" aria-hidden="true" />
               {t.faqTitle}
             </h2>
-
-            <div className="space-y-4">
               {t.faqs.map((faq, i) => (
-                <div key={i} className="bg-white/5 border border-white/10 rounded-xl p-5">
-                  <h3 className="font-bold text-white mb-2 flex items-start gap-2">
+              <article key={faq.q} className="border border-white/10 bg-white/[0.03] p-5">
+                <h3 className="flex items-start gap-2 text-sm font-semibold text-white">
                     <span className="text-[#FFD700]">Q:</span>
                     {faq.q}
                   </h3>
-                  <p className="text-gray-400 pl-6">{faq.a}</p>
-                </div>
+                <p className="mt-2 pl-6 text-sm leading-6 text-gray-400">{faq.a}</p>
+              </article>
               ))}
-            </div>
-          </motion.div>
+          </section>
         )}
 
-        {/* Roadmap Section */}
         {activeSection === 'roadmap' && (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            key={`roadmap-${lang}`}
-            className="space-y-8"
-          >
-            <h2 className="text-3xl font-bold mb-6 flex items-center gap-3">
-              <Map className="w-8 h-8 text-[#FFD700]" />
+          <section className="space-y-6">
+            <h2 className="flex items-center gap-3 text-2xl font-semibold text-white">
+              <Map className="w-7 h-7 text-[#FFD700]" aria-hidden="true" />
               {t.roadmapTitle}
             </h2>
 
-            <div className="relative">
-              {/* Timeline line */}
-              <div className="absolute left-8 top-0 bottom-0 w-0.5 bg-gradient-to-b from-[#FFD700] via-purple-500 to-gray-700" />
-
-              <div className="space-y-8">
-                {t.phases.map((phase, i) => (
-                  <div key={i} className="relative pl-20">
-                    {/* Timeline dot */}
-                    <div className={`absolute left-6 w-5 h-5 rounded-full border-4 ${
-                      phase.status === 'completed' ? 'bg-green-500 border-green-500/30' :
-                      phase.status === 'current' ? 'bg-[#FFD700] border-[#FFD700]/30 animate-pulse' :
-                      'bg-gray-600 border-gray-600/30'
-                    }`} />
-
-                    <div className={`bg-white/5 border rounded-2xl p-6 ${
+            <div className="space-y-4">
+              {t.phases.map((phase) => (
+                <article
+                  key={phase.phase}
+                  className={`border bg-white/[0.03] p-5 sm:p-6 ${
                       phase.status === 'current' ? 'border-[#FFD700]/50' : 'border-white/10'
+                    }`}
+                >
+                  <div className="flex flex-wrap items-center gap-3">
+                    <span className={`border px-3 py-1 text-xs font-semibold uppercase ${
+                      phase.status === 'completed' ? 'border-emerald-300/25 bg-emerald-300/10 text-emerald-200' :
+                      phase.status === 'current' ? 'border-[#FFD700]/35 bg-[#FFD700]/10 text-[#FFD700]' :
+                      'border-white/10 bg-white/[0.04] text-gray-400'
                     }`}>
-                      <div className="flex flex-wrap items-center gap-3 mb-3">
-                        <span className={`px-3 py-1 rounded-full text-sm font-bold ${
-                          phase.status === 'completed' ? 'bg-green-500/20 text-green-400' :
-                          phase.status === 'current' ? 'bg-[#FFD700]/20 text-[#FFD700]' :
-                          'bg-gray-500/20 text-gray-400'
-                        }`}>
-                          {phase.phase}
-                        </span>
-                        <span className="text-gray-500">{phase.date}</span>
-                      </div>
-                      
-                      <h3 className="text-xl font-bold text-white mb-3">{phase.title}</h3>
-                      
-                      <ul className="space-y-2">
+                      {phase.phase}
+                    </span>
+                    <span className="text-sm text-gray-500">{phase.date}</span>
+                  </div>
+                  <h3 className="mt-4 text-lg font-semibold text-white">{phase.title}</h3>
+                  <ul className="mt-4 space-y-2">
                         {phase.items.map((item, j) => {
                           const isItemObject = typeof item === 'object' && item !== null;
                           const itemText = isItemObject ? item.text : item;
                           const itemStatus = isItemObject ? item.status : (phase.status === 'completed' ? 'completed' : 'pending');
                           
                           return (
-                            <li key={j} className="flex items-center gap-2 text-gray-300">
+                      <li key={`${phase.phase}-${j}`} className="flex items-start gap-2 text-sm leading-6 text-gray-300">
                               {itemStatus === 'completed' ? (
-                                <CheckCircle className="w-4 h-4 text-green-400" />
+                          <CheckCircle className="mt-1 h-4 w-4 flex-shrink-0 text-emerald-200" aria-hidden="true" />
                               ) : itemStatus === 'in-progress' ? (
-                                <div className="w-4 h-4 rounded-full bg-[#FFD700] animate-pulse" />
+                          <span className="mt-2 h-2 w-2 flex-shrink-0 bg-[#FFD700]" aria-hidden="true" />
                               ) : (
-                                <div className="w-4 h-4 rounded-full border border-gray-600" />
+                          <span className="mt-2 h-2 w-2 flex-shrink-0 border border-gray-600" aria-hidden="true" />
                               )}
                               {itemText}
                               {itemStatus === 'in-progress' && (
-                                <span className="text-[#FFD700] text-sm ml-1">{t.weAreHere}</span>
+                          <span className="ml-1 text-[#FFD700]">{t.weAreHere}</span>
                               )}
                             </li>
                           );
                         })}
                       </ul>
-                    </div>
-                  </div>
+                </article>
                 ))}
               </div>
-            </div>
-          </motion.div>
+          </section>
         )}
       </div>
 
-      {/* Footer CTA */}
-      <div className="bg-gradient-to-r from-purple-900/30 to-[#FFD700]/10 border-t border-white/10">
-        <div className="max-w-6xl mx-auto px-4 py-16 text-center">
-          <h2 className="text-2xl md:text-3xl font-bold mb-4">{t.footerTitle}</h2>
-          <p className="text-gray-400 mb-8 max-w-xl mx-auto">
+      <footer className="border-t border-white/10 bg-white/[0.03] px-4 py-14 text-center sm:px-6">
+        <div className="mx-auto max-w-3xl">
+          <h2 className="text-2xl font-semibold text-white sm:text-3xl">{t.footerTitle}</h2>
+          <p className="mx-auto mt-3 max-w-xl text-sm leading-6 text-gray-400">
             {t.footerDesc}
           </p>
-          <Link href="/idea">
-            <motion.button
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              className="px-8 py-4 bg-gradient-to-r from-[#FFD700] to-[#FDB931] text-black font-bold rounded-full inline-flex items-center gap-2"
-            >
-              {t.getStarted}
-              <ArrowRight className="w-5 h-5" />
-            </motion.button>
+          <Link href="/idea" className="btn-primary mx-auto mt-7">
+            {t.getStarted}
+            <ArrowRight className="w-5 h-5" />
           </Link>
         </div>
-      </div>
-    </div>
+      </footer>
+    </main>
   );
 };
 

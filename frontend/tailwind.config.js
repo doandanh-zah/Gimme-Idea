@@ -27,8 +27,8 @@ module.exports = {
       fontFamily: {
         sans: ['var(--font-inter)', 'sans-serif'],
         mono: ['var(--font-mono)', 'monospace'],
-        display: ['var(--font-space)', 'sans-serif'],
-        quantico: ['var(--font-quantico)', 'sans-serif'],
+        display: ['var(--font-inter)', 'sans-serif'],
+        quantico: ['var(--font-mono)', 'monospace'],
       },
       animation: {
         'float': 'float 6s ease-in-out infinite',

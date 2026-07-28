@@ -11,7 +11,9 @@ import { LoadingLightbulb, LoadingStatus } from './LoadingLightbulb';
 import { uploadProjectImage } from '../lib/imgbb';
 
 export const UploadProject = () => {
-  const { addProject, user, openConnectReminder } = useAppStore();
+  const addProject = useAppStore((state) => state.addProject);
+  const user = useAppStore((state) => state.user);
+  const openConnectReminder = useAppStore((state) => state.openConnectReminder);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [status, setStatus] = useState<LoadingStatus>('loading');
   const fileInputRef = useRef<HTMLInputElement>(null);

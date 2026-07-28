@@ -1,4 +1,5 @@
-import { Controller, Post, Get, Body, UseGuards, Param } from "@nestjs/common";
+import { Controller, Post, Get, Body, UseGuards, Param, Res } from "@nestjs/common";
+import type { Response } from "express";
 import { AuthService } from "./auth.service";
 import { LoginDto } from "./dto/login.dto";
 import { EmailLoginDto } from "./dto/email-login.dto";
@@ -10,11 +11,22 @@ import { AgentRotateKeyDto } from './dto/agent-rotate-key.dto';
 import { AgentRevokeKeyDto } from './dto/agent-revoke-key.dto';
 import { AuthGuard } from "../common/guards/auth.guard";
 import { CurrentUser } from "../common/decorators/user.decorator";
+import { AUTH_COOKIE_NAME } from "../common/auth-session";
 import { ApiResponse, User } from "../shared/types";
 
 @Controller("auth")
 export class AuthController {
   constructor(private authService: AuthService) {}
+
+  private setSessionCookie(res: Response, token?: string) {
+    if (!token) return;
+    res.cookie(AUTH_COOKIE_NAME, token, this.authService.getSessionCookieOptions());
+  }
+
+  private clearSessionCookie(res: Response) {
+    const { maxAge: _maxAge, ...options } = this.authService.getSessionCookieOptions();
+    res.clearCookie(AUTH_COOKIE_NAME, options);
+  }
 
   /**
    * POST /api/auth/login
@@ -22,9 +34,12 @@ export class AuthController {
    */
   @Post("login")
   async login(
-    @Body() loginDto: LoginDto
+    @Body() loginDto: LoginDto,
+    @Res({ passthrough: true }) res: Response
   ): Promise<ApiResponse<{ token: string; user: User }>> {
-    return this.authService.login(loginDto);
+    const result = await this.authService.login(loginDto);
+    this.setSessionCookie(res, result.data?.token);
+    return result;
   }
 
   /**
@@ -33,9 +48,12 @@ export class AuthController {
    */
   @Post("login-email")
   async loginWithEmail(
-    @Body() emailLoginDto: EmailLoginDto
+    @Body() emailLoginDto: EmailLoginDto,
+    @Res({ passthrough: true }) res: Response
   ): Promise<ApiResponse<{ token: string; user: User; isNewUser: boolean }>> {
-    return this.authService.loginWithEmail(emailLoginDto);
+    const result = await this.authService.loginWithEmail(emailLoginDto);
+    this.setSessionCookie(res, result.data?.token);
+    return result;
   }
 
   /**
@@ -67,16 +85,32 @@ export class AuthController {
 
   @Post('agent/register')
   async registerAgent(
-    @Body() dto: AgentRegisterDto
+    @Body() dto: AgentRegisterDto,
+    @Res({ passthrough: true }) res: Response
   ): Promise<ApiResponse<{ token: string; user: User; secretKey: string }>> {
-    return this.authService.registerAgent(dto);
+    const result = await this.authService.registerAgent(dto);
+    this.setSessionCookie(res, result.data?.token);
+    return result;
   }
 
   @Post('agent/login')
   async loginAgent(
-    @Body() dto: AgentLoginDto
+    @Body() dto: AgentLoginDto,
+    @Res({ passthrough: true }) res: Response
   ): Promise<ApiResponse<{ token: string; user: User }>> {
-    return this.authService.loginAgent(dto);
+    const result = await this.authService.loginAgent(dto);
+    this.setSessionCookie(res, result.data?.token);
+    return result;
+  }
+
+  @Post("logout")
+  async logout(@Res({ passthrough: true }) res: Response): Promise<ApiResponse<{ ok: true }>> {
+    this.clearSessionCookie(res);
+    return {
+      success: true,
+      data: { ok: true },
+      message: "Logged out",
+    };
   }
 
   @Post('agent/rotate-key')

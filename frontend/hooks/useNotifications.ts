@@ -1,210 +1,309 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef } from "react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useState, useEffect, useCallback, useRef } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { apiClient } from "../lib/api-client";
 import { Notification } from "../lib/types";
+import { useAppStore } from "../lib/store";
 import { supabase } from "../lib/supabase";
 import { useAuth } from "../contexts/AuthContext";
-import { featureFlags } from "../lib/featureFlags";
-import { queryKeys } from "../lib/query-keys";
-import { useDebouncedCallback } from "./useDebounce";
-
-const DEFAULT_LIMIT = 20;
-
-/** Notifications API returns a non-standard envelope (fields at top level). */
-type NotificationsListBody = {
-  success: boolean;
-  error?: string;
-  notifications?: Notification[];
-};
-type UnreadCountBody = {
-  success: boolean;
-  error?: string;
-  unreadCount?: number;
-};
+import {
+  isRealtimeChannelEnabled,
+  logRealtimeLifecycle,
+} from "../lib/realtime/registry";
+import { useThrottledCallback } from "./useDebounce";
 
 export function useNotifications() {
-  const { user, session } = useAuth();
-  const queryClient = useQueryClient();
+  const user = useAppStore((state) => state.user);
+  const { session } = useAuth(); // Get Supabase session for realtime auth
+  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [isLoading, setIsLoading] = useState(false);
   const subscriptionRef = useRef<any>(null);
-  const userId = user?.id || "";
-  const listKey = useMemo(
-    () => queryKeys.notifications.list(userId, DEFAULT_LIMIT, 0),
-    [userId],
-  );
-  const unreadKey = useMemo(() => queryKeys.notifications.unread(userId), [userId]);
 
   const notificationsQuery = useQuery({
-    queryKey: listKey,
-    enabled: Boolean(userId),
-    queryFn: async ({ signal }) => {
-      const response = (await apiClient.getNotifications(
-        { limit: DEFAULT_LIMIT, offset: 0 },
-        signal,
-      )) as unknown as NotificationsListBody;
+    queryKey: ["notifications", user?.id],
+    queryFn: async () => {
+      const response = await apiClient.getNotifications({ limit: 20, offset: 0 });
       if (!response.success) {
         throw new Error(response.error || "Failed to fetch notifications");
       }
-      return response.notifications || [];
+
+      return ((response as any).notifications || []) as Notification[];
     },
+    enabled: !!user?.id,
+    staleTime: 30_000,
+    refetchOnWindowFocus: false,
   });
 
-  const unreadQuery = useQuery({
-    queryKey: unreadKey,
-    enabled: Boolean(userId),
-    queryFn: async ({ signal }) => {
-      const response = (await apiClient.getUnreadNotificationCount(
-        signal,
-      )) as unknown as UnreadCountBody;
+  const unreadCountQuery = useQuery({
+    queryKey: ["notifications", user?.id, "unread-count"],
+    queryFn: async () => {
+      const response = await apiClient.getUnreadNotificationCount();
       if (!response.success) {
         throw new Error(response.error || "Failed to fetch unread count");
       }
-      return Number(response.unreadCount || 0);
+
+      return (response as any).unreadCount || 0;
     },
+    enabled: !!user?.id,
+    staleTime: 30_000,
+    refetchOnWindowFocus: false,
   });
 
-  const notifications = notificationsQuery.data || [];
-  const unreadCount = unreadQuery.data || 0;
-
-  const fetchNotifications = useCallback(
-    async (limit = DEFAULT_LIMIT, offset = 0) => {
-      if (!userId) return;
-      if (limit === DEFAULT_LIMIT && offset === 0) {
-        await notificationsQuery.refetch();
-        return;
-      }
-
-      const response = (await apiClient.getNotifications({
-        limit,
-        offset,
-      })) as unknown as NotificationsListBody;
-      if (!response.success) return;
-      const incoming = response.notifications || [];
-      queryClient.setQueryData<Notification[]>(listKey, (current = []) =>
-        offset === 0 ? incoming : [...current, ...incoming],
-      );
-    },
-    [listKey, notificationsQuery.refetch, queryClient, userId],
-  );
-
-  const fetchUnreadCount = useCallback(async () => {
-    if (!userId) return;
-    await unreadQuery.refetch();
-  }, [unreadQuery.refetch, userId]);
-
-  const markAsRead = useCallback(
-    async (notificationId: string) => {
-      const response = await apiClient.markNotificationRead(notificationId);
-      if (!response.success) return;
-
-      let wasUnread = false;
-      queryClient.setQueryData<Notification[]>(listKey, (current = []) =>
-        current.map((notification) => {
-          if (notification.id !== notificationId) return notification;
-          wasUnread = !notification.read;
-          return { ...notification, read: true };
-        }),
-      );
-      if (wasUnread) {
-        queryClient.setQueryData<number>(unreadKey, (current = 0) =>
-          Math.max(0, current - 1),
-        );
-      }
-    },
-    [listKey, queryClient, unreadKey],
-  );
-
-  const markAllAsRead = useCallback(async () => {
-    const response = await apiClient.markAllNotificationsRead();
-    if (!response.success) return;
-    queryClient.setQueryData<Notification[]>(listKey, (current = []) =>
-      current.map((notification) => ({ ...notification, read: true })),
-    );
-    queryClient.setQueryData(unreadKey, 0);
-  }, [listKey, queryClient, unreadKey]);
-
-  const deleteNotification = useCallback(
-    async (notificationId: string) => {
-      const response = await apiClient.deleteNotification(notificationId);
-      if (!response.success) return;
-      const deleted = notifications.find((notification) => notification.id === notificationId);
-      queryClient.setQueryData<Notification[]>(listKey, (current = []) =>
-        current.filter((notification) => notification.id !== notificationId),
-      );
-      if (deleted && !deleted.read) {
-        queryClient.setQueryData<number>(unreadKey, (current = 0) =>
-          Math.max(0, current - 1),
-        );
-      }
-    },
-    [listKey, notifications, queryClient, unreadKey],
-  );
-
-  const clearAll = useCallback(async () => {
-    const response = await apiClient.clearAllNotifications();
-    if (!response.success) return;
-    queryClient.setQueryData(listKey, []);
-    queryClient.setQueryData(unreadKey, 0);
-  }, [listKey, queryClient, unreadKey]);
-
-  const invalidateNotificationQueries = useCallback(() => {
-    void queryClient.invalidateQueries({ queryKey: listKey });
-    void queryClient.invalidateQueries({ queryKey: unreadKey });
-  }, [listKey, queryClient, unreadKey]);
-
-  const refreshFromRealtime = useDebouncedCallback(invalidateNotificationQueries, 500);
+  useEffect(() => {
+    if (notificationsQuery.data) {
+      setNotifications(notificationsQuery.data);
+    }
+  }, [notificationsQuery.data]);
 
   useEffect(() => {
-    if (featureFlags.disableRealtime || !userId) return;
+    if (typeof unreadCountQuery.data === "number") {
+      setUnreadCount(unreadCountQuery.data);
+    }
+  }, [unreadCountQuery.data]);
 
-    const subscriptionUserId = session?.user?.id || userId;
+  // Fetch notifications from API
+  const fetchNotifications = useCallback(
+    async (limit = 20, offset = 0) => {
+      if (!user) return;
+
+      setIsLoading(true);
+      try {
+        const response = await apiClient.getNotifications({ limit, offset });
+        // API returns { success, notifications } directly, not wrapped in data
+        if (response.success) {
+          const notifs = (response as any).notifications || [];
+          if (offset === 0) {
+            setNotifications(notifs);
+          } else {
+            setNotifications((prev) => [...prev, ...notifs]);
+          }
+        }
+      } catch (error) {
+        console.error("Failed to fetch notifications:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    [user]
+  );
+
+  // Fetch unread count
+  const fetchUnreadCount = useCallback(async () => {
+    if (!user) return;
+
+    try {
+      const response = await apiClient.getUnreadNotificationCount();
+      // API returns { success, unreadCount } directly
+      if (response.success) {
+        setUnreadCount((response as any).unreadCount || 0);
+      }
+    } catch (error) {
+      console.error("Failed to fetch unread count:", error);
+    }
+  }, [user]);
+
+  // Mark single notification as read
+  const markAsRead = useCallback(async (notificationId: string) => {
+    try {
+      await apiClient.markNotificationRead(notificationId);
+      setNotifications((prev) =>
+        prev.map((n) => (n.id === notificationId ? { ...n, read: true } : n))
+      );
+      setUnreadCount((prev) => Math.max(0, prev - 1));
+    } catch (error) {
+      console.error("Failed to mark notification as read:", error);
+    }
+  }, []);
+
+  // Mark all as read
+  const markAllAsRead = useCallback(async () => {
+    try {
+      await apiClient.markAllNotificationsRead();
+      setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
+      setUnreadCount(0);
+    } catch (error) {
+      console.error("Failed to mark all notifications as read:", error);
+    }
+  }, []);
+
+  // Delete single notification
+  const deleteNotification = useCallback(
+    async (notificationId: string) => {
+      try {
+        await apiClient.deleteNotification(notificationId);
+        const notification = notifications.find((n) => n.id === notificationId);
+        setNotifications((prev) => prev.filter((n) => n.id !== notificationId));
+        if (notification && !notification.read) {
+          setUnreadCount((prev) => Math.max(0, prev - 1));
+        }
+      } catch (error) {
+        console.error("Failed to delete notification:", error);
+      }
+    },
+    [notifications]
+  );
+
+  // Clear all notifications
+  const clearAll = useCallback(async () => {
+    try {
+      await apiClient.clearAllNotifications();
+      setNotifications([]);
+      setUnreadCount(0);
+    } catch (error) {
+      console.error("Failed to clear notifications:", error);
+    }
+  }, []);
+
+  // Throttled versions of fetch functions for realtime event handlers
+  // This prevents cascade of simultaneous refetches when tab regains focus
+  const throttledFetchNotifications = useThrottledCallback(
+    () => fetchNotifications(),
+    500 // 500ms throttle for realtime events
+  );
+
+  const throttledFetchUnreadCount = useThrottledCallback(
+    () => fetchUnreadCount(),
+    500 // 500ms throttle for realtime events
+  );
+
+  // Get navigation path for notification
+  const getNotificationPath = useCallback(
+    (notification: Notification): string => {
+      switch (notification.type) {
+        case "follow":
+          // Go to follower's profile
+          return notification.actorId
+            ? `/profile/${notification.actorId}`
+            : "/";
+
+        case "new_post":
+        case "comment":
+        case "comment_reply":
+        case "like":
+        case "comment_like":
+        case "donation":
+          // Go to the project/idea
+          if (notification.targetType === "project" && notification.targetId) {
+            return `/idea/${notification.targetId}`;
+          }
+          return "/";
+
+        case "mention":
+          if (notification.targetType === "project" && notification.targetId) {
+            return `/idea/${notification.targetId}`;
+          }
+          return "/";
+
+        default:
+          return "/";
+      }
+    },
+    []
+  );
+
+  // Reset initial fetch flag when user changes (logout/login)
+  useEffect(() => {
+    if (!user?.id) {
+      setNotifications([]);
+      setUnreadCount(0);
+    }
+  }, [user?.id]);
+
+  // Setup realtime subscription
+  useEffect(() => {
+    if (!isRealtimeChannelEnabled("notifications")) {
+      return;
+    }
+
+    // Need both user (for API calls) and session (for realtime auth)
+    if (!user?.id) {
+      setNotifications([]);
+      setUnreadCount(0);
+      return;
+    }
+
+    // Use Supabase session user ID for realtime subscription if available
+    // This ensures the subscription filter matches the RLS policy (auth.uid())
+    const subscriptionUserId = session?.user?.id || user.id;
+    const channelName = `notifications:${subscriptionUserId}`;
+
+    // Subscribe to realtime updates
     const channel = supabase
-      .channel(`notifications:${subscriptionUserId}`)
+      .channel(channelName)
       .on(
         "postgres_changes",
         {
-          event: "*",
+          event: "INSERT",
           schema: "public",
           table: "notifications",
           filter: `user_id=eq.${subscriptionUserId}`,
         },
-        refreshFromRealtime,
+        () => {
+          // Refetch to get full notification with actor info
+          // Use throttled functions to prevent cascade of refetches on tab focus
+          throttledFetchNotifications();
+          throttledFetchUnreadCount();
+        }
       )
-      .subscribe();
+      .on(
+        "postgres_changes",
+        {
+          event: "UPDATE",
+          schema: "public",
+          table: "notifications",
+          filter: `user_id=eq.${subscriptionUserId}`,
+        },
+        (payload) => {
+          // Update local state
+          const updated = payload.new as any;
+          setNotifications((prev) =>
+            prev.map((n) =>
+              n.id === updated.id ? { ...n, read: updated.read } : n
+            )
+          );
+          if (updated.read) {
+            setUnreadCount((prev) => Math.max(0, prev - 1));
+          }
+        }
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "DELETE",
+          schema: "public",
+          table: "notifications",
+          filter: `user_id=eq.${subscriptionUserId}`,
+        },
+        (payload) => {
+          const deleted = payload.old as any;
+          setNotifications((prev) => prev.filter((n) => n.id !== deleted.id));
+        }
+      )
+      .subscribe((status) => {
+        if (status === "SUBSCRIBED") {
+          logRealtimeLifecycle(channelName, "subscribe");
+        } else if (status === "CHANNEL_ERROR") {
+          logRealtimeLifecycle(channelName, "error", { status });
+        }
+      });
 
     subscriptionRef.current = channel;
+
     return () => {
-      if (subscriptionRef.current === channel) {
+      if (subscriptionRef.current) {
+        supabase.removeChannel(subscriptionRef.current);
+        logRealtimeLifecycle(channelName, "unsubscribe");
         subscriptionRef.current = null;
       }
-      void supabase.removeChannel(channel);
     };
-  }, [refreshFromRealtime, session?.user?.id, userId]);
-
-  const getNotificationPath = useCallback((notification: Notification): string => {
-    switch (notification.type) {
-      case "follow":
-        return notification.actorId ? `/profile/${notification.actorId}` : "/";
-      case "new_post":
-      case "comment":
-      case "comment_reply":
-      case "like":
-      case "comment_like":
-      case "donation":
-      case "mention":
-        return notification.targetType === "project" && notification.targetId
-          ? `/idea/${notification.targetId}`
-          : "/";
-      default:
-        return "/";
-    }
-  }, []);
+  }, [user?.id, session?.user?.id]); // Only depend on user/session, not on callback functions
 
   return {
     notifications,
     unreadCount,
-    isLoading: notificationsQuery.isLoading || unreadQuery.isLoading,
+    isLoading: isLoading || notificationsQuery.isLoading || unreadCountQuery.isLoading,
     fetchNotifications,
     fetchUnreadCount,
     markAsRead,

@@ -2,8 +2,8 @@
 
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { Loader2 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
-import { LoadingLightbulb } from '@/components/LoadingLightbulb';
 
 export default function AuthCallback() {
   const router = useRouter();
@@ -32,8 +32,12 @@ export default function AuthCallback() {
   }, [router]);
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-black">
-      <LoadingLightbulb text="Signing in..." />
-    </div>
+    <main className="flex min-h-screen items-center justify-center px-4 py-20 text-gray-300 sm:px-6">
+      <section className="w-full max-w-sm border border-white/10 bg-white/[0.03] p-6 text-center">
+        <Loader2 className="mx-auto h-8 w-8 animate-spin text-[#FFD700]" aria-hidden="true" />
+        <h1 className="mt-5 text-xl font-semibold text-white">Signing in</h1>
+        <p className="mt-2 text-sm leading-6 text-gray-400">Checking your session and sending you back to Gimme Idea.</p>
+      </section>
+    </main>
   );
 }

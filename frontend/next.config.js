@@ -10,8 +10,64 @@ function getGitCommitSha() {
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  outputFileTracingRoot: __dirname,
+  poweredByHeader: false,
+
   env: {
     NEXT_PUBLIC_GIT_COMMIT_SHA: process.env.NEXT_PUBLIC_GIT_COMMIT_SHA || getGitCommitSha(),
+  },
+
+  async headers() {
+    const csp = [
+      "default-src 'self'",
+      "base-uri 'self'",
+      "object-src 'none'",
+      "frame-ancestors 'self'",
+      "form-action 'self' mailto:",
+      "script-src 'self' 'unsafe-inline' https://www.googletagmanager.com https://www.google-analytics.com",
+      "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+      "style-src-elem 'self' 'unsafe-inline' https://fonts.googleapis.com",
+      "img-src 'self' data: blob: https: http://localhost:*",
+      "font-src 'self' data: https://fonts.gstatic.com",
+      [
+        "connect-src 'self'",
+        "http://localhost:*",
+        "ws://localhost:*",
+        "https://*.supabase.co",
+        "wss://*.supabase.co",
+        "https://www.google-analytics.com",
+        "https://www.googletagmanager.com",
+        "https://api.mainnet-beta.solana.com",
+        "https://api.devnet.solana.com",
+        "https://*.helius-rpc.com",
+        "https://*.helius.xyz",
+        "https://kora.lazorkit.com",
+        "https://portal.lazor.sh",
+      ].join(" "),
+      [
+        "frame-src 'self'",
+        "https://accounts.google.com",
+        "https://www.googletagmanager.com",
+        "https://*.supabase.co",
+        "https://portal.lazor.sh",
+      ].join(" "),
+    ].join("; ");
+
+    return [
+      {
+        source: "/:path*",
+        headers: [
+          { key: "Content-Security-Policy", value: csp },
+          { key: "X-Content-Type-Options", value: "nosniff" },
+          { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
+          {
+            key: "Permissions-Policy",
+            value: "camera=(), microphone=(), geolocation=(), payment=(), usb=(), interest-cohort=()",
+          },
+          { key: "X-Frame-Options", value: "SAMEORIGIN" },
+        ],
+      },
+    ];
   },
 
   webpack: (config, { isServer }) => {
@@ -27,28 +83,12 @@ const nextConfig = {
       { module: /node_modules\/@walletconnect/ },
     ];
 
-    // Fallback for browser - Add polyfills for Node.js modules
+    // Fallback for browser-only wallet/web3 chunks.
     if (!isServer) {
-      // CRITICAL: Inject polyfills FIRST before any other code
-      const originalEntry = config.entry;
-      config.entry = async () => {
-        const entries = await originalEntry();
-
-        // Inject polyfills at the very beginning of every entry point
-        if (entries['main.app']) {
-          entries['main.app'] = [
-            './polyfills.js',
-            ...entries['main.app']
-          ];
-        }
-
-        return entries;
-      };
-
       config.resolve.fallback = {
         ...config.resolve.fallback,
         buffer: require.resolve('buffer/'),
-        crypto: require.resolve('crypto-browserify'),
+        crypto: false,
         stream: require.resolve('stream-browserify'),
         process: require.resolve('process/browser'),
         zlib: require.resolve('browserify-zlib'),
@@ -60,10 +100,15 @@ const nextConfig = {
         path: false,
       };
 
-      // Provide global polyfills for browser
+      const webpack = require('webpack');
+
+      // Provide browser-safe Node globals only where wallet/web3 chunks reference them.
       config.plugins = [
         ...config.plugins,
-        new (require('webpack')).ProvidePlugin({
+        new webpack.DefinePlugin({
+          global: 'globalThis',
+        }),
+        new webpack.ProvidePlugin({
           Buffer: ['buffer', 'Buffer'],
           process: 'process/browser',
         }),

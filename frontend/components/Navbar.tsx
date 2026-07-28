@@ -14,14 +14,12 @@ import { useNotifications } from '../hooks/useNotifications';
 import { useTeamInvites } from '../hooks/useTeamInvites';
 
 const Navbar = () => {
-  const {
-    openConnectReminder,
-    openSubmitModal,
-    searchQuery,
-    setSearchQuery,
-    setView,
-    setSelectedProject
-  } = useAppStore();
+  const openConnectReminder = useAppStore((state) => state.openConnectReminder);
+  const openSubmitModal = useAppStore((state) => state.openSubmitModal);
+  const searchQuery = useAppStore((state) => state.searchQuery);
+  const setSearchQuery = useAppStore((state) => state.setSearchQuery);
+  const setView = useAppStore((state) => state.setView);
+  const setSelectedProject = useAppStore((state) => state.setSelectedProject);
 
   const { user, signOut, setShowWalletPopup } = useAuth();
   const {
@@ -147,50 +145,47 @@ const Navbar = () => {
 
   return (
     <>
-      <nav className="hidden md:flex fixed top-4 sm:top-6 left-0 right-0 z-50 justify-center px-2 sm:px-4 pointer-events-none">
-        <motion.div
-          initial={{ y: -100, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          className="pointer-events-auto bg-[#0F0F0F]/90 backdrop-blur-xl border border-white/5 rounded-full px-3 sm:px-6 py-2 sm:py-3 flex items-center justify-between w-full max-w-5xl shadow-2xl shadow-purple-900/10 relative"
-        >
+      <nav className="fixed top-0 left-0 right-0 z-50 border-b border-white/10 bg-[#050505]/95">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between relative">
           {/* Logo - links to landing page */}
-          <button onClick={() => { setView('landing'); setSelectedProject(null); router.push('/landing'); }} className="flex items-center gap-1.5 sm:gap-2 group">
-            <div className="relative w-7 h-7 sm:w-10 sm:h-10 flex items-center justify-center">
-              <div className="absolute inset-0 bg-[#FFD700]/20 rounded-full blur-md opacity-50 group-hover:opacity-100 transition-opacity duration-300" />
+          <button
+            type="button"
+            onClick={() => {
+              setView('landing');
+              setSelectedProject(null);
+              router.push('/landing');
+            }}
+            className="flex items-center gap-2 group shrink-0"
+          >
+            <div className="relative w-8 h-8 flex items-center justify-center">
               <Image
                 src="/asset/logo-gmi.png"
                 alt="Gimme Idea Logo"
-                width={36}
-                height={36}
-                className="relative z-10 object-contain w-6 h-6 sm:w-9 sm:h-9"
+                width={32}
+                height={32}
+                className="object-contain w-7 h-7"
                 priority
               />
             </div>
-            <span className="font-quantico font-bold text-base sm:text-xl tracking-wide">
+            <span className="font-quantico font-bold text-lg tracking-wide">
               <span className="text-white">Gimme</span>
               <span className="text-[#FFD700]">Idea</span>
             </span>
           </button>
 
-          {/* Desktop Links */}
-          <div className={`hidden md:flex items-center gap-6 lg:gap-8 ${showSearch ? 'opacity-0 pointer-events-none' : 'opacity-100'} transition-opacity duration-300`}>
+          {/* Desktop Links — editorial mono */}
+          <div className={`hidden md:flex items-center gap-1 ${showSearch ? 'opacity-0 pointer-events-none' : 'opacity-100'} transition-opacity duration-200`}>
             {navLinks.map((link) => {
               if (link.isDropdown) {
                 return (
                   <div key={link.name} className="relative" ref={moreMenuRef}>
                     <button
+                      type="button"
                       onClick={handleMoreMenuClick}
-                      className={`text-sm font-medium transition-all duration-300 flex items-center gap-2 group
-                      ${showMoreMenu ? 'text-white font-bold' : 'text-gray-400'}`}
+                      className={`flex min-h-[40px] items-center gap-1.5 px-3 py-2 text-[11px] font-mono uppercase tracking-[0.12em] transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#FFD700]
+                      ${showMoreMenu ? 'text-[#FFD700]' : 'text-gray-400 hover:text-white'}`}
                     >
-                      <link.icon className={`w-4 h-4 transition-colors duration-300 ${showMoreMenu ? 'text-white' : 'group-hover:text-[#FFD700]'
-                        }`} />
-                      <span className={`bg-clip-text transition-all duration-300 ${showMoreMenu
-                        ? 'text-white'
-                        : 'text-gray-400 group-hover:text-transparent group-hover:bg-gradient-to-r group-hover:from-purple-400 group-hover:to-[#FFD700]'
-                        }`}>
-                        {link.name}
-                      </span>
+                      <span>{link.name}</span>
                     </button>
                     <AnimatePresence>
                       {showMoreMenu && (
@@ -198,7 +193,7 @@ const Navbar = () => {
                           initial={{ opacity: 0, y: 10, scale: 0.95 }}
                           animate={{ opacity: 1, y: 0, scale: 1 }}
                           exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                          className="absolute top-full left-1/2 -translate-x-1/2 mt-4 w-48 bg-[#0F0F0F] border border-white/10 rounded-xl shadow-2xl overflow-hidden z-50 py-1"
+                          className="absolute top-full left-0 mt-0 w-48 bg-[#0a0a0a] border border-white/10 overflow-hidden z-50 py-1"
                         >
                           {moreLinks.map((subLink: any) => {
                             const isLocked = subLink.status === 'locked';
@@ -206,6 +201,7 @@ const Navbar = () => {
 
                             return (
                               <button
+                                type="button"
                                 key={subLink.id || subLink.name}
                                 onClick={() => {
                                   if (!isLocked) {
@@ -218,7 +214,7 @@ const Navbar = () => {
                                   borderColor: style.borderColor || 'transparent',
                                   boxShadow: style.glow && style.borderColor ? `0 0 10px ${style.borderColor}40` : 'none'
                                 }}
-                                className={`w-full text-left px-4 py-3 text-sm flex items-center justify-between gap-2 border-l-2 transition-all
+                                className={`flex min-h-[40px] w-full items-center justify-between gap-2 border-l-2 px-4 py-3 text-left text-sm transition-all focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-[#FFD700]
                               ${isLocked
                                     ? 'text-gray-500 cursor-not-allowed bg-white/[0.02]'
                                     : 'text-gray-300 hover:bg-white/5 hover:text-white'
@@ -256,19 +252,15 @@ const Navbar = () => {
               return (
                 <button
                   key={link.name}
+                  type="button"
                   onClick={() => router.push(link.route)}
-                  className={`text-sm font-medium transition-all duration-300 flex items-center gap-2 group
-                  ${isActive ? 'text-white font-bold' : 'text-gray-400'}`}
+                  className={`relative px-3 py-2 text-[11px] font-mono uppercase tracking-[0.12em] transition-colors
+                  ${isActive ? 'text-white' : 'text-gray-400 hover:text-white'}`}
                 >
-                  <link.icon className={`w-4 h-4 transition-colors duration-300 ${isActive ? 'text-white' : 'group-hover:text-[#FFD700]'
-                    }`} />
-
-                  <span className={`bg-clip-text transition-all duration-300 ${isActive
-                    ? 'text-white'
-                    : 'text-gray-400 group-hover:text-transparent group-hover:bg-gradient-to-r group-hover:from-purple-400 group-hover:to-[#FFD700]'
-                    }`}>
-                    {link.name}
-                  </span>
+                  {link.name}
+                  {isActive && (
+                    <span className="absolute left-3 right-3 -bottom-[13px] h-0.5 bg-[#FFD700]" />
+                  )}
                 </button>
               );
             })}
@@ -298,8 +290,10 @@ const Navbar = () => {
           {/* Actions */}
           <div className="flex items-center gap-4 relative">
             <button
+              type="button"
+              aria-label={showSearch ? 'Close search' : 'Open search'}
               onClick={() => setShowSearch(!showSearch)}
-              className={`p-2 transition-colors ${showSearch ? 'text-accent' : 'text-gray-400 hover:text-white'}`}
+              className={`min-h-[40px] min-w-[40px] p-2 transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#FFD700] ${showSearch ? 'text-accent' : 'text-gray-400 hover:text-white'}`}
             >
               {showSearch ? <X className="w-5 h-5" /> : <Search className="w-5 h-5" />}
             </button>
@@ -309,8 +303,10 @@ const Navbar = () => {
                 {/* Notifications */}
                 <div className="relative" ref={notificationRef}>
                   <button
+                    type="button"
+                    aria-label="Open notifications"
                     onClick={handleNotificationClick}
-                    className={`p-2 transition-colors relative ${showNotifications ? 'text-white' : 'text-gray-400 hover:text-white'}`}
+                    className={`relative min-h-[40px] min-w-[40px] p-2 transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#FFD700] ${showNotifications ? 'text-white' : 'text-gray-400 hover:text-white'}`}
                   >
                     <Bell className="w-5 h-5" />
                     {totalUnreadCount > 0 && (
@@ -331,9 +327,9 @@ const Navbar = () => {
                           {notifications.length > 0 && (
                             <div className="flex items-center gap-2">
                               {unreadCount > 0 && (
-                                <button onClick={markAllAsRead} className="text-xs text-blue-400 hover:text-blue-300">Read All</button>
+                                <button type="button" onClick={markAllAsRead} className="min-h-[32px] text-xs text-blue-400 hover:text-blue-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#FFD700]">Read All</button>
                               )}
-                              <button onClick={clearAll} className="text-xs text-red-400 hover:text-red-300">Clear All</button>
+                              <button type="button" onClick={clearAll} className="min-h-[32px] text-xs text-red-400 hover:text-red-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#FFD700]">Clear All</button>
                             </div>
                           )}
                         </div>
@@ -379,6 +375,7 @@ const Navbar = () => {
                                       </span>
                                       <div className="flex gap-2 mt-2">
                                         <button
+                                          type="button"
                                           onClick={async () => {
                                             setRespondingInviteId(invite.id);
                                             const result = await acceptInvite(invite.id, invite.hackathonId);
@@ -389,18 +386,19 @@ const Navbar = () => {
                                             }
                                           }}
                                           disabled={respondingInviteId === invite.id}
-                                          className="px-3 py-1.5 bg-gold text-black text-xs font-bold rounded hover:bg-gold/90 transition-colors disabled:opacity-50"
+                                          className="min-h-[36px] px-3 py-1.5 bg-gold text-black text-xs font-bold rounded hover:bg-gold/90 transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#FFD700] disabled:opacity-50"
                                         >
                                           {respondingInviteId === invite.id ? '...' : 'Accept'}
                                         </button>
                                         <button
+                                          type="button"
                                           onClick={async () => {
                                             setRespondingInviteId(invite.id);
                                             await rejectInvite(invite.id, invite.hackathonId);
                                             setRespondingInviteId(null);
                                           }}
                                           disabled={respondingInviteId === invite.id}
-                                          className="px-3 py-1.5 bg-white/10 text-gray-300 text-xs font-bold rounded hover:bg-white/20 transition-colors disabled:opacity-50"
+                                          className="min-h-[36px] px-3 py-1.5 bg-white/10 text-gray-300 text-xs font-bold rounded hover:bg-white/20 transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#FFD700] disabled:opacity-50"
                                         >
                                           Decline
                                         </button>
@@ -429,9 +427,10 @@ const Navbar = () => {
                                   : 'from-purple-500 to-blue-500';
 
                               return (
-                                <div
+                                <button
+                                  type="button"
                                   key={notif.id}
-                                  className={`p-3 border-b border-white/5 hover:bg-white/5 transition-colors cursor-pointer ${!notif.read ? 'bg-purple-500/5' : ''}`}
+                                  className={`w-full border-b border-white/5 p-3 text-left transition-colors hover:bg-white/5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-[#FFD700] ${!notif.read ? 'bg-purple-500/5' : ''}`}
                                   onClick={() => {
                                     markAsRead(notif.id);
                                     const path = getNotificationPath(notif);
@@ -470,7 +469,7 @@ const Navbar = () => {
                                       </div>
                                     </div>
                                   </div>
-                                </div>
+                                </button>
                               );
                             })
                           ) : teamInvites.length === 0 && (
@@ -488,9 +487,11 @@ const Navbar = () => {
 
                 {/* User Menu */}
                 <div className="relative group">
-                  <div
+                  <button
+                    type="button"
+                    aria-label="Open user menu"
                     onClick={() => setShowUserMenu(!showUserMenu)}
-                    className="flex items-center gap-1 sm:gap-2 px-1 sm:pr-3 py-1 bg-white/5 hover:bg-white/10 border border-white/10 rounded-full cursor-pointer transition-all"
+                    className="flex min-h-[40px] items-center gap-1 rounded-full border border-white/10 bg-white/5 px-1 py-1 transition-all hover:bg-white/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#FFD700] sm:gap-2 sm:pr-3"
                   >
                     <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-gradient-to-br from-purple-500 to-blue-500 overflow-hidden relative flex-shrink-0">
                       {user.avatar && (
@@ -511,7 +512,7 @@ const Navbar = () => {
                         </span>
                       )}
                     </div>
-                  </div>
+                  </button>
 
                   {/* Dropdown Menu */}
                   {showUserMenu && (
@@ -521,6 +522,7 @@ const Navbar = () => {
                         <p className="text-[10px] sm:text-xs text-gray-400 truncate">{user.email || user.wallet}</p>
                       </div>
                       <button
+                        type="button"
                         onClick={() => { router.push('/profile'); setShowUserMenu(false); }}
                         className="w-full text-left px-3 sm:px-4 py-2 sm:py-3 text-xs sm:text-sm text-gray-300 hover:bg-white/5 hover:text-white flex items-center gap-2"
                       >
@@ -528,6 +530,7 @@ const Navbar = () => {
                       </button>
 
                       <button
+                        type="button"
                         onClick={() => { router.push('/settings/tokens'); setShowUserMenu(false); }}
                         className="w-full text-left px-3 sm:px-4 py-2 sm:py-3 text-xs sm:text-sm text-gray-300 hover:bg-white/5 hover:text-white flex items-center gap-2"
                       >
@@ -535,6 +538,7 @@ const Navbar = () => {
                       </button>
                       {user.needsWalletConnect && (
                         <button
+                          type="button"
                           onClick={() => { setShowWalletPopup(true); setShowUserMenu(false); }}
                           className="w-full text-left px-3 sm:px-4 py-2 sm:py-3 text-xs sm:text-sm text-yellow-400 hover:bg-yellow-500/10 flex items-center gap-2"
                         >
@@ -542,6 +546,7 @@ const Navbar = () => {
                         </button>
                       )}
                       <button
+                        type="button"
                         onClick={() => { signOut(); setShowUserMenu(false); router.push('/landing'); }}
                         className="w-full text-left px-3 sm:px-4 py-2 sm:py-3 text-xs sm:text-sm text-red-400 hover:bg-red-500/10 flex items-center gap-2 border-t border-white/5"
                       >
@@ -556,118 +561,127 @@ const Navbar = () => {
             )}
 
             {/* Mobile Menu Toggle */}
-            <button onClick={() => setIsOpen(!isOpen)} className="md:hidden text-white">
+            <button type="button" aria-label={isOpen ? 'Close menu' : 'Open menu'} onClick={() => setIsOpen(!isOpen)} className="md:hidden min-h-[40px] min-w-[40px] text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#FFD700]">
               {isOpen ? <X /> : <Menu />}
             </button>
           </div>
-        </motion.div>
+        </div>
 
         {/* Mobile Menu Overlay */}
         {isOpen && (
-          <motion.div
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="pointer-events-auto absolute top-20 left-4 right-4 bg-[#0F0F0F] border border-white/10 rounded-2xl p-4 flex flex-col gap-4 md:hidden shadow-2xl z-50"
-          >
+          <div className="md:hidden border-t border-white/10 bg-[#050505] px-4 py-3 flex flex-col gap-1">
             {navLinks.map((link) => {
               if (link.isDropdown) {
                 return (
                   <div key={link.name}>
                     <button
+                      type="button"
                       onClick={() => setShowMoreMenu(!showMoreMenu)}
-                      className="px-4 py-3 hover:bg-white/5 rounded-xl text-gray-300 text-left flex items-center gap-3"
+                      className="w-full px-3 py-3 hover:bg-white/5 text-gray-300 text-left flex items-center gap-3 font-mono text-xs uppercase tracking-wider"
                     >
-                      <link.icon className="w-5 h-5" />
+                      <link.icon className="w-4 h-4" />
                       {link.name}
                     </button>
-                    <AnimatePresence>
-                      {showMoreMenu && (
-                        <motion.div
-                          initial={{ opacity: 0, height: 0 }}
-                          animate={{ opacity: 1, height: 'auto' }}
-                          exit={{ opacity: 0, height: 0 }}
-                          className="overflow-hidden"
-                        >
-                          {moreLinks.map((subLink) => (
-                            <button
-                              key={subLink.name}
-                              onClick={() => {
-                                router.push(subLink.route);
-                                setIsOpen(false);
-                                setShowMoreMenu(false);
-                              }}
-                              className="w-full text-left pl-10 pr-4 py-3 text-sm text-gray-400 hover:bg-white/5 rounded-xl flex items-center gap-3"
-                            >
-                              <subLink.icon className="w-4 h-4" />
-                              {subLink.name}
-                            </button>
-                          ))}
-                        </motion.div>
-                      )}
-                    </AnimatePresence>
+                    {showMoreMenu && (
+                      <div>
+                        {moreLinks.map((subLink) => (
+                          <button
+                            type="button"
+                            key={subLink.name}
+                            onClick={() => {
+                              router.push(subLink.route);
+                              setIsOpen(false);
+                              setShowMoreMenu(false);
+                            }}
+                            className="w-full text-left pl-10 pr-3 py-2.5 text-xs text-gray-400 hover:bg-white/5 flex items-center gap-3 font-mono uppercase tracking-wider"
+                          >
+                            <subLink.icon className="w-3.5 h-3.5" />
+                            {subLink.name}
+                          </button>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 );
               }
               return (
                 <button
+                  type="button"
                   key={link.name}
                   onClick={() => {
                     router.push(link.route);
                     setIsOpen(false);
                   }}
-                  className="px-4 py-3 hover:bg-white/5 rounded-xl text-gray-300 text-left flex items-center gap-3"
+                  className="w-full px-3 py-3 hover:bg-white/5 text-gray-300 text-left flex items-center gap-3 font-mono text-xs uppercase tracking-wider"
                 >
-                  <link.icon className="w-5 h-5" />
+                  <link.icon className="w-4 h-4" />
                   {link.name}
                 </button>
               );
             })}
             {user && (
               <button
+                type="button"
                 onClick={() => {
                   router.push('/profile');
                   setIsOpen(false);
                 }}
-                className="px-4 py-3 hover:bg-white/5 rounded-xl text-gray-300 text-left flex items-center gap-3 border-t border-white/5"
+                className="w-full px-3 py-3 hover:bg-white/5 text-gray-300 text-left flex items-center gap-3 border-t border-white/10 font-mono text-xs uppercase tracking-wider"
               >
-                <UserIcon className="w-5 h-5" /> My Profile
+                <UserIcon className="w-4 h-4" /> My Profile
               </button>
             )}
-          </motion.div>
+          </div>
         )}
       </nav>
 
-      {/* Mobile Bottom Tab Bar */}
-      <div className="md:hidden fixed bottom-4 left-1/2 -translate-x-1/2 z-50 w-[94%] max-w-md">
-        <div className="relative rounded-full border border-white/10 bg-[#0F0F0F]/95 backdrop-blur-xl px-4 py-3 shadow-2xl">
-          <div className="grid grid-cols-5 items-center text-xs">
-            <button onClick={() => router.push('/home')} className={`flex flex-col items-center gap-1 ${pathname?.startsWith('/home') ? 'text-[#FFD700]' : 'text-gray-400'}`}>
-              <LayoutGrid className="w-5 h-5" />
-            </button>
-            <button onClick={() => router.push('/idea')} className={`flex flex-col items-center gap-1 ${pathname?.startsWith('/idea') ? 'text-[#FFD700]' : 'text-gray-400'}`}>
-              <Lightbulb className="w-5 h-5" />
-            </button>
+      {/* Mobile Bottom Tab Bar — flat dock */}
+      <div className="md:hidden fixed bottom-0 left-0 right-0 z-50 border-t border-white/10 bg-[#050505]">
+        <div className="grid grid-cols-5 items-center px-2 py-2 safe-area-pb">
+          <button
+            type="button"
+            onClick={() => router.push('/home')}
+            className={`flex flex-col items-center gap-0.5 min-h-[44px] justify-center text-[9px] font-mono uppercase tracking-wider ${pathname?.startsWith('/home') ? 'text-[#FFD700]' : 'text-gray-500'}`}
+          >
+            <LayoutGrid className="w-5 h-5" />
+            Home
+          </button>
+          <button
+            type="button"
+            onClick={() => router.push('/idea')}
+            className={`flex flex-col items-center gap-0.5 min-h-[44px] justify-center text-[9px] font-mono uppercase tracking-wider ${pathname?.startsWith('/idea') ? 'text-[#FFD700]' : 'text-gray-500'}`}
+          >
+            <Lightbulb className="w-5 h-5" />
+            Ideas
+          </button>
 
-            <div className="flex justify-center -mt-8">
-              <button
-                onClick={() => openSubmitModal('idea')}
-                className="w-14 h-14 rounded-full bg-[#FFD700] text-black flex items-center justify-center shadow-[0_8px_28px_rgba(255,215,0,0.45)] border-4 border-[#0F0F0F]"
-                aria-label="Create idea"
-              >
-                <Plus className="w-7 h-7" />
-              </button>
-            </div>
-
-            <button onClick={() => router.push('/feeds')} className={`flex flex-col items-center gap-1 ${pathname?.startsWith('/feeds') ? 'text-[#FFD700]' : 'text-gray-400'}`}>
-              <Rss className="w-5 h-5" />
-            </button>
+          <div className="flex justify-center">
             <button
-              onClick={() => (user ? router.push('/profile') : openConnectReminder())}
-              className={`flex flex-col items-center gap-1 ${pathname?.startsWith('/profile') ? 'text-[#FFD700]' : 'text-gray-400'}`}
+              type="button"
+              onClick={() => openSubmitModal('idea')}
+              className="w-11 h-11 rounded-sm bg-[#FFD700] text-black flex items-center justify-center"
+              aria-label="Create idea"
             >
-              <UserIcon className="w-5 h-5" />
+              <Plus className="w-6 h-6" />
             </button>
           </div>
+
+          <button
+            type="button"
+            onClick={() => router.push('/feeds')}
+            className={`flex flex-col items-center gap-0.5 min-h-[44px] justify-center text-[9px] font-mono uppercase tracking-wider ${pathname?.startsWith('/feeds') ? 'text-[#FFD700]' : 'text-gray-500'}`}
+          >
+            <Rss className="w-5 h-5" />
+            Feeds
+          </button>
+          <button
+            type="button"
+            onClick={() => (user ? router.push('/profile') : openConnectReminder())}
+            className={`flex flex-col items-center gap-0.5 min-h-[44px] justify-center text-[9px] font-mono uppercase tracking-wider ${pathname?.startsWith('/profile') ? 'text-[#FFD700]' : 'text-gray-500'}`}
+          >
+            <UserIcon className="w-5 h-5" />
+            You
+          </button>
         </div>
       </div>
     </>

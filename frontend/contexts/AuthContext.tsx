@@ -1,17 +1,49 @@
 'use client';
 
-import React, { createContext, useContext, useEffect, useState, useCallback, useRef } from 'react';
+import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
 import { User as SupabaseUser, Session } from '@supabase/supabase-js';
-import { useWallet } from '@solana/wallet-adapter-react';
-import { WalletReadyState } from '@solana/wallet-adapter-base';
-import bs58 from 'bs58';
-import { Capacitor } from '@capacitor/core';
-import { App } from '@capacitor/app';
-import { Browser } from '@capacitor/browser';
 import { supabase } from '@/lib/supabase';
 import { apiClient } from '@/lib/api-client';
 import { User } from '@/lib/types';
 import { logger } from '@/lib/logger';
+import {
+  clearBackendSessionHints,
+  hasBackendSessionHint,
+  hasLegacyAuthToken,
+  markBackendSessionPresent,
+} from '@/lib/session';
+
+type NativeBridge = {
+  isNativeApp: boolean;
+  App?: {
+    addListener: (eventName: 'appUrlOpen', listenerFunc: (event: { url: string }) => void | Promise<void>) => Promise<{ remove: () => void }>;
+  };
+  Browser?: {
+    open: (options: { url: string; windowName?: string }) => Promise<void>;
+    close: () => Promise<void>;
+  };
+};
+
+async function loadNativeBridge(): Promise<NativeBridge> {
+  if (typeof window === 'undefined') {
+    return { isNativeApp: false };
+  }
+
+  const capacitor = (window as Window & {
+    Capacitor?: { isNativePlatform?: () => boolean };
+  }).Capacitor;
+
+  if (!capacitor?.isNativePlatform?.()) {
+    return { isNativeApp: false };
+  }
+
+  const [{ App }, { Browser }] = await Promise.all([
+    import('@capacitor/app'),
+    import('@capacitor/browser'),
+  ]);
+
+  return { isNativeApp: true, App, Browser };
+}
 
 interface AuthContextType {
   supabaseUser: SupabaseUser | null;
@@ -46,21 +78,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [showWalletPopup, setShowWalletPopup] = useState(false);
   const [showWalletEmailPopup, setShowWalletEmailPopup] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
-  const userRef = useRef<User | null>(null);
-  const authInitializationStartedRef = useRef(false);
-
-  useEffect(() => {
-    userRef.current = user;
-  }, [user]);
-
-  const {
-    wallets,
-    select,
-    connect,
-    connected,
-    publicKey,
-    signMessage,
-  } = useWallet();
 
   // Check if current user is admin
   const checkAdminStatus = useCallback(async () => {
@@ -90,10 +107,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       logger.debug('[Auth] Login response:', response.success, response.error);
 
       if (response.success && response.data) {
-        // Token should be saved automatically by apiFetch, but let's ensure it
+        // Backend sets the JWT as an httpOnly cookie; keep only a non-sensitive hint.
         if (response.data.token) {
-          localStorage.setItem('auth_token', response.data.token);
-          logger.debug('[Auth] Token saved successfully');
+          markBackendSessionPresent();
+          logger.debug('[Auth] Backend session cookie established');
         }
 
         const userData: User = {
@@ -134,14 +151,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         console.warn('[Auth] Login API failed:', response.error);
         setUser(null);
         setIsAdmin(false);
-        localStorage.removeItem('auth_token');
+        clearBackendSessionHints();
         return null;
       }
     } catch (error) {
       console.error('[Auth] Email login error:', error);
       setUser(null);
       setIsAdmin(false);
-      localStorage.removeItem('auth_token');
+      clearBackendSessionHints();
       return null;
     }
   }, [checkAdminStatus]);
@@ -186,7 +203,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setShowWalletPopup(false);
       setShowWalletEmailPopup(false);
       setIsAdmin(false);
-      localStorage.removeItem('auth_token');
+      clearBackendSessionHints();
 
       // If there's a valid Supabase session, try to re-login to backend
       if (session?.user) {
@@ -258,20 +275,33 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           }
         }
 
-        await Browser.close();
+        const nativeBridge = await loadNativeBridge();
+        await nativeBridge.Browser?.close();
       } catch (err) {
         console.error('Error handling appUrlOpen:', err);
       }
     };
 
     handleHashFragment();
-    const isNativeApp = Capacitor.isNativePlatform && Capacitor.isNativePlatform();
     let appUrlOpenListener: { remove: () => void } | null = null;
-    if (isNativeApp) {
-      App.addListener('appUrlOpen', handleAppUrlOpen).then((listener) => {
-        appUrlOpenListener = listener;
+    let cancelled = false;
+
+    loadNativeBridge()
+      .then((nativeBridge) => {
+        if (cancelled || !nativeBridge.isNativeApp || !nativeBridge.App) {
+          return;
+        }
+
+        return nativeBridge.App.addListener('appUrlOpen', handleAppUrlOpen);
+      })
+      .then((listener) => {
+        if (listener) {
+          appUrlOpenListener = listener;
+        }
+      })
+      .catch((error) => {
+        console.error('Failed to initialize native auth bridge:', error);
       });
-    }
 
     // Get initial session and validate it with retry logic
     const initializeAuth = async () => {
@@ -293,14 +323,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           setSession(session);
           setSupabaseUser(session.user);
 
-          // Check if we already have a valid token - try to get current user first
-          const existingToken = localStorage.getItem('auth_token');
-          logger.debug('[Auth] Existing token:', existingToken ? 'found' : 'not found');
+          // Check if we already have a backend session cookie or legacy token.
+          const hasBackendSession = hasBackendSessionHint() || hasLegacyAuthToken();
+          logger.debug('[Auth] Existing backend session:', hasBackendSession ? 'hint found' : 'not found');
 
-          // If we have a token, try to get current user first (faster than full login)
-          if (existingToken) {
+          // If we have a backend session hint, try to get current user first.
+          if (hasBackendSession) {
             try {
-              const userResponse = await apiClient.getCurrentUser();
+              const userResponse = await apiClient.getCurrentUser({ suppressAuthEvent: true });
               if (userResponse.success && userResponse.data) {
                 logger.debug('[Auth] Existing session valid, user data fetched');
                 const userData: User = {
@@ -325,8 +355,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 return;
               }
             } catch (e) {
-              logger.debug('[Auth] Existing token invalid, will re-login');
-              localStorage.removeItem('auth_token');
+              logger.debug('[Auth] Existing backend session invalid, will re-login');
+              clearBackendSessionHints();
             }
           }
 
@@ -345,7 +375,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             // Backend validation failed after retry
             console.warn('[Auth] Backend login failed after retry - user may need to re-login');
           } else {
-            logger.debug('[Auth] Login successful, token saved:', !!localStorage.getItem('auth_token'));
+            logger.debug('[Auth] Login successful, backend session established');
           }
         } else {
           // No Supabase session. Keep supporting wallet-first login via backend JWT.
@@ -353,9 +383,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           setSupabaseUser(null);
           setSession(null);
 
-          const existingToken = localStorage.getItem('auth_token');
-          if (existingToken) {
-            const userResponse = await apiClient.getCurrentUser();
+          const hasBackendSession = hasBackendSessionHint() || hasLegacyAuthToken();
+          if (hasBackendSession) {
+            const userResponse = await apiClient.getCurrentUser({ suppressAuthEvent: true });
             if (userResponse.success && userResponse.data) {
               const walletUser: User = {
                 id: userResponse.data.id,
@@ -379,7 +409,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 setShowWalletEmailPopup(true);
               }
             } else {
-              localStorage.removeItem('auth_token');
+              clearBackendSessionHints();
               setUser(null);
             }
           } else {
@@ -390,16 +420,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         console.error('[Auth] Auth initialization error:', error);
         // On error, just clear user data but keep Supabase session
         setUser(null);
-        localStorage.removeItem('auth_token');
+        clearBackendSessionHints();
       } finally {
         setIsLoading(false);
       }
     };
 
-    if (!authInitializationStartedRef.current) {
-      authInitializationStartedRef.current = true;
-      void initializeAuth();
-    }
+    initializeAuth();
 
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
@@ -410,9 +437,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         if (event === 'SIGNED_IN' && session?.user) {
           // Supabase can emit SIGNED_IN on tab focus/session refresh.
           // If app user + backend token are already present, skip re-login to prevent UI flicker.
-          const hasBackendToken = !!localStorage.getItem('auth_token');
-          const hasHydratedUser = !!userRef.current;
-          if (hasHydratedUser && hasBackendToken) {
+          const hasBackendSession = hasBackendSessionHint() || hasLegacyAuthToken();
+          const hasHydratedUser = !!user;
+          if (hasHydratedUser && hasBackendSession) {
             return;
           }
 
@@ -420,8 +447,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           if (shouldShowLoading) {
             setIsLoading(true);
           }
-          // Only treat as a brand-new login when app has no user and no backend token.
-          await processEmailLogin(session.user, !hasHydratedUser && !hasBackendToken);
+          // Only treat as a brand-new login when app has no user and no backend session.
+          await processEmailLogin(session.user, !hasHydratedUser && !hasBackendSession);
           if (shouldShowLoading) {
             setIsLoading(false);
           }
@@ -431,21 +458,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           setShowWalletPopup(false);
           setShowWalletEmailPopup(false);
           setIsAdmin(false);
-          localStorage.removeItem('auth_token');
+          clearBackendSessionHints();
         }
       }
     );
 
     return () => {
+      cancelled = true;
       if (appUrlOpenListener) {
         appUrlOpenListener.remove();
       }
       subscription.unsubscribe();
     };
-  }, [checkAdminStatus, processEmailLogin]);
+  }, [processEmailLogin, user]);
 
   const signInWithGoogle = async () => {
-    const isNativeApp = Capacitor.isNativePlatform && Capacitor.isNativePlatform();
+    const nativeBridge = await loadNativeBridge();
+    const isNativeApp = nativeBridge.isNativeApp;
     const redirectUri = isNativeApp
       ? 'com.gimmeidea.app://auth/callback'
       : `${window.location.origin}/auth/callback`;
@@ -464,92 +493,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     if (error) throw error;
 
-    if (isNativeApp && data?.url) {
+    if (isNativeApp && data?.url && nativeBridge.Browser) {
       // Open OAuth in in-app browser (avoids jumping to external browser).
-      await Browser.open({ url: data.url, windowName: '_self' });
+      await nativeBridge.Browser.open({ url: data.url, windowName: '_self' });
     }
   };
 
   const signInWithWallet = async () => {
-    try {
-      setIsLoading(true);
-
-      // Ensure wallet connected
-      if (!connected || !publicKey) {
-        const preferredWallet = wallets.find((w) => w.adapter.connected)
-          || wallets.find((w) =>
-            w.readyState === WalletReadyState.Installed || w.readyState === WalletReadyState.Loadable
-          );
-
-        if (!preferredWallet) {
-          throw new Error('No Solana wallet found. Please install Phantom or Solflare.');
-        }
-
-        select(preferredWallet.adapter.name);
-        await connect();
-      }
-
-      let activePublicKey = publicKey;
-      let activeSignMessage = signMessage;
-
-      // After connect(), hook state may still be catching up in the same tick.
-      if ((!activePublicKey || !activeSignMessage) && connected) {
-        const connectedAdapter = wallets.find((w) => w.adapter.connected)?.adapter as any;
-        activePublicKey = connectedAdapter?.publicKey || activePublicKey;
-        activeSignMessage = connectedAdapter?.signMessage || activeSignMessage;
-      }
-
-      if (!activePublicKey || !activeSignMessage) {
-        throw new Error('Wallet not ready for signing. Please try again.');
-      }
-
-      const timestamp = new Date().toISOString();
-      const walletAddress = activePublicKey.toBase58();
-      const message = `Sign in to GimmeIdea\n\nTimestamp: ${timestamp}\nWallet: ${walletAddress}`;
-      const encoded = new TextEncoder().encode(message);
-      const signatureBytes = await activeSignMessage(encoded);
-      const signature = bs58.encode(signatureBytes);
-
-      const response = await apiClient.login({
-        publicKey: walletAddress,
-        signature,
-        message,
-      });
-
-      if (!response.success || !response.data) {
-        throw new Error(response.error || 'Wallet login failed');
-      }
-
-      localStorage.setItem('auth_token', response.data.token);
-
-      const userData: User = {
-        id: response.data.user.id,
-        wallet: response.data.user.wallet || walletAddress,
-        username: response.data.user.username,
-        reputation: response.data.user.reputationScore || 0,
-        balance: response.data.user.balance || 0,
-        projects: [],
-        avatar: response.data.user.avatar,
-        coverImage: response.data.user.coverImage,
-        bio: response.data.user.bio,
-        socials: response.data.user.socialLinks,
-        email: response.data.user.email,
-        authProvider: response.data.user.authProvider || 'wallet',
-        authId: response.data.user.authId,
-        needsWalletConnect: response.data.user.needsWalletConnect || false,
-      };
-
-      setUser(userData);
-      setIsNewUser((response.data.user.loginCount || 0) <= 1);
-      setShowWalletPopup(false);
-      setShowWalletEmailPopup((userData.authProvider || 'wallet') === 'wallet' && !userData.email);
-      checkAdminStatus();
-    } catch (error) {
-      console.error('[Auth] Wallet login error:', error);
-      throw error;
-    } finally {
-      setIsLoading(false);
-    }
+    setShowWalletPopup(true);
   };
 
   const mapUser = (src: any, fallbackProvider: 'wallet' | 'google' | 'agent' = 'wallet'): User => ({
@@ -577,7 +528,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         throw new Error(response.error || 'Agent login failed');
       }
 
-      localStorage.setItem('auth_token', response.data.token);
+      markBackendSessionPresent();
       setUser(mapUser(response.data.user, 'agent'));
       setIsNewUser(false);
       setShowWalletPopup(false);
@@ -596,7 +547,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         throw new Error(response.error || 'Agent register failed');
       }
 
-      localStorage.setItem('auth_token', response.data.token);
+      markBackendSessionPresent();
       setUser(mapUser(response.data.user, 'agent'));
       setIsNewUser(true);
       setShowWalletPopup(false);
@@ -648,6 +599,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } catch (error) {
       console.error('Sign out error:', error);
     }
+    try {
+      await apiClient.logout();
+    } catch (error) {
+      console.error('Backend logout error:', error);
+    }
     // Always clear local state even if supabase signout fails
     setUser(null);
     setSupabaseUser(null);
@@ -656,7 +612,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setShowWalletPopup(false);
     setShowWalletEmailPopup(false);
     setIsAdmin(false);
-    localStorage.removeItem('auth_token');
+    clearBackendSessionHints();
     // Clear any other cached data
     localStorage.removeItem('gimme_ai_chat_sessions');
   };

@@ -1,10 +1,9 @@
 'use client';
 
 import React from 'react';
-import ReactMarkdown from 'react-markdown';
+import ReactMarkdown, { defaultUrlTransform } from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import remarkBreaks from 'remark-breaks';
-import rehypeRaw from 'rehype-raw';
 
 interface MarkdownContentProps {
   content: string;
@@ -16,7 +15,7 @@ export const MarkdownContent: React.FC<MarkdownContentProps> = ({ content, class
     <div className={`markdown-content ${className}`}>
       <ReactMarkdown
         remarkPlugins={[remarkGfm, remarkBreaks]}
-        rehypePlugins={[rehypeRaw]}
+        urlTransform={defaultUrlTransform}
         components={{
         // Headings
         h1: ({ node, ...props }) => (
@@ -57,10 +56,10 @@ export const MarkdownContent: React.FC<MarkdownContentProps> = ({ content, class
         // Links
         a: ({ node, ...props }) => (
           <a
+            {...props}
             className="text-[#FFD700] hover:text-[#FFC700] underline transition-colors"
             target="_blank"
             rel="noopener noreferrer"
-            {...props}
           />
         ),
 

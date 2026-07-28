@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { MAINTENANCE_MODE } from './lib/maintenance-config';
 
-export function middleware(req: NextRequest) {
+export function proxy(req: NextRequest) {
   const host = req.headers.get('host') || '';
   const { pathname } = req.nextUrl;
 
@@ -30,5 +30,5 @@ export function middleware(req: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/((?!_next/static|_next/image|favicon.ico).*)']
+  matcher: ['/((?!_next/static|_next/image|favicon.ico).*)'],
 };

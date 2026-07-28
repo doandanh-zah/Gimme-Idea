@@ -7,6 +7,7 @@ import { useWallet } from '@solana/wallet-adapter-react';
 import { usePasskeyWallet } from '@/contexts/LazorkitContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { apiClient } from '@/lib/api-client';
+import { markBackendSessionPresent } from '@/lib/session';
 import { LoadingLightbulb } from './LoadingLightbulb';
 import toast from 'react-hot-toast';
 import bs58 from 'bs58';
@@ -27,7 +28,17 @@ export const ConnectWalletPopup = () => {
   const [step, setStep] = useState<Step>('initial');
   const [isMinimized, setIsMinimized] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
-  const { showWalletPopup, setShowWalletPopup, setIsNewUser, user, setUser, refreshUser, signInWithGoogle, isLoading } = useAuth();
+  const {
+    showWalletPopup,
+    setShowWalletPopup,
+    setShowWalletEmailPopup,
+    setIsNewUser,
+    user,
+    setUser,
+    refreshUser,
+    signInWithGoogle,
+    isLoading,
+  } = useAuth();
   const { wallets, select, connect, publicKey, signMessage, connected, disconnect } = useWallet();
   const { isPasskeyConnected, passkeyWalletAddress, connectPasskey, disconnectPasskey, signPasskeyMessage, isPasskeyConnecting } = usePasskeyWallet();
   const [isSigningInGoogle, setIsSigningInGoogle] = useState(false);
@@ -61,60 +72,96 @@ export const ConnectWalletPopup = () => {
     }
   }, [showWalletPopup]);
 
-  // Handle wallet connection and linking
+  // Handle wallet connection, then either link to an email account or sign in wallet-first.
   useEffect(() => {
     const linkWalletToAccount = async () => {
       // Prevent multiple calls
       if (isLinkingRef.current) return;
       
-      if (step === 'connecting' && connected && publicKey && signMessage && user) {
+      if (step === 'connecting' && connected && publicKey && signMessage) {
         isLinkingRef.current = true;
         
         try {
-          // Create message for signing
           const timestamp = new Date().toISOString();
-          const message = `Link wallet to GimmeIdea\n\nTimestamp: ${timestamp}\nWallet: ${publicKey.toBase58()}\nEmail: ${user.email}`;
-          
-          // Request signature
+          const walletAddress = publicKey.toBase58();
+          const message = user
+            ? `Link wallet to GimmeIdea\n\nTimestamp: ${timestamp}\nWallet: ${walletAddress}\nEmail: ${user.email}`
+            : `Sign in to GimmeIdea\n\nTimestamp: ${timestamp}\nWallet: ${walletAddress}`;
+
           const encodedMessage = new TextEncoder().encode(message);
           const signature = await signMessage(encodedMessage);
           const signatureBase58 = bs58.encode(signature);
 
-          // Send to backend
-          const response = await apiClient.linkWallet({
-            walletAddress: publicKey.toBase58(),
-            signature: signatureBase58,
-            message,
-          });
-
-          if (response.success && response.data) {
-            // Update user with new wallet
-            setUser({
-              ...user,
-              wallet: publicKey.toBase58(),
-              needsWalletConnect: false,
-              reputation: response.data.user.reputationScore || user.reputation,
-              balance: response.data.user.balance || user.balance,
+          if (!user) {
+            const response = await apiClient.login({
+              publicKey: walletAddress,
+              signature: signatureBase58,
+              message,
             });
 
-            if (response.data.merged) {
-              toast.success('Wallet linked & data merged from existing account!', { duration: 5000 });
-            } else {
-              toast.success('Wallet connected successfully!');
+            if (!response.success || !response.data) {
+              throw new Error(response.error || 'Wallet login failed');
             }
 
-            setIsNewUser(false);
+            markBackendSessionPresent();
+
+            const userData = {
+              id: response.data.user.id,
+              wallet: response.data.user.wallet || walletAddress,
+              username: response.data.user.username,
+              reputation: response.data.user.reputationScore || 0,
+              balance: response.data.user.balance || 0,
+              projects: [],
+              avatar: response.data.user.avatar,
+              coverImage: response.data.user.coverImage,
+              bio: response.data.user.bio,
+              socials: response.data.user.socialLinks,
+              email: response.data.user.email,
+              authProvider: response.data.user.authProvider || 'wallet',
+              authId: response.data.user.authId,
+              needsWalletConnect: response.data.user.needsWalletConnect || false,
+            };
+
+            setUser(userData);
+            setIsNewUser((response.data.user.loginCount || 0) <= 1);
+            setShowWalletEmailPopup((userData.authProvider || 'wallet') === 'wallet' && !userData.email);
             setShowWalletPopup(false);
+            toast.success('Signed in with wallet');
           } else {
-            throw new Error(response.error || 'Failed to link wallet');
+            const response = await apiClient.linkWallet({
+              walletAddress,
+              signature: signatureBase58,
+              message,
+            });
+
+            if (response.success && response.data) {
+              setUser({
+                ...user,
+                wallet: walletAddress,
+                needsWalletConnect: false,
+                reputation: response.data.user.reputationScore || user.reputation,
+                balance: response.data.user.balance || user.balance,
+              });
+
+              if (response.data.merged) {
+                toast.success('Wallet linked & data merged from existing account!', { duration: 5000 });
+              } else {
+                toast.success('Wallet connected successfully!');
+              }
+
+              setIsNewUser(false);
+              setShowWalletPopup(false);
+            } else {
+              throw new Error(response.error || 'Failed to link wallet');
+            }
           }
         } catch (error: any) {
-          console.error('Link wallet error:', error);
+          console.error('Wallet auth error:', error);
           
           if (error.message?.includes('User rejected') || error.message?.includes('canceled')) {
             toast.error('Signature cancelled');
           } else {
-            toast.error(error.message || 'Failed to link wallet');
+            toast.error(error.message || 'Wallet authentication failed');
           }
           
           // Reset flag and disconnect
@@ -126,13 +173,22 @@ export const ConnectWalletPopup = () => {
     };
 
     linkWalletToAccount();
-  }, [step, connected, publicKey, signMessage, user, setUser, setIsNewUser, setShowWalletPopup, disconnect]);
+  }, [step, connected, publicKey, signMessage, user, setUser, setIsNewUser, setShowWalletEmailPopup, setShowWalletPopup, disconnect]);
 
   // Handle Passkey wallet connection and linking
   useEffect(() => {
     const linkPasskeyWalletToAccount = async () => {
       if (isLinkingRef.current) return;
       
+      if (step === 'connecting-passkey' && isPasskeyConnected && passkeyWalletAddress && !user) {
+        isLinkingRef.current = true;
+        toast.error('Sign in with Google first, then link a passkey wallet.');
+        await disconnectPasskey();
+        isLinkingRef.current = false;
+        setStep('select-wallet');
+        return;
+      }
+
       if (step === 'connecting-passkey' && isPasskeyConnected && passkeyWalletAddress && user) {
         isLinkingRef.current = true;
         
@@ -377,7 +433,7 @@ export const ConnectWalletPopup = () => {
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
-        className="absolute inset-0 bg-black/80 backdrop-blur-md" 
+        className="absolute inset-0 modal-overlay"
       />
         
       {/* Modal */}

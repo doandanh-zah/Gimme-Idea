@@ -14,7 +14,12 @@ import { uploadProjectImage } from '../lib/imgbb';
 import { sanitizeText, sanitizeUrl, hasDangerousContent } from '../lib/sanitize';
 
 export const SubmissionModal = () => {
-  const { isSubmitModalOpen, submitType, closeSubmitModal, addProject, user, openConnectReminder } = useAppStore();
+  const isSubmitModalOpen = useAppStore((state) => state.isSubmitModalOpen);
+  const submitType = useAppStore((state) => state.submitType);
+  const closeSubmitModal = useAppStore((state) => state.closeSubmitModal);
+  const addProject = useAppStore((state) => state.addProject);
+  const user = useAppStore((state) => state.user);
+  const openConnectReminder = useAppStore((state) => state.openConnectReminder);
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [status, setStatus] = useState<LoadingStatus>('loading');
@@ -223,7 +228,7 @@ export const SubmissionModal = () => {
       <motion.div 
         initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
         onClick={closeSubmitModal}
-        className="absolute inset-0 bg-black/80 backdrop-blur-sm"
+        className="absolute inset-0 modal-overlay"
       />
 
       <AnimatePresence mode="wait">
@@ -233,7 +238,7 @@ export const SubmissionModal = () => {
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
-                className="fixed inset-0 z-[101] flex items-center justify-center bg-[#050508]/95 backdrop-blur-xl"
+                className="fixed inset-0 z-[101] flex items-center justify-center bg-[#050505]/95"
              >
                  {status === 'success' ? (
                      <div className="relative w-full h-full flex items-center justify-center overflow-hidden">
@@ -266,10 +271,7 @@ export const SubmissionModal = () => {
                            initial={{ scale: 0.5, opacity: 0, y: 50 }}
                            animate={{ scale: 1, opacity: 1, y: 0 }}
                            transition={{ type: "spring", duration: 0.8, bounce: 0.4 }}
-                           className="relative z-10 bg-[#0F0F0F] border border-white/10 p-1 rounded-3xl backdrop-blur-2xl"
-                           style={{
-                               boxShadow: `0 0 100px ${glowColor}40`
-                           }}
+                           className="relative z-10 bg-[#0F0F0F] border border-white/10 p-1 rounded-3xl"
                         >
                            <div className="bg-[#0A0A0A] rounded-[20px] p-12 text-center relative overflow-hidden w-[90vw] max-w-md">
                                {/* Shimmer on Card */}

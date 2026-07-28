@@ -2,8 +2,7 @@
 
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Heart, Send, Copy, Check, ExternalLink, Sparkles, Coffee, Zap, Wallet, Shield } from 'lucide-react';
-import { TwitterIcon as Twitter } from './icons/SocialBrandIcons';
+import { Heart, Send, AtSign, Copy, Check, ExternalLink, Sparkles, Coffee, Zap, Wallet, Shield } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useAppStore } from '../lib/store';
 import { apiClient } from '../lib/api-client';
@@ -17,7 +16,7 @@ import { WalletRequiredModal } from './WalletRequiredModal';
 const MEMO_PROGRAM_ID = new PublicKey('MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr');
 
 export const Donate = () => {
-    const { openConnectReminder } = useAppStore();
+    const openConnectReminder = useAppStore((state) => state.openConnectReminder);
     const { user } = useAuth();
     
     // Standard Solana wallet adapter
@@ -194,22 +193,19 @@ export const Donate = () => {
     };
 
     return (
-        <div className="min-h-screen pt-20 sm:pt-24 pb-12 px-4 sm:px-6 relative overflow-hidden flex items-center">
-            <div className="max-w-6xl mx-auto w-full">
+        <div className="relative min-h-screen px-4 pt-28 pb-20 sm:px-6">
+            <div className="mx-auto w-full max-w-6xl">
                 {/* Header */}
                 <motion.div
                     initial={{ opacity: 0, y: -20 }}
                     animate={{ opacity: 1, y: 0 }}
-                    className="text-center mb-8 sm:mb-12"
+                    className="mb-8 border-b border-white/10 pb-8 sm:mb-10"
                 >
-                    <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-blue-500/10 border border-blue-500/20 mb-4">
-                        <Heart className="w-4 h-4 text-blue-400 fill-blue-400" />
-                        <span className="text-xs font-mono text-blue-400 uppercase tracking-wide">Support Open Source</span>
-                    </div>
-                    <h1 className="text-3xl sm:text-5xl font-display font-bold mb-4">
-                        Fuel the <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-500">Revolution</span>
+                    <div className="ui-eyebrow mb-4">Support Open Source</div>
+                    <h1 className="text-3xl font-semibold tracking-tight text-white sm:text-5xl">
+                        Support Gimme Idea
                     </h1>
-                    <p className="text-gray-400 max-w-xl mx-auto">
+                    <p className="mt-4 max-w-2xl text-base leading-7 text-gray-400">
                         Your contribution directly supports server costs, development, and keeping Gimme Idea free for the Solana community.
                     </p>
                 </motion.div>
@@ -222,10 +218,10 @@ export const Donate = () => {
                         animate={{ opacity: 1, x: 0 }}
                         transition={{ delay: 0.1 }}
                     >
-                        <div className="bg-gradient-to-br from-white/[0.08] to-white/[0.02] backdrop-blur-xl border border-white/10 rounded-2xl p-6 sm:p-8 h-full">
+                        <div className="h-full border border-white/10 bg-white/[0.03] p-6 sm:p-8">
                             <div className="flex items-center gap-3 mb-6">
-                                <div className="w-10 h-10 rounded-full bg-blue-500/20 flex items-center justify-center">
-                                    <Wallet className="w-5 h-5 text-blue-400" />
+                                <div className="flex h-10 w-10 items-center justify-center border border-[#FFD700]/30 bg-[#FFD700]/10">
+                                    <Wallet className="w-5 h-5 text-[#FFD700]" />
                                 </div>
                                 <div>
                                     <h2 className="font-bold text-lg">Send Donation</h2>
@@ -242,10 +238,10 @@ export const Donate = () => {
                                         exit={{ opacity: 0, scale: 0.95 }}
                                         className="text-center py-8"
                                     >
-                                        <div className="w-16 h-16 rounded-full bg-green-500/20 flex items-center justify-center mx-auto mb-4 border border-green-500/30">
+                                        <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center border border-green-500/30 bg-green-500/20">
                                             <Check className="w-8 h-8 text-green-400" />
                                         </div>
-                                        <h3 className="text-xl font-bold mb-2">Thank You! 🎉</h3>
+                                        <h3 className="text-xl font-bold mb-2">Thank you</h3>
                                         <p className="text-gray-400 text-sm mb-4">
                                             You sent <span className="text-white font-bold">{amount} SOL</span>
                                         </p>
@@ -272,7 +268,7 @@ export const Donate = () => {
                                             <h3 className="font-bold text-lg">Confirm Transaction</h3>
                                         </div>
                                         
-                                        <div className="bg-black/30 border border-white/10 rounded-xl p-4 mb-4">
+                                        <div className="mb-4 border border-white/10 bg-black/30 p-4">
                                             <div className="space-y-3">
                                                 <div className="flex justify-between items-center">
                                                     <span className="text-gray-400 text-sm">Action</span>
@@ -301,7 +297,7 @@ export const Donate = () => {
                                             </div>
                                         </div>
 
-                                        <div className="bg-green-500/10 border border-green-500/20 rounded-xl p-3 mb-4">
+                                        <div className="mb-4 border border-green-500/20 bg-green-500/10 p-3">
                                             <div className="flex items-start gap-2">
                                                 <Shield className="w-4 h-4 text-green-400 mt-0.5 flex-shrink-0" />
                                                 <p className="text-green-400 text-xs">
@@ -312,19 +308,21 @@ export const Donate = () => {
 
                                         <div className="flex gap-3">
                                             <button 
+                                                type="button"
                                                 onClick={() => setShowPreview(false)}
-                                                className="flex-1 py-3 bg-white/10 text-white font-medium rounded-xl hover:bg-white/20 transition-colors text-sm"
+                                                className="flex-1 border border-white/10 bg-white/[0.04] py-3 text-sm font-medium text-white transition-colors hover:bg-white/10"
                                             >
                                                 Back
                                             </button>
                                             <button 
+                                                type="button"
                                                 onClick={handleDonate}
                                                 disabled={isProcessing}
-                                                className="flex-1 py-3 bg-gradient-to-r from-blue-500 to-purple-600 text-white font-bold rounded-xl hover:opacity-90 transition-colors text-sm disabled:opacity-50"
+                                                className="flex-1 bg-[#FFD700] py-3 text-sm font-bold text-black transition-colors hover:bg-[#FDB931] disabled:opacity-50"
                                             >
                                                 {isProcessing ? (
                                                     <div className="flex items-center justify-center gap-2">
-                                                        <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                                                        <div className="h-4 w-4 animate-spin rounded-full border-2 border-black/20 border-t-black" />
                                                         Sending...
                                                     </div>
                                                 ) : (
@@ -346,11 +344,12 @@ export const Donate = () => {
                                             <div className="grid grid-cols-4 gap-2 mb-3">
                                                 {['0.1', '0.5', '1', '2'].map((val) => (
                                                     <button
+                                                        type="button"
                                                         key={val}
                                                         onClick={() => setAmount(val)}
-                                                        className={`py-2.5 rounded-xl font-mono text-sm font-bold transition-all ${
+                                                        className={`border py-2.5 font-mono text-sm font-bold transition-all ${
                                                             amount === val
-                                                                ? 'bg-blue-500 text-white shadow-lg shadow-blue-500/25'
+                                                                ? 'border-[#FFD700] bg-[#FFD700] text-black'
                                                                 : 'bg-white/5 text-gray-400 hover:bg-white/10 border border-white/10'
                                                         }`}
                                                     >
@@ -364,7 +363,7 @@ export const Donate = () => {
                                                     value={amount}
                                                     onChange={(e) => setAmount(e.target.value)}
                                                     step="0.1"
-                                                    className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-lg font-bold text-white outline-none focus:border-blue-500 transition-colors pr-16"
+                                                    className="w-full border border-white/10 bg-white/5 px-4 py-3 pr-16 text-lg font-bold text-white outline-none transition-colors focus:border-[#FFD700]"
                                                     placeholder="Custom"
                                                 />
                                                 <span className="absolute right-4 top-1/2 -translate-y-1/2 text-sm text-gray-500 font-mono">SOL</span>
@@ -378,19 +377,21 @@ export const Donate = () => {
                                                 type="text"
                                                 value={contributorName}
                                                 onChange={(e) => setContributorName(e.target.value)}
-                                                placeholder="Anonymous Hero"
-                                                className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white outline-none focus:border-blue-500 transition-colors text-sm"
+                                                placeholder="Anonymous supporter"
+                                                className="w-full border border-white/10 bg-white/5 px-4 py-3 text-sm text-white outline-none transition-colors focus:border-[#FFD700]"
                                             />
                                         </div>
 
                                         {/* Wallet Address */}
                                         <div className="mb-6">
                                             <label className="block text-xs font-medium text-gray-400 mb-2">Or send directly</label>
-                                            <div className="flex items-center gap-2 bg-black/30 border border-white/10 rounded-xl p-3">
+                                            <div className="flex items-center gap-2 border border-white/10 bg-black/30 p-3">
                                                 <code className="text-xs text-gray-400 font-mono truncate flex-1">{walletAddress}</code>
                                                 <button
+                                                    type="button"
                                                     onClick={handleCopy}
-                                                    className="p-2 hover:bg-white/10 rounded-lg transition-colors flex-shrink-0"
+                                                    aria-label="Copy treasury wallet address"
+                                                    className="flex-shrink-0 p-2 transition-colors hover:bg-white/10"
                                                 >
                                                     {copied ? <Check className="w-4 h-4 text-green-400" /> : <Copy className="w-4 h-4 text-gray-400" />}
                                                 </button>
@@ -400,13 +401,14 @@ export const Donate = () => {
                                         {/* Buttons */}
                                         <div className="space-y-3">
                                             <button
+                                                type="button"
                                                 onClick={initiateDonate}
                                                 disabled={isProcessing}
-                                                className="w-full py-3.5 bg-gradient-to-r from-blue-500 to-purple-600 rounded-xl font-bold text-white hover:opacity-90 transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-blue-500/20"
+                                                className="flex w-full items-center justify-center gap-2 bg-[#FFD700] py-3.5 font-bold text-black transition-all hover:bg-[#FDB931] disabled:cursor-not-allowed disabled:opacity-50"
                                             >
                                                 {isProcessing ? (
                                                     <>
-                                                        <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                                                        <div className="h-5 w-5 animate-spin rounded-full border-2 border-black/20 border-t-black" />
                                                         Processing...
                                                     </>
                                                 ) : (
@@ -416,6 +418,7 @@ export const Donate = () => {
                                                 )}
                                             </button>
                                             <button
+                                                type="button"
                                                 onClick={() => {
                                                     const amountNum = Number(amount);
                                                     if (isNaN(amountNum) || amountNum <= 0) {
@@ -426,7 +429,7 @@ export const Donate = () => {
                                                     const solanaUrl = `solana:${walletAddress}?amount=${amountNum}&label=GimmeIdea&message=${encodeURIComponent(message)}`;
                                                     window.open(solanaUrl, '_blank');
                                                 }}
-                                                className="w-full py-3 bg-white/5 border border-white/10 rounded-xl font-medium text-gray-300 hover:bg-white/10 transition-colors flex items-center justify-center gap-2"
+                                                className="flex w-full items-center justify-center gap-2 border border-white/10 bg-white/5 py-3 font-medium text-gray-300 transition-colors hover:bg-white/10"
                                             >
                                                 <ExternalLink className="w-4 h-4" /> Open in Wallet App
                                             </button>
@@ -445,35 +448,36 @@ export const Donate = () => {
                         className="flex flex-col gap-6"
                     >
                         {/* Builders */}
-                        <div className="bg-gradient-to-br from-white/[0.08] to-white/[0.02] backdrop-blur-xl border border-white/10 rounded-2xl p-6">
+                        <div className="border border-white/10 bg-white/[0.03] p-6">
                             <h2 className="font-bold text-lg mb-4 flex items-center gap-2">
-                                <span className="text-xl">👨‍🍳</span> We Cooked This
+                                <Heart className="h-5 w-5 text-[#FFD700]" />
+                                Builders
                             </h2>
                             
                             <div className="space-y-4">
                                 {/* ZAH */}
-                                <div className="flex items-center gap-4 p-3 rounded-xl bg-white/5 hover:bg-white/10 transition-colors">
-                                    <div className="w-12 h-12 rounded-full overflow-hidden border-2 border-purple-500/30 flex-shrink-0">
+                                <div className="flex items-center gap-4 border border-white/10 bg-white/5 p-3 transition-colors hover:bg-white/10">
+                                    <div className="h-12 w-12 flex-shrink-0 overflow-hidden border-2 border-[#FFD700]/30">
                                         <img src="/asset/zah.png" alt="ZAH" className="w-full h-full object-cover" />
                                     </div>
                                     <div className="min-w-0">
                                         <div className="flex items-center gap-2">
                                             <span className="font-bold">ZAH</span>
-                                            <span className="px-1.5 py-0.5 bg-purple-500/20 text-purple-400 rounded text-[10px] font-mono">FOUNDER</span>
+                                            <span className="bg-[#FFD700]/10 px-1.5 py-0.5 font-mono text-[10px] text-[#FFD700]">FOUNDER</span>
                                         </div>
                                         <p className="text-xs text-gray-500 truncate">President @ DUT Superteam UC</p>
                                     </div>
                                 </div>
 
                                 {/* THODIUM */}
-                                <div className="flex items-center gap-4 p-3 rounded-xl bg-white/5 hover:bg-white/10 transition-colors">
-                                    <div className="w-12 h-12 rounded-full overflow-hidden border-2 border-blue-500/30 flex-shrink-0">
+                                <div className="flex items-center gap-4 border border-white/10 bg-white/5 p-3 transition-colors hover:bg-white/10">
+                                    <div className="h-12 w-12 flex-shrink-0 overflow-hidden border-2 border-cyan-300/30">
                                         <img src="/asset/thodium.png" alt="THODIUM" className="w-full h-full object-cover" />
                                     </div>
                                     <div className="min-w-0">
                                         <div className="flex items-center gap-2">
                                             <span className="font-bold">THODIUM</span>
-                                            <span className="px-1.5 py-0.5 bg-blue-500/20 text-blue-400 rounded text-[10px] font-mono">CO-FOUNDER</span>
+                                            <span className="bg-cyan-300/10 px-1.5 py-0.5 font-mono text-[10px] text-cyan-200">CO-FOUNDER</span>
                                         </div>
                                         <p className="text-xs text-gray-500 truncate">Vice President @ DUT Superteam UC</p>
                                     </div>
@@ -482,18 +486,18 @@ export const Donate = () => {
                         </div>
 
                         {/* What Your Donation Supports */}
-                        <div className="bg-gradient-to-br from-white/[0.08] to-white/[0.02] backdrop-blur-xl border border-white/10 rounded-2xl p-6">
+                        <div className="border border-white/10 bg-white/[0.03] p-6">
                             <h2 className="font-bold text-lg mb-4">Your Support Powers</h2>
                             <div className="grid grid-cols-3 gap-3">
-                                <div className="text-center p-3 rounded-xl bg-white/5">
+                                <div className="border border-white/10 bg-white/5 p-3 text-center">
                                     <Coffee className="w-6 h-6 mx-auto mb-2 text-yellow-400" />
                                     <p className="text-xs text-gray-400">Coffee Fund</p>
                                 </div>
-                                <div className="text-center p-3 rounded-xl bg-white/5">
+                                <div className="border border-white/10 bg-white/5 p-3 text-center">
                                     <Zap className="w-6 h-6 mx-auto mb-2 text-blue-400" />
                                     <p className="text-xs text-gray-400">Servers</p>
                                 </div>
-                                <div className="text-center p-3 rounded-xl bg-white/5">
+                                <div className="border border-white/10 bg-white/5 p-3 text-center">
                                     <Sparkles className="w-6 h-6 mx-auto mb-2 text-purple-400" />
                                     <p className="text-xs text-gray-400">Features</p>
                                 </div>
@@ -506,16 +510,16 @@ export const Donate = () => {
                                 href="https://twitter.com/intent/tweet?text=Just%20supported%20Gimme%20Idea!&url=https://gimmeidea.com"
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="flex-1 bg-white/5 hover:bg-[#1DA1F2]/10 border border-white/10 hover:border-[#1DA1F2]/30 rounded-xl p-3 flex items-center justify-center gap-2 transition-all group"
+                                className="group flex flex-1 items-center justify-center gap-2 border border-white/10 bg-white/5 p-3 transition-all hover:border-[#1DA1F2]/30 hover:bg-[#1DA1F2]/10"
                             >
-                                <Twitter className="w-4 h-4 text-gray-400 group-hover:text-[#1DA1F2]" />
+                                <AtSign className="w-4 h-4 text-gray-400 group-hover:text-[#1DA1F2]" />
                                 <span className="text-sm text-gray-400 group-hover:text-white">Tweet</span>
                             </a>
                             <a
                                 href="https://t.me/+s7KW91Nf4G1iZWVl"
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="flex-1 bg-white/5 hover:bg-[#0088cc]/10 border border-white/10 hover:border-[#0088cc]/30 rounded-xl p-3 flex items-center justify-center gap-2 transition-all group"
+                                className="group flex flex-1 items-center justify-center gap-2 border border-white/10 bg-white/5 p-3 transition-all hover:border-[#0088cc]/30 hover:bg-[#0088cc]/10"
                             >
                                 <Send className="w-4 h-4 text-gray-400 group-hover:text-[#0088cc]" />
                                 <span className="text-sm text-gray-400 group-hover:text-white">Telegram</span>

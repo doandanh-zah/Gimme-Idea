@@ -27,7 +27,10 @@ const CommentItem: React.FC<CommentItemProps> = ({
     isReply = false,
     onTip
 }) => {
-    const { user, likeComment, dislikeComment, replyComment } = useAppStore();
+    const user = useAppStore((state) => state.user);
+    const likeComment = useAppStore((state) => state.likeComment);
+    const dislikeComment = useAppStore((state) => state.dislikeComment);
+    const replyComment = useAppStore((state) => state.replyComment);
     const [replyingTo, setReplyingTo] = useState(false);
     const [replyText, setReplyText] = useState('');
     const [showBurst, setShowBurst] = useState(false);
@@ -194,20 +197,18 @@ const CommentItem: React.FC<CommentItemProps> = ({
 };
 
 export const ProjectDetail = () => {
-  const {
-    projects,
-    selectedProjectId,
-    setView,
-    voteProject,
-    addComment,
-    user,
-    openConnectReminder,
-    tipComment,
-    openUserProfile,
-    handleRealtimeNewComment,
-    handleRealtimeUpdateComment,
-    handleRealtimeDeleteComment,
-  } = useAppStore();
+  const projects = useAppStore((state) => state.projects);
+  const selectedProjectId = useAppStore((state) => state.selectedProjectId);
+  const setView = useAppStore((state) => state.setView);
+  const voteProject = useAppStore((state) => state.voteProject);
+  const addComment = useAppStore((state) => state.addComment);
+  const user = useAppStore((state) => state.user);
+  const openConnectReminder = useAppStore((state) => state.openConnectReminder);
+  const tipComment = useAppStore((state) => state.tipComment);
+  const openUserProfile = useAppStore((state) => state.openUserProfile);
+  const handleRealtimeNewComment = useAppStore((state) => state.handleRealtimeNewComment);
+  const handleRealtimeUpdateComment = useAppStore((state) => state.handleRealtimeUpdateComment);
+  const handleRealtimeDeleteComment = useAppStore((state) => state.handleRealtimeDeleteComment);
   const [commentText, setCommentText] = useState('');
 
   // Payment Modal State

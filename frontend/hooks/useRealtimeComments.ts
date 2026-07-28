@@ -1,7 +1,10 @@
 import { useEffect, useRef } from "react";
 import { supabase } from "../lib/supabase";
 import { RealtimeChannel } from "@supabase/supabase-js";
-import { featureFlags } from "../lib/featureFlags";
+import {
+  isRealtimeChannelEnabled,
+  logRealtimeLifecycle,
+} from "../lib/realtime/registry";
 
 interface UseRealtimeCommentsProps {
   projectId: string;
@@ -33,15 +36,16 @@ export function useRealtimeComments({
   }, [onNewComment, onUpdateComment, onDeleteComment]);
 
   useEffect(() => {
-    if (featureFlags.disableRealtime) return;
+    if (!isRealtimeChannelEnabled("comments")) return;
     if (!projectId) return;
 
     let channel: RealtimeChannel;
+    const channelName = `comments-${projectId}`;
 
     const setupRealtimeSubscription = async () => {
       // Subscribe to comments for this specific project
       channel = supabase
-        .channel(`comments-${projectId}`)
+        .channel(channelName)
         .on(
           "postgres_changes",
           {
@@ -86,9 +90,12 @@ export function useRealtimeComments({
         )
         .subscribe((status) => {
           if (status === "CHANNEL_ERROR") {
+            logRealtimeLifecycle(channelName, "error", { status, projectId });
             console.error(
               `Failed to subscribe to comments for project ${projectId}`
             );
+          } else if (status === "SUBSCRIBED") {
+            logRealtimeLifecycle(channelName, "subscribe", { projectId });
           }
         });
     };
@@ -99,6 +106,7 @@ export function useRealtimeComments({
     return () => {
       if (channel) {
         supabase.removeChannel(channel);
+        logRealtimeLifecycle(channelName, "unsubscribe", { projectId });
       }
     };
   }, [projectId]); // Only re-subscribe when projectId changes

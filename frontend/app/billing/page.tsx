@@ -1,13 +1,25 @@
 'use client';
 
 import { Suspense, useEffect, useMemo, useState } from 'react';
+import { ArrowLeft, CreditCard, Loader2, ReceiptText } from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import toast from 'react-hot-toast';
+
 import { apiClient } from '../../lib/api-client';
 
 export default function BillingPage() {
   return (
-    <Suspense fallback={<div className="min-h-screen pt-24 pb-16 px-4 sm:px-6" />}>
+    <Suspense
+      fallback={
+        <main className="relative min-h-screen px-4 pt-28 pb-20 sm:px-6">
+          <div className="mx-auto max-w-4xl">
+            <div className="h-8 w-24 animate-pulse bg-white/10" />
+            <div className="mt-8 h-10 w-48 animate-pulse bg-white/10" />
+            <div className="mt-6 h-40 animate-pulse border border-white/10 bg-white/[0.03]" />
+          </div>
+        </main>
+      }
+    >
       <BillingContent />
     </Suspense>
   );
@@ -34,7 +46,7 @@ function BillingContent() {
         toast.error(res.error || 'Could not confirm payment yet');
       }
     };
-    confirm();
+    void confirm();
   }, [success, sessionId]);
 
   const startCheckout = async (plan: 'pack' | 'pro5' | 'pro10') => {
@@ -62,41 +74,150 @@ function BillingContent() {
   };
 
   return (
-    <div className="min-h-screen pt-24 pb-16 px-4 sm:px-6">
-      <div className="max-w-4xl mx-auto">
-        <button onClick={() => router.back()} className="text-gray-400 hover:text-white text-sm mb-4">← Back</button>
-        <h1 className="text-3xl sm:text-4xl font-bold mb-2">Billing</h1>
-        <p className="text-gray-400 mb-8">International checkout (Visa/Mastercard via Stripe) + crypto plans.</p>
+    <main className="relative min-h-screen px-4 pt-28 pb-20 text-gray-300 sm:px-6">
 
-        <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-5 mb-6">
-          <h2 className="text-lg font-semibold text-[#FFD700] mb-4">Payer Information</h2>
-          <div className="grid sm:grid-cols-3 gap-3">
-            <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Full name" className="bg-[#12131a] border border-white/10 rounded-lg px-3 py-2 text-sm" />
-            <input value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Email" className="bg-[#12131a] border border-white/10 rounded-lg px-3 py-2 text-sm" />
-            <input value={country} onChange={(e) => setCountry(e.target.value)} placeholder="Country (optional)" className="bg-[#12131a] border border-white/10 rounded-lg px-3 py-2 text-sm" />
+      <div className="mx-auto max-w-5xl">
+        <button
+          type="button"
+          onClick={() => router.back()}
+          className="mb-8 inline-flex min-h-[40px] items-center gap-2 text-sm text-gray-400 transition hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#FFD700]"
+        >
+          <ArrowLeft className="h-4 w-4" />
+          Back
+        </button>
+
+        <header className="border-b border-white/10 pb-8">
+          <p className="ui-eyebrow">Billing</p>
+          <h1 className="mt-4 text-3xl font-semibold tracking-tight text-white sm:text-4xl">
+            Checkout and AI credits
+          </h1>
+          <p className="mt-3 max-w-2xl text-base leading-7 text-gray-400">
+            International card checkout via Stripe, with crypto plans kept separate from wallet-based product flows.
+          </p>
+        </header>
+
+        <section className="my-8 border border-white/10 bg-white/[0.03] p-5">
+          <div className="mb-5 flex items-center gap-3">
+            <ReceiptText className="h-5 w-5 text-[#FFD700]" />
+            <h2 className="text-lg font-semibold text-white">Payer Information</h2>
           </div>
-        </div>
+          <div className="grid gap-4 sm:grid-cols-3">
+            <div>
+              <label htmlFor="payer-name" className="mb-2 block text-xs font-medium uppercase tracking-[0.14em] text-gray-400">
+                Full name
+              </label>
+              <input
+                id="payer-name"
+                value={name}
+                onChange={(event) => setName(event.target.value)}
+                autoComplete="name"
+                placeholder="Full name"
+                className="w-full border border-white/10 bg-black/25 px-3 py-3 text-sm text-white placeholder-gray-600 focus:border-[#FFD700]/50 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#FFD700]/60"
+              />
+            </div>
+            <div>
+              <label htmlFor="payer-email" className="mb-2 block text-xs font-medium uppercase tracking-[0.14em] text-gray-400">
+                Email
+              </label>
+              <input
+                id="payer-email"
+                type="email"
+                value={email}
+                onChange={(event) => setEmail(event.target.value)}
+                autoComplete="email"
+                spellCheck={false}
+                placeholder="you@example.com"
+                className="w-full border border-white/10 bg-black/25 px-3 py-3 text-sm text-white placeholder-gray-600 focus:border-[#FFD700]/50 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#FFD700]/60"
+              />
+            </div>
+            <div>
+              <label htmlFor="payer-country" className="mb-2 block text-xs font-medium uppercase tracking-[0.14em] text-gray-400">
+                Country <span className="text-gray-600">(optional)</span>
+              </label>
+              <input
+                id="payer-country"
+                value={country}
+                onChange={(event) => setCountry(event.target.value)}
+                autoComplete="country-name"
+                placeholder="Country"
+                className="w-full border border-white/10 bg-black/25 px-3 py-3 text-sm text-white placeholder-gray-600 focus:border-[#FFD700]/50 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#FFD700]/60"
+              />
+            </div>
+          </div>
+        </section>
 
-        <div className="grid md:grid-cols-3 gap-4">
-          <PlanCard title="$1 / 5 Questions" desc="Pay as you go for brainstorm depth." cta="Buy question pack" onClick={() => startCheckout('pack')} loading={loadingPlan === 'pack'} />
-          <PlanCard title="$5 / month" desc="Unlimited idea views. Great for frequent browsing." cta="Start Pro5" onClick={() => startCheckout('pro5')} loading={loadingPlan === 'pro5'} />
-          <PlanCard title="$10 / month" desc="Unlimited idea views + unlimited AI advice." cta="Start Pro10" onClick={() => startCheckout('pro10')} loading={loadingPlan === 'pro10'} highlight />
-        </div>
+        <section className="grid gap-4 md:grid-cols-3">
+          <PlanCard
+            title="$1 / 5 Questions"
+            desc="Pay as you go for deeper brainstorming."
+            cta="Buy question pack"
+            onClick={() => startCheckout('pack')}
+            loading={loadingPlan === 'pack'}
+          />
+          <PlanCard
+            title="$5 / month"
+            desc="Unlimited idea views for frequent browsing."
+            cta="Start Pro5"
+            onClick={() => startCheckout('pro5')}
+            loading={loadingPlan === 'pro5'}
+          />
+          <PlanCard
+            title="$10 / month"
+            desc="Unlimited idea views plus unlimited AI advice."
+            cta="Start Pro10"
+            onClick={() => startCheckout('pro10')}
+            loading={loadingPlan === 'pro10'}
+            highlight
+          />
+        </section>
 
-        <p className="text-xs text-gray-500 mt-6">Card payments are processed by Stripe (supports Visa/Mastercard and major international cards).</p>
+        <p className="mt-6 text-xs leading-5 text-gray-500">
+          Card payments are processed by Stripe and support Visa, Mastercard, and major international cards.
+        </p>
       </div>
-    </div>
+    </main>
   );
 }
 
-function PlanCard({ title, desc, cta, onClick, loading, highlight = false }: { title: string; desc: string; cta: string; onClick: () => void; loading: boolean; highlight?: boolean }) {
+function PlanCard({
+  title,
+  desc,
+  cta,
+  onClick,
+  loading,
+  highlight = false,
+}: {
+  title: string;
+  desc: string;
+  cta: string;
+  onClick: () => void;
+  loading: boolean;
+  highlight?: boolean;
+}) {
   return (
-    <div className={`rounded-2xl border ${highlight ? 'border-[#FFD700]/40' : 'border-white/10'} bg-[#0f1118] p-5`}>
-      <h3 className="text-xl font-bold mb-2">{title}</h3>
-      <p className="text-sm text-gray-400 mb-5 min-h-[42px]">{desc}</p>
-      <button onClick={onClick} disabled={loading} className={`w-full rounded-full py-2.5 font-bold ${highlight ? 'bg-[#FFD700] text-black' : 'bg-white/10 text-white hover:bg-white/20'} disabled:opacity-60`}>
-        {loading ? 'Redirecting…' : cta}
+    <article className={`border ${highlight ? 'border-[#FFD700]/40 bg-[#FFD700]/10' : 'border-white/10 bg-white/[0.03]'} p-5`}>
+      <CreditCard className="h-5 w-5 text-[#FFD700]" />
+      <h3 className="mt-5 text-xl font-semibold text-white">{title}</h3>
+      <p className="mt-2 min-h-[48px] text-sm leading-6 text-gray-400">{desc}</p>
+      <button
+        type="button"
+        onClick={onClick}
+        disabled={loading}
+        className={`mt-5 flex min-h-[44px] w-full items-center justify-center gap-2 px-4 text-sm font-bold transition disabled:opacity-60 ${
+          highlight
+            ? 'bg-[#FFD700] text-black hover:bg-[#FDB931]'
+            : 'border border-white/10 bg-white/[0.04] text-white hover:bg-white/10'
+        }`}
+      >
+        {loading ? (
+          <>
+            <Loader2 className="h-4 w-4 animate-spin" />
+            Redirecting...
+          </>
+        ) : (
+          cta
+        )}
       </button>
-    </div>
+    </article>
   );
 }

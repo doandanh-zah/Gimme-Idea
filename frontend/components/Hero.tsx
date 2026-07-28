@@ -1,117 +1,143 @@
-
 'use client';
 
 import React from 'react';
-import { motion } from 'framer-motion';
-import { Terminal, Code, Cpu, LayoutGrid, Plus } from 'lucide-react';
+import { ArrowUpRight, LayoutGrid, Plus } from 'lucide-react';
 import { useAppStore } from '../lib/store';
 import { useRouter } from 'next/navigation';
 
+const heroSteps = [
+  {
+    n: '01',
+    t: 'Publish',
+    d: 'Drop a raw idea — problem, solution, opportunity.',
+  },
+  {
+    n: '02',
+    t: 'Signal',
+    d: 'Community votes, comments, and AI feedback stack up.',
+  },
+  {
+    n: '03',
+    t: 'Build',
+    d: 'Find co-founders, pools, and builders ready to ship.',
+  },
+];
+
+const metricCells = [
+  { k: 'Chain', v: 'Solana' },
+  { k: 'Signal', v: 'Votes' },
+  { k: 'AI', v: 'Sensei' },
+];
+
+function HeroStepsPanel() {
+  return (
+    <>
+      <div className="border border-white/10 bg-[#0a0a0a]">
+        <div className="flex items-center justify-between px-4 py-3 border-b border-white/10">
+          <span className="font-mono text-[10px] tracking-[0.16em] uppercase text-gray-500">
+            How it works
+          </span>
+          <span className="font-mono text-[10px] text-[#FFD700]">01 — 03</span>
+        </div>
+
+        {heroSteps.map((step, i) => (
+          <div
+            key={step.n}
+            className={`grid grid-cols-[48px_1fr] gap-3 px-4 py-5 ${
+              i < 2 ? 'border-b border-white/10' : ''
+            }`}
+          >
+            <span className="font-quantico text-xl font-bold text-[#FFD700]">{step.n}</span>
+            <div>
+              <div className="flex items-center gap-2 mb-1">
+                <h3 className="font-display font-semibold text-white text-lg tracking-tight">
+                  {step.t}
+                </h3>
+                <ArrowUpRight className="w-3.5 h-3.5 text-gray-600" />
+              </div>
+              <p className="text-sm text-gray-500 leading-relaxed">{step.d}</p>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <div className="mt-3 grid grid-cols-3 border border-white/10 border-t-0 bg-[#0a0a0a] divide-x divide-white/10">
+        {metricCells.map((cell) => (
+          <div key={cell.k} className="px-3 py-3 text-center">
+            <div className="font-mono text-[9px] tracking-widest uppercase text-gray-600 mb-1">
+              {cell.k}
+            </div>
+            <div className="text-sm font-semibold text-white">{cell.v}</div>
+          </div>
+        ))}
+      </div>
+    </>
+  );
+}
+
 const Hero: React.FC = () => {
-  const { openSubmitModal } = useAppStore();
+  const openSubmitModal = useAppStore((state) => state.openSubmitModal);
   const router = useRouter();
 
   return (
-    <section className="relative min-h-screen flex items-center pt-24 sm:pt-20 overflow-hidden px-6">
-      {/* Content Container */}
-      <div className="max-w-7xl mx-auto relative z-10 grid lg:grid-cols-2 gap-12 items-center w-full">
-        
-        {/* Left Column: Text */}
-        <div className="text-left space-y-8">
-          <motion.div
-             initial={{ opacity: 0, x: -50 }}
-             animate={{ opacity: 1, x: 0 }}
-             transition={{ duration: 0.8 }}
-          >
-            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/5 border border-white/10 mb-6 backdrop-blur-sm">
-              <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
-              <span className="text-xs font-mono text-green-400 uppercase tracking-wide">Solana Mainnet Compatible</span>
-            </div>
-            
-            <h1 className="text-4xl sm:text-5xl lg:text-7xl font-display font-bold leading-tight mb-6">
-              Ship faster with <br />
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#9945FF] to-[#ffd700]">Real Feedback.</span>
-            </h1>
-            
-            <p className="text-base sm:text-lg text-gray-400 max-w-xl leading-relaxed">
-              Turn your ideas into reality. Share concepts, get honest feedback from real builders, and discover what the community truly wants.
-            </p>
-
-            <div className="flex flex-col sm:flex-row gap-4 mt-8">
-              <button
-                onClick={() => openSubmitModal('idea')}
-                className="px-8 py-4 bg-white text-black font-bold rounded-full hover:bg-gold transition-all duration-300 transform hover:scale-105 flex items-center justify-center gap-2"
-              >
-                <Plus className="w-5 h-5" />
-                Share Your Idea
-              </button>
-              <button
-                onClick={() => router.push('/idea')}
-                className="px-8 py-4 bg-transparent border border-white/20 text-white font-bold rounded-full hover:border-white hover:bg-white/5 transition-all duration-300 flex items-center justify-center gap-2"
-              >
-                <LayoutGrid className="w-5 h-5" />
-                Explore Ideas
-              </button>
-            </div>
-          </motion.div>
-
-
-        </div>
-
-        {/* Right Column: Visuals */}
-        <motion.div 
-          initial={{ opacity: 0, scale: 0.9 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.8 }}
-          className="relative hidden lg:block"
-        >
-          {/* Abstract Code Card */}
-          <div className="absolute top-0 right-0 w-72 glass-panel p-4 rounded-xl rotate-6 animate-float z-20">
-            <div className="flex items-center gap-2 mb-3">
-              <Code className="w-4 h-4 text-gold" />
-              <span className="text-xs text-gray-400 font-mono">Smart Contract Audit</span>
-            </div>
-            <div className="space-y-2">
-              <div className="h-2 bg-white/10 rounded w-3/4"></div>
-              <div className="h-2 bg-white/10 rounded w-full"></div>
-              <div className="h-2 bg-white/10 rounded w-5/6"></div>
-              <div className="h-2 bg-red-500/20 rounded w-1/2 mt-2"></div>
-            </div>
-            <div className="mt-4 flex justify-end">
-               <span className="text-[10px] font-mono bg-gold/20 text-gold px-2 py-1 rounded">Critical Bug Found</span>
-            </div>
+    <>
+      <section className="relative flex min-h-[100svh] flex-col justify-center overflow-hidden px-4 pb-28 pt-28 sm:px-6 sm:pt-32 lg:pb-16">
+        <div className="max-w-6xl mx-auto w-full">
+          {/* Top strip */}
+          <div className="flex flex-wrap items-center justify-between gap-3 mb-10 sm:mb-14 pb-4 border-b border-white/10">
+            <span className="ui-eyebrow">Solana mainnet</span>
+            <span className="font-mono text-[11px] tracking-widest uppercase text-gray-500">
+              Idea · Feedback · Build
+            </span>
           </div>
 
-          {/* Terminal Window */}
-          <div className="bg-[#0f0f0f] border border-white/10 rounded-xl overflow-hidden shadow-2xl max-w-md mx-auto relative z-10">
-            <div className="bg-[#1a1a1a] px-4 py-2 flex items-center gap-2 border-b border-white/5">
-              <div className="w-3 h-3 rounded-full bg-red-500/50"></div>
-              <div className="w-3 h-3 rounded-full bg-yellow-500/50"></div>
-              <div className="w-3 h-3 rounded-full bg-green-500/50"></div>
-              <div className="ml-auto text-xs text-gray-600 font-mono">bash — 80x24</div>
-            </div>
-            <div className="p-6 font-mono text-sm text-gray-300 space-y-2">
-              <p><span className="text-green-400">➜</span> <span className="text-blue-400">~</span> gimme-idea init</p>
-              <p className="text-gray-500">Initializing project environment...</p>
-              <p className="text-gray-500">Connecting to Solana Mainnet...</p>
-              <p><span className="text-green-400">✔</span> Wallet connected: <span className="text-gold">8xF3...92a</span></p>
-              <p><span className="text-green-400">✔</span> Fetching community feedback...</p>
-              <div className="p-3 bg-white/5 rounded border-l-2 border-gold mt-4">
-                <p className="text-xs text-gray-400 mb-1">@rust_wizard says:</p>
-                <p className="text-white">"Consider using PDA seeds for better account derivation here. Saves 0.002 SOL per user."</p>
+          <div className="grid lg:grid-cols-12 gap-10 lg:gap-8 items-end">
+            {/* Copy — 7 cols */}
+            <div className="lg:col-span-7 space-y-8">
+              <h1 className="font-display font-bold tracking-tight leading-[0.95] text-[clamp(2.75rem,8vw,5.5rem)]">
+                <span className="block text-white">Ship faster</span>
+                <span className="block text-white">
+                  with{' '}
+                  <span className="text-[#FFD700]">real</span>
+                </span>
+                <span className="block">
+                  <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#9945FF] to-[#FFD700]">
+                    feedback.
+                  </span>
+                </span>
+              </h1>
+
+              <p className="text-base sm:text-lg text-gray-400 max-w-lg leading-relaxed border-l-2 border-[#FFD700]/40 pl-4">
+                Share concepts, get honest input from builders, and find what the community actually
+                wants — before you write the first line of code.
+              </p>
+
+              <div className="flex flex-col sm:flex-row gap-3 pt-1">
+                <button type="button" onClick={() => openSubmitModal('idea')} className="btn-primary">
+                  <Plus className="w-4 h-4" />
+                  Share your idea
+                </button>
+                <button type="button" onClick={() => router.push('/idea')} className="btn-ghost">
+                  <LayoutGrid className="w-4 h-4" />
+                  Browse ideas
+                </button>
               </div>
-              <p className="animate-pulse">_</p>
+            </div>
+
+            {/* Side panel — 5 cols: editorial index, not fake terminal */}
+            <div className="hidden lg:col-span-5 lg:block">
+              <HeroStepsPanel />
             </div>
           </div>
-          
-          {/* Floating Tech Icons */}
-          <div className="absolute -bottom-10 -left-10 bg-black p-4 rounded-2xl border border-white/10 animate-float" style={{animationDelay: '1s'}}>
-            <Cpu className="w-8 h-8 text-purple-500" />
-          </div>
+        </div>
+      </section>
 
-        </motion.div>
+      <div className="px-4 pb-12 sm:px-6 lg:hidden">
+        <div className="max-w-6xl mx-auto">
+          <HeroStepsPanel />
+        </div>
       </div>
-    </section>
+    </>
   );
 };
 

@@ -1,51 +1,68 @@
 'use client';
 
-import React, { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
+import Link from 'next/link';
+import { AlertTriangle, ArrowLeft, Loader2, RefreshCw } from 'lucide-react';
 import { IdeaDetail } from '../../../components/IdeaDetail';
 import { useAppStore } from '../../../lib/store';
 import { extractIdFromSlug } from '../../../lib/slug-utils';
-import { LoadingSpinner } from '../../../components/LoadingSpinner';
 import BackendMaintenancePlaceholder from '../../../components/BackendMaintenancePlaceholder';
-import {
-  isBackendUnavailableError,
-  useProjectDetail,
-} from '../../../hooks/useProjectDetail';
+import { WalletRouteBoundary } from '../../../components/wallet/WalletRouteBoundary';
+import { useProjectDetailQuery } from '../../../hooks/useProjectsQuery';
+
+function IdeaDetailSkeleton() {
+  return (
+    <main className="min-h-screen px-4 pb-16 pt-28 sm:px-6">
+      <div className="mx-auto max-w-6xl">
+        <div className="flex items-center gap-3 text-sm text-gray-400">
+          <Loader2 className="h-4 w-4 animate-spin text-[#FFD700]" aria-hidden="true" />
+          Loading idea
+        </div>
+        <section className="mt-6 border border-white/10 bg-white/[0.03] p-5 sm:p-7">
+          <div className="h-4 w-24 animate-pulse bg-white/10" />
+          <div className="mt-5 h-10 w-full max-w-2xl animate-pulse bg-white/10" />
+          <div className="mt-4 h-4 w-full max-w-3xl animate-pulse bg-white/10" />
+          <div className="mt-2 h-4 w-2/3 animate-pulse bg-white/10" />
+        </section>
+      </div>
+    </main>
+  );
+}
 
 export default function IdeaDetailPage() {
   const params = useParams();
-  const {
-    selectedProject,
-    setSelectedProject,
-    hydrateProjectDetail,
-    clearBackendMaintenance,
-  } = useAppStore();
+  const [notFound, setNotFound] = useState(false);
+  const selectedProject = useAppStore((state) => state.selectedProject);
+  const setSelectedProject = useAppStore((state) => state.setSelectedProject);
+  const hydrateProjectDetailFromQuery = useAppStore((state) => state.hydrateProjectDetailFromQuery);
+  const isBackendMaintenance = useAppStore((state) => state.isBackendMaintenance);
+  const clearBackendMaintenance = useAppStore((state) => state.clearBackendMaintenance);
   const slugOrId = params.id as string;
 
   // Extract ID prefix from slug (e.g. "my-idea-abc12345" -> "abc12345").
   // Or use the full value if it is already a UUID.
-  const routeKey = extractIdFromSlug(slugOrId) || slugOrId;
+  const ideaId = extractIdFromSlug(slugOrId) || slugOrId;
+  const detailQuery = useProjectDetailQuery(ideaId, !!ideaId);
 
-  const detailQuery = useProjectDetail(routeKey);
-  // Only treat as hard failure when there is no usable data (not a background refetch error)
-  const hardError =
-    detailQuery.isError && !detailQuery.data && !detailQuery.isFetching;
-  const isMaintenance =
-    hardError && isBackendUnavailableError(detailQuery.error);
-
-  // Clear working copy on route change (prevents painting project A under B)
   useEffect(() => {
-    setSelectedProject(null);
-    clearBackendMaintenance();
-  }, [routeKey, setSelectedProject, clearBackendMaintenance]);
+    if (ideaId) {
+      setNotFound(false);
+      clearBackendMaintenance();
+      setSelectedProject(null);
+    }
+  }, [ideaId, clearBackendMaintenance, setSelectedProject]);
 
-  // Trust active RQ key: hydrate on success for this query only
   useEffect(() => {
-    if (!detailQuery.data) return;
-    hydrateProjectDetail(detailQuery.data);
-  }, [detailQuery.data, hydrateProjectDetail]);
+    if (detailQuery.data) {
+      hydrateProjectDetailFromQuery(detailQuery.data);
+      setNotFound(false);
+    } else if (detailQuery.isError) {
+      setNotFound(true);
+    }
+  }, [detailQuery.data, detailQuery.isError, hydrateProjectDetailFromQuery]);
 
-  if (isMaintenance) {
+  if (isBackendMaintenance) {
     return (
       <div className="min-h-screen px-4 sm:px-6 pt-28 sm:pt-32">
         <div className="max-w-5xl mx-auto">
@@ -55,25 +72,35 @@ export default function IdeaDetailPage() {
     );
   }
 
-  if (hardError && !isBackendUnavailableError(detailQuery.error)) {
+  if (notFound && !detailQuery.isLoading) {
     return (
-      <div className="min-h-screen px-4 sm:px-6 pt-28 sm:pt-32">
-        <div className="max-w-5xl mx-auto rounded-2xl border border-white/10 bg-white/5 p-6 sm:p-8 text-white/90">
-          This idea does not exist or has been removed.
-        </div>
-      </div>
+      <main className="min-h-screen px-4 pb-16 pt-28 text-gray-300 sm:px-6">
+        <section className="mx-auto max-w-2xl border border-white/10 bg-white/[0.03] p-6 text-center sm:p-8">
+          <AlertTriangle className="mx-auto h-10 w-10 text-red-200" aria-hidden="true" />
+          <h1 className="mt-4 text-2xl font-semibold text-white">Idea not found</h1>
+          <p className="mt-2 text-sm leading-6 text-gray-400">This idea does not exist, moved, or has been removed.</p>
+          <div className="mt-6 flex flex-col justify-center gap-2 sm:flex-row">
+            <Link href="/idea" className="btn-ghost">
+              <ArrowLeft className="h-4 w-4" aria-hidden="true" />
+              Back to ideas
+            </Link>
+            <button type="button" onClick={() => void detailQuery.refetch()} className="btn-primary">
+              <RefreshCw className="h-4 w-4" aria-hidden="true" />
+              Retry
+            </button>
+          </div>
+        </section>
+      </main>
     );
   }
 
-  // Keep showing selection while refetch errors if we already hydrated
-  const showDetail = Boolean(selectedProject);
-  if (!showDetail || !routeKey) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <LoadingSpinner isLoading={true} size="lg" text="Loading idea..." />
-      </div>
-    );
+  if (detailQuery.isLoading || !ideaId || !selectedProject) {
+    return <IdeaDetailSkeleton />;
   }
 
-  return <IdeaDetail />;
+  return (
+    <WalletRouteBoundary>
+      <IdeaDetail />
+    </WalletRouteBoundary>
+  );
 }

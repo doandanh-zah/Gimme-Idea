@@ -26,7 +26,8 @@ export const GenerateAIFeedbackButton: React.FC<GenerateAIFeedbackButtonProps> =
   ideaData,
   onFeedbackGenerated,
 }) => {
-  const { user, openConnectReminder } = useAppStore();
+  const user = useAppStore((state) => state.user);
+  const openConnectReminder = useAppStore((state) => state.openConnectReminder);
   const [loading, setLoading] = useState(false);
   const [quota, setQuota] = useState<AIQuota | null>(null);
   const [error, setError] = useState('');

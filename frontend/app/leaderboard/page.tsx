@@ -1,83 +1,67 @@
 'use client';
 
-import React from 'react';
-import { motion } from 'framer-motion';
-import { Trophy, Star, TrendingUp, Users, ArrowLeft } from 'lucide-react';
-import { useRouter } from 'next/navigation';
+import Link from 'next/link';
+import { ArrowLeft, Star, TrendingUp, Trophy, Users } from 'lucide-react';
+
+const previewStats = [
+  {
+    title: 'Top Creators',
+    description: 'Most innovative idea publishers.',
+    icon: Star,
+  },
+  {
+    title: 'Top Feedbackers',
+    description: 'Most helpful community members.',
+    icon: TrendingUp,
+  },
+  {
+    title: 'Top Supporters',
+    description: 'Generous tip contributors.',
+    icon: Users,
+  },
+];
 
 export default function LeaderboardPage() {
-  const router = useRouter();
-
   return (
-    <div className="min-h-screen bg-[#0A0A0A] text-white">
-      {/* Background Effects */}
-      <div className="fixed inset-0 pointer-events-none overflow-hidden">
-        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-purple-600/10 rounded-full blur-3xl" />
-        <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-[#FFD700]/10 rounded-full blur-3xl" />
+    <main className="relative min-h-screen pb-20 pt-28 text-white">
+
+      <div className="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8">
+        <Link
+          href="/home"
+          className="mb-8 inline-flex min-h-[40px] items-center gap-2 text-sm text-gray-400 transition hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#FFD700]"
+        >
+          <ArrowLeft className="h-4 w-4" />
+          Back to Home
+        </Link>
+
+        <section className="border border-white/10 bg-white/[0.03] p-6 text-center sm:p-10">
+          <div className="mx-auto flex h-16 w-16 items-center justify-center border border-[#FFD700]/30 bg-[#FFD700]/10">
+            <Trophy className="h-8 w-8 text-[#FFD700]" />
+          </div>
+
+          <p className="ui-eyebrow mx-auto mt-6 w-fit">Community ranking</p>
+          <h1 className="mt-4 text-3xl font-semibold tracking-tight text-white sm:text-5xl">
+            Leaderboard Coming Soon
+          </h1>
+          <p className="mx-auto mt-4 max-w-2xl text-base leading-7 text-gray-400">
+            We are building a leaderboard for top idea creators, helpful feedbackers, and generous supporters.
+          </p>
+
+          <div className="mt-8 grid grid-cols-1 gap-4 md:grid-cols-3">
+            {previewStats.map((item) => (
+              <div key={item.title} className="border border-white/10 bg-black/20 p-5">
+                <item.icon className="mx-auto h-7 w-7 text-[#FFD700]" />
+                <h2 className="mt-4 font-semibold text-white">{item.title}</h2>
+                <p className="mt-2 text-sm leading-6 text-gray-500">{item.description}</p>
+              </div>
+            ))}
+          </div>
+
+          <Link href="/idea" className="btn-primary mx-auto mt-8">
+            Build reputation now
+          </Link>
+        </section>
       </div>
-
-      <main className="relative z-10 pt-32 pb-20 px-4">
-        <div className="max-w-4xl mx-auto">
-          {/* Back Button */}
-          <button
-            onClick={() => router.push('/home')}
-            className="flex items-center gap-2 text-gray-400 hover:text-white transition-colors mb-8"
-          >
-            <ArrowLeft className="w-4 h-4" />
-            Back to Home
-          </button>
-
-          {/* Coming Soon Card */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="bg-gradient-to-br from-[#1a1a2e] to-[#0F0F0F] border border-white/10 rounded-3xl p-12 text-center"
-          >
-            {/* Trophy Icon */}
-            <motion.div
-              initial={{ scale: 0 }}
-              animate={{ scale: 1 }}
-              transition={{ delay: 0.2, type: 'spring' }}
-              className="w-24 h-24 bg-gradient-to-br from-[#FFD700]/20 to-purple-500/20 rounded-full flex items-center justify-center mx-auto mb-8"
-            >
-              <Trophy className="w-12 h-12 text-[#FFD700]" />
-            </motion.div>
-
-            <h1 className="text-4xl font-bold mb-4 bg-gradient-to-r from-[#FFD700] to-purple-400 bg-clip-text text-transparent">
-              Leaderboard Coming Soon
-            </h1>
-            
-            <p className="text-gray-400 text-lg mb-8 max-w-xl mx-auto leading-relaxed">
-              We're building an exciting leaderboard to showcase the top idea creators, 
-              most helpful feedbackers, and generous tippers in our community!
-            </p>
-
-            {/* Preview Stats */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
-              <div className="bg-white/5 border border-white/10 rounded-2xl p-6">
-                <Star className="w-8 h-8 text-[#FFD700] mx-auto mb-3" />
-                <h3 className="font-bold text-white mb-1">Top Creators</h3>
-                <p className="text-sm text-gray-500">Most innovative idea publishers</p>
-              </div>
-              <div className="bg-white/5 border border-white/10 rounded-2xl p-6">
-                <TrendingUp className="w-8 h-8 text-green-400 mx-auto mb-3" />
-                <h3 className="font-bold text-white mb-1">Top Feedbackers</h3>
-                <p className="text-sm text-gray-500">Most helpful community members</p>
-              </div>
-              <div className="bg-white/5 border border-white/10 rounded-2xl p-6">
-                <Users className="w-8 h-8 text-purple-400 mx-auto mb-3" />
-                <h3 className="font-bold text-white mb-1">Top Supporters</h3>
-                <p className="text-sm text-gray-500">Generous tip contributors</p>
-              </div>
-            </div>
-
-            {/* CTA */}
-            <p className="text-gray-500 text-sm">
-              Stay tuned! Start building your reputation now by sharing ideas and giving feedback.
-            </p>
-          </motion.div>
-        </div>
-      </main>
-    </div>
+    </main>
   );
 }

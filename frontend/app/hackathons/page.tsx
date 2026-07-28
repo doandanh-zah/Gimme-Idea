@@ -1,17 +1,24 @@
 'use client';
 
-import React, { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { 
-  Calendar, Users, Trophy, ArrowRight, Zap, Loader2, 
-  Lightbulb, Mic, Code, Target, ChevronRight, Clock,
-  Star, Award, Medal, Sparkles, ExternalLink
-} from 'lucide-react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import Image from 'next/image';
 import Link from 'next/link';
-import ConstellationBackground from '@/components/ConstellationBackground';
-import { useQuery } from '@tanstack/react-query';
-import { apiClient } from '@/lib/api-client';
-import { queryKeys } from '@/lib/query-keys';
+import {
+  AlertTriangle,
+  ArrowRight,
+  Archive,
+  Calendar,
+  Clock,
+  Code,
+  ExternalLink,
+  Lightbulb,
+  Mic,
+  RefreshCw,
+  Target,
+  Trophy,
+  Users,
+  Zap,
+} from 'lucide-react';
 
 interface HackathonRound {
   roundNumber: number;
@@ -39,457 +46,425 @@ interface Hackathon {
   currentRound?: number;
   totalRounds?: number;
   rounds?: HackathonRound[];
-  coverImage?: string; // 1x3 banner from admin
+  coverImage?: string;
   bannerImage?: string;
-  imageUrl?: string; // Alternative image field from API
+  imageUrl?: string;
   mode?: 'online' | 'offline' | 'hybrid';
   organizerName?: string;
   registrationStart?: string;
   registrationEnd?: string;
 }
 
-// Round icon mapping
-const getRoundIcon = (type: string) => {
+const STATUS_STYLE: Record<Hackathon['status'], string> = {
+  active: 'border-[#FFD700]/35 bg-[#FFD700]/10 text-[#FFD700]',
+  upcoming: 'border-cyan-300/25 bg-cyan-300/10 text-cyan-200',
+  judging: 'border-amber-300/25 bg-amber-300/10 text-amber-200',
+  completed: 'border-emerald-300/25 bg-emerald-300/10 text-emerald-200',
+  draft: 'border-white/10 bg-white/[0.04] text-gray-400',
+  cancelled: 'border-red-300/25 bg-red-300/10 text-red-200',
+};
+
+function getRoundIcon(type: HackathonRound['roundType']) {
   switch (type) {
-    case 'idea': return Lightbulb;
-    case 'pitching': return Mic;
-    case 'final': return Code;
-    default: return Target;
+    case 'idea':
+      return Lightbulb;
+    case 'pitching':
+      return Mic;
+    case 'final':
+      return Code;
+    default:
+      return Target;
   }
-};
+}
 
-// Status badge colors
-const getStatusStyle = (status: string) => {
-  switch (status) {
-    case 'active': return 'bg-[#FFD700] text-black';
-    case 'upcoming': return 'bg-blue-500/80 text-white';
-    case 'judging': return 'bg-amber-500/80 text-black';
-    case 'completed': return 'bg-purple-500/80 text-white';
-    default: return 'bg-white/10 text-gray-500';
-  }
-};
+function getCoverImage(hackathon: Hackathon) {
+  return hackathon.coverImage || hackathon.imageUrl || hackathon.bannerImage || '';
+}
 
-// Featured Hackathon Card (main hackathon)
-const FeaturedHackathonCard = ({ hackathon }: { hackathon: Hackathon }) => {
-  const [isHovered, setIsHovered] = useState(false);
-  
-  // Calculate countdown
-  const getCountdown = () => {
-    if (!hackathon.rounds || hackathon.rounds.length === 0) return null;
-    
-    const activeRound = hackathon.rounds.find(r => r.status === 'active');
-    const upcomingRound = hackathon.rounds.find(r => r.status === 'upcoming');
-    const targetRound = activeRound || upcomingRound;
-    
-    if (!targetRound) return null;
-    
-    const targetDate = new Date(activeRound ? targetRound.endDate : targetRound.startDate);
-    const now = new Date();
-    const diff = targetDate.getTime() - now.getTime();
-    
-    if (diff <= 0) return null;
-    
-    const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-    const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-    
-    return {
-      days,
-      hours,
-      label: activeRound ? `Round ${activeRound.roundNumber} ends in` : `Round ${upcomingRound?.roundNumber} starts in`
-    };
+function getEventHref(hackathon: Hackathon) {
+  return `/hackathons/${hackathon.slug || hackathon.id}`;
+}
+
+function getCountdown(hackathon: Hackathon) {
+  const activeRound = hackathon.rounds?.find((round) => round.status === 'active');
+  const upcomingRound = hackathon.rounds?.find((round) => round.status === 'upcoming');
+  const targetRound = activeRound || upcomingRound;
+
+  if (!targetRound) return null;
+
+  const targetDate = new Date(activeRound ? targetRound.endDate : targetRound.startDate);
+  const diff = targetDate.getTime() - Date.now();
+
+  if (Number.isNaN(targetDate.getTime()) || diff <= 0) return null;
+
+  const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+  const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+
+  return {
+    days,
+    hours,
+    label: activeRound ? `Round ${activeRound.roundNumber} ends in` : `Round ${upcomingRound?.roundNumber} starts in`,
   };
-  
-  const countdown = getCountdown();
-  const currentRound = hackathon.rounds?.find(r => r.status === 'active') || hackathon.rounds?.[0];
-  // Use coverImage, imageUrl, or bannerImage (in priority order)
-  const coverImage = hackathon.coverImage || hackathon.imageUrl || hackathon.bannerImage;
-  
+}
+
+function formatDate(value?: string) {
+  if (!value) return 'TBA';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return 'TBA';
+  return new Intl.DateTimeFormat('en', { month: 'short', day: 'numeric', year: 'numeric' }).format(date);
+}
+
+function HackathonsSkeleton() {
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      className="relative"
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
-    >
-      <Link href={`/hackathons/${hackathon.slug || hackathon.id}`}>
-        <div 
-          className="relative bg-gradient-to-br from-[#1a1a2e] to-[#0d0d1a] border border-[#FFD700]/20 rounded-2xl overflow-hidden transition-all duration-500"
-          style={{
-            boxShadow: isHovered 
-              ? '0 0 60px rgba(255, 215, 0, 0.3), 0 0 120px rgba(153, 69, 255, 0.2)'
-              : '0 0 30px rgba(255, 215, 0, 0.1)'
-          }}
-        >
-          {/* Cover Image Background */}
-          {coverImage && (
-            <div 
-              className="absolute inset-0 bg-cover bg-center opacity-30"
-              style={{ backgroundImage: `url(${coverImage})` }}
-            />
-          )}
-          
-          {/* Gradient overlay */}
-          <div className="absolute inset-0 bg-gradient-to-t from-black via-black/70 to-transparent z-[1]" />
-          
-          {/* Scanline effect */}
-          <div 
-            className="absolute inset-0 pointer-events-none z-[2]"
-            style={{
-              backgroundImage: 'repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(255,215,0,0.02) 2px, rgba(255,215,0,0.02) 4px)',
-              opacity: isHovered ? 0.8 : 0.4
-            }}
-          />
-          
-          {/* Status Badge */}
-          <div className="absolute top-4 right-4 z-10">
-            <div className={`px-3 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 ${getStatusStyle(hackathon.status)}`}>
-              {hackathon.status === 'active' && <Zap className="w-3 h-3" />}
-              {hackathon.status}
-            </div>
-          </div>
-          
-          {/* Content */}
-          <div className="relative z-[2] p-8">
-            {/* Header */}
-            <div className="flex items-start justify-between mb-6">
-              <div>
-                <div className="flex items-center gap-2 mb-2">
-                  <Trophy className="w-5 h-5 text-[#FFD700]" />
-                  <span className="text-[#FFD700] text-sm font-medium">Featured Hackathon</span>
-                </div>
-                <h2 className="text-2xl md:text-3xl font-bold text-white mb-2 group-hover:text-[#FFD700] transition-colors">
-                  {hackathon.title}
-                </h2>
-                <p className="text-gray-400 text-sm md:text-base max-w-2xl">
-                  {hackathon.tagline || hackathon.description}
-                </p>
-              </div>
-            </div>
-            
-            {/* Stats Row */}
-            <div className="flex flex-wrap gap-6 mb-8">
-              <div className="flex items-center gap-2">
-                <div className="w-10 h-10 rounded-lg bg-[#FFD700]/10 flex items-center justify-center">
-                  <Trophy className="w-5 h-5 text-[#FFD700]" />
-                </div>
-                <div>
-                  <div className="text-lg font-bold text-white">{hackathon.prizePool || 'TBA'}</div>
-                  <div className="text-xs text-gray-500">Prize Pool</div>
-                </div>
-              </div>
-              
-              <div className="flex items-center gap-2">
-                <div className="w-10 h-10 rounded-lg bg-purple-500/10 flex items-center justify-center">
-                  <Users className="w-5 h-5 text-purple-400" />
-                </div>
-                <div>
-                  <div className="text-lg font-bold text-white">{hackathon.teamsCount || hackathon.participantsCount || 0}</div>
-                  <div className="text-xs text-gray-500">Teams Registered</div>
-                </div>
-              </div>
-              
-              {countdown && (
-                <div className="flex items-center gap-2">
-                  <div className="w-10 h-10 rounded-lg bg-cyan-500/10 flex items-center justify-center">
-                    <Clock className="w-5 h-5 text-cyan-400" />
-                  </div>
-                  <div>
-                    <div className="text-lg font-bold text-white">
-                      {countdown.days}d {countdown.hours}h
-                    </div>
-                    <div className="text-xs text-gray-500">{countdown.label}</div>
-                  </div>
-                </div>
-              )}
-            </div>
-            
-            {/* Rounds Progress */}
-            {hackathon.rounds && hackathon.rounds.length > 0 && (
-              <div className="mb-8">
-                <div className="text-xs text-gray-500 uppercase tracking-wider mb-3">Competition Rounds</div>
-                <div className="flex gap-2">
-                  {hackathon.rounds.map((round, idx) => {
-                    const RoundIcon = getRoundIcon(round.roundType);
-                    const isActive = round.status === 'active';
-                    const isCompleted = round.status === 'completed';
-                    
-                    return (
-                      <div 
-                        key={idx}
-                        className={`flex-1 p-3 rounded-xl border transition-all ${
-                          isActive 
-                            ? 'bg-[#FFD700]/10 border-[#FFD700]/40' 
-                            : isCompleted
-                              ? 'bg-green-500/10 border-green-500/20'
-                              : 'bg-white/5 border-white/10'
-                        }`}
-                      >
-                        <div className="flex items-center gap-2 mb-1">
-                          <RoundIcon className={`w-4 h-4 ${isActive ? 'text-[#FFD700]' : isCompleted ? 'text-green-400' : 'text-gray-500'}`} />
-                          <span className={`text-xs font-bold ${isActive ? 'text-[#FFD700]' : isCompleted ? 'text-green-400' : 'text-gray-400'}`}>
-                            Round {round.roundNumber}
-                          </span>
-                          {isActive && (
-                            <span className="px-1.5 py-0.5 bg-[#FFD700] text-black text-[8px] font-bold rounded uppercase">Live</span>
-                          )}
-                        </div>
-                        <div className={`text-sm font-medium ${isActive ? 'text-white' : 'text-gray-400'}`}>
-                          {round.title}
-                        </div>
-                        <div className="text-[10px] text-gray-500 mt-1">
-                          {round.mode === 'offline' ? '🏢 Offline' : round.mode === 'hybrid' ? '🌐 Hybrid' : '💻 Online'}
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
-            
-            {/* CTA */}
-            <div className="flex items-center justify-between">
-              <div className="text-xs text-gray-500">
-                {hackathon.organizerName && `Organized by ${hackathon.organizerName}`}
-              </div>
-              <motion.div 
-                className="flex items-center gap-2 text-[#FFD700] font-medium"
-                animate={{ x: isHovered ? 5 : 0 }}
-              >
-                View Details
-                <ArrowRight className="w-4 h-4" />
-              </motion.div>
-            </div>
-          </div>
-          
-          {/* Animated border on hover */}
-          <AnimatePresence>
-            {isHovered && (
-              <>
-                <motion.div
-                  initial={{ scaleX: 0 }}
-                  animate={{ scaleX: 1 }}
-                  exit={{ scaleX: 0 }}
-                  transition={{ duration: 0.3 }}
-                  className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-[#FFD700] to-transparent origin-left z-20"
-                />
-                <motion.div
-                  initial={{ scaleX: 0 }}
-                  animate={{ scaleX: 1 }}
-                  exit={{ scaleX: 0 }}
-                  transition={{ duration: 0.3, delay: 0.1 }}
-                  className="absolute bottom-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-[#9945FF] to-transparent origin-right z-20"
-                />
-              </>
-            )}
-          </AnimatePresence>
+    <main className="min-h-screen px-4 pb-16 pt-28 sm:px-6">
+      <div className="mx-auto max-w-7xl">
+        <div className="h-4 w-28 animate-pulse bg-white/10" />
+        <div className="mt-4 h-10 w-full max-w-lg animate-pulse bg-white/10" />
+        <div className="mt-3 h-5 w-full max-w-2xl animate-pulse bg-white/10" />
+        <div className="mt-8 min-h-[320px] animate-pulse border border-white/10 bg-white/[0.03]" />
+        <div className="mt-8 grid gap-4 md:grid-cols-3">
+          {Array.from({ length: 3 }).map((_, index) => (
+            <div key={index} className="h-44 animate-pulse border border-white/10 bg-white/[0.03]" />
+          ))}
         </div>
-      </Link>
-    </motion.div>
+      </div>
+    </main>
   );
-};
+}
 
-// Partner/External Hackathon Card (smaller, simpler)
-const PartnerHackathonCard = ({ hackathon, index }: { hackathon: Hackathon; index: number }) => {
-  // Use coverImage, imageUrl, or bannerImage (in priority order)
-  const coverImage = hackathon.coverImage || hackathon.imageUrl || hackathon.bannerImage;
-  
+function StatusBadge({ status }: { status: Hackathon['status'] }) {
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: index * 0.1 }}
-    >
-      <Link href={`/hackathons/${hackathon.slug || hackathon.id}`}>
-        <div className="relative bg-[#111] border border-white/5 rounded-xl overflow-hidden hover:border-white/20 transition-all group">
-          {/* Cover Image */}
-          {coverImage && (
-            <div 
-              className="h-32 bg-cover bg-center"
-              style={{ backgroundImage: `url(${coverImage})` }}
-            >
-              <div className="absolute inset-0 bg-gradient-to-t from-[#111] via-[#111]/70 to-transparent" />
-            </div>
-          )}
-          
-          <div className="relative p-5">
-            <div className="flex items-start justify-between mb-3">
-              <div className="flex items-center gap-2">
-                <ExternalLink className="w-4 h-4 text-gray-500" />
-                <span className="text-[10px] text-gray-500 uppercase tracking-wider">Partner Event</span>
-              </div>
-              <div className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase ${getStatusStyle(hackathon.status)}`}>
-                {hackathon.status}
-              </div>
-            </div>
-            
-            <h3 className="text-lg font-bold text-white mb-2 group-hover:text-[#FFD700] transition-colors line-clamp-1">
-              {hackathon.title}
-            </h3>
-            
-            <p className="text-sm text-gray-400 line-clamp-2 mb-4">
-              {hackathon.tagline || hackathon.description}
-            </p>
-            
-            <div className="flex items-center justify-between text-xs text-gray-500">
-              <div className="flex items-center gap-3">
-                <span className="flex items-center gap-1">
-                  <Trophy className="w-3 h-3" />
-                  {hackathon.prizePool || 'TBA'}
-                </span>
-                <span className="flex items-center gap-1">
-                  <Users className="w-3 h-3" />
-                  {hackathon.participantsCount || 0}
-                </span>
-              </div>
-              <ChevronRight className="w-4 h-4 group-hover:text-[#FFD700] transition-colors" />
-            </div>
-          </div>
-        </div>
-      </Link>
-    </motion.div>
+    <span className={`inline-flex min-h-[28px] items-center gap-1 border px-2 text-[11px] font-semibold uppercase ${STATUS_STYLE[status]}`}>
+      {status === 'active' ? <Zap className="h-3 w-3" aria-hidden="true" /> : null}
+      {status}
+    </span>
   );
-};
+}
 
-export default function HackathonsList() {
-  const hackathonsQuery = useQuery({
-    queryKey: queryKeys.hackathons.list,
-    staleTime: 5 * 60_000,
-    queryFn: async ({ signal }) => {
-      const response = await apiClient.getPublicHackathons(signal);
-      if (!response.success || !response.data) {
-        throw new Error(response.error || 'Failed to fetch hackathons');
-      }
-      return response.data as Hackathon[];
-    },
-  });
-  const hackathons = hackathonsQuery.data || [];
-  const isLoading = hackathonsQuery.isLoading;
-
-  // Separate featured (Gimme Idea's own) and partner hackathons
-  const featuredHackathon = hackathons.find(h => h.status === 'active' || h.status === 'upcoming');
-  const partnerHackathons = hackathons.filter(h => h.id !== featuredHackathon?.id && h.status !== 'draft');
-  
-  // Past hackathons
-  const pastHackathons = hackathons.filter(h => h.status === 'completed');
+function EventStats({ hackathon }: { hackathon: Hackathon }) {
+  const countdown = getCountdown(hackathon);
 
   return (
-    <div className="min-h-screen text-gray-300 pt-28 pb-10 px-4 font-sans relative">
-      {/* Constellation Background */}
-      <ConstellationBackground opacity={0.25} />
-
-      <div className="max-w-[1000px] mx-auto space-y-10">
-        
-        {/* Header */}
-        <div className="border-b border-white/10 pb-6">
-          <div className="flex items-center gap-3 mb-2">
-            <Trophy className="w-8 h-8 text-[#FFD700]" />
-            <h1 className="text-3xl font-bold text-white font-quantico">HACKATHONS</h1>
-          </div>
-          <p className="text-gray-400 max-w-2xl">
-            Join Gimme Idea's hackathons and compete through 3 rounds: Idea Phase, Pitching, and Grand Final. 
-            Build innovative solutions, get feedback, and win prizes!
-          </p>
-        </div>
-
-        {/* Loading State */}
-        {isLoading ? (
-          <div className="flex justify-center py-20">
-            <Loader2 className="w-8 h-8 animate-spin text-[#FFD700]" />
-          </div>
-        ) : (
-          <>
-            {/* Featured Hackathon */}
-            {featuredHackathon ? (
-              <section>
-                <FeaturedHackathonCard hackathon={featuredHackathon} />
-              </section>
-            ) : (
-              <div className="text-center py-16 bg-[#111] border border-white/5 rounded-xl">
-                <Trophy className="w-12 h-12 text-gray-600 mx-auto mb-4" />
-                <h3 className="text-xl font-bold text-white mb-2">No Active Hackathon</h3>
-                <p className="text-gray-500">Stay tuned for our next hackathon announcement!</p>
-              </div>
-            )}
-
-            {/* How It Works */}
-            <section className="bg-[#111]/50 border border-white/5 rounded-xl p-6">
-              <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
-                <Sparkles className="w-5 h-5 text-[#FFD700]" />
-                How Gimme Idea Hackathons Work
-              </h3>
-              <div className="grid md:grid-cols-3 gap-4">
-                <div className="p-4 bg-white/5 rounded-lg">
-                  <div className="flex items-center gap-2 mb-2">
-                    <div className="w-8 h-8 rounded-full bg-[#FFD700]/20 flex items-center justify-center">
-                      <Lightbulb className="w-4 h-4 text-[#FFD700]" />
-                    </div>
-                    <span className="font-bold text-white">Round 1: Idea</span>
-                  </div>
-                  <p className="text-sm text-gray-400">
-                    Submit ideas (3-5 per team), give feedback to others, and compete for top spots. 
-                    Top 10 ideas + Top 5 engagement teams advance.
-                  </p>
-                </div>
-                <div className="p-4 bg-white/5 rounded-lg">
-                  <div className="flex items-center gap-2 mb-2">
-                    <div className="w-8 h-8 rounded-full bg-purple-500/20 flex items-center justify-center">
-                      <Mic className="w-4 h-4 text-purple-400" />
-                    </div>
-                    <span className="font-bold text-white">Round 2: Pitching</span>
-                  </div>
-                  <p className="text-sm text-gray-400">
-                    Present your solution to judges. Can be online or offline depending on the season. 
-                    Top 10 best pitches move to the final.
-                  </p>
-                </div>
-                <div className="p-4 bg-white/5 rounded-lg">
-                  <div className="flex items-center gap-2 mb-2">
-                    <div className="w-8 h-8 rounded-full bg-cyan-500/20 flex items-center justify-center">
-                      <Code className="w-4 h-4 text-cyan-400" />
-                    </div>
-                    <span className="font-bold text-white">Round 3: Final</span>
-                  </div>
-                  <p className="text-sm text-gray-400">
-                    Demo your MVP and technical implementation. Win prizes and recognition!
-                    3-5 winners per season.
-                  </p>
-                </div>
-              </div>
-            </section>
-
-            {/* Partner Hackathons */}
-            {partnerHackathons.length > 0 && (
-              <section>
-                <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
-                  <ExternalLink className="w-5 h-5 text-gray-400" />
-                  Partner Hackathons
-                </h3>
-                <div className="grid md:grid-cols-2 gap-4">
-                  {partnerHackathons.map((h, i) => (
-                    <PartnerHackathonCard key={h.id} hackathon={h} index={i} />
-                  ))}
-                </div>
-              </section>
-            )}
-
-            {/* Past Hackathons */}
-            {pastHackathons.length > 0 && (
-              <section>
-                <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
-                  <Award className="w-5 h-5 text-gray-400" />
-                  Past Hackathons
-                </h3>
-                <div className="grid md:grid-cols-2 gap-4">
-                  {pastHackathons.map((h, i) => (
-                    <PartnerHackathonCard key={h.id} hackathon={h} index={i} />
-                  ))}
-                </div>
-              </section>
-            )}
-          </>
-        )}
+    <div className="grid gap-3 sm:grid-cols-3">
+      <div className="border border-white/10 bg-white/[0.03] p-4">
+        <Trophy className="h-5 w-5 text-[#FFD700]" aria-hidden="true" />
+        <p className="mt-3 text-lg font-semibold text-white">{hackathon.prizePool || 'TBA'}</p>
+        <p className="text-xs text-gray-500">Prize pool</p>
+      </div>
+      <div className="border border-white/10 bg-white/[0.03] p-4">
+        <Users className="h-5 w-5 text-cyan-200" aria-hidden="true" />
+        <p className="mt-3 text-lg font-semibold text-white">{hackathon.teamsCount || hackathon.participantsCount || 0}</p>
+        <p className="text-xs text-gray-500">Teams registered</p>
+      </div>
+      <div className="border border-white/10 bg-white/[0.03] p-4">
+        <Clock className="h-5 w-5 text-emerald-200" aria-hidden="true" />
+        <p className="mt-3 text-lg font-semibold text-white">
+          {countdown ? `${countdown.days}d ${countdown.hours}h` : formatDate(hackathon.registrationEnd)}
+        </p>
+        <p className="text-xs text-gray-500">{countdown?.label || 'Registration ends'}</p>
       </div>
     </div>
+  );
+}
+
+function RoundTimeline({ rounds }: { rounds?: HackathonRound[] }) {
+  if (!rounds?.length) return null;
+
+  return (
+    <div className="mt-6 border-t border-white/10 pt-5">
+      <p className="ui-eyebrow">Competition rounds</p>
+      <div className="mt-4 grid gap-3 md:grid-cols-3">
+        {rounds.map((round) => {
+          const RoundIcon = getRoundIcon(round.roundType);
+          const isActive = round.status === 'active';
+          const isCompleted = round.status === 'completed';
+
+          return (
+            <div
+              key={`${round.roundNumber}-${round.title}`}
+              className={`border p-4 ${
+                isActive
+                  ? 'border-[#FFD700]/35 bg-[#FFD700]/10'
+                  : isCompleted
+                    ? 'border-emerald-300/20 bg-emerald-300/10'
+                    : 'border-white/10 bg-white/[0.03]'
+              }`}
+            >
+              <div className="flex items-center gap-2">
+                <RoundIcon className={isActive ? 'h-4 w-4 text-[#FFD700]' : 'h-4 w-4 text-gray-400'} aria-hidden="true" />
+                <span className={isActive ? 'text-xs font-semibold uppercase text-[#FFD700]' : 'text-xs font-semibold uppercase text-gray-400'}>
+                  Round {round.roundNumber}
+                </span>
+              </div>
+              <h3 className="mt-3 text-sm font-semibold text-white">{round.title}</h3>
+              <p className="mt-2 line-clamp-3 text-xs leading-5 text-gray-400">{round.description}</p>
+              <p className="mt-3 text-[11px] uppercase text-gray-500">{round.mode}</p>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function FeaturedHackathonCard({ hackathon }: { hackathon: Hackathon }) {
+  const coverImage = getCoverImage(hackathon);
+
+  return (
+    <Link
+      href={getEventHref(hackathon)}
+      className="group block overflow-hidden border border-[#FFD700]/25 bg-white/[0.03] transition hover:border-[#FFD700]/45 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#FFD700]"
+    >
+      {coverImage ? (
+        <div className="relative aspect-[3/1] min-h-[180px] w-full overflow-hidden border-b border-white/10">
+          <Image
+            src={coverImage}
+            alt={`${hackathon.title} banner`}
+            fill
+            className="object-cover transition duration-500 group-hover:scale-[1.02]"
+            sizes="(min-width: 1280px) 1280px, 100vw"
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent" aria-hidden="true" />
+        </div>
+      ) : null}
+
+      <div className="p-5 sm:p-7">
+        <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
+          <div className="min-w-0">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="ui-eyebrow">Featured hackathon</span>
+              <StatusBadge status={hackathon.status} />
+            </div>
+            <h2 className="mt-3 text-3xl font-semibold tracking-tight text-white sm:text-4xl">{hackathon.title}</h2>
+            <p className="mt-3 max-w-3xl text-sm leading-6 text-gray-400 sm:text-base">
+              {hackathon.tagline || hackathon.description || 'Compete through idea, pitch, and build rounds.'}
+            </p>
+            {hackathon.organizerName ? (
+              <p className="mt-3 text-xs text-gray-500">Organized by {hackathon.organizerName}</p>
+            ) : null}
+          </div>
+          <span className="inline-flex min-h-[44px] items-center gap-2 text-sm font-semibold text-[#FFD700]">
+            View details
+            <ArrowRight className="h-4 w-4 transition group-hover:translate-x-1" aria-hidden="true" />
+          </span>
+        </div>
+
+        <div className="mt-6">
+          <EventStats hackathon={hackathon} />
+        </div>
+        <RoundTimeline rounds={hackathon.rounds} />
+      </div>
+    </Link>
+  );
+}
+
+function CompactHackathonCard({ hackathon, label }: { hackathon: Hackathon; label: string }) {
+  const coverImage = getCoverImage(hackathon);
+
+  return (
+    <Link
+      href={getEventHref(hackathon)}
+      className="group block h-full overflow-hidden border border-white/10 bg-white/[0.03] transition hover:border-[#FFD700]/35 hover:bg-white/[0.05] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#FFD700]"
+    >
+      {coverImage ? (
+        <div className="relative aspect-[16/7] w-full border-b border-white/10">
+          <Image src={coverImage} alt={`${hackathon.title} banner`} fill className="object-cover" sizes="(min-width: 768px) 50vw, 100vw" />
+        </div>
+      ) : null}
+      <div className="p-5">
+        <div className="flex items-start justify-between gap-3">
+          <span className="ui-eyebrow">{label}</span>
+          <StatusBadge status={hackathon.status} />
+        </div>
+        <h3 className="mt-4 line-clamp-2 text-lg font-semibold text-white">{hackathon.title}</h3>
+        <p className="mt-2 line-clamp-2 text-sm leading-6 text-gray-400">{hackathon.tagline || hackathon.description || 'Hackathon details are coming soon.'}</p>
+        <div className="mt-5 flex flex-wrap gap-4 text-xs text-gray-500">
+          <span className="inline-flex items-center gap-1">
+            <Trophy className="h-3.5 w-3.5 text-[#FFD700]" aria-hidden="true" />
+            {hackathon.prizePool || 'TBA'}
+          </span>
+          <span className="inline-flex items-center gap-1">
+            <Users className="h-3.5 w-3.5 text-cyan-200" aria-hidden="true" />
+            {hackathon.teamsCount || hackathon.participantsCount || 0}
+          </span>
+          <span className="inline-flex items-center gap-1">
+            <Calendar className="h-3.5 w-3.5 text-gray-400" aria-hidden="true" />
+            {formatDate(hackathon.registrationEnd || hackathon.registrationStart)}
+          </span>
+        </div>
+      </div>
+    </Link>
+  );
+}
+
+function HowItWorks() {
+  const steps = [
+    {
+      icon: Lightbulb,
+      title: 'Idea round',
+      text: 'Submit several ideas, review others, and let the strongest concepts rise through signal and feedback.',
+    },
+    {
+      icon: Mic,
+      title: 'Pitch round',
+      text: 'Turn the top concepts into focused pitches for judges, mentors, and early supporters.',
+    },
+    {
+      icon: Code,
+      title: 'Final build',
+      text: 'Demo the MVP, show traction, and compete for prizes, credits, and community recognition.',
+    },
+  ];
+
+  return (
+    <section className="border border-white/10 bg-white/[0.03] p-5 sm:p-6">
+      <div className="flex items-center gap-2">
+        <Trophy className="h-5 w-5 text-[#FFD700]" aria-hidden="true" />
+        <h2 className="text-lg font-semibold text-white">How Gimme Idea hackathons work</h2>
+      </div>
+      <div className="mt-5 grid gap-4 md:grid-cols-3">
+        {steps.map((step) => {
+          const Icon = step.icon;
+          return (
+            <div key={step.title} className="border border-white/10 bg-black/20 p-4">
+              <Icon className="h-5 w-5 text-[#FFD700]" aria-hidden="true" />
+              <h3 className="mt-4 text-sm font-semibold text-white">{step.title}</h3>
+              <p className="mt-2 text-sm leading-6 text-gray-400">{step.text}</p>
+            </div>
+          );
+        })}
+      </div>
+    </section>
+  );
+}
+
+export default function HackathonsList() {
+  const [hackathons, setHackathons] = useState<Hackathon[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState('');
+
+  const loadHackathons = useCallback(async () => {
+    setIsLoading(true);
+    setError('');
+
+    try {
+      const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+      const res = await fetch(`${API_URL}/hackathons`);
+      if (!res.ok) {
+        throw new Error('Could not load hackathons.');
+      }
+
+      const data = await res.json();
+      setHackathons(data.success && Array.isArray(data.data) ? data.data : []);
+    } catch (requestError) {
+      console.error('Failed to fetch hackathons:', requestError);
+      setError(requestError instanceof Error ? requestError.message : 'Could not load hackathons.');
+      setHackathons([]);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    void loadHackathons();
+  }, [loadHackathons]);
+
+  const { featuredHackathon, partnerHackathons, pastHackathons } = useMemo(() => {
+    const visible = hackathons.filter((hackathon) => hackathon.status !== 'draft' && hackathon.status !== 'cancelled');
+    const featured = visible.find((hackathon) => hackathon.status === 'active' || hackathon.status === 'upcoming') || null;
+
+    return {
+      featuredHackathon: featured,
+      partnerHackathons: visible.filter((hackathon) => hackathon.id !== featured?.id && hackathon.status !== 'completed'),
+      pastHackathons: visible.filter((hackathon) => hackathon.status === 'completed'),
+    };
+  }, [hackathons]);
+
+  if (isLoading) {
+    return <HackathonsSkeleton />;
+  }
+
+  return (
+    <main className="min-h-screen px-4 pb-16 pt-28 text-gray-300 sm:px-6">
+      <div className="mx-auto max-w-7xl space-y-8">
+        <header className="border-b border-white/10 pb-6">
+          <p className="ui-eyebrow">Build competitions</p>
+          <div className="mt-4 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+            <div className="max-w-3xl">
+              <h1 className="text-4xl font-semibold tracking-tight text-white sm:text-5xl">Hackathons</h1>
+              <p className="mt-4 text-base leading-7 text-gray-400">
+                Join focused build seasons with idea validation, pitching, team formation, and final demos.
+              </p>
+            </div>
+            <Link href="/idea" className="btn-primary w-full sm:w-auto">
+              Submit an idea
+              <ArrowRight className="h-4 w-4" aria-hidden="true" />
+            </Link>
+          </div>
+        </header>
+
+        {error ? (
+          <section className="border border-red-300/25 bg-red-300/10 p-5">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex items-start gap-3">
+                <AlertTriangle className="mt-0.5 h-5 w-5 text-red-200" aria-hidden="true" />
+                <div>
+                  <h2 className="text-sm font-semibold text-red-100">Could not load hackathons</h2>
+                  <p className="mt-1 text-sm text-red-100/75">{error}</p>
+                </div>
+              </div>
+              <button type="button" onClick={() => void loadHackathons()} className="btn-ghost border-red-300/30 text-red-100 hover:bg-red-300/10">
+                <RefreshCw className="h-4 w-4" aria-hidden="true" />
+                Retry
+              </button>
+            </div>
+          </section>
+        ) : null}
+
+        {!error && featuredHackathon ? (
+          <FeaturedHackathonCard hackathon={featuredHackathon} />
+        ) : null}
+
+        {!error && !featuredHackathon ? (
+          <section className="border border-dashed border-white/10 bg-black/20 px-6 py-14 text-center">
+            <Archive className="mx-auto h-10 w-10 text-gray-600" aria-hidden="true" />
+            <h2 className="mt-4 text-lg font-semibold text-white">No active hackathon</h2>
+            <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-gray-400">
+              There is no open competition right now. New hackathon seasons will appear here when registration opens.
+            </p>
+          </section>
+        ) : null}
+
+        {!error ? <HowItWorks /> : null}
+
+        {!error && partnerHackathons.length > 0 ? (
+          <section>
+            <div className="mb-4 flex items-center gap-2">
+              <ExternalLink className="h-5 w-5 text-gray-400" aria-hidden="true" />
+              <h2 className="text-lg font-semibold text-white">Partner hackathons</h2>
+            </div>
+            <div className="grid gap-4 md:grid-cols-2">
+              {partnerHackathons.map((hackathon) => (
+                <CompactHackathonCard key={hackathon.id} hackathon={hackathon} label="Partner event" />
+              ))}
+            </div>
+          </section>
+        ) : null}
+
+        {!error && pastHackathons.length > 0 ? (
+          <section>
+            <div className="mb-4 flex items-center gap-2">
+              <Archive className="h-5 w-5 text-gray-400" aria-hidden="true" />
+              <h2 className="text-lg font-semibold text-white">Past hackathons</h2>
+            </div>
+            <div className="grid gap-4 md:grid-cols-2">
+              {pastHackathons.map((hackathon) => (
+                <CompactHackathonCard key={hackathon.id} hackathon={hackathon} label="Past event" />
+              ))}
+            </div>
+          </section>
+        ) : null}
+      </div>
+    </main>
   );
 }

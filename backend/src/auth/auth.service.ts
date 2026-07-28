@@ -2,6 +2,7 @@ import { BadRequestException, HttpException, HttpStatus, Injectable, Unauthorize
 import { ConfigService } from "@nestjs/config";
 import * as jwt from "jsonwebtoken";
 import { createHash, randomBytes, timingSafeEqual } from 'crypto';
+import type { CookieOptions } from 'express';
 import { SolanaService } from "../shared/solana.service";
 import { SupabaseService } from "../shared/supabase.service";
 import { LoginDto } from "./dto/login.dto";
@@ -12,6 +13,7 @@ import { AgentRegisterDto } from './dto/agent-register.dto';
 import { AgentLoginDto } from './dto/agent-login.dto';
 import { AgentRotateKeyDto } from './dto/agent-rotate-key.dto';
 import { AgentRevokeKeyDto } from './dto/agent-revoke-key.dto';
+import { durationToMs } from '../common/auth-session';
 import { ApiResponse, User } from "../shared/types";
 
 @Injectable()
@@ -57,9 +59,35 @@ export class AuthService {
     }
   }
 
+  getJwtExpiresIn() {
+    return this.configService.get<string>('JWT_EXPIRES_IN') || '7d';
+  }
+
+  getSessionCookieOptions(): CookieOptions {
+    const configuredSameSite = (
+      this.configService.get<string>('AUTH_COOKIE_SAMESITE') ||
+      (process.env.NODE_ENV === 'production' ? 'none' : 'lax')
+    ).toLowerCase();
+    const sameSite: CookieOptions['sameSite'] =
+      configuredSameSite === 'strict' || configuredSameSite === 'none' ? configuredSameSite : 'lax';
+    const secureFlag = this.configService.get<string>('AUTH_COOKIE_SECURE');
+    const secure =
+      secureFlag === 'true' ||
+      (!secureFlag && (process.env.NODE_ENV === 'production' || sameSite === 'none'));
+    const domain = this.configService.get<string>('AUTH_COOKIE_DOMAIN');
+
+    return {
+      httpOnly: true,
+      secure,
+      sameSite,
+      path: '/',
+      maxAge: durationToMs(this.getJwtExpiresIn()),
+      ...(domain ? { domain } : {}),
+    };
+  }
+
   private issueJwt(user: any) {
     const jwtSecret = this.configService.get<string>('JWT_SECRET');
-    const jwtExpires = this.configService.get<string>('JWT_EXPIRES_IN') || '365d';
 
     return jwt.sign(
       {
@@ -69,7 +97,7 @@ export class AuthService {
         email: user.email,
       },
       jwtSecret,
-      { expiresIn: jwtExpires }
+      { expiresIn: this.getJwtExpiresIn() }
     );
   }
 
@@ -179,19 +207,7 @@ export class AuthService {
     }
 
     // 4. Generate JWT token
-    const jwtSecret = this.configService.get<string>("JWT_SECRET");
-    const jwtExpires =
-      this.configService.get<string>("JWT_EXPIRES_IN") || "365d"; // 1 year
-
-    const token = jwt.sign(
-      {
-        userId: user.id,
-        wallet: user.wallet,
-        username: user.username,
-      },
-      jwtSecret,
-      { expiresIn: jwtExpires }
-    );
+    const token = this.issueJwt(user);
 
     // 5. Map database user to User type
     const userResponse: User = {
@@ -272,20 +288,7 @@ export class AuthService {
       .eq("id", user_id);
 
     // Generate JWT token
-    const jwtSecret = this.configService.get<string>("JWT_SECRET");
-    const jwtExpires =
-      this.configService.get<string>("JWT_EXPIRES_IN") || "365d"; // 1 year
-
-    const token = jwt.sign(
-      {
-        userId: user.id,
-        wallet: user.wallet,
-        username: user.username,
-        email: user.email,
-      },
-      jwtSecret,
-      { expiresIn: jwtExpires }
-    );
+    const token = this.issueJwt(user);
 
     const userResponse: User = {
       id: user.id,

@@ -17,7 +17,9 @@ interface ProjectCardProps {
 }
 
 export const ProjectCard: React.FC<ProjectCardProps> = ({ project, hideIdeaStageBadge = false }) => {
-  const { user, voteProject, openConnectReminder } = useAppStore();
+  const user = useAppStore((state) => state.user);
+  const voteProject = useAppStore((state) => state.voteProject);
+  const openConnectReminder = useAppStore((state) => state.openConnectReminder);
   const router = useRouter();
   const [isHovered, setIsHovered] = useState(false);
 

@@ -1,7 +1,10 @@
 import { useEffect, useRef } from "react";
 import { supabase } from "../lib/supabase";
 import { RealtimeChannel } from "@supabase/supabase-js";
-import { featureFlags } from "../lib/featureFlags";
+import {
+  isRealtimeChannelEnabled,
+  logRealtimeLifecycle,
+} from "../lib/realtime/registry";
 
 interface UseRealtimeProjectsProps {
   onNewProject?: (project: any) => void;
@@ -37,14 +40,15 @@ export function useRealtimeProjects({
   }, [onNewProject, onUpdateProject, onDeleteProject]);
 
   useEffect(() => {
-    if (featureFlags.disableRealtime) return;
+    if (!isRealtimeChannelEnabled("projects")) return;
 
     let channel: RealtimeChannel;
+    const channelName = "projects-realtime";
 
     const setupRealtimeSubscription = async () => {
       // Subscribe to projects table changes
       channel = supabase
-        .channel("projects-realtime")
+        .channel(channelName)
         .on(
           "postgres_changes",
           {
@@ -101,7 +105,10 @@ export function useRealtimeProjects({
         )
         .subscribe((status) => {
           if (status === "CHANNEL_ERROR") {
+            logRealtimeLifecycle(channelName, "error", { status });
             console.error("Failed to subscribe to projects realtime");
+          } else if (status === "SUBSCRIBED") {
+            logRealtimeLifecycle(channelName, "subscribe");
           }
         });
     };
@@ -112,6 +119,7 @@ export function useRealtimeProjects({
     return () => {
       if (channel) {
         supabase.removeChannel(channel);
+        logRealtimeLifecycle(channelName, "unsubscribe");
       }
     };
   }, []); // Empty dependency array - only subscribe once on mount

@@ -1,9 +1,14 @@
 'use client';
 
-const enableRealtime = process.env.NEXT_PUBLIC_ENABLE_REALTIME === 'true';
+import { realtimeChannelMatrix } from './realtime/registry';
+
+const enableRealtime =
+  process.env.NEXT_PUBLIC_ENABLE_REALTIME === 'true' &&
+  process.env.NEXT_PUBLIC_DISABLE_REALTIME !== 'true';
 
 export const featureFlags = {
   // Realtime can create a steady stream of Supabase egress, so it is opt-in.
-  disableRealtime:
-    process.env.NEXT_PUBLIC_DISABLE_REALTIME === 'true' || !enableRealtime,
+  enableRealtime,
+  disableRealtime: !enableRealtime,
+  realtime: realtimeChannelMatrix,
 };

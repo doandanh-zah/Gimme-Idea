@@ -1,41 +1,36 @@
-'use client';
-
-import React from 'react';
-import { motion } from 'framer-motion';
-import { Shield, ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
+import { ArrowLeft, Shield } from 'lucide-react';
 
 export default function PrivacyPage() {
   return (
-    <div className="min-h-screen bg-[#0A0A0A] text-white pt-20">
-      <div className="border-b border-white/5 bg-[#0F0F0F]/80 backdrop-blur-xl">
-        <div className="max-w-4xl mx-auto px-6 py-4 flex items-center gap-4">
-          <Link href="/landing" className="p-2 hover:bg-white/10 rounded-full transition-colors">
-            <ArrowLeft className="w-5 h-5" />
-          </Link>
-          <h1 className="text-xl font-bold">Privacy Policy</h1>
-        </div>
-      </div>
+    <main className="relative min-h-screen pb-20 pt-28 text-gray-300">
 
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="max-w-4xl mx-auto px-6 py-12"
-      >
-        <div className="flex items-center gap-4 mb-8">
-          <div className="w-16 h-16 bg-purple-500/20 rounded-full flex items-center justify-center">
-            <Shield className="w-8 h-8 text-purple-400" />
-          </div>
-          <div>
-            <h1 className="text-3xl font-bold">Privacy Policy</h1>
-            <p className="text-gray-400">Last updated: February 2026</p>
-          </div>
-        </div>
+      <div className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8">
+        <Link
+          href="/landing"
+          className="mb-8 inline-flex min-h-[40px] items-center gap-2 text-sm text-gray-400 transition hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#FFD700]"
+        >
+          <ArrowLeft className="h-4 w-4" />
+          Back to Landing
+        </Link>
 
-        <div className="prose prose-invert max-w-none space-y-8">
+        <header className="border-b border-white/10 pb-8">
+          <div className="flex items-center gap-4">
+            <div className="flex h-12 w-12 items-center justify-center border border-[#FFD700]/30 bg-[#FFD700]/10">
+              <Shield className="h-6 w-6 text-[#FFD700]" />
+            </div>
+            <div>
+              <p className="ui-eyebrow">Policy</p>
+              <h1 className="mt-2 text-3xl font-semibold tracking-tight text-white">Privacy Policy</h1>
+              <p className="mt-2 text-sm text-gray-500">Last updated: February 2026</p>
+            </div>
+          </div>
+        </header>
+
+        <div className="prose prose-invert max-w-none space-y-8 py-10">
           <section>
-            <h2 className="text-xl font-bold text-white mb-4">1. Data We Collect</h2>
-            <ul className="list-disc list-inside text-gray-300 space-y-2">
+            <h2 className="mb-4 text-xl font-bold text-white">1. Data We Collect</h2>
+            <ul className="list-inside list-disc space-y-2 text-gray-300">
               <li><strong>Account data:</strong> username, email (when used), profile metadata.</li>
               <li><strong>Auth data:</strong> wallet public addresses, auth provider metadata, and login history.</li>
               <li><strong>Automation credentials metadata:</strong> hashed PAT/agent-key records and usage metadata (never plaintext after issuance).</li>
@@ -45,8 +40,8 @@ export default function PrivacyPage() {
           </section>
 
           <section>
-            <h2 className="text-xl font-bold text-white mb-4">2. How We Use Data</h2>
-            <ul className="list-disc list-inside text-gray-300 space-y-2">
+            <h2 className="mb-4 text-xl font-bold text-white">2. How We Use Data</h2>
+            <ul className="list-inside list-disc space-y-2 text-gray-300">
               <li>To provide platform functionality and account security.</li>
               <li>To process content operations (create/edit/delete) and social features.</li>
               <li>To run AI features and improve quality/safety controls.</li>
@@ -56,31 +51,31 @@ export default function PrivacyPage() {
           </section>
 
           <section>
-            <h2 className="text-xl font-bold text-white mb-4">3. Sharing and Disclosure</h2>
-            <p className="text-gray-300 leading-relaxed">
+            <h2 className="mb-4 text-xl font-bold text-white">3. Sharing and Disclosure</h2>
+            <p className="leading-relaxed text-gray-300">
               We do not sell personal data. We may disclose limited information when required by law, to protect users/platform integrity,
               or to trusted service providers under contractual controls.
             </p>
           </section>
 
           <section>
-            <h2 className="text-xl font-bold text-white mb-4">4. Public vs Private Data</h2>
-            <p className="text-gray-300 leading-relaxed">
+            <h2 className="mb-4 text-xl font-bold text-white">4. Public vs Private Data</h2>
+            <p className="leading-relaxed text-gray-300">
               Content you publish on Gimme Idea is visible according to product behavior (generally public/community-visible).
               Keep sensitive information out of public posts.
             </p>
           </section>
 
           <section>
-            <h2 className="text-xl font-bold text-white mb-4">5. Blockchain Notice</h2>
-            <p className="text-gray-300 leading-relaxed">
+            <h2 className="mb-4 text-xl font-bold text-white">5. Blockchain Notice</h2>
+            <p className="leading-relaxed text-gray-300">
               On-chain actions are publicly observable and generally immutable. We cannot modify blockchain state or reverse finalized on-chain transactions.
             </p>
           </section>
 
           <section>
-            <h2 className="text-xl font-bold text-white mb-4">6. Security Practices</h2>
-            <ul className="list-disc list-inside text-gray-300 space-y-2">
+            <h2 className="mb-4 text-xl font-bold text-white">6. Security Practices</h2>
+            <ul className="list-inside list-disc space-y-2 text-gray-300">
               <li>Credential secrets are not stored in plaintext after issuance where designed.</li>
               <li>Rate limits, auditing, and abuse controls are used to reduce risk.</li>
               <li>Access is restricted by authorization and ownership checks.</li>
@@ -88,16 +83,16 @@ export default function PrivacyPage() {
           </section>
 
           <section>
-            <h2 className="text-xl font-bold text-white mb-4">7. Retention</h2>
-            <p className="text-gray-300 leading-relaxed">
+            <h2 className="mb-4 text-xl font-bold text-white">7. Retention</h2>
+            <p className="leading-relaxed text-gray-300">
               We retain data for product operations, compliance, fraud prevention, and security investigation needs.
               Retention windows may vary by data type and legal obligations.
             </p>
           </section>
 
           <section>
-            <h2 className="text-xl font-bold text-white mb-4">8. Your Controls</h2>
-            <ul className="list-disc list-inside text-gray-300 space-y-2">
+            <h2 className="mb-4 text-xl font-bold text-white">8. Your Controls</h2>
+            <ul className="list-inside list-disc space-y-2 text-gray-300">
               <li>Update profile information in-app.</li>
               <li>Rotate/revoke API tokens or agent keys.</li>
               <li>Request account/content support through official contact channels.</li>
@@ -105,20 +100,23 @@ export default function PrivacyPage() {
           </section>
 
           <section>
-            <h2 className="text-xl font-bold text-white mb-4">9. Policy Updates</h2>
-            <p className="text-gray-300 leading-relaxed">
+            <h2 className="mb-4 text-xl font-bold text-white">9. Policy Updates</h2>
+            <p className="leading-relaxed text-gray-300">
               We may revise this policy as product capabilities evolve. Continued use after updates means acceptance of the revised policy.
             </p>
           </section>
 
           <section>
-            <h2 className="text-xl font-bold text-white mb-4">10. Contact</h2>
-            <p className="text-gray-300 leading-relaxed">
-              Privacy and security inquiries: <a href="mailto:gimmeidea.contact@gmail.com" className="text-purple-400 hover:underline">gimmeidea.contact@gmail.com</a>
+            <h2 className="mb-4 text-xl font-bold text-white">10. Contact</h2>
+            <p className="leading-relaxed text-gray-300">
+              Privacy and security inquiries:{' '}
+              <a href="mailto:gimmeidea.contact@gmail.com" className="text-[#FFD700] underline-offset-4 hover:underline">
+                gimmeidea.contact@gmail.com
+              </a>
             </p>
           </section>
         </div>
-      </motion.div>
-    </div>
+      </div>
+    </main>
   );
 }

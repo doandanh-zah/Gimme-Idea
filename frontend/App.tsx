@@ -1,21 +1,45 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect } from 'react';
+import dynamic from 'next/dynamic';
+import Navbar from './components/Navbar';
 import Hero from './components/Hero';
 import StatsDashboard from './components/StatsDashboard';
 import JourneyMap from './components/JourneyMap';
 import { useAppStore } from './lib/store';
 import { useAuth } from './contexts/AuthContext';
 import Dashboard from './components/Dashboard';
-import { ProjectDetail } from './components/ProjectDetail';
-import { IdeaDetail } from './components/IdeaDetail';
-import { Donate } from './components/Donate';
+import { SubmissionModal } from './components/SubmissionModal';
 import { LoadingLightbulb } from './components/LoadingLightbulb';
-import { Profile } from './components/Profile';
+import { ConnectReminderModal } from './components/ConnectReminderModal';
+
+const LoadingView = () => <LoadingLightbulb text="Loading..." />;
+
+const ProjectDetail = dynamic(
+  () => import('./components/ProjectDetail').then((mod) => mod.ProjectDetail),
+  { ssr: false, loading: LoadingView }
+);
+const IdeaDetail = dynamic(
+  () => import('./components/IdeaDetail').then((mod) => mod.IdeaDetail),
+  { ssr: false, loading: LoadingView }
+);
+const Donate = dynamic(
+  () => import('./components/Donate').then((mod) => mod.Donate),
+  { ssr: false, loading: LoadingView }
+);
+const Profile = dynamic(
+  () => import('./components/Profile').then((mod) => mod.Profile),
+  { ssr: false, loading: LoadingView }
+);
 
 function App() {
-  const { currentView, isNavigating, openSubmitModal } = useAppStore();
-  const { isLoading: authLoading } = useAuth();
+  const { currentView, isNavigating, openSubmitModal, setUser } = useAppStore();
+  const { user: authUser, isLoading: authLoading } = useAuth();
+
+  // Sync AuthContext user with Store
+  useEffect(() => {
+    setUser(authUser);
+  }, [authUser, setUser]);
 
   const renderContent = () => {
     switch (currentView) {
@@ -36,35 +60,29 @@ function App() {
         return (
           <main>
             <Hero />
-            
-            {/* Stats Section */}
-            <section className="py-12 border-y border-white/5 bg-gradient-to-b from-transparent via-[#000000]/60 to-[#000000]/80">
-              <div className="max-w-7xl mx-auto backdrop-blur-sm">
-                 <StatsDashboard />
+
+            <section className="py-12 border-y border-white/10">
+              <div className="max-w-6xl mx-auto px-4 sm:px-6">
+                <div className="ui-eyebrow mb-6">Network signal</div>
+                <StatsDashboard />
               </div>
             </section>
 
-            {/* Journey Map */}
             <JourneyMap />
 
-            {/* CTA */}
-            <section className="py-32 px-6 text-center relative overflow-hidden">
-              <div className="absolute inset-0 bg-gold/10 blur-[100px] pointer-events-none" />
-              <div className="relative z-10 max-w-3xl mx-auto space-y-8">
-                <h2 className="text-5xl md:text-6xl font-display font-bold tracking-tight">
-                  Ready to validate your <br /><span className="text-gold glow-text-gold">Moonshot?</span>
+            <section className="py-20 md:py-28 px-4 sm:px-6 border-t border-white/10">
+              <div className="max-w-3xl mx-auto">
+                <div className="ui-eyebrow mb-4">Next step</div>
+                <h2 className="font-display text-3xl sm:text-5xl font-bold tracking-tight leading-tight mb-4">
+                  Ready to validate your{' '}
+                  <span className="text-[#FFD700]">moonshot</span>?
                 </h2>
-                <p className="text-xl text-gray-400">Where ideas meet builders. Share, discover, and grow together.</p>
-                <div className="flex flex-col sm:flex-row justify-center gap-4">
-
-                  <button 
-                    onClick={() => openSubmitModal('idea')}
-                    className="px-8 py-4 bg-transparent border border-white/20 text-white rounded-full font-bold hover:bg-white/10 transition-colors"
-                  >
-                    Submit Idea
-                  </button>
-
-                </div>
+                <p className="text-base sm:text-lg text-gray-500 mb-8 max-w-xl">
+                  Where ideas meet builders. Share, discover, and grow together.
+                </p>
+                <button type="button" onClick={() => openSubmitModal('idea')} className="btn-primary">
+                  Submit idea
+                </button>
               </div>
             </section>
           </main>
@@ -73,25 +91,37 @@ function App() {
   };
 
   return (
-    <div className="min-h-screen text-white selection:bg-gold/30 selection:text-gold relative overflow-hidden">
+    <div className="min-h-screen text-white selection:bg-[#FFD700]/30 selection:text-[#FFD700] relative overflow-hidden">
       {(isNavigating || authLoading) && (
-        <div className="fixed inset-0 z-[200] bg-black/90 backdrop-blur-lg flex items-center justify-center">
-          <LoadingLightbulb text={authLoading ? "Loading..." : "Accessing Protocol..."} />
+        <div className="fixed inset-0 z-[200] bg-black/90 flex items-center justify-center">
+          <LoadingLightbulb text={authLoading ? 'Loading...' : 'Accessing Protocol...'} />
         </div>
       )}
 
+      {/* Note: Navbar/modals also mounted in ClientLayout for app routes; landing SPA shell keeps its own for legacy view switch */}
+      <Navbar />
+      <ConnectReminderModal />
+      <SubmissionModal />
+
       {renderContent()}
 
-      <footer className="border-t border-white/10 py-8 px-6 bg-black/90 backdrop-blur-xl">
-        <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-4">
-          <div className="text-2xl font-display font-bold">Gimme<span className="text-gold">Idea</span></div>
-          <div className="text-gray-500 text-sm font-mono">
-            &copy; 2025 Gimme Idea Protocol. Product of DUT Superteam University Club
+      <footer className="border-t border-white/10 py-10 px-4 sm:px-6">
+        <div className="max-w-6xl mx-auto flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+          <div>
+            <div className="font-quantico text-xl font-bold">
+              Gimme<span className="text-[#FFD700]">Idea</span>
+            </div>
+            <div className="mt-2 text-gray-600 text-xs font-mono uppercase tracking-wider">
+              © 2025 · DUT Superteam University Club
+            </div>
           </div>
-          <div className="flex gap-4 text-gray-400 text-sm">
-            <a href="/terms" className="hover:text-white transition-colors">Terms</a>
-            <span className="text-gray-600">•</span>
-            <a href="/privacy" className="hover:text-white transition-colors">Privacy</a>
+          <div className="flex gap-6 text-xs font-mono uppercase tracking-wider text-gray-500">
+            <a href="/terms" className="hover:text-[#FFD700] transition-colors">
+              Terms
+            </a>
+            <a href="/privacy" className="hover:text-[#FFD700] transition-colors">
+              Privacy
+            </a>
           </div>
         </div>
       </footer>

@@ -16,9 +16,10 @@ import toast from "react-hot-toast";
 interface UseFollowOptions {
   targetUserId: string;
   initialStats?: FollowStats;
+  onFollowChange?: (isFollowing: boolean) => void;
 }
 
-export function useFollow({ targetUserId, initialStats }: UseFollowOptions) {
+export function useFollow({ targetUserId, initialStats, onFollowChange }: UseFollowOptions) {
   const { user } = useAuth();
   const viewerId = user?.id ?? null;
   const queryClient = useQueryClient();
@@ -81,6 +82,7 @@ export function useFollow({ targetUserId, initialStats }: UseFollowOptions) {
     },
     onSuccess: (next) => {
       toast.success(next === "follow" ? "Followed!" : "Unfollowed");
+      onFollowChange?.(next === "follow");
       void queryClient.invalidateQueries({
         queryKey: queryKeys.profile.followLists,
       });

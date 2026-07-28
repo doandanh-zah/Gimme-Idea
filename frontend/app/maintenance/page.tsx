@@ -1,138 +1,40 @@
-'use client';
-
-import { motion } from 'framer-motion';
-import { Zap, Clock } from 'lucide-react';
+import { Clock, Mail, Wrench } from 'lucide-react';
 
 export default function MaintenancePage() {
-    const containerVariants = {
-        hidden: { opacity: 0, y: 20 },
-        visible: { opacity: 1, y: 0, transition: { duration: 0.6 } }
-    };
-
-    const pulseVariants = {
-        pulse: {
-            scale: [1, 1.2, 1],
-            transition: { duration: 1.5, repeat: Infinity }
-        }
-    };
-
-    const rotateVariants = {
-        rotate: {
-            rotate: 360,
-            transition: { duration: 3, repeat: Infinity, ease: 'linear' }
-        }
-    };
-
-    return (
-        <div className="min-h-screen bg-gradient-to-br from-[#0D0D12] to-[#1a1a22] flex items-center justify-center p-4 overflow-hidden">
-            {/* Background decoration */}
-            <div className="absolute inset-0 overflow-hidden pointer-events-none">
-                <motion.div
-                    animate={{
-                        background: [
-                            'radial-gradient(circle at 20% 50%, rgba(255, 215, 0, 0.1) 0%, transparent 50%)',
-                            'radial-gradient(circle at 80% 80%, rgba(255, 215, 0, 0.1) 0%, transparent 50%)',
-                            'radial-gradient(circle at 40% 20%, rgba(255, 215, 0, 0.1) 0%, transparent 50%)'
-                        ]
-                    }}
-                    transition={{ duration: 8, repeat: Infinity }}
-                    className="absolute inset-0"
-                />
-            </div>
-
-            {/* Content */}
-            <motion.div
-                variants={containerVariants}
-                initial="hidden"
-                animate="visible"
-                className="text-center max-w-md relative z-10"
-            >
-                {/* Icon */}
-                <motion.div
-                    variants={rotateVariants}
-                    animate="rotate"
-                    className="mb-8 inline-block"
-                >
-                    <div className="relative">
-                        <Zap className="w-16 h-16 text-yellow-400 drop-shadow-lg" />
-                        <motion.div
-                            variants={pulseVariants}
-                            animate="pulse"
-                            className="absolute inset-0 rounded-full border-2 border-yellow-400/30"
-                        />
-                    </div>
-                </motion.div>
-
-                {/* Title */}
-                <motion.h1
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    transition={{ delay: 0.2, duration: 0.6 }}
-                    className="text-4xl sm:text-5xl font-bold text-white mb-3 font-display"
-                >
-                    Under Maintenance
-                </motion.h1>
-
-                {/* Divider */}
-                <motion.div
-                    initial={{ scaleX: 0 }}
-                    animate={{ scaleX: 1 }}
-                    transition={{ delay: 0.3, duration: 0.6 }}
-                    className="h-1 w-20 bg-gradient-to-r from-yellow-400 to-yellow-600 mx-auto mb-6 rounded-full"
-                />
-
-                {/* Description */}
-                <motion.p
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    transition={{ delay: 0.4, duration: 0.6 }}
-                    className="text-gray-400 text-base sm:text-lg mb-6 leading-relaxed"
-                >
-                    We're upgrading Gimme Idea to serve you better. We'll be back online shortly!
-                </motion.p>
-
-                {/* Status Indicator */}
-                <motion.div
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    transition={{ delay: 0.5, duration: 0.6 }}
-                    className="flex items-center justify-center gap-3 mb-8"
-                >
-                    <motion.div
-                        variants={pulseVariants}
-                        animate="pulse"
-                        className="w-3 h-3 rounded-full bg-yellow-400 shadow-lg shadow-yellow-400/50"
-                    />
-                    <span className="text-gray-400 text-sm font-medium">Maintenance in progress</span>
-                </motion.div>
-
-                {/* Info Box */}
-                <motion.div
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.6, duration: 0.6 }}
-                    className="bg-white/5 border border-yellow-400/20 rounded-xl p-6 backdrop-blur-sm mb-6"
-                >
-                    <div className="flex items-center justify-center gap-3 mb-3">
-                        <Clock className="w-5 h-5 text-yellow-400" />
-                        <p className="text-gray-300 font-medium">Estimated time: 1 day</p>
-                    </div>
-                    <p className="text-gray-400 text-sm">Thank you for your patience!</p>
-                </motion.div>
-
-                {/* Footer */}
-                <motion.p
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    transition={{ delay: 0.7, duration: 0.6 }}
-                    className="text-gray-500 text-xs sm:text-sm"
-                >
-                    Questions? Contact us at{' '}
-                    <a href="mailto:gimmeidea.contact@gmail.com" className="text-yellow-400 hover:text-yellow-300 transition">
-                        gimmeidea.contact@gmail.com
-                    </a>
-                </motion.p>
-            </motion.div>
+  return (
+    <main className="flex min-h-screen items-center justify-center px-4 py-20 text-gray-300 sm:px-6">
+      <section className="w-full max-w-lg border border-white/10 bg-white/[0.03] p-6 text-center sm:p-8">
+        <div className="mx-auto flex h-14 w-14 items-center justify-center border border-[#FFD700]/30 bg-[#FFD700]/10">
+          <Wrench className="h-7 w-7 text-[#FFD700]" />
         </div>
-    );
+
+        <p className="ui-eyebrow mx-auto mt-6 w-fit">System status</p>
+        <h1 className="mt-4 text-3xl font-semibold tracking-tight text-white sm:text-4xl">
+          Under Maintenance
+        </h1>
+        <p className="mx-auto mt-4 max-w-md text-base leading-7 text-gray-400">
+          We are upgrading Gimme Idea to improve reliability and performance. The product will be back online shortly.
+        </p>
+
+        <div className="mt-8 border border-[#FFD700]/20 bg-[#FFD700]/10 p-4">
+          <div className="flex items-center justify-center gap-2 text-sm font-medium text-yellow-50">
+            <Clock className="h-4 w-4 text-[#FFD700]" />
+            Estimated time: 1 day
+          </div>
+          <p className="mt-2 text-sm text-gray-400">Thank you for your patience.</p>
+        </div>
+
+        <p className="mt-6 text-sm text-gray-500">
+          Questions?{' '}
+          <a
+            href="mailto:gimmeidea.contact@gmail.com"
+            className="inline-flex items-center gap-1 text-[#FFD700] underline-offset-4 hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#FFD700]"
+          >
+            <Mail className="h-3.5 w-3.5" />
+            Contact us
+          </a>
+        </p>
+      </section>
+    </main>
+  );
 }

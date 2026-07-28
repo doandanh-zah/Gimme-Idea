@@ -1,12 +1,10 @@
 'use client';
 
-import React, { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { MessageSquare, User, Sparkles } from 'lucide-react';
+import React from 'react';
+import { MessageSquare, User, Sparkles, ChevronRight } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { Project } from '../lib/types';
 import { useAppStore } from '../lib/store';
-import { LikeButton } from './LikeButton';
 import toast from 'react-hot-toast';
 
 interface IdeaCardProps {
@@ -15,213 +13,121 @@ interface IdeaCardProps {
 
 export const IdeaCard: React.FC<IdeaCardProps> = ({ project }) => {
   const router = useRouter();
-  const [isHovered, setIsHovered] = useState(false);
-  const { user, voteProject, openConnectReminder } = useAppStore();
+  const user = useAppStore((state) => state.user);
+  const voteProject = useAppStore((state) => state.voteProject);
+  const openConnectReminder = useAppStore((state) => state.openConnectReminder);
 
   const handleClick = () => {
     const slug = project.slug || project.id.substring(0, 8);
     router.push(`/idea/${slug}`);
   };
 
-  const handleVote = async () => {
+  const handleVote = async (e: React.MouseEvent) => {
+    e.stopPropagation();
     if (!user) {
       openConnectReminder();
-      throw new Error('Not logged in');
+      return;
     }
-    
     try {
       await voteProject(project.id);
-    } catch (error) {
+    } catch {
       toast.error('Failed to vote');
-      throw error;
     }
   };
 
-  const categoryColors: Record<string, string> = {
-    'DeFi': 'from-blue-500/20 to-cyan-500/20 text-cyan-400',
-    'NFT': 'from-purple-500/20 to-pink-500/20 text-pink-400',
-    'Gaming': 'from-green-500/20 to-emerald-500/20 text-emerald-400',
-    'DAO': 'from-orange-500/20 to-amber-500/20 text-amber-400',
-    'Infrastructure': 'from-gray-500/20 to-slate-500/20 text-slate-400',
-    'Social': 'from-rose-500/20 to-red-500/20 text-rose-400',
-    'AI': 'from-violet-500/20 to-purple-500/20 text-violet-400',
-    'Other': 'from-gray-500/20 to-zinc-500/20 text-zinc-400',
-  };
-
-  const categoryColor = categoryColors[project.category] || categoryColors['Other'];
+  const poolLabel =
+    project.poolStatus === 'pool_open'
+      ? 'Pool open'
+      : project.poolStatus === 'approved_for_pool'
+        ? 'Pool ready'
+        : project.poolStatus
+          ? project.poolStatus.replace(/_/g, ' ')
+          : null;
 
   return (
-    <motion.div
-      className="relative cursor-pointer"
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
+    <article
+      role="button"
+      tabIndex={0}
       onClick={handleClick}
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.3 }}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          handleClick();
+        }
+      }}
+      className="idea-row group focus-visible:outline-none"
     >
-      {/* Card Container - Always visible */}
-      <div 
-        className="relative bg-gradient-to-br from-[#1a1a2e]/95 to-[#0d0d1a]/98 backdrop-blur-xl border border-white/10 rounded-xl overflow-hidden transition-all duration-300 h-[260px] flex flex-col"
-        style={{
-          boxShadow: isHovered 
-            ? '0 0 30px rgba(255, 215, 0, 0.3), 0 0 60px rgba(153, 69, 255, 0.2)'
-            : '0 4px 20px rgba(0, 0, 0, 0.3)'
-        }}
+      {/* Vote column — editorial score box */}
+      <button
+        type="button"
+        onClick={handleVote}
+        className="idea-row-votes"
+        aria-label={`Vote, currently ${project.votes}`}
       >
-        {/* Static scanline stripes - Always visible, subtle CRT effect */}
-        <div 
-          className="absolute inset-0 pointer-events-none z-[1]"
-          style={{
-            backgroundImage: 'repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(255,215,0,0.02) 2px, rgba(255,215,0,0.02) 4px)',
-            opacity: isHovered ? 0.8 : 0.4,
-            transition: 'opacity 0.3s ease'
-          }}
-        />
+        <span className="text-[10px] font-mono uppercase tracking-wider text-gray-500 mb-1">Up</span>
+        <span className="text-lg font-bold tabular-nums text-white group-hover:text-[#FFD700] transition-colors">
+          {project.votes}
+        </span>
+      </button>
 
-        {/* Glitch Border Effects - Only on hover */}
-        <AnimatePresence>
-          {isHovered && (
+      {/* Main content */}
+      <div className="min-w-0 flex flex-col gap-2">
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 idea-row-meta">
+          <span className="text-[#FFD700]">{project.category}</span>
+          {poolLabel && (
             <>
-              {/* Top border - Gold */}
-              <motion.div
-                initial={{ scaleX: 0, opacity: 0 }}
-                animate={{ scaleX: 1, opacity: 1 }}
-                exit={{ scaleX: 0, opacity: 0 }}
-                transition={{ duration: 0.3 }}
-                className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-[#FFD700] to-transparent origin-left z-20"
-              />
-              {/* Bottom border - Purple */}
-              <motion.div
-                initial={{ scaleX: 0, opacity: 0 }}
-                animate={{ scaleX: 1, opacity: 1 }}
-                exit={{ scaleX: 0, opacity: 0 }}
-                transition={{ duration: 0.3, delay: 0.1 }}
-                className="absolute bottom-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-[#9945FF] to-transparent origin-right z-20"
-              />
-              {/* Left border */}
-              <motion.div
-                initial={{ scaleY: 0, opacity: 0 }}
-                animate={{ scaleY: 1, opacity: 1 }}
-                exit={{ scaleY: 0, opacity: 0 }}
-                transition={{ duration: 0.3, delay: 0.15 }}
-                className="absolute top-0 bottom-0 left-0 w-[2px] bg-gradient-to-b from-[#FFD700] via-transparent to-[#9945FF] origin-top z-20"
-              />
-              {/* Right border */}
-              <motion.div
-                initial={{ scaleY: 0, opacity: 0 }}
-                animate={{ scaleY: 1, opacity: 1 }}
-                exit={{ scaleY: 0, opacity: 0 }}
-                transition={{ duration: 0.3, delay: 0.2 }}
-                className="absolute top-0 bottom-0 right-0 w-[2px] bg-gradient-to-b from-[#FFD700] via-transparent to-[#9945FF] origin-bottom z-20"
-              />
+              <span className="text-white/20">/</span>
+              <span
+                className={
+                  project.poolStatus === 'pool_open' ? 'text-[#14F195]' : 'text-gray-400'
+                }
+              >
+                {poolLabel}
+              </span>
             </>
           )}
-        </AnimatePresence>
-
-        {/* Card Content */}
-        <div className="p-4 relative z-[5] flex flex-col flex-1">
-          {/* Header Row */}
-          <div className="flex items-start justify-between gap-3 mb-3">
-            <div className="flex items-center gap-2 flex-wrap">
-              {/* Category Badge */}
-              <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-gradient-to-r ${categoryColor}`}>
-                {project.category}
-              </span>
-
-              {/* Pool Status Badge (Commit-to-Build) */}
-              {project.poolStatus && (
-                <span
-                  className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider border ${
-                    project.poolStatus === 'pool_open'
-                      ? 'border-green-500/30 bg-green-500/10 text-green-300'
-                      : project.poolStatus === 'reviewing' || project.poolStatus === 'approved_for_pool'
-                        ? 'border-[#FFD700]/30 bg-[#FFD700]/10 text-[#FFD700]'
-                        : 'border-white/10 bg-white/5 text-gray-300'
-                  }`}
-                >
-                  {project.poolStatus === 'pool_open'
-                    ? 'POOL OPEN'
-                    : project.poolStatus === 'approved_for_pool'
-                      ? 'POOL READY'
-                      : project.poolStatus.toUpperCase()}
-                </span>
-              )}
-            </div>
-            
-            {/* AI Score if available */}
-            {(project as any).aiScore && (
-              <div className="flex items-center gap-1 text-[10px] text-[#FFD700]">
+          {(project as any).aiScore != null && (
+            <>
+              <span className="text-white/20">/</span>
+              <span className="inline-flex items-center gap-1 text-[#FFD700]">
                 <Sparkles className="w-3 h-3" />
-                <span>{(project as any).aiScore}</span>
-              </div>
+                {(project as any).aiScore}
+              </span>
+            </>
+          )}
+        </div>
+
+        <h3 className="idea-row-title line-clamp-2">{project.title}</h3>
+
+        <p className="text-sm text-gray-400 line-clamp-2 leading-relaxed max-w-2xl">
+          {project.description}
+        </p>
+
+        <div className="flex items-center gap-2 mt-1">
+          <div className="w-5 h-5 rounded-sm bg-gradient-to-br from-[#9945FF] to-[#14F195] flex items-center justify-center overflow-hidden">
+            {project.author?.avatar ? (
+              <img src={project.author.avatar} alt="" className="w-full h-full object-cover" />
+            ) : (
+              <User className="w-3 h-3 text-white" />
             )}
           </div>
-
-          {/* Title - White normally, glitch effect on hover */}
-          <h3 
-            className="font-bold text-base mb-2 line-clamp-2 transition-all duration-300"
-            style={{
-              color: isHovered ? '#FFD700' : '#ffffff',
-              textShadow: isHovered 
-                ? '0 0 10px rgba(255, 215, 0, 0.5), 2px 0 #9945FF, -2px 0 #14F195'
-                : 'none'
-            }}
-          >
-            {project.title}
-          </h3>
-
-          {/* Description */}
-          <p className="text-xs text-gray-400 line-clamp-2 mb-3 leading-relaxed flex-1">
-            {project.description}
-          </p>
-
-          {/* Author */}
-          <div className="flex items-center gap-2 mb-3">
-            <div className="w-5 h-5 rounded-full bg-gradient-to-br from-[#9945FF] to-[#14F195] flex items-center justify-center overflow-hidden">
-              {project.author?.avatar ? (
-                <img src={project.author.avatar} alt="" className="w-full h-full object-cover" />
-              ) : (
-                <User className="w-3 h-3 text-white" />
-              )}
-            </div>
-            <span className="text-xs text-gray-500">
-              {project.author?.username || 'Anonymous'}
-            </span>
-          </div>
-
-          {/* Footer Stats */}
-          <div className="flex items-center justify-between pt-3 border-t border-white/5">
-            {/* Vote Button */}
-            <LikeButton
-              initialCount={project.votes}
-              onLike={handleVote}
-              size="sm"
-              variant="thumbs"
-            />
-
-            {/* Comments Count */}
-            <div className="flex items-center gap-1.5 text-xs text-gray-500">
-              <MessageSquare className="w-3.5 h-3.5" />
-              <span>{project.feedbackCount || 0}</span>
-            </div>
-
-            {/* Terminal Hint - Only on hover */}
-            <AnimatePresence>
-              {isHovered && (
-                <motion.span
-                  initial={{ opacity: 0, x: 10 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: 10 }}
-                  className="text-[10px] font-mono text-[#FFD700]/70"
-                >
-                  CLICK_TO_VIEW
-                </motion.span>
-              )}
-            </AnimatePresence>
-          </div>
+          <span className="text-xs text-gray-500 font-mono">
+            {project.author?.username || 'Anonymous'}
+          </span>
         </div>
       </div>
-    </motion.div>
+
+      {/* Aside metrics */}
+      <div className="idea-row-aside hidden sm:flex flex-col items-end justify-between gap-3 self-stretch min-w-[88px]">
+        <div className="flex items-center gap-1.5 text-xs text-gray-500 tabular-nums font-mono">
+          <MessageSquare className="w-3.5 h-3.5" />
+          <span>{project.feedbackCount || 0}</span>
+        </div>
+        <span className="inline-flex items-center gap-0.5 text-[11px] font-mono uppercase tracking-wider text-gray-600 group-hover:text-[#FFD700] transition-colors">
+          Open
+          <ChevronRight className="w-3.5 h-3.5" />
+        </span>
+      </div>
+    </article>
   );
 };

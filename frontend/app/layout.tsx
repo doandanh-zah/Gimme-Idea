@@ -84,6 +84,12 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
+      <Script id="browser-global-shim" strategy="beforeInteractive">
+        {`
+          window.global = window.global || window;
+          window.globalThis = window.globalThis || window;
+        `}
+      </Script>
       <head>
         {/* JSON-LD Schema for SEO */}
         <script

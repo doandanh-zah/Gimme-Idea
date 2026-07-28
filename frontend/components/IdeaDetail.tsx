@@ -25,9 +25,6 @@ import { ProposalSendModal } from './ProposalSendModal';
 import { CreatePoolButton } from './ideas/CreatePoolButton';
 import { useWallet, useConnection } from '@solana/wallet-adapter-react';
 import { PublicKey, Transaction, SystemProgram, LAMPORTS_PER_SOL } from '@solana/web3.js';
-import { useRelatedProjects } from '../hooks/useRelatedProjects';
-import { useQueryClient } from '@tanstack/react-query';
-import { syncProjectDetailCache } from '../hooks/useProjectDetail';
 
 // AI Bot display name
 const AI_BOT_NAME = 'Gimme Sensei';
@@ -361,8 +358,11 @@ interface CommentItemProps {
 }
 
 const CommentItem: React.FC<CommentItemProps> = ({ comment, projectId, isReply = false, onTip, ideaOwnerUsername, ideaContext, parentAIComment, parentCommentAuthor, isParentAI, activeReplyId, setActiveReplyId }) => {
-    const { user, likeComment, dislikeComment, replyComment, fetchProjectById } = useAppStore();
-    const queryClient = useQueryClient();
+    const user = useAppStore((state) => state.user);
+    const likeComment = useAppStore((state) => state.likeComment);
+    const dislikeComment = useAppStore((state) => state.dislikeComment);
+    const replyComment = useAppStore((state) => state.replyComment);
+    const fetchProjectById = useAppStore((state) => state.fetchProjectById);
     const [replyText, setReplyText] = useState('');
     const [isAnonReply, setIsAnonReply] = useState(false);
     const [showBurst, setShowBurst] = useState(false);
@@ -380,11 +380,6 @@ const CommentItem: React.FC<CommentItemProps> = ({ comment, projectId, isReply =
 
     const isOwnComment = user && !comment.isAnonymous && comment.author?.username === user.username;
 
-    const refreshProjectDetail = async () => {
-        const project = await fetchProjectById(projectId, { force: true });
-        if (project) syncProjectDetailCache(queryClient, project);
-    };
-
     const handleEditSave = async () => {
         if (!editText.trim()) {
             toast.error('Comment cannot be empty');
@@ -396,7 +391,8 @@ const CommentItem: React.FC<CommentItemProps> = ({ comment, projectId, isReply =
             if (response.success) {
                 toast.success('Comment updated!');
                 setIsEditing(false);
-                await refreshProjectDetail();
+                // Refresh project to get updated comments
+                fetchProjectById(projectId);
             } else {
                 toast.error(response.error || 'Failed to update comment');
             }
@@ -414,7 +410,8 @@ const CommentItem: React.FC<CommentItemProps> = ({ comment, projectId, isReply =
             const response = await apiClient.deleteComment(comment.id);
             if (response.success) {
                 toast.success('Comment deleted');
-                await refreshProjectDetail();
+                // Refresh project to get updated comments
+                fetchProjectById(projectId);
             } else {
                 toast.error(response.error || 'Failed to delete comment');
             }
@@ -483,7 +480,8 @@ const CommentItem: React.FC<CommentItemProps> = ({ comment, projectId, isReply =
                         if (response.data.skipped) {
                             // Don't show anything - user's comment was posted, AI just didn't need to reply
                         } else {
-                            await refreshProjectDetail();
+                            // Refresh to get the new AI reply
+                            await fetchProjectById(projectId);
                             toast.success('AI has replied!', { icon: '🤖' });
                         }
                     }
@@ -747,19 +745,16 @@ const CommentItem: React.FC<CommentItemProps> = ({ comment, projectId, isReply =
 };
 
 export const IdeaDetail = () => {
-    const {
-        selectedProject,
-        voteProject,
-        addComment,
-        user,
-        openConnectReminder,
-        tipComment,
-        handleRealtimeNewComment,
-        handleRealtimeUpdateComment,
-        handleRealtimeDeleteComment,
-        fetchProjectById,
-    } = useAppStore();
-    const queryClient = useQueryClient();
+    const selectedProject = useAppStore((state) => state.selectedProject);
+    const voteProject = useAppStore((state) => state.voteProject);
+    const addComment = useAppStore((state) => state.addComment);
+    const user = useAppStore((state) => state.user);
+    const openConnectReminder = useAppStore((state) => state.openConnectReminder);
+    const tipComment = useAppStore((state) => state.tipComment);
+    const handleRealtimeNewComment = useAppStore((state) => state.handleRealtimeNewComment);
+    const handleRealtimeUpdateComment = useAppStore((state) => state.handleRealtimeUpdateComment);
+    const handleRealtimeDeleteComment = useAppStore((state) => state.handleRealtimeDeleteComment);
+    const fetchProjectById = useAppStore((state) => state.fetchProjectById);
     const { isAdmin } = useAuth();
     const router = useRouter();
     const [commentText, setCommentText] = useState('');
@@ -784,6 +779,7 @@ export const IdeaDetail = () => {
 
     // Related Projects Modal State
     const [showRelatedProjectsModal, setShowRelatedProjectsModal] = useState(false);
+    const [relatedProjectsCount, setRelatedProjectsCount] = useState(0);
     const [viewGate, setViewGate] = useState<{ blocked: boolean; message?: string } | null>(null);
     const [monetization, setMonetization] = useState<any>(null);
     const [isBuyingPack, setIsBuyingPack] = useState(false);
@@ -798,10 +794,13 @@ export const IdeaDetail = () => {
     const { connection } = useConnection();
 
     const project = selectedProject;
-    const relatedProjectsQuery = useRelatedProjects(project?.id || '', Boolean(project?.id));
-    const relatedProjectsCount =
-        (relatedProjectsQuery.data?.aiDetected?.length || 0) +
-        (relatedProjectsQuery.data?.userPinned?.length || 0);
+
+    // Fetch related projects count on mount and when modal closes
+    useEffect(() => {
+        if (project?.id && !showRelatedProjectsModal) {
+            fetchRelatedProjectsCount();
+        }
+    }, [project?.id, showRelatedProjectsModal]); // Refresh when modal closes
 
     // Daily limiter: authenticated users via backend, guests via localStorage (persists across reload)
     useEffect(() => {
@@ -874,6 +873,20 @@ export const IdeaDetail = () => {
         run();
     }, [user]);
 
+    const fetchRelatedProjectsCount = async () => {
+        if (!project?.id) return;
+        try {
+            const response = await apiClient.getRelatedProjects(project.id);
+            if (response.success && response.data) {
+                const aiCount = response.data.aiDetected?.length || 0;
+                const userCount = response.data.userPinned?.length || 0;
+                setRelatedProjectsCount(aiCount + userCount);
+            }
+        } catch (error) {
+            console.error('Failed to fetch related projects count:', error);
+        }
+    };
+
     // Subscribe to realtime comment updates for this project
     useRealtimeComments({
         projectId: project?.id || '',
@@ -896,8 +909,7 @@ export const IdeaDetail = () => {
 
     const refreshIdeaAndProposals = async () => {
         if (!project?.id) return;
-        const next = await fetchProjectById(project.id, { force: true });
-        if (next) syncProjectDetailCache(queryClient, next);
+        await fetchProjectById(project.id);
     };
 
     if (!project) return null;
@@ -1177,94 +1189,20 @@ export const IdeaDetail = () => {
     };
 
     return (
-        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="min-h-screen pt-24 sm:pt-32 pb-20 px-4 sm:px-6">
-            <div className="max-w-4xl mx-auto">
-                {/* Nav */}
-                <button onClick={() => router.push('/idea')} className="flex items-center gap-2 text-gray-400 hover:text-white mb-6 sm:mb-8 text-sm">
-                    <ArrowLeft className="w-4 h-4" /> Back to Ideas
+        <div className="min-h-screen pt-20 sm:pt-24 pb-28 px-4 sm:px-6">
+            <div className="max-w-3xl mx-auto">
+                <button type="button" onClick={() => router.push('/idea')} className="inline-flex items-center gap-2 text-gray-500 hover:text-white mb-8 text-xs font-mono uppercase tracking-wider min-h-[40px]">
+                    <ArrowLeft className="w-3.5 h-3.5" /> Back to ideas
                 </button>
 
-                {/* Header */}
-                <div className="mb-8 sm:mb-12">
-                    <div className="flex flex-col gap-4 mb-6">
-                        <h1 className="text-2xl sm:text-4xl md:text-5xl font-display font-bold leading-tight">{project.title}</h1>
-                        <div className="flex flex-wrap items-center gap-2 sm:gap-3">
-                            {/* Like Button - First */}
-                            <motion.button
-                                onClick={handleVote}
-                                whileTap={{ scale: 0.9 }}
-                                className="bg-[#FFD700] text-black px-4 sm:px-6 py-2 rounded-full font-bold flex items-center gap-2 hover:scale-105 transition-transform shadow-[0_0_20px_rgba(255,215,0,0.3)] text-sm relative overflow-hidden"
-                            >
-                                <motion.div
-                                    animate={{ rotate: hasVoted ? [0, -20, 20, 0] : 0 }}
-                                    transition={{ duration: 0.3 }}
-                                >
-                                    <ThumbsUp className={`w-4 h-4 ${hasVoted ? 'fill-current' : ''}`} />
-                                </motion.div>
-                                <AnimatePresence mode="wait">
-                                    <motion.span
-                                        key={project.votes}
-                                        initial={{ y: 10, opacity: 0 }}
-                                        animate={{ y: 0, opacity: 1 }}
-                                        exit={{ y: -10, opacity: 0 }}
-                                        transition={{ duration: 0.2 }}
-                                    >
-                                        {project.votes}
-                                    </motion.span>
-                                </AnimatePresence>
-                            </motion.button>
+                {/* Magazine header */}
+                <header className="mb-2 pb-8 border-b border-white/10">
+                    <div className="ui-eyebrow mb-4">{project.category}</div>
+                    <h1 className="font-display text-3xl sm:text-4xl md:text-5xl font-bold leading-[1.1] tracking-tight text-white mb-6">
+                        {project.title}
+                    </h1>
 
-                            {/* Share Button - Second */}
-                            <button
-                                onClick={handleShareToX}
-                                className="bg-[#1DA1F2] text-white px-4 sm:px-5 py-2 rounded-full font-bold flex items-center gap-2 hover:scale-105 transition-transform shadow-[0_0_20px_rgba(29,161,242,0.3)] text-sm"
-                            >
-                                <Share2 className="w-4 h-4" /> Share
-                            </button>
-
-                            {/* Save Button - Third */}
-                            <button
-                                onClick={() => {
-                                    if (!user) {
-                                        openConnectReminder();
-                                        return;
-                                    }
-                                    setShowBookmarkModal(true);
-                                }}
-                                className="bg-purple-600 text-white px-4 sm:px-5 py-2 rounded-full font-bold flex items-center gap-2 hover:scale-105 transition-transform shadow-[0_0_20px_rgba(147,51,234,0.3)] text-sm"
-                            >
-                                <Bookmark className="w-4 h-4" /> Save
-                            </button>
-
-                            {/* Related Projects Button */}
-                            <button
-                                onClick={() => setShowRelatedProjectsModal(true)}
-                                className="relative flex items-center gap-2 rounded-full border border-cyan-400/20 bg-cyan-400/10 px-4 sm:px-5 py-2 text-sm font-bold text-cyan-100 transition-all hover:bg-cyan-400/15"
-                                title="Find similar projects on the internet"
-                            >
-                                <Archive className="w-4 h-4" /> Projects
-                                {relatedProjectsCount > 0 && (
-                                    <span className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-[#FFD700] text-xs font-bold text-black shadow-lg">
-                                        {relatedProjectsCount}
-                                    </span>
-                                )}
-                            </button>
-
-                            {/* Admin Actions */}
-                            {isAdmin && (
-                                <>
-                                    <AdminDeleteButton
-                                        projectId={project.id}
-                                        projectTitle={project.title}
-                                        onDeleted={() => router.push('/idea')}
-                                        variant="button"
-                                    />
-                                </>
-                            )}
-                        </div>
-                    </div>
-
-                    <div className="flex flex-wrap items-center gap-3 sm:gap-4 text-xs sm:text-sm text-gray-400 mb-6 sm:mb-8 border-b border-white/10 pb-6 sm:pb-8">
+                    <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-xs font-mono uppercase tracking-wider text-gray-500 mb-6">
                         <AuthorLink
                             username={project.author?.username || 'Anonymous'}
                             avatar={project.author?.avatar}
@@ -1272,65 +1210,121 @@ export const IdeaDetail = () => {
                             showAvatar={true}
                             avatarSize="md"
                         />
-                        <span>•</span>
-                        <span>{project.category}</span>
-                        <span>•</span>
+                        <span className="text-white/15">/</span>
                         <span>{new Date(project.createdAt).toLocaleDateString()}</span>
                     </div>
 
-                    {/* Content Blocks */}
-                    <div className="space-y-12">
-                        <section>
-                            <h3 className="text-xl font-bold text-[#FFD700] mb-4 font-mono uppercase tracking-wider">The Problem</h3>
-                            <div className="text-lg text-gray-200 leading-relaxed">
+                    <div className="flex flex-wrap items-center gap-2">
+                        <button
+                            type="button"
+                            onClick={handleVote}
+                            className="btn-primary !min-h-[40px] !px-4 !text-xs"
+                        >
+                            <ThumbsUp className={`w-3.5 h-3.5 ${hasVoted ? 'fill-current' : ''}`} />
+                            <span className="tabular-nums">{project.votes}</span>
+                        </button>
+                        <button
+                            type="button"
+                            onClick={handleShareToX}
+                            className="btn-ghost !min-h-[40px] !px-4 !text-xs"
+                        >
+                            <Share2 className="w-3.5 h-3.5" /> Share
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => {
+                                if (!user) {
+                                    openConnectReminder();
+                                    return;
+                                }
+                                setShowBookmarkModal(true);
+                            }}
+                            className="btn-ghost !min-h-[40px] !px-4 !text-xs"
+                        >
+                            <Bookmark className="w-3.5 h-3.5" /> Save
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => setShowRelatedProjectsModal(true)}
+                            className="relative btn-ghost !min-h-[40px] !px-4 !text-xs"
+                            title="Find similar projects on the internet"
+                        >
+                            <Archive className="w-3.5 h-3.5" /> Projects
+                            {relatedProjectsCount > 0 && (
+                                <span className="ml-1 inline-flex h-5 min-w-[20px] items-center justify-center rounded-sm bg-[#FFD700] px-1 text-[10px] font-bold text-black">
+                                    {relatedProjectsCount}
+                                </span>
+                            )}
+                        </button>
+                        {isAdmin && (
+                            <AdminDeleteButton
+                                projectId={project.id}
+                                projectTitle={project.title}
+                                onDeleted={() => router.push('/idea')}
+                                variant="button"
+                            />
+                        )}
+                    </div>
+                </header>
+
+                {/* Chapter content */}
+                <div className="mb-10">
+                    <div className="chapter">
+                        <span className="chapter-index">01</span>
+                        <div>
+                            <div className="chapter-label">The problem</div>
+                            <div className="text-base sm:text-lg text-gray-200 leading-relaxed">
                                 <MarkdownContent content={project.problem} />
                             </div>
-                        </section>
-
-                        <section>
-                            <h3 className="text-xl font-bold text-[#FFD700] mb-4 font-mono uppercase tracking-wider">The Solution</h3>
-                            <div className="p-6 bg-white/5 border-l-4 border-[#FFD700] rounded-r-xl">
-                                <div className="text-lg text-white leading-relaxed">
-                                    <MarkdownContent content={project.solution} />
-                                </div>
+                        </div>
+                    </div>
+                    <div className="chapter">
+                        <span className="chapter-index">02</span>
+                        <div>
+                            <div className="chapter-label">The solution</div>
+                            <div className="text-base sm:text-lg text-white leading-relaxed border-l-2 border-[#FFD700] pl-4">
+                                <MarkdownContent content={project.solution} />
                             </div>
-                        </section>
-
-                        <section>
-                            <h3 className="text-sm font-bold text-gray-500 mb-2 font-mono uppercase">Opportunity</h3>
-                            <div className="text-gray-300">
-                                {project.opportunity ? <MarkdownContent content={project.opportunity} /> : "Not specified."}
+                        </div>
+                    </div>
+                    <div className="chapter">
+                        <span className="chapter-index">03</span>
+                        <div>
+                            <div className="chapter-label">Opportunity</div>
+                            <div className="text-gray-300 leading-relaxed">
+                                {project.opportunity ? <MarkdownContent content={project.opportunity} /> : 'Not specified.'}
                             </div>
-                        </section>
+                        </div>
+                    </div>
 
-                        <section className="pt-2">
-                            <button
-                                onClick={initializeAssessment}
-                                className="bg-[#FFD700] text-black px-4 py-2 rounded-full text-sm font-bold"
-                            >
-                                Brainstorm with Gimme Sensei
-                            </button>
-                        </section>
-
+                    <div className="pt-8">
+                        <button
+                            type="button"
+                            onClick={initializeAssessment}
+                            className="btn-primary"
+                        >
+                            Brainstorm with Gimme Sensei
+                        </button>
                     </div>
                 </div>
 
                 {/* On-chain Actions */}
-                <div className="mb-10 rounded-2xl border border-white/10 bg-white/[0.03] p-5 space-y-4">
+                <div className="mb-10 border border-white/10 bg-[#0a0a0a] p-5 space-y-4">
                     <div className="flex items-center justify-between gap-3">
-                        <h3 className="text-sm font-bold text-white uppercase tracking-wider font-mono">
-                            On-chain Actions
+                        <h3 className="text-[11px] font-bold text-white uppercase tracking-[0.14em] font-mono">
+                            On-chain actions
                         </h3>
                         {project.finalDecision ? (
-                            <span className="text-xs text-yellow-300">Final: {project.finalDecision}</span>
+                            <span className="text-xs text-[#FFD700] font-mono">Final: {project.finalDecision}</span>
                         ) : null}
                     </div>
                     {!project.proposalPubkey ? (
                         <CreatePoolButton idea={project} onCreated={refreshIdeaAndProposals} />
                     ) : (
                         <button
+                            type="button"
                             onClick={() => setShowProposalModal(true)}
-                            className="px-4 py-2 rounded-full bg-[#FFD700] text-black text-sm font-bold"
+                            className="btn-primary !min-h-[40px] !text-xs"
                         >
                             Send Proposal
                         </button>
@@ -1387,7 +1381,7 @@ export const IdeaDetail = () => {
             </div>
 
             {showBuyOptions && (
-                <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4" onClick={() => setShowBuyOptions(false)}>
+                <div className="fixed inset-0 z-50 modal-overlay flex items-center justify-center p-4" onClick={() => setShowBuyOptions(false)}>
                     <div className="w-full max-w-md rounded-2xl border border-white/10 bg-[#0D0D12] p-5" onClick={(e) => e.stopPropagation()}>
                         <h3 className="text-lg font-bold text-[#FFD700] mb-2">Choose a plan</h3>
                         <p className="text-xs text-gray-400 mb-4">Pay instantly with wallet, or continue to Billing for Visa/Mastercard checkout.</p>
@@ -1416,7 +1410,7 @@ export const IdeaDetail = () => {
             )}
 
             {showGtmChat && (
-                <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4" onClick={() => setShowGtmChat(false)}>
+                <div className="fixed inset-0 z-50 modal-overlay flex items-end sm:items-center justify-center p-0 sm:p-4" onClick={() => setShowGtmChat(false)}>
                     <div className="w-full sm:max-w-2xl h-[88vh] sm:h-auto sm:max-h-[88vh] rounded-t-2xl sm:rounded-2xl border border-white/10 bg-[#0D0D12] overflow-hidden flex flex-col" onClick={(e) => e.stopPropagation()}>
                         <div className="px-4 sm:px-5 py-4 border-b border-white/10 flex items-center justify-between">
                             <h3 className="text-base sm:text-lg font-bold text-[#FFD700]">Brainstorm with Gimme Sensei</h3>
@@ -1512,6 +1506,6 @@ export const IdeaDetail = () => {
                 isIdeaUploader={Boolean(user?.username && project?.author?.username && user.username === project.author.username)}
                 ideaUploaderName={project?.author?.username || undefined}
             />
-        </motion.div>
+        </div>
     );
 };
