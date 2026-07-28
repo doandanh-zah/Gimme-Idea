@@ -46,6 +46,7 @@ test-ledger/
 # Solana keys (SECURITY: Never commit wallet keys)
 *.json
 !package.json
+!frontend/package-lock.json
 !tsconfig.json
 !nest-cli.json
 !vercel.json
