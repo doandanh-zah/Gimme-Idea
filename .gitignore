@@ -65,3 +65,4 @@ devdocs/
 # Personal documents
 dev-docs
 AGENTS.md
+.vercel/

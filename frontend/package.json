@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build --webpack",
+    "build": "next build --webpack && node scripts/ensure-next-package-json.mjs",
     "start": "next start",
     "lint": "next lint",
     "guard:imports": "node scripts/check-client-boundaries.mjs",
