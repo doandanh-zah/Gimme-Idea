@@ -48,6 +48,8 @@ test-ledger/
 !package.json
 !tsconfig.json
 !nest-cli.json
+!vercel.json
+!**/vercel.json
 
 # Misc
 .cache/
