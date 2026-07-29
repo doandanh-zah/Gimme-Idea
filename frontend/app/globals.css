@@ -108,6 +108,10 @@ body {
 .btn-primary:hover {
   background: var(--gold-soft);
 }
+.btn-primary:focus-visible {
+  outline: 2px solid var(--gold);
+  outline-offset: 2px;
+}
 .btn-primary:disabled {
   opacity: 0.55;
   cursor: not-allowed;
@@ -132,6 +136,10 @@ body {
   border-color: rgba(255, 255, 255, 0.35);
   background: rgba(255, 255, 255, 0.03);
 }
+.btn-ghost:focus-visible {
+  outline: 2px solid var(--gold);
+  outline-offset: 2px;
+}
 
 /* Filter tab — underline style */
 .ui-tab {
@@ -153,6 +161,10 @@ body {
 }
 .ui-tab:hover {
   color: #fff;
+}
+.ui-tab:focus-visible {
+  outline: 2px solid var(--gold);
+  outline-offset: 2px;
 }
 .ui-tab-active {
   color: #fff;

@@ -1,21 +1,20 @@
 'use client';
 
-import React, { useState, useRef, useEffect, CSSProperties } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useAppStore } from '../lib/store';
 import { useAuth } from '../contexts/AuthContext';
 import { useRouter, usePathname } from 'next/navigation';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Camera, Edit2, Save, X, AtSign, Code2, Globe, Send, Pencil, Trash2, ArrowLeft, Wallet, Check, Repeat, Loader2, Lightbulb, MessageSquare, Heart, Star, Calendar, Link as LinkIcon, ImageIcon, ThumbsUp, TrendingUp, Users, Rss, Bookmark, AlertTriangle } from 'lucide-react';
+import { Camera, Save, AtSign, Code2, Globe, Send, Pencil, Trash2, ArrowLeft, Wallet, Check, Loader2, Lightbulb, MessageSquare, Star, Calendar, Link as LinkIcon, ImageIcon, TrendingUp, Users, Rss, Bookmark, AlertTriangle } from 'lucide-react';
 import { ProjectCard } from './ProjectCard';
 import { WalletReminderBadge } from './WalletReminderBadge';
 import { WalletRequiredModal } from './WalletRequiredModal';
 import { EditProjectModal } from './EditProjectModal';
 import { ImageCropper } from './ImageCropper';
-import { FollowButton, FollowStats } from './FollowButton';
+import { FollowButton } from './FollowButton';
 import { FollowListModal } from './FollowListModal';
 import { LoadingSpinner } from './LoadingSpinner';
-import { useFollow } from '../hooks/useFollow';
 import toast from 'react-hot-toast';
 import { Project, Feed } from '../lib/types';
 import { apiClient } from '../lib/api-client';
@@ -443,557 +442,526 @@ export const Profile = () => {
 
   const hasSocialLinks = displayUser.socials?.twitter || displayUser.socials?.github || 
     displayUser.socials?.telegram || displayUser.socials?.facebook;
+  const avatarSrc = isEditing ? editForm.avatar : displayUser.avatar;
+  const coverSrc = isEditing ? editForm.coverImage : displayUser.coverImage;
+  const avatarInitial = displayUser.username?.slice(0, 1).toUpperCase() || 'G';
 
   return (
-    <motion.div 
-        initial={{ opacity: 0 }} 
-        animate={{ opacity: 1 }}
-        className="min-h-screen pt-20 sm:pt-24 pb-20 px-4 sm:px-6"
+    <motion.main
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      className="min-h-screen px-4 pb-24 pt-24 sm:px-6 sm:pt-28"
     >
-        <div className="max-w-5xl mx-auto">
-            {/* Back Button */}
-            {!isOwnProfile && (
-                <button
-                    onClick={() => router.back()}
-                    className="flex items-center gap-2 text-gray-400 hover:text-white mb-6 text-sm"
-                >
-                    <ArrowLeft className="w-4 h-4" /> Back
-                </button>
+      <div className="mx-auto max-w-5xl">
+        {!isOwnProfile && (
+          <button
+            type="button"
+            onClick={() => router.back()}
+            className="mb-5 inline-flex min-h-[40px] items-center gap-2 text-sm text-gray-400 transition hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#FFD700]"
+          >
+            <ArrowLeft className="h-4 w-4" aria-hidden="true" />
+            Back
+          </button>
+        )}
+
+        {isOwnProfile && displayUser.needsWalletConnect && (
+          <div className="mb-5">
+            <WalletReminderBadge onConnect={() => setShowWalletPopup(true)} />
+          </div>
+        )}
+
+        <section className="overflow-hidden border border-white/10 bg-[#0A0A0A]">
+          <div className="relative h-40 overflow-hidden border-b border-white/10 bg-[#111] sm:h-52">
+            {coverSrc ? (
+              <img
+                src={coverSrc}
+                alt={`${displayUser.username} cover`}
+                className="h-full w-full object-cover"
+              />
+            ) : (
+              <div className="absolute inset-0 bg-[linear-gradient(135deg,#141414_0%,#0a0a0a_58%,rgba(255,215,0,0.08)_100%)]">
+                <div className="absolute inset-0 opacity-35 [background-image:linear-gradient(rgba(255,255,255,0.04)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.04)_1px,transparent_1px)] [background-size:32px_32px]" />
+              </div>
             )}
 
-            {/* Wallet Reminder */}
-            {isOwnProfile && displayUser.needsWalletConnect && (
-              <WalletReminderBadge onConnect={() => setShowWalletPopup(true)} />
-            )}
+            <input
+              type="file"
+              ref={coverInputRef}
+              className="hidden"
+              accept="image/*"
+              onChange={handleCoverUpload}
+              disabled={isUploadingCover}
+            />
 
-            {/* Profile Header Card */}
-            <div className="bg-gradient-to-br from-white/[0.08] to-white/[0.02] backdrop-blur-xl border border-white/10 rounded-2xl overflow-hidden">
-                {/* Cover Image - taller for X/Twitter style */}
-                <div className="relative h-36 sm:h-48 bg-gradient-to-br from-purple-900/50 via-blue-900/30 to-pink-900/30 overflow-hidden">
-                    {(isEditing ? editForm.coverImage : displayUser.coverImage) ? (
-                        <img 
-                            src={isEditing ? editForm.coverImage : displayUser.coverImage} 
-                            alt="Cover" 
-                            className="w-full h-full object-cover"
-                        />
-                    ) : (
-                        <div className="absolute inset-0 bg-gradient-to-br from-purple-900/50 via-blue-900/30 to-pink-900/30">
-                            <div className="absolute inset-0 opacity-30">
-                                <div className="absolute top-4 left-8 w-2 h-2 bg-white rounded-full animate-pulse" />
-                                <div className="absolute top-12 left-1/4 w-1 h-1 bg-white/60 rounded-full" />
-                                <div className="absolute top-6 right-1/3 w-1.5 h-1.5 bg-white/80 rounded-full animate-pulse" />
-                                <div className="absolute bottom-8 right-12 w-1 h-1 bg-white/50 rounded-full" />
-                                <div className="absolute top-1/2 left-1/2 w-2 h-2 bg-purple-300/50 rounded-full animate-pulse" />
-                            </div>
-                        </div>
-                    )}
-                    
-                    <input 
-                        type="file" 
-                        ref={coverInputRef} 
-                        className="hidden" 
-                        accept="image/*" 
-                        onChange={handleCoverUpload} 
-                        disabled={isUploadingCover}
-                    />
-
-                    {isEditing && (
-                        <button 
-                            onClick={() => !isUploadingCover && coverInputRef.current?.click()}
-                            disabled={isUploadingCover}
-                            className="absolute bottom-3 right-3 z-10 flex items-center gap-2 px-3 py-1.5 bg-black/60 hover:bg-black/80 rounded-full text-sm text-white transition-colors border border-white/20 cursor-pointer"
-                        >
-                            {isUploadingCover ? (
-                                <>
-                                    <Loader2 className="w-4 h-4 animate-spin" />
-                                    <span>Uploading...</span>
-                                </>
-                            ) : (
-                                <>
-                                    <ImageIcon className="w-4 h-4" />
-                                    <span>{editForm.coverImage ? 'Change' : 'Add'} cover</span>
-                                </>
-                            )}
-                        </button>
-                    )}
-                </div>
-
-                {/* Profile Section - X/Twitter Style Layout */}
-                <div className="relative px-4 sm:px-6">
-                    {/* Avatar Row - Avatar overlaps cover, Edit button on right */}
-                    <div className="flex justify-between items-end -mt-12 sm:-mt-16 mb-3">
-                        {/* Avatar */}
-                        <div className="relative group flex-shrink-0">
-                            <div className="w-24 h-24 sm:w-32 sm:h-32 rounded-full border-4 border-[#0a0a0a] overflow-hidden bg-gray-800 shadow-xl">
-                                <img 
-                                    src={isEditing ? editForm.avatar : displayUser.avatar} 
-                                    alt="Profile" 
-                                    className="w-full h-full object-cover" 
-                                />
-                            </div>
-                            
-                            <input 
-                                type="file" 
-                                ref={fileInputRef} 
-                                className="hidden" 
-                                accept="image/*" 
-                                onChange={handleImageUpload} 
-                                disabled={isUploadingAvatar}
-                            />
-
-                            {isEditing && (
-                                <button 
-                                    onClick={() => !isUploadingAvatar && fileInputRef.current?.click()}
-                                    disabled={isUploadingAvatar}
-                                    className="absolute inset-0 flex items-center justify-center bg-black/60 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
-                                >
-                                    {isUploadingAvatar ? (
-                                        <Loader2 className="w-8 h-8 text-white animate-spin" />
-                                    ) : (
-                                        <Camera className="w-8 h-8 text-white" />
-                                    )}
-                                </button>
-                            )}
-                        </div>
-
-                        {/* Action Buttons */}
-                        <div className="flex items-center gap-2">
-                            {/* Share Profile Button - shows on ALL profiles */}
-                            <button 
-                                onClick={() => {
-                                    const profileSlug = displayUser.slug || createUsernameSlug(displayUser.username);
-                                    const profileUrl = `${window.location.origin}/profile/${profileSlug}`;
-                                    navigator.clipboard.writeText(profileUrl);
-                                    // Show toast notification
-                                    const toast = document.createElement('div');
-                                    toast.className = 'fixed bottom-4 right-4 bg-yellow-500 text-black px-4 py-2 rounded-full font-semibold shadow-lg z-50 animate-pulse';
-                                    toast.textContent = 'Profile link copied!';
-                                    document.body.appendChild(toast);
-                                    setTimeout(() => toast.remove(), 2000);
-                                }}
-                                className="px-5 py-2.5 bg-gradient-to-r from-yellow-400 via-yellow-500 to-amber-500 hover:from-yellow-500 hover:via-yellow-600 hover:to-amber-600 text-black rounded-full text-sm font-bold transition-all shadow-lg shadow-yellow-500/25 flex items-center gap-2"
-                            >
-                                <LinkIcon className="w-4 h-4" />
-                                Share Profile
-                            </button>
-                            
-                            {/* Edit Profile Button - only for own profile */}
-                            {isOwnProfile && !isEditing && (
-                                <button 
-                                    onClick={() => setIsEditing(true)}
-                                    className="px-5 py-2.5 border border-white/30 hover:bg-white/10 rounded-full text-sm font-bold transition-colors"
-                                >
-                                    Edit profile
-                                </button>
-                            )}
-                            
-                            {/* Follow Button - for other profiles */}
-                            {!isOwnProfile && displayUser?.id && (
-                                <FollowButton
-                                    targetUserId={displayUser.id}
-                                    targetUsername={displayUser.username}
-                                    onFollowChange={handleFollowChange}
-                                />
-                            )}
-                        </div>
-                    </div>
-
-                    {/* Name & Info Section - Below Avatar */}
-                    <div className="pb-4">
-                        {/* Username & Email */}
-                        <div className="mb-3">
-                            {isEditing ? (
-                                <input 
-                                    value={editForm.username}
-                                    onChange={e => setEditForm({...editForm, username: e.target.value})}
-                                    className="bg-white/5 border border-white/20 rounded-lg px-3 py-2 text-xl font-bold focus:border-purple-500 outline-none text-white w-full max-w-[250px]"
-                                />
-                            ) : (
-                                <h1 className="text-xl sm:text-2xl font-bold">{displayUser.username}</h1>
-                            )}
-                            {displayUser.email && (
-                                <p className="text-gray-500 text-sm mt-0.5">{displayUser.email}</p>
-                            )}
-                        </div>
-
-                    {/* Bio */}
-                        {isEditing ? (
-                            <textarea 
-                                value={editForm.bio}
-                                onChange={e => setEditForm({...editForm, bio: e.target.value})}
-                                placeholder="Write something about yourself..."
-                                className="w-full bg-white/5 border border-white/20 rounded-xl px-4 py-3 focus:border-purple-500 outline-none text-white resize-none h-20 text-sm mb-4"
-                            />
-                        ) : displayUser.bio ? (
-                            <p className="text-gray-300 text-sm leading-relaxed mb-4">
-                                {displayUser.bio}
-                            </p>
-                        ) : isOwnProfile ? (
-                            <p className="text-gray-500 text-sm mb-4">Add a bio to tell people about yourself.</p>
-                        ) : null}
-
-                    {/* Followers/Following Stats */}
-                    <div className="flex items-center gap-4 mb-4">
-                        <button
-                            onClick={() => {
-                                setFollowModalTab('followers');
-                                setShowFollowModal(true);
-                            }}
-                            className="flex items-center gap-1.5 hover:text-purple-400 transition-colors group"
-                        >
-                            <span className="font-bold text-white group-hover:text-purple-400">
-                                {localFollowersCount}
-                            </span>
-                            <span className="text-gray-400 text-sm">Followers</span>
-                        </button>
-                        <button
-                            onClick={() => {
-                                setFollowModalTab('following');
-                                setShowFollowModal(true);
-                            }}
-                            className="flex items-center gap-1.5 hover:text-purple-400 transition-colors group"
-                        >
-                            <span className="font-bold text-white group-hover:text-purple-400">
-                                {localFollowingCount}
-                            </span>
-                            <span className="text-gray-400 text-sm">Following</span>
-                        </button>
-                    </div>
-
-                    {/* Meta Info */}
-                    <div className="flex flex-wrap items-center gap-x-4 gap-y-2 mt-4 text-sm text-gray-500">
-                        {/* Wallet */}
-                        {displayUser.wallet && (
-                            <div className="flex items-center gap-1.5">
-                                <Wallet className="w-4 h-4" />
-                                <span className="font-mono text-xs">
-                                    {displayUser.wallet.slice(0, 4)}...{displayUser.wallet.slice(-4)}
-                                </span>
-                                {isOwnProfile && (
-                                    <>
-                                        {isWalletConnected ? (
-                                            <span className="text-green-400 text-[10px] bg-green-500/10 px-1.5 py-0.5 rounded">
-                                                <Check className="w-3 h-3 inline" />
-                                            </span>
-                                        ) : (
-                                            <button
-                                                onClick={() => {
-                                                    setWalletModalMode('reconnect');
-                                                    setShowWalletModal(true);
-                                                }}
-                                                className="text-purple-400 text-[10px] bg-purple-500/10 hover:bg-purple-500/20 px-1.5 py-0.5 rounded transition-colors"
-                                            >
-                                                Reconnect
-                                            </button>
-                                        )}
-                                    </>
-                                )}
-                            </div>
-                        )}
-
-                        {/* Join Date - Placeholder since createdAt not in User type */}
-                        <div className="flex items-center gap-1.5">
-                            <Calendar className="w-4 h-4" />
-                            <span>Gimme Idea Member</span>
-                        </div>
-                    </div>
-
-                    {/* Social Links - Display */}
-                    {!isEditing && hasSocialLinks && (
-                        <div className="flex gap-2 mt-4">
-                            {displayUser.socials?.twitter && (
-                                <a href={displayUser.socials.twitter} target="_blank" rel="noopener noreferrer" 
-                                   className="p-2 bg-white/5 hover:bg-white/10 rounded-full transition-colors">
-                                    <AtSign className="w-4 h-4 text-gray-400 hover:text-[#1DA1F2]" />
-                                </a>
-                            )}
-                            {displayUser.socials?.github && (
-                                <a href={displayUser.socials.github} target="_blank" rel="noopener noreferrer"
-                                   className="p-2 bg-white/5 hover:bg-white/10 rounded-full transition-colors">
-                                    <Code2 className="w-4 h-4 text-gray-400 hover:text-white" />
-                                </a>
-                            )}
-                            {displayUser.socials?.telegram && (
-                                <a href={displayUser.socials.telegram} target="_blank" rel="noopener noreferrer"
-                                   className="p-2 bg-white/5 hover:bg-white/10 rounded-full transition-colors">
-                                    <Send className="w-4 h-4 text-gray-400 hover:text-[#0088cc]" />
-                                </a>
-                            )}
-                            {displayUser.socials?.facebook && (
-                                <a href={displayUser.socials.facebook} target="_blank" rel="noopener noreferrer"
-                                   className="p-2 bg-white/5 hover:bg-white/10 rounded-full transition-colors">
-                                    <Globe className="w-4 h-4 text-gray-400 hover:text-[#4267B2]" />
-                                </a>
-                            )}
-                        </div>
-                    )}
-
-                    {/* Social Links - Edit */}
-                    {isEditing && (
-                        <div className="grid grid-cols-2 gap-3 mt-4">
-                            <div className="relative">
-                                <AtSign className="w-4 h-4 text-gray-500 absolute left-3 top-1/2 -translate-y-1/2" />
-                                <input 
-                                    value={editForm.twitter}
-                                    onChange={e => setEditForm({...editForm, twitter: e.target.value})}
-                                    className="w-full bg-white/5 border border-white/20 rounded-lg pl-10 pr-3 py-2 focus:border-purple-500 outline-none text-white text-sm"
-                                    placeholder="Twitter URL"
-                                />
-                            </div>
-                            <div className="relative">
-                                <Code2 className="w-4 h-4 text-gray-500 absolute left-3 top-1/2 -translate-y-1/2" />
-                                <input 
-                                    value={editForm.github}
-                                    onChange={e => setEditForm({...editForm, github: e.target.value})}
-                                    className="w-full bg-white/5 border border-white/20 rounded-lg pl-10 pr-3 py-2 focus:border-purple-500 outline-none text-white text-sm"
-                                    placeholder="GitHub URL"
-                                />
-                            </div>
-                            <div className="relative">
-                                <Send className="w-4 h-4 text-gray-500 absolute left-3 top-1/2 -translate-y-1/2" />
-                                <input 
-                                    value={editForm.telegram}
-                                    onChange={e => setEditForm({...editForm, telegram: e.target.value})}
-                                    className="w-full bg-white/5 border border-white/20 rounded-lg pl-10 pr-3 py-2 focus:border-purple-500 outline-none text-white text-sm"
-                                    placeholder="Telegram URL"
-                                />
-                            </div>
-                            <div className="relative">
-                                <Globe className="w-4 h-4 text-gray-500 absolute left-3 top-1/2 -translate-y-1/2" />
-                                <input 
-                                    value={editForm.facebook}
-                                    onChange={e => setEditForm({...editForm, facebook: e.target.value})}
-                                    className="w-full bg-white/5 border border-white/20 rounded-lg pl-10 pr-3 py-2 focus:border-purple-500 outline-none text-white text-sm"
-                                    placeholder="Facebook URL"
-                                />
-                            </div>
-                        </div>
-                    )}
-
-                    {/* Wallet Connect Button */}
-                    {isOwnProfile && !displayUser.wallet && !isEditing && (
-                        <button
-                            onClick={() => {
-                                setWalletModalMode('connect');
-                                setShowWalletModal(true);
-                            }}
-                            className="mt-4 text-sm text-purple-400 bg-purple-500/10 hover:bg-purple-500/20 px-4 py-2 rounded-full transition-colors flex items-center gap-2"
-                        >
-                            <Wallet className="w-4 h-4" /> Connect wallet to receive tips
-                        </button>
-                    )}
-
-                    {/* Edit Actions */}
-                    {isEditing && (
-                        <div className="flex gap-3 mt-6">
-                            <button 
-                                onClick={handleSaveProfile}
-                                className="flex-1 py-2.5 bg-white text-black rounded-full font-bold hover:bg-gray-200 transition-colors flex items-center justify-center gap-2"
-                            >
-                                <Save className="w-4 h-4" /> Save
-                            </button>
-                            <button 
-                                onClick={handleCancelProfile}
-                                className="px-6 py-2.5 bg-white/5 hover:bg-white/10 border border-white/20 rounded-full transition-colors"
-                            >
-                                Cancel
-                            </button>
-                        </div>
-                    )}
-                    </div>
-                </div>
-
-                {/* Stats Bar */}
-                <div className="grid grid-cols-4 border-t border-white/10">
-                    <div className="py-4 text-center hover:bg-white/5 transition-colors cursor-default">
-                        <div className="text-lg sm:text-xl font-bold">
-                            {isLoadingStats ? '—' : (userStats?.ideasCount ?? 0)}
-                        </div>
-                        <div className="text-[10px] sm:text-xs text-gray-500 uppercase flex items-center justify-center gap-1">
-                            <Lightbulb className="w-3 h-3" /> Ideas
-                        </div>
-                    </div>
-                    <div className="py-4 text-center hover:bg-white/5 transition-colors cursor-default border-l border-white/10">
-                        <div className="text-lg sm:text-xl font-bold text-purple-400">
-                            {isLoadingStats ? '—' : (userStats?.feedbackCount ?? 0)}
-                        </div>
-                        <div className="text-[10px] sm:text-xs text-gray-500 uppercase flex items-center justify-center gap-1">
-                            <MessageSquare className="w-3 h-3" /> Comments
-                        </div>
-                    </div>
-                    <div className="py-4 text-center hover:bg-white/5 transition-colors cursor-default border-l border-white/10">
-                        <div className="text-lg sm:text-xl font-bold text-green-400">
-                            {isLoadingStats ? '—' : (userStats?.votesReceived ?? 0)}
-                        </div>
-                        <div className="text-[10px] sm:text-xs text-gray-500 uppercase flex items-center justify-center gap-1">
-                            <TrendingUp className="w-3 h-3" /> Votes
-                        </div>
-                    </div>
-                    <div className="py-4 text-center hover:bg-white/5 transition-colors cursor-default border-l border-white/10">
-                        <div className="text-lg sm:text-xl font-bold text-yellow-400">
-                            {isLoadingStats ? '—' : (userStats?.reputation ?? 0)}
-                        </div>
-                        <div className="text-[10px] sm:text-xs text-gray-500 uppercase flex items-center justify-center gap-1">
-                            <Star className="w-3 h-3" /> Rep
-                        </div>
-                    </div>
-                </div>
-
-                {/* Tabs */}
-                <div className="flex border-t border-white/10">
-                    <button
-                        onClick={() => setActiveTab('ideas')}
-                        className={`flex-1 py-3 text-sm font-medium transition-colors relative ${
-                            activeTab === 'ideas' ? 'text-white' : 'text-gray-500 hover:text-gray-300'
-                        }`}
-                    >
-                        Ideas
-                        {activeTab === 'ideas' && (
-                            <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-16 h-1 bg-purple-500 rounded-full" />
-                        )}
-                    </button>
-                    <button
-                        onClick={() => setActiveTab('feeds')}
-                        className={`flex-1 py-3 text-sm font-medium transition-colors relative border-l border-white/10 ${
-                            activeTab === 'feeds' ? 'text-white' : 'text-gray-500 hover:text-gray-300'
-                        }`}
-                    >
-                        {isOwnProfile ? 'Your Feeds' : 'Feeds'}
-                        {activeTab === 'feeds' && (
-                            <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-16 h-1 bg-purple-500 rounded-full" />
-                        )}
-                    </button>
-                </div>
-            </div>
-
-            {/* Tab Content */}
-            <div className="mt-4">
-                {activeTab === 'ideas' ? (
-                    <>
-                        {isLoadingIdeas ? (
-                            <LoadingSpinner isLoading={true} size="md" text="Loading ideas..." />
-                        ) : userIdeas.length > 0 ? (
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <AnimatePresence mode="popLayout">
-                                {userIdeas.map(project => (
-                                    <motion.div
-                                        key={project.id}
-                                        layout
-                                        initial={{ opacity: 0, y: 10 }}
-                                        animate={
-                                          deletingIdeaIds.has(project.id)
-                                            ? { opacity: 0.45, scale: 0.98, y: 4 }
-                                            : { opacity: 1, scale: 1, y: 0 }
-                                        }
-                                        exit={{ opacity: 0, scale: 0.9, y: 24 }}
-                                        transition={{ duration: 0.22, ease: 'easeOut' }}
-                                        className="relative group"
-                                    >
-                                        <ProjectCard project={project} hideIdeaStageBadge={true} />
-                                        {isOwnProfile && (
-                                            <div className="absolute top-3 right-3 z-20 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                                <button 
-                                                    onClick={(e) => {
-                                                        e.stopPropagation();
-                                                        startEditingProject(project);
-                                                    }}
-                                                    className="p-2 bg-black/80 hover:bg-purple-900/80 text-white rounded-full border border-white/20 transition-all"
-                                                    title="Edit"
-                                                >
-                                                    <Pencil className="w-3.5 h-3.5" />
-                                                </button>
-                                                <button 
-                                                    onClick={(e) => {
-                                                        e.stopPropagation();
-                                                        setIdeaPendingDelete(project);
-                                                    }}
-                                                    className="p-2 bg-black/80 hover:bg-red-900/80 text-white rounded-full border border-white/20 transition-all"
-                                                    title="Delete"
-                                                >
-                                                    <Trash2 className="w-3.5 h-3.5 text-red-400" />
-                                                </button>
-                                            </div>
-                                        )}
-                                    </motion.div>
-                                ))}
-                                </AnimatePresence>
-                            </div>
-                        ) : (
-                            <div className="text-center py-16 bg-white/5 border border-dashed border-white/10 rounded-2xl">
-                                <Lightbulb className="w-12 h-12 mx-auto mb-4 text-gray-600" />
-                                <p className="text-gray-500 mb-4">No ideas shared yet</p>
-                                {isOwnProfile && (
-                                    <button 
-                                        onClick={() => openSubmitModal('idea')} 
-                                        className="text-purple-400 font-medium hover:text-purple-300 transition-colors"
-                                    >
-                                        Share your first idea →
-                                    </button>
-                                )}
-                            </div>
-                        )}
-                    </>
+            {isEditing && (
+              <button
+                type="button"
+                onClick={() => !isUploadingCover && coverInputRef.current?.click()}
+                disabled={isUploadingCover}
+                aria-busy={isUploadingCover}
+                className="btn-ghost absolute bottom-3 right-3 z-10 !min-h-[40px] !bg-black/65 !px-3 !text-xs"
+              >
+                {isUploadingCover ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
+                    Uploading
+                  </>
                 ) : (
-                    /* Feeds Tab */
-                    <div>
-                        {isLoadingFeeds ? (
-                            <LoadingSpinner isLoading={true} size="md" text="Loading feeds..." />
-                        ) : userFeeds.length > 0 ? (
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                {userFeeds.map(feed => (
-                                    <div
-                                        key={feed.id}
-                                        onClick={() => router.push(`/feeds/${feed.slug || feed.id}`)}
-                                        className="bg-white/5 border border-white/10 rounded-2xl p-5 cursor-pointer hover:bg-white/[0.08] hover:border-white/20 transition-all group"
-                                    >
-                                        <div className="flex items-start gap-4">
-                                            <div className="w-12 h-12 rounded-xl bg-[#FFD700]/20 flex items-center justify-center flex-shrink-0">
-                                                <Rss className="w-6 h-6 text-[#FFD700]" />
-                                            </div>
-                                            <div className="flex-grow min-w-0">
-                                                <h3 className="font-bold text-white group-hover:text-[#FFD700] transition-colors truncate">
-                                                    {feed.name}
-                                                </h3>
-                                                {feed.description && (
-                                                    <p className="text-sm text-gray-400 line-clamp-2 mt-1">
-                                                        {feed.description}
-                                                    </p>
-                                                )}
-                                                <div className="flex items-center gap-4 mt-3 text-xs text-gray-500">
-                                                    <span className="flex items-center gap-1">
-                                                        <Bookmark className="w-3.5 h-3.5" />
-                                                        {feed.itemsCount} ideas
-                                                    </span>
-                                                    <span className="flex items-center gap-1">
-                                                        <Users className="w-3.5 h-3.5" />
-                                                        {feed.followersCount} followers
-                                                    </span>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                        ) : (
-                            <div className="text-center py-16 bg-white/5 border border-dashed border-white/10 rounded-2xl">
-                                <Rss className="w-12 h-12 mx-auto mb-4 text-gray-600" />
-                                <p className="text-gray-500 mb-4">
-                                    {isOwnProfile ? "You haven't created any feeds yet" : "No public feeds"}
-                                </p>
-                                {isOwnProfile && (
-                                    <button 
-                                        onClick={() => router.push('/feeds')} 
-                                        className="text-[#FFD700] font-medium hover:text-[#FFD700]/80 transition-colors"
-                                    >
-                                        Create your first feed →
-                                    </button>
-                                )}
-                            </div>
-                        )}
-                    </div>
+                  <>
+                    <ImageIcon className="h-4 w-4" aria-hidden="true" />
+                    {editForm.coverImage ? 'Change cover' : 'Add cover'}
+                  </>
                 )}
+              </button>
+            )}
+          </div>
+
+          <div className="px-4 pb-5 sm:px-6 sm:pb-6">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+              <div className="relative -mt-10 h-24 w-24 flex-shrink-0 bg-[#111] sm:-mt-14 sm:h-28 sm:w-28">
+                <div className="h-full w-full overflow-hidden border-4 border-[#050505] bg-[#111]">
+                  {avatarSrc ? (
+                    <img src={avatarSrc} alt={`${displayUser.username} avatar`} className="h-full w-full object-cover" />
+                  ) : (
+                    <div className="flex h-full w-full items-center justify-center bg-[#161616] font-display text-4xl font-bold text-[#FFD700]">
+                      {avatarInitial}
+                    </div>
+                  )}
+                </div>
+
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  className="hidden"
+                  accept="image/*"
+                  onChange={handleImageUpload}
+                  disabled={isUploadingAvatar}
+                />
+
+                {isEditing && (
+                  <button
+                    type="button"
+                    onClick={() => !isUploadingAvatar && fileInputRef.current?.click()}
+                    disabled={isUploadingAvatar}
+                    aria-label="Change avatar"
+                    aria-busy={isUploadingAvatar}
+                    className="absolute inset-1 flex items-center justify-center bg-black/65 text-white opacity-100 transition hover:bg-black/80 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#FFD700] sm:opacity-0 sm:hover:opacity-100 sm:focus-visible:opacity-100"
+                  >
+                    {isUploadingAvatar ? (
+                      <Loader2 className="h-7 w-7 animate-spin" aria-hidden="true" />
+                    ) : (
+                      <Camera className="h-7 w-7" aria-hidden="true" />
+                    )}
+                  </button>
+                )}
+              </div>
+
+              <div className="flex flex-wrap items-center gap-2 sm:justify-end">
+                <button
+                  type="button"
+                  onClick={() => {
+                    const profileSlug = displayUser.slug || createUsernameSlug(displayUser.username);
+                    const profileUrl = `${window.location.origin}/profile/${profileSlug}`;
+                    navigator.clipboard.writeText(profileUrl);
+                    toast.success('Profile link copied');
+                  }}
+                  className="btn-ghost !min-h-[40px] !px-3 !text-xs"
+                >
+                  <LinkIcon className="h-4 w-4" aria-hidden="true" />
+                  Share
+                </button>
+
+                {isOwnProfile && !isEditing && (
+                  <button
+                    type="button"
+                    onClick={() => setIsEditing(true)}
+                    className="btn-ghost !min-h-[40px] !px-3 !text-xs"
+                  >
+                    Edit profile
+                  </button>
+                )}
+
+                {!isOwnProfile && displayUser?.id && (
+                  <FollowButton
+                    targetUserId={displayUser.id}
+                    targetUsername={displayUser.username}
+                    onFollowChange={handleFollowChange}
+                    className="!min-h-[40px] !px-4 !text-xs"
+                  />
+                )}
+              </div>
             </div>
+
+            <div className="mt-4 grid gap-5 lg:grid-cols-[1fr_auto] lg:items-start">
+              <div className="min-w-0">
+                {isEditing ? (
+                  <input
+                    value={editForm.username}
+                    onChange={e => setEditForm({ ...editForm, username: e.target.value })}
+                    className="w-full max-w-sm border border-white/15 bg-white/[0.04] px-3 py-2 text-xl font-bold text-white outline-none transition focus:border-[#FFD700]/60 focus-visible:ring-1 focus-visible:ring-[#FFD700]"
+                  />
+                ) : (
+                  <h1 className="font-display text-2xl font-bold tracking-tight text-white sm:text-3xl">
+                    {displayUser.username}
+                  </h1>
+                )}
+                {displayUser.email && (
+                  <p className="mt-1 text-sm text-gray-500">{displayUser.email}</p>
+                )}
+
+                {isEditing ? (
+                  <textarea
+                    value={editForm.bio}
+                    onChange={e => setEditForm({ ...editForm, bio: e.target.value })}
+                    placeholder="Write something about yourself..."
+                    className="mt-4 h-24 w-full resize-none border border-white/15 bg-white/[0.04] px-4 py-3 text-sm text-white outline-none transition placeholder:text-gray-600 focus:border-[#FFD700]/60 focus-visible:ring-1 focus-visible:ring-[#FFD700]"
+                  />
+                ) : displayUser.bio ? (
+                  <p className="mt-3 max-w-2xl text-sm leading-relaxed text-gray-300">
+                    {displayUser.bio}
+                  </p>
+                ) : isOwnProfile ? (
+                  <p className="mt-3 text-sm text-gray-500">Add a bio to tell people about yourself.</p>
+                ) : null}
+              </div>
+
+              <div className="flex flex-wrap items-center gap-3 lg:justify-end">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setFollowModalTab('followers');
+                    setShowFollowModal(true);
+                  }}
+                  className="inline-flex min-h-[40px] items-baseline gap-1.5 border border-white/10 bg-white/[0.03] px-3 py-2 text-left transition hover:border-[#FFD700]/35 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#FFD700]"
+                >
+                  <span className="font-mono text-base font-bold text-white">{localFollowersCount}</span>
+                  <span className="text-xs uppercase tracking-[0.1em] text-gray-500">Followers</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setFollowModalTab('following');
+                    setShowFollowModal(true);
+                  }}
+                  className="inline-flex min-h-[40px] items-baseline gap-1.5 border border-white/10 bg-white/[0.03] px-3 py-2 text-left transition hover:border-[#FFD700]/35 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#FFD700]"
+                >
+                  <span className="font-mono text-base font-bold text-white">{localFollowingCount}</span>
+                  <span className="text-xs uppercase tracking-[0.1em] text-gray-500">Following</span>
+                </button>
+              </div>
+            </div>
+
+            <div className="mt-5 flex flex-wrap items-center gap-2 text-sm text-gray-500">
+              {displayUser.wallet && (
+                <div className="inline-flex min-h-[32px] items-center gap-2 border border-white/10 bg-white/[0.03] px-2.5 font-mono text-xs">
+                  <Wallet className="h-4 w-4 text-[#FFD700]" aria-hidden="true" />
+                  {displayUser.wallet.slice(0, 4)}...{displayUser.wallet.slice(-4)}
+                  {isOwnProfile && (
+                    <>
+                      {isWalletConnected ? (
+                        <span className="inline-flex items-center border border-[#14F195]/30 bg-[#14F195]/10 px-1.5 py-0.5 text-[10px] text-[#14F195]">
+                          <Check className="h-3 w-3" aria-hidden="true" />
+                        </span>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setWalletModalMode('reconnect');
+                            setShowWalletModal(true);
+                          }}
+                          className="ml-1 text-[10px] text-[#FFD700] underline-offset-4 hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#FFD700]"
+                        >
+                          Reconnect
+                        </button>
+                      )}
+                    </>
+                  )}
+                </div>
+              )}
+
+              <div className="inline-flex min-h-[32px] items-center gap-2 border border-white/10 bg-white/[0.03] px-2.5 text-xs">
+                <Calendar className="h-4 w-4 text-[#FFD700]" aria-hidden="true" />
+                Gimme Idea Member
+              </div>
+            </div>
+
+            {!isEditing && hasSocialLinks && (
+              <div className="mt-4 flex flex-wrap gap-2">
+                {displayUser.socials?.twitter && (
+                  <a href={displayUser.socials.twitter} target="_blank" rel="noopener noreferrer" aria-label="Twitter profile" className="inline-flex min-h-[40px] min-w-[40px] items-center justify-center border border-white/10 bg-white/[0.03] text-gray-400 transition hover:border-[#FFD700]/35 hover:text-[#FFD700] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#FFD700]">
+                    <AtSign className="h-4 w-4" aria-hidden="true" />
+                  </a>
+                )}
+                {displayUser.socials?.github && (
+                  <a href={displayUser.socials.github} target="_blank" rel="noopener noreferrer" aria-label="GitHub profile" className="inline-flex min-h-[40px] min-w-[40px] items-center justify-center border border-white/10 bg-white/[0.03] text-gray-400 transition hover:border-[#FFD700]/35 hover:text-[#FFD700] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#FFD700]">
+                    <Code2 className="h-4 w-4" aria-hidden="true" />
+                  </a>
+                )}
+                {displayUser.socials?.telegram && (
+                  <a href={displayUser.socials.telegram} target="_blank" rel="noopener noreferrer" aria-label="Telegram profile" className="inline-flex min-h-[40px] min-w-[40px] items-center justify-center border border-white/10 bg-white/[0.03] text-gray-400 transition hover:border-[#FFD700]/35 hover:text-[#FFD700] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#FFD700]">
+                    <Send className="h-4 w-4" aria-hidden="true" />
+                  </a>
+                )}
+                {displayUser.socials?.facebook && (
+                  <a href={displayUser.socials.facebook} target="_blank" rel="noopener noreferrer" aria-label="Facebook profile" className="inline-flex min-h-[40px] min-w-[40px] items-center justify-center border border-white/10 bg-white/[0.03] text-gray-400 transition hover:border-[#FFD700]/35 hover:text-[#FFD700] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#FFD700]">
+                    <Globe className="h-4 w-4" aria-hidden="true" />
+                  </a>
+                )}
+              </div>
+            )}
+
+            {isEditing && (
+              <div className="mt-5 grid gap-3 sm:grid-cols-2">
+                <label className="relative block">
+                  <AtSign className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-500" aria-hidden="true" />
+                  <input
+                    value={editForm.twitter}
+                    onChange={e => setEditForm({ ...editForm, twitter: e.target.value })}
+                    className="w-full border border-white/15 bg-white/[0.04] py-2 pl-10 pr-3 text-sm text-white outline-none transition placeholder:text-gray-600 focus:border-[#FFD700]/60 focus-visible:ring-1 focus-visible:ring-[#FFD700]"
+                    placeholder="Twitter URL"
+                  />
+                </label>
+                <label className="relative block">
+                  <Code2 className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-500" aria-hidden="true" />
+                  <input
+                    value={editForm.github}
+                    onChange={e => setEditForm({ ...editForm, github: e.target.value })}
+                    className="w-full border border-white/15 bg-white/[0.04] py-2 pl-10 pr-3 text-sm text-white outline-none transition placeholder:text-gray-600 focus:border-[#FFD700]/60 focus-visible:ring-1 focus-visible:ring-[#FFD700]"
+                    placeholder="GitHub URL"
+                  />
+                </label>
+                <label className="relative block">
+                  <Send className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-500" aria-hidden="true" />
+                  <input
+                    value={editForm.telegram}
+                    onChange={e => setEditForm({ ...editForm, telegram: e.target.value })}
+                    className="w-full border border-white/15 bg-white/[0.04] py-2 pl-10 pr-3 text-sm text-white outline-none transition placeholder:text-gray-600 focus:border-[#FFD700]/60 focus-visible:ring-1 focus-visible:ring-[#FFD700]"
+                    placeholder="Telegram URL"
+                  />
+                </label>
+                <label className="relative block">
+                  <Globe className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-500" aria-hidden="true" />
+                  <input
+                    value={editForm.facebook}
+                    onChange={e => setEditForm({ ...editForm, facebook: e.target.value })}
+                    className="w-full border border-white/15 bg-white/[0.04] py-2 pl-10 pr-3 text-sm text-white outline-none transition placeholder:text-gray-600 focus:border-[#FFD700]/60 focus-visible:ring-1 focus-visible:ring-[#FFD700]"
+                    placeholder="Facebook URL"
+                  />
+                </label>
+              </div>
+            )}
+
+            {isOwnProfile && !displayUser.wallet && !isEditing && (
+              <button
+                type="button"
+                onClick={() => {
+                  setWalletModalMode('connect');
+                  setShowWalletModal(true);
+                }}
+                className="btn-ghost mt-5 !min-h-[40px] !px-3 !text-xs"
+              >
+                <Wallet className="h-4 w-4 text-[#FFD700]" aria-hidden="true" />
+                Connect wallet to receive tips
+              </button>
+            )}
+
+            {isEditing && (
+              <div className="mt-6 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+                <button type="button" onClick={handleCancelProfile} className="btn-ghost">
+                  Cancel
+                </button>
+                <button type="button" onClick={handleSaveProfile} className="btn-primary">
+                  <Save className="h-4 w-4" aria-hidden="true" />
+                  Save profile
+                </button>
+              </div>
+            )}
+          </div>
+
+          <div className="grid grid-cols-2 border-t border-white/10 sm:grid-cols-4">
+            {[
+              { label: 'Ideas', value: userStats?.ideasCount ?? 0, icon: Lightbulb },
+              { label: 'Comments', value: userStats?.feedbackCount ?? 0, icon: MessageSquare },
+              { label: 'Votes', value: userStats?.votesReceived ?? 0, icon: TrendingUp },
+              { label: 'Rep', value: userStats?.reputation ?? 0, icon: Star },
+            ].map((stat, index) => {
+              const Icon = stat.icon;
+              return (
+                <div
+                  key={stat.label}
+                  className={`min-h-[86px] px-4 py-4 ${index % 2 ? 'border-l border-white/10' : ''} ${index > 1 ? 'border-t border-white/10 sm:border-t-0' : ''} ${index > 0 ? 'sm:border-l sm:border-white/10' : ''}`}
+                >
+                  <div className="flex items-baseline justify-between gap-3">
+                    <div className="font-mono text-2xl font-bold text-white">
+                      {isLoadingStats ? '-' : stat.value}
+                    </div>
+                    <Icon className="h-4 w-4 text-[#FFD700]" aria-hidden="true" />
+                  </div>
+                  <div className="mt-2 font-mono text-[10px] uppercase tracking-[0.14em] text-gray-500">
+                    {stat.label}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </section>
+
+        <div className="mt-6 flex overflow-x-auto border-b border-white/10 scrollbar-hide">
+          <button
+            type="button"
+            onClick={() => setActiveTab('ideas')}
+            className={`ui-tab ${activeTab === 'ideas' ? 'ui-tab-active' : ''}`}
+          >
+            Ideas
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveTab('feeds')}
+            className={`ui-tab ${activeTab === 'feeds' ? 'ui-tab-active' : ''}`}
+          >
+            {isOwnProfile ? 'Your Feeds' : 'Feeds'}
+          </button>
         </div>
+
+        <section className="mt-4">
+          <div className="mb-3 flex items-center justify-between">
+            <span className="font-mono text-[10px] uppercase tracking-widest text-gray-600">
+              {activeTab === 'ideas'
+                ? isLoadingIdeas ? 'Loading ideas' : `${userIdeas.length} ideas`
+                : isLoadingFeeds ? 'Loading feeds' : `${userFeeds.length} feeds`}
+            </span>
+          </div>
+
+          {activeTab === 'ideas' ? (
+            <>
+              {isLoadingIdeas ? (
+                <div className="flex min-h-[180px] items-center justify-center border border-white/10 bg-white/[0.03] text-sm text-gray-400">
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin text-[#FFD700]" aria-hidden="true" />
+                  Loading ideas
+                </div>
+              ) : userIdeas.length > 0 ? (
+                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                  <AnimatePresence mode="popLayout">
+                    {userIdeas.map(project => (
+                      <motion.div
+                        key={project.id}
+                        layout
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={
+                          deletingIdeaIds.has(project.id)
+                            ? { opacity: 0.45, scale: 0.98, y: 4 }
+                            : { opacity: 1, scale: 1, y: 0 }
+                        }
+                        exit={{ opacity: 0, scale: 0.9, y: 24 }}
+                        transition={{ duration: 0.22, ease: 'easeOut' }}
+                        className="group relative"
+                      >
+                        <ProjectCard project={project} hideIdeaStageBadge={true} />
+                        {isOwnProfile && (
+                          <div className="absolute right-3 top-3 z-20 flex gap-2 opacity-100 transition-opacity sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100">
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                startEditingProject(project);
+                              }}
+                              className="inline-flex min-h-[40px] min-w-[40px] items-center justify-center border border-white/15 bg-black/80 text-white transition hover:border-[#FFD700]/40 hover:text-[#FFD700] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#FFD700]"
+                              aria-label="Edit idea"
+                              title="Edit"
+                            >
+                              <Pencil className="h-4 w-4" aria-hidden="true" />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setIdeaPendingDelete(project);
+                              }}
+                              className="inline-flex min-h-[40px] min-w-[40px] items-center justify-center border border-white/15 bg-black/80 text-red-300 transition hover:border-red-400/50 hover:text-red-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-300"
+                              aria-label="Delete idea"
+                              title="Delete"
+                            >
+                              <Trash2 className="h-4 w-4" aria-hidden="true" />
+                            </button>
+                          </div>
+                        )}
+                      </motion.div>
+                    ))}
+                  </AnimatePresence>
+                </div>
+              ) : (
+                <div className="border border-dashed border-white/10 bg-white/[0.03] px-4 py-14 text-center">
+                  <Lightbulb className="mx-auto mb-4 h-10 w-10 text-[#FFD700]" aria-hidden="true" />
+                  <p className="mb-4 text-sm text-gray-500">No ideas shared yet</p>
+                  {isOwnProfile && (
+                    <button type="button" onClick={() => openSubmitModal('idea')} className="btn-primary">
+                      Share your first idea
+                    </button>
+                  )}
+                </div>
+              )}
+            </>
+          ) : (
+            <div>
+              {isLoadingFeeds ? (
+                <div className="flex min-h-[180px] items-center justify-center border border-white/10 bg-white/[0.03] text-sm text-gray-400">
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin text-[#FFD700]" aria-hidden="true" />
+                  Loading feeds
+                </div>
+              ) : userFeeds.length > 0 ? (
+                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                  {userFeeds.map(feed => (
+                    <button
+                      type="button"
+                      key={feed.id}
+                      onClick={() => router.push(`/feeds/${feed.slug || feed.id}`)}
+                      className="group w-full border border-white/10 bg-white/[0.03] p-5 text-left transition hover:border-[#FFD700]/35 hover:bg-white/[0.05] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#FFD700]"
+                    >
+                      <div className="flex items-start gap-4">
+                        <div className="flex h-11 w-11 flex-shrink-0 items-center justify-center border border-[#FFD700]/25 bg-[#FFD700]/10">
+                          <Rss className="h-5 w-5 text-[#FFD700]" aria-hidden="true" />
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <h3 className="truncate font-semibold text-white transition group-hover:text-[#FFD700]">
+                            {feed.name}
+                          </h3>
+                          {feed.description && (
+                            <p className="mt-1 line-clamp-2 text-sm text-gray-400">
+                              {feed.description}
+                            </p>
+                          )}
+                          <div className="mt-3 flex flex-wrap items-center gap-4 font-mono text-[10px] uppercase tracking-[0.1em] text-gray-500">
+                            <span className="flex items-center gap-1">
+                              <Bookmark className="h-3.5 w-3.5" aria-hidden="true" />
+                              {feed.itemsCount} ideas
+                            </span>
+                            <span className="flex items-center gap-1">
+                              <Users className="h-3.5 w-3.5" aria-hidden="true" />
+                              {feed.followersCount} followers
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              ) : (
+                <div className="border border-dashed border-white/10 bg-white/[0.03] px-4 py-14 text-center">
+                  <Rss className="mx-auto mb-4 h-10 w-10 text-[#FFD700]" aria-hidden="true" />
+                  <p className="mb-4 text-sm text-gray-500">
+                    {isOwnProfile ? "You haven't created any feeds yet" : 'No public feeds'}
+                  </p>
+                  {isOwnProfile && (
+                    <button type="button" onClick={() => router.push('/feeds')} className="btn-primary">
+                      Create your first feed
+                    </button>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+        </section>
+      </div>
 
         {/* Edit Project Modal */}
         <EditProjectModal
@@ -1018,7 +986,7 @@ export const Profile = () => {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="fixed inset-0 z-[220] flex items-center justify-center bg-black/70 backdrop-blur-sm p-4"
+              className="modal-overlay fixed inset-0 z-[220] flex items-center justify-center p-4"
               onClick={() => !isDeletingIdea && setIdeaPendingDelete(null)}
             >
               <motion.div
@@ -1026,11 +994,11 @@ export const Profile = () => {
                 animate={{ scale: 1, opacity: 1, y: 0 }}
                 exit={{ scale: 0.95, opacity: 0, y: 8 }}
                 onClick={(e) => e.stopPropagation()}
-                className="w-full max-w-md rounded-2xl border border-white/15 bg-[#111319] p-5 sm:p-6"
+                className="modal-panel w-full max-w-md p-5 sm:p-6"
               >
                 <div className="flex items-start gap-3">
-                  <div className="mt-0.5 p-2 rounded-full bg-red-500/15 border border-red-500/25">
-                    <AlertTriangle className="w-5 h-5 text-red-400" />
+                  <div className="mt-0.5 border border-red-500/25 bg-red-500/15 p-2">
+                    <AlertTriangle className="w-5 h-5 text-red-400" aria-hidden="true" />
                   </div>
                   <div>
                     <h3 className="text-lg font-semibold text-white">Delete idea?</h3>
@@ -1038,31 +1006,33 @@ export const Profile = () => {
                   </div>
                 </div>
 
-                <div className="mt-4 p-3 rounded-xl border border-white/10 bg-white/5">
+                <div className="mt-4 border border-white/10 bg-white/[0.04] p-3">
                   <p className="text-sm text-gray-300 line-clamp-2">{ideaPendingDelete.title}</p>
                 </div>
 
                 <div className="mt-5 flex flex-col-reverse sm:flex-row gap-2 sm:justify-end">
                   <button
+                    type="button"
                     onClick={() => setIdeaPendingDelete(null)}
                     disabled={isDeletingIdea}
-                    className="px-4 py-2.5 rounded-lg text-sm text-gray-300 bg-white/5 hover:bg-white/10 border border-white/10 transition-colors disabled:opacity-50"
+                    className="btn-ghost"
                   >
                     Cancel
                   </button>
                   <button
+                    type="button"
                     onClick={handleDeleteProject}
                     disabled={isDeletingIdea}
-                    className="px-4 py-2.5 rounded-lg text-sm font-medium text-white bg-red-500 hover:bg-red-600 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+                    className="inline-flex min-h-[44px] items-center justify-center gap-2 border border-red-500 bg-red-500 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-red-600 disabled:cursor-not-allowed disabled:opacity-50"
                   >
                     {isDeletingIdea ? (
                       <>
-                        <Loader2 className="w-4 h-4 animate-spin" />
+                        <Loader2 className="w-4 h-4 animate-spin" aria-hidden="true" />
                         Deleting...
                       </>
                     ) : (
                       <>
-                        <Trash2 className="w-4 h-4" />
+                        <Trash2 className="w-4 h-4" aria-hidden="true" />
                         Delete idea
                       </>
                     )}
@@ -1124,6 +1094,6 @@ export const Profile = () => {
             initialTab={followModalTab}
           />
         )}
-    </motion.div>
+    </motion.main>
   );
 };

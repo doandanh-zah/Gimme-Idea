@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Users, Loader2 } from 'lucide-react';
 import { useFollowList } from '../hooks/useFollow';
@@ -28,6 +28,12 @@ export const FollowListModal: React.FC<FollowListModalProps> = ({
   const { user: currentUser } = useAuth();
   const isOwnProfileList = Boolean(currentUser?.id && currentUser.id === userId);
 
+  useEffect(() => {
+    if (isOpen) {
+      setActiveTab(initialTab);
+    }
+  }, [initialTab, isOpen]);
+
   if (!isOpen) return null;
 
   return (
@@ -36,7 +42,7 @@ export const FollowListModal: React.FC<FollowListModalProps> = ({
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
-        className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
+        className="modal-overlay fixed inset-0 z-50 flex items-center justify-center p-4"
         onClick={onClose}
       >
         <motion.div
@@ -44,38 +50,34 @@ export const FollowListModal: React.FC<FollowListModalProps> = ({
           animate={{ scale: 1, opacity: 1 }}
           exit={{ scale: 0.95, opacity: 0 }}
           onClick={(e) => e.stopPropagation()}
-          className="bg-gradient-to-br from-gray-900 to-gray-950 border border-white/10 rounded-2xl w-full max-w-md max-h-[80vh] overflow-hidden"
+          className="modal-panel w-full max-w-md max-h-[80vh] overflow-hidden"
         >
           {/* Header */}
           <div className="flex items-center justify-between p-4 border-b border-white/10">
             <h2 className="text-lg font-bold text-white">{username}</h2>
             <button
+              type="button"
               onClick={onClose}
-              className="p-2 hover:bg-white/10 rounded-full transition-colors"
+              className="inline-flex min-h-[40px] min-w-[40px] items-center justify-center text-gray-400 transition hover:bg-white/10 hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#FFD700]"
+              aria-label="Close follow list"
             >
-              <X className="w-5 h-5 text-gray-400" />
+              <X className="w-5 h-5" aria-hidden="true" />
             </button>
           </div>
 
           {/* Tabs */}
-          <div className="flex border-b border-white/10">
+          <div className="flex border-b border-white/10 px-4">
             <button
+              type="button"
               onClick={() => setActiveTab('followers')}
-              className={`flex-1 py-3 text-sm font-medium transition-colors ${
-                activeTab === 'followers'
-                  ? 'text-purple-400 border-b-2 border-purple-400'
-                  : 'text-gray-400 hover:text-white'
-              }`}
+              className={`ui-tab ${activeTab === 'followers' ? 'ui-tab-active' : ''}`}
             >
               Followers
             </button>
             <button
+              type="button"
               onClick={() => setActiveTab('following')}
-              className={`flex-1 py-3 text-sm font-medium transition-colors ${
-                activeTab === 'following'
-                  ? 'text-purple-400 border-b-2 border-purple-400'
-                  : 'text-gray-400 hover:text-white'
-              }`}
+              className={`ui-tab ${activeTab === 'following' ? 'ui-tab-active' : ''}`}
             >
               Following
             </button>
@@ -115,7 +117,7 @@ const FollowListContent: React.FC<FollowListContentProps> = ({
   if (isLoading && users.length === 0) {
     return (
       <div className="flex items-center justify-center py-12">
-        <Loader2 className="w-6 h-6 animate-spin text-purple-400" />
+        <Loader2 className="w-6 h-6 animate-spin text-[#FFD700]" aria-hidden="true" />
       </div>
     );
   }
@@ -123,7 +125,7 @@ const FollowListContent: React.FC<FollowListContentProps> = ({
   if (users.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-12 text-gray-400">
-        <Users className="w-12 h-12 mb-3 opacity-50" />
+        <Users className="w-12 h-12 mb-3 text-[#FFD700]" aria-hidden="true" />
         <p className="text-sm">
           {type === 'followers' ? 'No followers yet' : 'Not following anyone yet'}
         </p>
@@ -144,12 +146,13 @@ const FollowListContent: React.FC<FollowListContentProps> = ({
       {hasMore && (
         <div className="p-4 flex justify-center">
           <button
+            type="button"
             onClick={loadMore}
             disabled={isLoading}
-            className="px-4 py-2 bg-white/5 hover:bg-white/10 rounded-lg text-sm text-gray-400 transition-colors disabled:opacity-50"
+            className="btn-ghost !min-h-[40px] !px-4 !py-2 !text-xs disabled:opacity-50"
           >
             {isLoading ? (
-              <Loader2 className="w-4 h-4 animate-spin" />
+              <Loader2 className="w-4 h-4 animate-spin" aria-hidden="true" />
             ) : (
               'Load More'
             )}
@@ -167,7 +170,7 @@ interface FollowUserItemProps {
 
 const FollowUserItem: React.FC<FollowUserItemProps> = ({ user, showFollowBack }) => {
   return (
-    <div className="flex items-center justify-between p-4 hover:bg-white/5 transition-colors">
+    <div className="flex items-center justify-between p-4 transition-colors hover:bg-white/[0.04]">
       <div className="flex items-center gap-3 flex-1 min-w-0">
         <AuthorAvatar
           username={user.username}
@@ -177,7 +180,7 @@ const FollowUserItem: React.FC<FollowUserItemProps> = ({ user, showFollowBack })
         <div className="flex-1 min-w-0">
           <AuthorLink
             username={user.username}
-            className="font-medium text-white hover:text-purple-400 truncate block"
+            className="font-medium text-white hover:text-[#FFD700] truncate block"
           />
           {user.bio && (
             <p className="text-sm text-gray-400 truncate">{user.bio}</p>
@@ -185,7 +188,7 @@ const FollowUserItem: React.FC<FollowUserItemProps> = ({ user, showFollowBack })
           <div className="flex items-center gap-3 mt-1 text-xs text-gray-500">
             <span>{user.followersCount} followers</span>
             {showFollowBack && user.isFollowingBack && (
-              <span className="text-purple-400">• Follows you</span>
+              <span className="text-[#FFD700]">Follows you</span>
             )}
           </div>
         </div>

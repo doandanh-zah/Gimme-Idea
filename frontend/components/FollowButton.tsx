@@ -52,13 +52,16 @@ export const FollowButton: React.FC<FollowButtonProps> = ({
       <motion.button
         whileHover={{ scale: 1.05 }}
         whileTap={{ scale: 0.95 }}
+        type="button"
         onClick={handleClick}
         disabled={isLoading}
-        className={`p-2 rounded-full transition-all ${
+        aria-busy={isLoading}
+        className={`inline-flex min-h-[40px] min-w-[40px] items-center justify-center border transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#FFD700] ${
           isFollowing
-            ? 'bg-purple-500/20 text-purple-400 hover:bg-red-500/20 hover:text-red-400'
-            : 'bg-purple-500/20 text-purple-400 hover:bg-purple-500/30'
+            ? 'border-white/15 bg-white/[0.04] text-white hover:border-red-400/50 hover:text-red-300'
+            : 'border-[#FFD700] bg-[#FFD700] text-black hover:bg-[#FDB931]'
         } ${className}`}
+        aria-label={`${isFollowing ? 'Unfollow' : 'Follow'} ${targetUsername || 'user'}`}
         title={isFollowing ? 'Unfollow' : 'Follow'}
       >
         {isLoading ? (
@@ -78,12 +81,14 @@ export const FollowButton: React.FC<FollowButtonProps> = ({
       <motion.button
         whileHover={{ scale: 1.02 }}
         whileTap={{ scale: 0.98 }}
+        type="button"
         onClick={handleClick}
         disabled={isLoading}
-        className={`px-3 py-1.5 rounded-full text-sm font-medium transition-all flex items-center gap-1.5 ${
+        aria-busy={isLoading}
+        className={`inline-flex min-h-[40px] items-center gap-1.5 px-3 py-2 text-sm font-semibold transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#FFD700] ${
           isFollowing
-            ? 'bg-white/10 text-white hover:bg-red-500/20 hover:text-red-400 border border-white/20'
-            : 'bg-purple-500 text-white hover:bg-purple-600'
+            ? 'border border-white/15 bg-white/[0.04] text-white hover:border-red-400/50 hover:text-red-300'
+            : 'border border-[#FFD700] bg-[#FFD700] text-black hover:bg-[#FDB931]'
         } ${className}`}
       >
         {isLoading ? (
@@ -103,17 +108,19 @@ export const FollowButton: React.FC<FollowButtonProps> = ({
     );
   }
 
-  // Default variant - Pill shape purple button
+  // Default variant
   return (
     <motion.button
       whileHover={{ scale: 1.03 }}
       whileTap={{ scale: 0.97 }}
+      type="button"
       onClick={handleClick}
       disabled={isLoading}
-      className={`px-6 py-2.5 rounded-full font-semibold transition-all flex items-center gap-2 shadow-lg ${
+      aria-busy={isLoading}
+      className={`group ${
         isFollowing
-          ? 'bg-white/10 text-white hover:bg-red-500/20 hover:text-red-400 border border-white/20 group backdrop-blur-sm'
-          : 'bg-gradient-to-r from-purple-600 via-purple-500 to-violet-500 text-white hover:from-purple-700 hover:via-purple-600 hover:to-violet-600 shadow-purple-500/25'
+          ? 'btn-ghost hover:!border-red-400/50 hover:!text-red-300'
+          : 'btn-primary'
       } ${className}`}
     >
       {isLoading ? (
@@ -157,15 +164,17 @@ export const FollowStats: React.FC<FollowStatsProps> = ({
   return (
     <div className={`flex items-center gap-4 ${className}`}>
       <button
+        type="button"
         onClick={onFollowersClick}
-        className="flex items-center gap-1.5 hover:text-purple-400 transition-colors"
+        className="inline-flex min-h-[40px] items-baseline gap-1.5 transition hover:text-[#FFD700] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#FFD700]"
       >
         <span className="font-bold text-white">{followersCount}</span>
         <span className="text-gray-400 text-sm">Followers</span>
       </button>
       <button
+        type="button"
         onClick={onFollowingClick}
-        className="flex items-center gap-1.5 hover:text-purple-400 transition-colors"
+        className="inline-flex min-h-[40px] items-baseline gap-1.5 transition hover:text-[#FFD700] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#FFD700]"
       >
         <span className="font-bold text-white">{followingCount}</span>
         <span className="text-gray-400 text-sm">Following</span>
