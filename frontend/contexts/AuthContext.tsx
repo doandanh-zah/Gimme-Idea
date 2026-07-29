@@ -2,7 +2,13 @@
 
 import React, { createContext, useContext, useEffect, useState, useCallback, useRef } from 'react';
 import { User as SupabaseUser, Session } from '@supabase/supabase-js';
-import { hasSupabaseEnv, supabase } from '@/lib/supabase';
+import {
+  clearSupabaseAuthCallbackParams,
+  clearSupabaseAuthStorage,
+  hasSupabaseEnv,
+  isRecoverableSupabaseAuthError,
+  supabase,
+} from '@/lib/supabase';
 import { apiClient } from '@/lib/api-client';
 import { User } from '@/lib/types';
 import { logger } from '@/lib/logger';
@@ -103,6 +109,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setUserState((currentUser) =>
       authUsersAreEquivalent(currentUser, nextUser) ? currentUser : nextUser
     );
+  }, []);
+
+  const clearSupabaseLocalSession = useCallback(async () => {
+    clearSupabaseAuthStorage();
+    try {
+      await supabase.auth.signOut({ scope: 'local' });
+    } catch {
+      // Local storage cleanup above is enough for recovery.
+    }
   }, []);
 
   useEffect(() => {
@@ -252,15 +267,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const clearAuthHashFromUrl = () => {
       if (typeof window === 'undefined') return;
-      if (!window.location.hash) return;
       // Strip OAuth tokens / errors from the URL so a reload does not re-apply them.
-      window.history.replaceState(null, '', window.location.pathname + window.location.search);
+      clearSupabaseAuthCallbackParams();
     };
 
     // Handle hash fragment from OAuth redirect (when Supabase redirects to root with hash)
     const handleHashFragment = async () => {
       if (typeof window === 'undefined') return;
       if (!window.location.hash) return;
+      if (window.location.pathname === '/auth/callback') return;
       if (!hasSupabaseEnv) {
         console.warn('[Auth] OAuth hash present but Supabase env is not configured.');
         clearAuthHashFromUrl();
@@ -288,18 +303,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           });
 
           if (error) {
-            // Invalid API key usually means wrong/missing NEXT_PUBLIC_SUPABASE_ANON_KEY
-            // at build/runtime, not a bad user password.
             console.error('Error setting session from hash:', error.message || error);
-            if (
-              error.message?.toLowerCase().includes('invalid api key') ||
-              error.message?.toLowerCase().includes('bad_jwt')
-            ) {
-              try {
-                await supabase.auth.signOut({ scope: 'local' });
-              } catch {
-                // ignore cleanup failures
-              }
+            if (isRecoverableSupabaseAuthError(error)) {
+              await clearSupabaseLocalSession();
             }
           }
 
@@ -381,16 +387,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         if (error) {
           console.error('[Auth] Error getting session:', error.message || error);
           // Stale/corrupt local session or bad anon key — drop local auth so the UI recovers.
-          if (
-            error.message?.toLowerCase().includes('invalid api key') ||
-            error.message?.toLowerCase().includes('invalid jwt') ||
-            error.message?.toLowerCase().includes('bad_jwt')
-          ) {
-            try {
-              await supabase.auth.signOut({ scope: 'local' });
-            } catch {
-              // ignore
-            }
+          if (isRecoverableSupabaseAuthError(error)) {
+            await clearSupabaseLocalSession();
           }
           setSession(null);
           setSupabaseUser(null);
@@ -550,9 +548,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
       subscription.unsubscribe();
     };
-  }, [processEmailLogin]);
+  }, [clearSupabaseLocalSession, processEmailLogin]);
 
   const signInWithGoogle = async () => {
+    await clearSupabaseLocalSession();
+    clearSupabaseAuthCallbackParams();
+    setSession(null);
+    setSupabaseUser(null);
+
     const nativeBridge = await loadNativeBridge();
     const isNativeApp = nativeBridge.isNativeApp;
     const redirectUri = isNativeApp
@@ -679,6 +682,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } catch (error) {
       console.error('Sign out error:', error);
     }
+    clearSupabaseAuthStorage();
     try {
       await apiClient.logout();
     } catch (error) {

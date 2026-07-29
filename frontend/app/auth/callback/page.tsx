@@ -3,7 +3,13 @@
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Loader2 } from 'lucide-react';
-import { supabase } from '@/lib/supabase';
+import {
+  clearSupabaseAuthCallbackParams,
+  clearSupabaseAuthStorage,
+  hasSupabaseEnv,
+  isRecoverableSupabaseAuthError,
+  supabase,
+} from '@/lib/supabase';
 
 export default function AuthCallback() {
   const router = useRouter();
@@ -11,20 +17,94 @@ export default function AuthCallback() {
   useEffect(() => {
     const handleAuthCallback = async () => {
       try {
-        const { error } = await supabase.auth.getSession();
-        
-        if (error) {
-          console.error('Auth callback error:', error);
-          router.push('/home');
+        if (!hasSupabaseEnv) {
+          console.error('Auth callback error: Supabase env is not configured');
+          clearSupabaseAuthCallbackParams();
+          router.replace('/home');
           return;
         }
 
-        // Redirect to idea page after successful login
-        // The AuthContext will handle showing the wallet popup if needed
-        router.push('/idea');
+        const url = new URL(window.location.href);
+        const hashParams = new URLSearchParams(url.hash.replace(/^#/, ''));
+        const oauthError =
+          hashParams.get('error_description') ||
+          hashParams.get('error') ||
+          url.searchParams.get('error_description') ||
+          url.searchParams.get('error');
+
+        if (oauthError) {
+          console.error('Auth callback error:', oauthError);
+          clearSupabaseAuthCallbackParams();
+          router.replace('/home');
+          return;
+        }
+
+        const accessToken = hashParams.get('access_token');
+        const refreshToken = hashParams.get('refresh_token');
+
+        if (accessToken && refreshToken) {
+          const { error } = await supabase.auth.setSession({
+            access_token: accessToken,
+            refresh_token: refreshToken,
+          });
+          clearSupabaseAuthCallbackParams();
+
+          if (error) {
+            console.error('Auth callback setSession error:', error.message || error);
+            if (isRecoverableSupabaseAuthError(error)) {
+              clearSupabaseAuthStorage();
+              await supabase.auth.signOut({ scope: 'local' }).catch(() => undefined);
+            }
+            router.replace('/home');
+            return;
+          }
+
+          router.replace('/idea');
+          return;
+        }
+
+        const code = url.searchParams.get('code');
+        if (code) {
+          const { error } = await supabase.auth.exchangeCodeForSession(code);
+          clearSupabaseAuthCallbackParams();
+
+          if (error) {
+            console.error('Auth callback exchange error:', error.message || error);
+            if (isRecoverableSupabaseAuthError(error)) {
+              clearSupabaseAuthStorage();
+              await supabase.auth.signOut({ scope: 'local' }).catch(() => undefined);
+            }
+            router.replace('/home');
+            return;
+          }
+
+          router.replace('/idea');
+          return;
+        }
+
+        const { data, error } = await supabase.auth.getSession();
+
+        if (error) {
+          console.error('Auth callback session error:', error.message || error);
+          if (isRecoverableSupabaseAuthError(error)) {
+            clearSupabaseAuthStorage();
+            await supabase.auth.signOut({ scope: 'local' }).catch(() => undefined);
+          }
+          clearSupabaseAuthCallbackParams();
+          router.replace('/home');
+          return;
+        }
+
+        clearSupabaseAuthCallbackParams();
+        router.replace(data.session ? '/idea' : '/home');
       } catch (err) {
         console.error('Auth callback error:', err);
-        router.push('/home');
+        if (isRecoverableSupabaseAuthError(err)) {
+          clearSupabaseAuthStorage();
+          await supabase.auth.signOut({ scope: 'local' }).catch(() => undefined);
+        }
+        clearSupabaseAuthCallbackParams();
+        router.replace('/home');
       }
     };
 
