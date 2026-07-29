@@ -4,6 +4,7 @@ import React from 'react';
 import { Wallet, X, ArrowRight, Lock } from 'lucide-react';
 import { useAppStore } from '../lib/store';
 import { useAuth } from '../contexts/AuthContext';
+import { LoadingDots } from './LoadingSpinner';
 
 export const ConnectReminderModal = () => {
   const isConnectReminderOpen = useAppStore((state) => state.isConnectReminderOpen);
@@ -11,6 +12,19 @@ export const ConnectReminderModal = () => {
   const { signInWithGoogle, signInWithWallet, isLoading } = useAuth();
   const [isSigningInGoogle, setIsSigningInGoogle] = React.useState(false);
   const [isSigningInWallet, setIsSigningInWallet] = React.useState(false);
+
+  React.useEffect(() => {
+    if (!isConnectReminderOpen) return;
+
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        closeConnectReminder();
+      }
+    };
+
+    document.addEventListener('keydown', handleEscape);
+    return () => document.removeEventListener('keydown', handleEscape);
+  }, [closeConnectReminder, isConnectReminderOpen]);
 
   if (!isConnectReminderOpen) return null;
 
@@ -44,44 +58,53 @@ export const ConnectReminderModal = () => {
       <button
         type="button"
         aria-label="Close"
+        tabIndex={-1}
         onClick={closeConnectReminder}
         className="absolute inset-0 modal-overlay"
       />
 
-      <div className="relative w-full max-w-md modal-panel overflow-hidden border-l-2 border-l-[#FFD700]">
+      <div
+        className="modal-panel relative w-full max-w-md overflow-hidden border-l-2 border-l-[#FFD700]"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="connect-reminder-title"
+        aria-describedby="connect-reminder-description"
+      >
         <button
           type="button"
+          aria-label="Close sign in dialog"
           onClick={closeConnectReminder}
-          className="absolute top-3 right-3 p-2 text-gray-500 hover:text-white transition-colors z-20 min-h-[40px] min-w-[40px] flex items-center justify-center"
+          className="absolute right-3 top-3 z-20 flex min-h-[40px] min-w-[40px] items-center justify-center text-gray-500 transition-colors hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#FFD700]"
         >
           <X className="w-5 h-5" />
         </button>
 
-        <div className="p-8">
-          <div className="ui-eyebrow mb-4">Access</div>
-          <div className="flex items-start gap-3 mb-2">
-            <div className="w-10 h-10 border border-white/10 bg-[#111] flex items-center justify-center shrink-0">
+        <div className="p-6 sm:p-8">
+          <div className="ui-eyebrow mb-5">Access</div>
+          <div className="mb-2 flex items-start gap-4">
+            <div className="flex h-11 w-11 shrink-0 items-center justify-center border border-white/10 bg-[#111]">
               <Lock className="w-4 h-4 text-[#FFD700]" />
             </div>
             <div>
-              <h2 className="font-display text-2xl font-bold text-white tracking-tight">
+              <h2 id="connect-reminder-title" className="font-display text-2xl font-bold tracking-tight text-white">
                 Sign in required
               </h2>
-              <p className="text-gray-500 text-sm leading-relaxed mt-2">
+              <p id="connect-reminder-description" className="mt-2 text-sm leading-relaxed text-gray-400">
                 You must sign in to post projects, ideas, or send donations.
               </p>
             </div>
           </div>
 
-          <div className="mt-8 space-y-2">
+          <div className="mt-8 space-y-2.5">
             <button
               type="button"
               onClick={handleGoogleSignIn}
               disabled={loadingGoogle}
+              aria-busy={loadingGoogle}
               className="btn-primary w-full"
             >
               {loadingGoogle ? (
-                <div className="w-4 h-4 border-2 border-black/30 border-t-black rounded-full animate-spin" />
+                <LoadingDots className="text-black" />
               ) : (
                 <svg className="w-4 h-4" viewBox="0 0 24 24" aria-hidden>
                   <path
@@ -110,10 +133,11 @@ export const ConnectReminderModal = () => {
               type="button"
               onClick={handleWalletSignIn}
               disabled={loadingWallet}
+              aria-busy={loadingWallet}
               className="btn-ghost w-full"
             >
               {loadingWallet ? (
-                <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                <LoadingDots className="text-white" />
               ) : (
                 <Wallet className="w-4 h-4" />
               )}
@@ -123,7 +147,7 @@ export const ConnectReminderModal = () => {
             <button
               type="button"
               onClick={closeConnectReminder}
-              className="w-full mt-2 py-2 text-xs font-mono uppercase tracking-wider text-gray-600 hover:text-gray-300"
+              className="mt-2 min-h-[40px] w-full py-2 font-mono text-xs uppercase tracking-wider text-gray-600 transition-colors hover:text-gray-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#FFD700]"
             >
               Cancel
             </button>

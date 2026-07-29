@@ -1,16 +1,18 @@
 import { createClient } from "@supabase/supabase-js";
 
 // Get Supabase configuration from environment variables
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim();
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY?.trim();
 
 export const hasSupabaseEnv = Boolean(supabaseUrl && supabaseAnonKey);
 
 // Never hard-crash at module import time during build.
 // Use safe placeholders so static generation can complete,
 // while runtime env on Vercel should provide real values.
-const resolvedSupabaseUrl = supabaseUrl ?? "https://example.supabase.co";
-const resolvedSupabaseAnonKey = supabaseAnonKey ?? "public-anon-key";
+// NOTE: placeholders produce AuthApiError "Invalid API key" if used at runtime —
+// always set NEXT_PUBLIC_SUPABASE_* in .env.local / Vercel before testing auth.
+const resolvedSupabaseUrl = supabaseUrl || "https://example.supabase.co";
+const resolvedSupabaseAnonKey = supabaseAnonKey || "public-anon-key";
 
 if (!hasSupabaseEnv && typeof window !== "undefined") {
   console.warn(
@@ -23,6 +25,7 @@ export const supabase = createClient(resolvedSupabaseUrl, resolvedSupabaseAnonKe
   auth: {
     persistSession: true, // Enable session persistence for Google OAuth
     autoRefreshToken: true,
+    // Client auto-parses OAuth tokens in the URL; AuthContext still cleans the hash.
     detectSessionInUrl: true,
   },
   realtime: {

@@ -1,7 +1,7 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import React, { useEffect, useState } from 'react';
+import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 
 interface LoadingSpinnerProps {
   isLoading: boolean;
@@ -22,210 +22,132 @@ export const LoadingSpinner: React.FC<LoadingSpinnerProps> = ({
 }) => {
   const [isExiting, setIsExiting] = useState(false);
   const [shouldRender, setShouldRender] = useState(isLoading);
+  const prefersReducedMotion = useReducedMotion();
 
-  // Size configurations
   const sizeConfig = {
-    sm: { logo: 32, ring: 48, stroke: 2 },
-    md: { logo: 48, ring: 72, stroke: 3 },
-    lg: { logo: 64, ring: 96, stroke: 4 },
+    sm: { frame: 36, scan: 10, text: 'text-[10px]', gap: 'mt-3', bar: 'w-24', pad: 'py-8' },
+    md: { frame: 52, scan: 16, text: 'text-[11px]', gap: 'mt-4', bar: 'w-32', pad: 'py-10' },
+    lg: { frame: 68, scan: 24, text: 'text-xs', gap: 'mt-5', bar: 'w-40', pad: 'py-12' },
   };
 
   const config = sizeConfig[size];
 
   useEffect(() => {
     if (!isLoading && shouldRender) {
-      // Trigger exit animation
       setIsExiting(true);
       const timer = setTimeout(() => {
         setShouldRender(false);
         setIsExiting(false);
         onLoadingComplete?.();
-      }, 500); // Duration of exit animation
+      }, prefersReducedMotion ? 0 : 180);
       return () => clearTimeout(timer);
     } else if (isLoading && !shouldRender) {
       setShouldRender(true);
     }
-  }, [isLoading, shouldRender, onLoadingComplete]);
+  }, [isLoading, shouldRender, onLoadingComplete, prefersReducedMotion]);
 
   if (!shouldRender) return null;
 
   const containerClasses = fullScreen
-    ? 'fixed inset-0 z-50 flex items-center justify-center bg-[#0a0a0a]/90 backdrop-blur-sm'
-    : 'flex flex-col items-center justify-center py-12';
+    ? 'fixed inset-0 z-50 flex items-center justify-center bg-[#050505]/95'
+    : `flex flex-col items-center justify-center ${config.pad}`;
+
+  const motionOff = prefersReducedMotion || isExiting;
 
   return (
     <AnimatePresence mode="wait">
       {shouldRender && (
         <motion.div
           className={containerClasses}
+          role="status"
+          aria-live="polite"
+          aria-busy={isLoading}
           initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
+          animate={isExiting ? { opacity: 0, scale: prefersReducedMotion ? 1 : 0.98 } : { opacity: 1, scale: 1 }}
           exit={{ opacity: 0 }}
-          transition={{ duration: 0.3 }}
+          transition={{ duration: prefersReducedMotion ? 0 : 0.18, ease: 'easeOut' }}
         >
           <div className="relative flex flex-col items-center">
-            {/* Glitch container for exit effect */}
             <motion.div
-              className="relative"
-              animate={isExiting ? {
-                x: [0, -3, 3, -2, 2, 0],
-                opacity: [1, 0.8, 1, 0.6, 0.8, 0],
-                filter: [
-                  'hue-rotate(0deg)',
-                  'hue-rotate(90deg)',
-                  'hue-rotate(-90deg)',
-                  'hue-rotate(45deg)',
-                  'hue-rotate(0deg)',
-                  'hue-rotate(0deg)',
-                ],
-              } : {}}
-              transition={{ duration: 0.4, ease: 'easeOut' }}
+              className="relative overflow-hidden rounded-[4px] border border-white/15 bg-[#0A0A0A]"
+              style={{ width: config.frame, height: config.frame }}
+              animate={
+                motionOff
+                  ? undefined
+                  : {
+                      borderColor: [
+                        'rgba(255, 255, 255, 0.16)',
+                        'rgba(255, 215, 0, 0.55)',
+                        'rgba(255, 255, 255, 0.16)',
+                      ],
+                    }
+              }
+              transition={{ duration: 1.2, repeat: Infinity, ease: 'easeInOut' }}
             >
-              {/* Rotating gradient ring */}
-              <motion.div
-                className="absolute inset-0 flex items-center justify-center"
-                style={{
-                  width: config.ring,
-                  height: config.ring,
-                  left: '50%',
-                  top: '50%',
-                  marginLeft: -config.ring / 2,
-                  marginTop: -config.ring / 2,
-                }}
-              >
-                <svg
-                  width={config.ring}
-                  height={config.ring}
-                  viewBox={`0 0 ${config.ring} ${config.ring}`}
-                  className="absolute"
-                >
-                  <defs>
-                    <linearGradient id="loadingGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                      <stop offset="0%" stopColor="#FFD700" />
-                      <stop offset="50%" stopColor="#9945FF" />
-                      <stop offset="100%" stopColor="#FFD700" />
-                    </linearGradient>
-                  </defs>
-                  <motion.circle
-                    cx={config.ring / 2}
-                    cy={config.ring / 2}
-                    r={(config.ring - config.stroke * 2) / 2}
-                    fill="none"
-                    stroke="url(#loadingGradient)"
-                    strokeWidth={config.stroke}
-                    strokeLinecap="round"
-                    strokeDasharray={`${(config.ring - config.stroke * 2) * Math.PI * 0.75} ${(config.ring - config.stroke * 2) * Math.PI * 0.25}`}
-                    animate={{ rotate: 360 }}
+              <span className="absolute left-0 top-0 h-2 w-2 border-l border-t border-[#FFD700]" />
+              <span className="absolute right-0 top-0 h-2 w-2 border-r border-t border-[#FFD700]" />
+              <span className="absolute bottom-0 left-0 h-2 w-2 border-b border-l border-[#FFD700]" />
+              <span className="absolute bottom-0 right-0 h-2 w-2 border-b border-r border-[#FFD700]" />
+
+              <div className="absolute inset-3 grid grid-cols-3 gap-1">
+                {Array.from({ length: 9 }).map((_, index) => (
+                  <motion.span
+                    key={index}
+                    className={`border border-white/[0.06] ${
+                      index === 4 ? 'bg-[#FFD700]' : 'bg-white/[0.07]'
+                    }`}
+                    animate={
+                      motionOff
+                        ? undefined
+                        : {
+                            opacity: index === 4 ? [0.65, 1, 0.65] : [0.18, 0.52, 0.18],
+                          }
+                    }
                     transition={{
-                      duration: 1.2,
+                      duration: 0.9,
                       repeat: Infinity,
-                      ease: 'linear',
+                      delay: index * 0.06,
+                      ease: 'easeInOut',
                     }}
-                    style={{ transformOrigin: 'center' }}
                   />
-                </svg>
+                ))}
+              </div>
 
-                {/* Glow effect */}
-                <motion.div
-                  className="absolute inset-0 rounded-full"
-                  style={{
-                    background: 'conic-gradient(from 0deg, transparent, rgba(255, 215, 0, 0.3), transparent, rgba(153, 69, 255, 0.3), transparent)',
-                    filter: 'blur(8px)',
-                  }}
-                  animate={{ rotate: 360 }}
-                  transition={{
-                    duration: 1.2,
-                    repeat: Infinity,
-                    ease: 'linear',
-                  }}
-                />
-              </motion.div>
-
-              {/* Logo with popping animation */}
-              <motion.div
-                className="relative z-10 flex items-center justify-center"
-                style={{ width: config.ring, height: config.ring }}
-                initial={{ scale: 0, opacity: 0 }}
-                animate={{
-                  scale: [0, 1.2, 0.9, 1.05, 1],
-                  opacity: 1,
-                }}
-                transition={{
-                  duration: 0.6,
-                  ease: [0.34, 1.56, 0.64, 1], // Spring-like bounce
-                }}
-              >
-                {/* Pulsing background glow */}
-                <motion.div
-                  className="absolute rounded-full bg-gradient-to-br from-[#FFD700]/20 to-[#9945FF]/20"
-                  style={{ width: config.logo + 16, height: config.logo + 16 }}
-                  animate={{
-                    scale: [1, 1.15, 1],
-                    opacity: [0.5, 0.8, 0.5],
-                  }}
-                  transition={{
-                    duration: 1.5,
-                    repeat: Infinity,
-                    ease: 'easeInOut',
-                  }}
-                />
-
-                {/* Logo */}
-                <motion.img
-                  src="/gmi-logo.png"
-                  alt="Loading"
-                  style={{ width: config.logo, height: config.logo }}
-                  className="relative z-10 drop-shadow-[0_0_10px_rgba(255,215,0,0.5)]"
-                  animate={{
-                    scale: [1, 1.05, 1],
-                  }}
-                  transition={{
-                    duration: 1.5,
-                    repeat: Infinity,
-                    ease: 'easeInOut',
-                  }}
-                />
-              </motion.div>
+              <motion.span
+                className="absolute left-2 right-2 top-1/2 h-px bg-[#FFD700]"
+                animate={
+                  motionOff
+                    ? undefined
+                    : {
+                        y: [-config.scan, config.scan, -config.scan],
+                        opacity: [0.18, 0.9, 0.18],
+                      }
+                }
+                transition={{ duration: 1.1, repeat: Infinity, ease: 'easeInOut' }}
+              />
             </motion.div>
 
-            {/* Loading text */}
+            <span className="sr-only">{text}</span>
+
             {showText && (
               <motion.p
-                className="mt-4 text-gray-400 text-sm font-medium"
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.3 }}
+                aria-hidden="true"
+                className={`${config.gap} max-w-[220px] text-center font-mono ${config.text} uppercase tracking-[0.14em] text-gray-500`}
+                initial={{ opacity: prefersReducedMotion ? 1 : 0 }}
+                animate={{ opacity: isExiting ? 0 : 1 }}
+                transition={{ duration: prefersReducedMotion ? 0 : 0.18 }}
               >
-                <motion.span
-                  animate={isExiting ? { opacity: 0 } : { opacity: [0.5, 1, 0.5] }}
-                  transition={{ duration: 1.5, repeat: Infinity }}
-                >
-                  {text}
-                </motion.span>
+                {text}
               </motion.p>
             )}
 
-            {/* Glitch lines on exit */}
-            <AnimatePresence>
-              {isExiting && (
-                <>
-                  <motion.div
-                    className="absolute left-0 right-0 h-[2px] bg-[#FFD700]"
-                    style={{ top: '30%' }}
-                    initial={{ scaleX: 0, opacity: 0 }}
-                    animate={{ scaleX: [0, 1, 0], opacity: [0, 1, 0], x: [-20, 20, -10] }}
-                    transition={{ duration: 0.3 }}
-                  />
-                  <motion.div
-                    className="absolute left-0 right-0 h-[1px] bg-[#9945FF]"
-                    style={{ top: '60%' }}
-                    initial={{ scaleX: 0, opacity: 0 }}
-                    animate={{ scaleX: [0, 1, 0], opacity: [0, 1, 0], x: [20, -20, 10] }}
-                    transition={{ duration: 0.3, delay: 0.1 }}
-                  />
-                </>
-              )}
-            </AnimatePresence>
+            <div className={`${showText ? 'mt-3' : config.gap} ${config.bar} h-px overflow-hidden bg-white/10`}>
+              <motion.span
+                className="block h-full w-1/3 bg-[#FFD700]"
+                animate={motionOff ? { x: '110%' } : { x: ['-120%', '320%'] }}
+                transition={{ duration: 1, repeat: Infinity, ease: 'easeInOut' }}
+              />
+            </div>
           </div>
         </motion.div>
       )}
@@ -234,21 +156,30 @@ export const LoadingSpinner: React.FC<LoadingSpinnerProps> = ({
 };
 
 // Simple inline version for buttons and small areas
-export const LoadingDots: React.FC<{ className?: string }> = ({ className = '' }) => (
-  <span className={`inline-flex items-center gap-1 ${className}`}>
-    {[0, 1, 2].map((i) => (
-      <motion.span
-        key={i}
-        className="w-1.5 h-1.5 rounded-full bg-current"
-        animate={{ opacity: [0.3, 1, 0.3], scale: [0.8, 1, 0.8] }}
-        transition={{
-          duration: 0.8,
-          repeat: Infinity,
-          delay: i * 0.15,
-        }}
-      />
-    ))}
-  </span>
-);
+export const LoadingDots: React.FC<{ className?: string }> = ({ className = '' }) => {
+  const prefersReducedMotion = useReducedMotion();
+
+  return (
+    <span className={`inline-flex items-center gap-1 ${className}`} role="status" aria-label="Loading">
+      {[0, 1, 2].map((i) => (
+        <motion.span
+          key={i}
+          className="h-1.5 w-1.5 bg-current"
+          animate={
+            prefersReducedMotion
+              ? { opacity: 0.65 }
+              : { opacity: [0.35, 1, 0.35], scaleY: [0.8, 1.15, 0.8] }
+          }
+          transition={{
+            duration: 0.8,
+            repeat: Infinity,
+            delay: i * 0.15,
+            ease: 'easeInOut',
+          }}
+        />
+      ))}
+    </span>
+  );
+};
 
 export default LoadingSpinner;

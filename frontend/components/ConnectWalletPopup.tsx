@@ -1,14 +1,16 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { X, Wallet, AlertTriangle, ArrowLeft, ChevronUp, Smartphone, Fingerprint } from 'lucide-react';
+import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
+import { X, Wallet, AlertTriangle, ArrowLeft, Smartphone, Fingerprint } from 'lucide-react';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { usePasskeyWallet } from '@/contexts/LazorkitContext';
 import { useAuth } from '@/contexts/AuthContext';
+import { useSelectAndConnect } from '@/hooks/useSelectAndConnect';
 import { apiClient } from '@/lib/api-client';
 import { markBackendSessionPresent } from '@/lib/session';
 import { LoadingLightbulb } from './LoadingLightbulb';
+import { LoadingDots } from './LoadingSpinner';
 import toast from 'react-hot-toast';
 import bs58 from 'bs58';
 
@@ -39,9 +41,11 @@ export const ConnectWalletPopup = () => {
     signInWithGoogle,
     isLoading,
   } = useAuth();
-  const { wallets, select, connect, publicKey, signMessage, connected, disconnect } = useWallet();
+  const { publicKey, signMessage, connected, disconnect } = useWallet();
+  const { wallets, selectAndConnect } = useSelectAndConnect();
   const { isPasskeyConnected, passkeyWalletAddress, connectPasskey, disconnectPasskey, signPasskeyMessage, isPasskeyConnecting } = usePasskeyWallet();
   const [isSigningInGoogle, setIsSigningInGoogle] = useState(false);
+  const prefersReducedMotion = useReducedMotion();
   
   // Flag to prevent multiple API calls
   const isLinkingRef = useRef(false);
@@ -250,50 +254,24 @@ export const ConnectWalletPopup = () => {
   }, [step, isPasskeyConnected, passkeyWalletAddress, signPasskeyMessage, user, setUser, setIsNewUser, setShowWalletPopup, disconnectPasskey]);
 
   const handleConnect = async (walletName: string, isMobileAdapter?: boolean) => {
-    let selectedWallet;
-    
-    // For Mobile Wallet Adapter, find the adapter with "Mobile" in its name
-    if (isMobileAdapter) {
-      selectedWallet = wallets.find(w =>
-        w.adapter.name.toLowerCase().includes('mobile') ||
-        w.adapter.name.toLowerCase().includes('solana mobile')
-      );
-    } else {
-      selectedWallet = wallets.find(w =>
-        w.adapter.name.toLowerCase().includes(walletName.toLowerCase())
-      );
-    }
-
-    if (!selectedWallet) {
-      // On mobile, if no mobile adapter found, try to find a regular wallet
-      if (isMobileAdapter) {
-        selectedWallet = wallets.find(w =>
-          w.adapter.name.toLowerCase().includes('phantom') ||
-          w.adapter.name.toLowerCase().includes('solflare')
-        );
-      }
-      
-      if (!selectedWallet) {
-        toast.error(`${walletName} wallet not found. Please install a Solana wallet app.`);
-        return;
-      }
-    }
-
     try {
       setStep('connecting');
-      select(selectedWallet.adapter.name);
-      await connect();
+      // select() is async React state — useSelectAndConnect waits for the
+      // selected adapter before calling connect(), avoiding WalletNotSelectedError.
+      await selectAndConnect({ walletName, isMobileAdapter });
     } catch (error: any) {
       // Ignore errors from other wallet extensions (like MetaMask)
       if (error.message?.includes('MetaMask') || 
-          error.message?.includes('Ethereum') ||
-          error.name === 'WalletNotSelectedError') {
+          error.message?.includes('Ethereum')) {
+        setStep('select-wallet');
         return;
       }
       
       console.error('Wallet connection error:', error);
       
-      if (error.message?.includes('User rejected') || error.message?.includes('canceled')) {
+      if (error.message?.includes('not found')) {
+        toast.error(error.message);
+      } else if (error.message?.includes('User rejected') || error.message?.includes('canceled') || error.message?.includes('cancelled')) {
         toast.error('Connection cancelled');
       } else {
         toast.error('Failed to connect wallet');
@@ -359,65 +337,84 @@ export const ConnectWalletPopup = () => {
     {
       name: 'Passkey',
       icon: '', // We'll use Fingerprint icon component
-      color: 'hover:bg-[#00D9FF]/20 hover:border-[#00D9FF]/50',
       isPasskey: true,
       isMobileAdapter: false,
     },
     {
       name: 'Phantom',
       icon: '/asset/phantom-logo.svg',
-      color: 'hover:bg-[#AB9FF2]/20 hover:border-[#AB9FF2]/50',
       isPasskey: false,
       isMobileAdapter: false,
     },
     {
       name: 'Solflare',
       icon: '/asset/solflare-logo.png',
-      color: 'hover:bg-[#FFD700]/20 hover:border-[#FFD700]/50',
       isPasskey: false,
       isMobileAdapter: false,
     },
   ];
 
+  const stepMotion = prefersReducedMotion
+    ? {
+        initial: { opacity: 1 },
+        animate: { opacity: 1 },
+        exit: { opacity: 0 },
+      }
+    : {
+        initial: { opacity: 0, y: 8 },
+        animate: { opacity: 1, y: 0 },
+        exit: { opacity: 0, y: -8 },
+      };
+  const walletOptionClass = 'group flex min-h-[64px] w-full items-center justify-between border border-white/10 bg-white/[0.03] px-3 py-3 text-left transition-colors hover:border-[#FFD700]/40 hover:bg-[#FFD700]/[0.03] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-[#FFD700] sm:px-4';
+  const walletIconClass = 'flex h-11 w-11 shrink-0 items-center justify-center border border-white/10 bg-[#111] p-2';
+
   if (!showWalletPopup) return null;
 
-  // Minimized version - small toast at bottom right
   if (isMinimized) {
     return (
       <motion.div
-        initial={{ opacity: 0, y: 50, scale: 0.9 }}
-        animate={{ opacity: 1, y: 0, scale: 1 }}
-        exit={{ opacity: 0, y: 50, scale: 0.9 }}
-        className="fixed bottom-6 right-6 z-[100] max-w-sm"
+        initial={prefersReducedMotion ? { opacity: 1 } : { opacity: 0, y: 18 }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={prefersReducedMotion ? { opacity: 0 } : { opacity: 0, y: 18 }}
+        transition={{ duration: prefersReducedMotion ? 0 : 0.18, ease: 'easeOut' }}
+        className="fixed bottom-6 right-6 z-[100] max-w-sm px-4 sm:px-0"
+        role="dialog"
+        aria-label="Connect wallet reminder"
       >
-        <div className="bg-[#1A1A1A] border border-white/10 rounded-2xl p-4 shadow-2xl shadow-purple-900/20">
+        <div className="modal-panel border-l-2 border-l-[#FFD700] p-4">
           <div className="flex items-start gap-3">
-            <div className="w-10 h-10 bg-purple-500/20 rounded-full flex items-center justify-center flex-shrink-0">
-              <Wallet className="w-5 h-5 text-purple-400" />
+            <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center border border-white/10 bg-[#111]">
+              <Wallet className="h-5 w-5 text-[#FFD700]" aria-hidden="true" />
             </div>
-            <div className="flex-1 min-w-0">
-              <h3 className="text-sm font-bold text-white mb-1">Connect Wallet?</h3>
-              <p className="text-xs text-gray-400 mb-3">Receive tips from the community</p>
+            <div className="min-w-0 flex-1">
+              <h3 className="mb-1 font-mono text-[11px] font-semibold uppercase tracking-[0.12em] text-white">
+                Connect wallet
+              </h3>
+              <p className="mb-3 text-xs leading-5 text-gray-400">Receive tips from the community.</p>
               <div className="flex gap-2">
                 <button
+                  type="button"
                   onClick={handleExpandFromMinimized}
-                  className="px-3 py-1.5 bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold rounded-full transition-all"
+                  className="min-h-[36px] border border-[#FFD700] bg-[#FFD700] px-3 py-1.5 text-xs font-bold text-black transition-colors hover:bg-[#FDB931] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#FFD700]"
                 >
                   Connect
                 </button>
                 <button
+                  type="button"
                   onClick={handleDismissMinimized}
-                  className="px-3 py-1.5 bg-white/5 hover:bg-white/10 text-gray-400 text-xs rounded-full transition-all"
+                  className="min-h-[36px] border border-white/15 bg-white/[0.03] px-3 py-1.5 text-xs text-gray-400 transition-colors hover:bg-white/[0.05] hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#FFD700]"
                 >
                   Later
                 </button>
               </div>
             </div>
             <button
+              type="button"
+              aria-label="Dismiss wallet reminder"
               onClick={handleDismissMinimized}
-              className="p-1 text-gray-500 hover:text-white transition-colors"
+              className="flex min-h-[40px] min-w-[40px] items-center justify-center text-gray-500 transition-colors hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#FFD700]"
             >
-              <X className="w-4 h-4" />
+              <X className="h-4 w-4" />
             </button>
           </div>
         </div>
@@ -425,64 +422,78 @@ export const ConnectWalletPopup = () => {
     );
   }
 
-  // Full popup version
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center px-3 sm:px-4">
-      {/* Backdrop */}
-      <motion.div 
+      <motion.button
+        type="button"
+        aria-label="Dismiss wallet dialog"
+        tabIndex={-1}
+        onClick={handleUnderstood}
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
         className="absolute inset-0 modal-overlay"
       />
-        
-      {/* Modal */}
-      <motion.div 
-        initial={{ scale: 0.9, opacity: 0, y: 20 }}
+
+      <motion.div
+        initial={prefersReducedMotion ? { opacity: 1 } : { scale: 0.98, opacity: 0, y: 12 }}
         animate={{ scale: 1, opacity: 1, y: 0 }}
-        exit={{ scale: 0.9, opacity: 0, y: 20 }}
-        className="relative w-full max-w-md bg-[#0F0F0F] border border-white/10 rounded-2xl sm:rounded-3xl p-5 sm:p-8 shadow-2xl shadow-purple-900/20 overflow-hidden"
+        exit={prefersReducedMotion ? { opacity: 0 } : { scale: 0.98, opacity: 0, y: 12 }}
+        transition={{ duration: prefersReducedMotion ? 0 : 0.18, ease: 'easeOut' }}
+        className="modal-panel relative w-full max-w-md overflow-hidden border-l-2 border-l-[#FFD700] p-5 sm:p-8"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="wallet-popup-title"
       >
-        {/* Top Gradient Line */}
-        <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-purple-500 via-[#FFD700] to-green-500" />
+        <button
+          type="button"
+          aria-label="Close wallet dialog"
+          onClick={handleUnderstood}
+          className="absolute right-3 top-3 z-20 flex min-h-[40px] min-w-[40px] items-center justify-center text-gray-500 transition-colors hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#FFD700]"
+        >
+          <X className="h-5 w-5" />
+        </button>
 
         <AnimatePresence mode="wait">
           {step === 'initial' && (
             <motion.div
               key="initial"
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -20 }}
+              {...stepMotion}
+              transition={{ duration: prefersReducedMotion ? 0 : 0.18, ease: 'easeOut' }}
               className="text-center"
             >
-              <div className="w-16 h-16 sm:w-20 sm:h-20 bg-purple-500/20 rounded-full flex items-center justify-center mx-auto mb-4 sm:mb-6">
-                <Wallet className="w-8 h-8 sm:w-10 sm:h-10 text-purple-400" />
+              <div className="ui-eyebrow mb-5 justify-center">Wallet</div>
+              <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center border border-white/10 bg-[#111]">
+                <Wallet className="h-8 w-8 text-[#FFD700]" aria-hidden="true" />
               </div>
-              
-              <h2 className="text-xl sm:text-2xl font-bold text-white mb-2 sm:mb-3">
-                Do you want to connect wallet?
+
+              <h2 id="wallet-popup-title" className="mb-3 text-xl font-bold tracking-tight text-white sm:text-2xl">
+                Connect wallet
               </h2>
-              
-              <p className="text-gray-400 text-sm sm:text-base mb-6 sm:mb-8 leading-relaxed">
-                Connect your Solana wallet to receive tips from the community for your awesome ideas!
+
+              <p className="mx-auto max-w-sm text-sm leading-6 text-gray-400">
+                Add a Solana wallet to receive community tips and manage on-chain actions.
               </p>
 
-              <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center">
+              <div className="mt-8 grid gap-2.5">
                 <button
+                  type="button"
                   onClick={() => setStep('select-wallet')}
-                  className="w-full sm:w-auto px-6 sm:px-8 py-2.5 sm:py-3 bg-gradient-to-r from-purple-600 to-purple-500 hover:from-purple-500 hover:to-purple-400 text-white font-bold rounded-full transition-all transform hover:scale-105 shadow-lg shadow-purple-500/25 text-sm sm:text-base"
+                  className="btn-primary w-full"
                 >
-                  Okay
+                  Connect wallet
                 </button>
                 <button
+                  type="button"
                   onClick={handleGoogleSignIn}
                   disabled={isLoading || isSigningInGoogle}
-                  className="w-full sm:w-auto px-6 sm:px-8 py-2.5 sm:py-3 bg-white text-black font-bold rounded-full transition-all shadow-lg text-sm sm:text-base flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
+                  aria-busy={isLoading || isSigningInGoogle}
+                  className="btn-ghost w-full"
                 >
                   {isLoading || isSigningInGoogle ? (
-                    <div className="w-4 h-4 border-2 border-black/30 border-t-black rounded-full animate-spin" />
+                    <LoadingDots className="text-white" />
                   ) : (
-                    <svg className="w-4 h-4" viewBox="0 0 24 24">
+                    <svg className="h-4 w-4" viewBox="0 0 24 24" aria-hidden="true">
                       <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
                       <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
                       <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" />
@@ -492,8 +503,9 @@ export const ConnectWalletPopup = () => {
                   Sign in with Google
                 </button>
                 <button
+                  type="button"
                   onClick={handleSkip}
-                  className="w-full sm:w-auto px-6 sm:px-8 py-2.5 sm:py-3 bg-zinc-800 hover:bg-zinc-700 text-white font-semibold rounded-full transition-all border border-zinc-700 text-sm sm:text-base"
+                  className="min-h-[44px] w-full border border-white/15 bg-transparent px-4 py-2.5 text-sm font-semibold text-gray-300 transition-colors hover:bg-white/[0.04] hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#FFD700]"
                 >
                   Skip for now
                 </button>
@@ -504,33 +516,35 @@ export const ConnectWalletPopup = () => {
           {step === 'warning' && (
             <motion.div
               key="warning"
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -20 }}
+              {...stepMotion}
+              transition={{ duration: prefersReducedMotion ? 0 : 0.18, ease: 'easeOut' }}
               className="text-center"
             >
-              <div className="w-16 h-16 sm:w-20 sm:h-20 bg-yellow-500/20 rounded-full flex items-center justify-center mx-auto mb-4 sm:mb-6">
-                <AlertTriangle className="w-8 h-8 sm:w-10 sm:h-10 text-yellow-400" />
+              <div className="ui-eyebrow mb-5 justify-center">Notice</div>
+              <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center border border-[#FFD700]/35 bg-[#FFD700]/10">
+                <AlertTriangle className="h-8 w-8 text-[#FFD700]" aria-hidden="true" />
               </div>
-              
-              <h2 className="text-xl sm:text-2xl font-bold text-white mb-2 sm:mb-3">
+
+              <h2 id="wallet-popup-title" className="mb-3 text-xl font-bold tracking-tight text-white sm:text-2xl">
                 Heads up!
               </h2>
-              
-              <p className="text-gray-400 text-sm sm:text-base mb-6 sm:mb-8 leading-relaxed">
+
+              <p className="mx-auto max-w-sm text-sm leading-6 text-gray-400">
                 If you don't connect a wallet, you won't be able to receive tips from other users.
               </p>
 
-              <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center">
+              <div className="mt-8 grid gap-2.5">
                 <button
+                  type="button"
                   onClick={() => setStep('select-wallet')}
-                  className="w-full sm:w-auto px-6 sm:px-8 py-2.5 sm:py-3 bg-gradient-to-r from-[#FFD700] to-[#FDB931] text-black font-bold rounded-full transition-all transform hover:scale-105 shadow-lg shadow-yellow-500/25 text-sm sm:text-base"
+                  className="btn-primary w-full"
                 >
                   Connect now
                 </button>
                 <button
+                  type="button"
                   onClick={handleUnderstood}
-                  className="w-full sm:w-auto px-6 sm:px-8 py-2.5 sm:py-3 bg-zinc-800 hover:bg-zinc-700 text-white font-semibold rounded-full transition-all border border-zinc-700 text-sm sm:text-base"
+                  className="btn-ghost w-full"
                 >
                   Maybe later
                 </button>
@@ -541,104 +555,92 @@ export const ConnectWalletPopup = () => {
           {step === 'select-wallet' && (
             <motion.div
               key="select-wallet"
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -20 }}
+              {...stepMotion}
+              transition={{ duration: prefersReducedMotion ? 0 : 0.18, ease: 'easeOut' }}
             >
               <button
+                type="button"
+                aria-label="Back"
                 onClick={() => setStep('initial')}
-                className="absolute top-4 left-4 sm:top-6 sm:left-6 p-2 text-gray-400 hover:text-white transition-colors"
+                className="absolute left-3 top-3 flex min-h-[40px] min-w-[40px] items-center justify-center text-gray-400 transition-colors hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#FFD700]"
               >
                 <ArrowLeft className="w-5 h-5" />
               </button>
 
-              <button
-                onClick={handleUnderstood}
-                className="absolute top-4 right-4 sm:top-6 sm:right-6 p-2 text-gray-400 hover:text-white transition-colors"
-              >
-                <X className="w-5 h-5" />
-              </button>
-
-              <div className="text-center pt-4">
-                <div className="w-14 h-14 sm:w-16 sm:h-16 bg-purple-500/20 rounded-full flex items-center justify-center mx-auto mb-4 sm:mb-6">
-                  <Wallet className="w-7 h-7 sm:w-8 sm:h-8 text-purple-400" />
+              <div className="pt-8 text-center">
+                <div className="ui-eyebrow mb-5 justify-center">Provider</div>
+                <div className="mx-auto mb-5 flex h-14 w-14 items-center justify-center border border-white/10 bg-[#111]">
+                  <Wallet className="h-7 w-7 text-[#FFD700]" aria-hidden="true" />
                 </div>
-                
-                <h2 className="text-xl sm:text-2xl font-bold text-white mb-2">
+
+                <h2 id="wallet-popup-title" className="mb-2 text-xl font-bold tracking-tight text-white sm:text-2xl">
                   Select Wallet
                 </h2>
-                
-                <p className="text-gray-400 text-sm sm:text-base mb-4 sm:mb-6">
+
+                <p className="mb-5 text-sm leading-6 text-gray-400">
                   Choose your preferred Solana wallet
                 </p>
 
-                <div className="space-y-2 sm:space-y-3">
-                  {/* On mobile, always show options (deep link to wallet apps) */}
+                <div className="space-y-2">
                   {isMobile ? (
                     walletOptions.map((wallet) => (
                       <button
+                        type="button"
                         key={wallet.name}
                         onClick={() => wallet.isPasskey ? handlePasskeyConnect() : handleConnect(wallet.name, wallet.isMobileAdapter)}
-                        className={`w-full flex items-center justify-between p-3 sm:p-4 rounded-xl border border-white/5 bg-white/5 transition-all duration-300 group ${wallet.color}`}
+                        className={walletOptionClass}
                       >
-                        <div className="flex items-center gap-3 sm:gap-4">
-                          <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-white/10 flex items-center justify-center p-2 sm:p-2.5">
+                        <div className="flex min-w-0 items-center gap-3">
+                          <div className={walletIconClass}>
                             {wallet.isPasskey ? (
-                              <Fingerprint className="w-6 h-6 text-cyan-400" />
+                              <Fingerprint className="h-5 w-5 text-[#FFD700]" aria-hidden="true" />
                             ) : wallet.isMobileAdapter ? (
-                              <Smartphone className="w-6 h-6 text-purple-400" />
+                              <Smartphone className="h-5 w-5 text-[#FFD700]" aria-hidden="true" />
                             ) : (
                               <img src={wallet.icon} alt={wallet.name} className="w-full h-full object-contain" />
                             )}
                           </div>
-                          <div className="text-left">
-                            <span className="font-bold text-base sm:text-lg text-white block">{wallet.name}</span>
+                          <div className="min-w-0 text-left">
+                            <span className="block font-mono text-[11px] font-semibold uppercase tracking-[0.12em] text-white">{wallet.name}</span>
                             {wallet.isPasskey && (
-                              <span className="text-xs text-gray-400">FaceID / TouchID / Windows Hello</span>
+                              <span className="text-xs text-gray-500">FaceID / TouchID / Windows Hello</span>
                             )}
                             {wallet.isMobileAdapter && (
-                              <span className="text-xs text-gray-400">Opens your wallet app</span>
+                              <span className="text-xs text-gray-500">Opens your wallet app</span>
                             )}
                           </div>
                         </div>
-                        <div className={`w-2 h-2 sm:w-2.5 sm:h-2.5 rounded-full bg-gray-600 transition-all ${
-                          wallet.name === 'Passkey' ? 'group-hover:bg-[#00D9FF] group-hover:shadow-[0_0_10px_#00D9FF]' :
-                          wallet.name === 'Phantom' ? 'group-hover:bg-[#AB9FF2] group-hover:shadow-[0_0_10px_#AB9FF2]' :
-                          wallet.name === 'Mobile Wallet' ? 'group-hover:bg-[#9945FF] group-hover:shadow-[0_0_10px_#9945FF]' :
-                          'group-hover:bg-[#FFD700] group-hover:shadow-[0_0_10px_#FFD700]'
-                        }`} />
+                        <span className="h-2 w-2 border border-white/25 transition-colors group-hover:border-[#FFD700] group-hover:bg-[#FFD700]" />
                       </button>
                     ))
                   ) : (
                     <>
-                      {/* Always show Passkey option first */}
                       {walletOptions.filter(w => w.isPasskey).map((wallet) => (
                         <button
+                          type="button"
                           key={wallet.name}
                           onClick={handlePasskeyConnect}
-                          className={`w-full flex items-center justify-between p-3 sm:p-4 rounded-xl border border-white/5 bg-white/5 transition-all duration-300 group ${wallet.color}`}
+                          className={walletOptionClass}
                         >
-                          <div className="flex items-center gap-3 sm:gap-4">
-                            <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-white/10 flex items-center justify-center p-2 sm:p-2.5">
-                              <Fingerprint className="w-6 h-6 text-cyan-400" />
+                          <div className="flex min-w-0 items-center gap-3">
+                            <div className={walletIconClass}>
+                              <Fingerprint className="h-5 w-5 text-[#FFD700]" aria-hidden="true" />
                             </div>
-                            <div className="text-left">
-                              <span className="font-bold text-base sm:text-lg text-white block">{wallet.name}</span>
-                              <span className="text-xs text-gray-400">FaceID / TouchID / Windows Hello</span>
+                            <div className="min-w-0 text-left">
+                              <span className="block font-mono text-[11px] font-semibold uppercase tracking-[0.12em] text-white">{wallet.name}</span>
+                              <span className="text-xs text-gray-500">FaceID / TouchID / Windows Hello</span>
                             </div>
                           </div>
-                          <div className="w-2 h-2 sm:w-2.5 sm:h-2.5 rounded-full bg-gray-600 transition-all group-hover:bg-[#00D9FF] group-hover:shadow-[0_0_10px_#00D9FF]" />
+                          <span className="h-2 w-2 border border-white/25 transition-colors group-hover:border-[#FFD700] group-hover:bg-[#FFD700]" />
                         </button>
                       ))}
-                      
-                      {/* Divider */}
+
                       <div className="flex items-center gap-3 py-2">
                         <div className="flex-1 h-px bg-white/10"></div>
-                        <span className="text-xs text-gray-500">or use wallet extension</span>
+                        <span className="font-mono text-[10px] uppercase tracking-[0.12em] text-gray-500">Wallet extension</span>
                         <div className="flex-1 h-px bg-white/10"></div>
                       </div>
-                      
-                      {/* Traditional wallet options */}
+
                       {wallets.filter(w => w.readyState === 'Installed' || w.readyState === 'Loadable').length > 0 ? (
                         walletOptions.filter(w => !w.isPasskey && !w.isMobileAdapter).map((wallet) => {
                           const isInstalled = wallets.some(
@@ -650,33 +652,31 @@ export const ConnectWalletPopup = () => {
 
                           return (
                             <button
+                              type="button"
                               key={wallet.name}
                               onClick={() => handleConnect(wallet.name, wallet.isMobileAdapter)}
-                              className={`w-full flex items-center justify-between p-3 sm:p-4 rounded-xl border border-white/5 bg-white/5 transition-all duration-300 group ${wallet.color}`}
+                              className={walletOptionClass}
                             >
-                              <div className="flex items-center gap-3 sm:gap-4">
-                                <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-white/10 flex items-center justify-center p-2 sm:p-2.5">
+                              <div className="flex min-w-0 items-center gap-3">
+                                <div className={walletIconClass}>
                                   <img src={wallet.icon} alt={wallet.name} className="w-full h-full object-contain" />
                                 </div>
-                                <span className="font-bold text-base sm:text-lg text-white">{wallet.name}</span>
+                                <span className="font-mono text-[11px] font-semibold uppercase tracking-[0.12em] text-white">{wallet.name}</span>
                               </div>
-                              <div className={`w-2 h-2 sm:w-2.5 sm:h-2.5 rounded-full bg-gray-600 transition-all ${
-                                wallet.name === 'Phantom' ? 'group-hover:bg-[#AB9FF2] group-hover:shadow-[0_0_10px_#AB9FF2]' :
-                                'group-hover:bg-[#FFD700] group-hover:shadow-[0_0_10px_#FFD700]'
-                              }`} />
+                              <span className="h-2 w-2 border border-white/25 transition-colors group-hover:border-[#FFD700] group-hover:bg-[#FFD700]" />
                             </button>
                           );
                         })
                       ) : (
-                        <div className="text-gray-400 py-2">
-                          <p className="text-xs text-center text-gray-500">No wallet extension detected</p>
+                        <div className="border border-white/10 bg-white/[0.02] px-4 py-3 text-center">
+                          <p className="text-xs text-gray-500">No wallet extension detected</p>
                         </div>
                       )}
                     </>
                   )}
                 </div>
 
-                <p className="text-[10px] sm:text-xs text-gray-500 mt-4 sm:mt-6">
+                <p className="mt-5 text-[10px] text-gray-500 sm:text-xs">
                   You can always connect or change your wallet later in Profile settings.
                 </p>
               </div>
@@ -686,9 +686,8 @@ export const ConnectWalletPopup = () => {
           {step === 'connecting' && (
             <motion.div
               key="connecting"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
+              {...stepMotion}
+              transition={{ duration: prefersReducedMotion ? 0 : 0.18, ease: 'easeOut' }}
               className="py-6 sm:py-8"
             >
               <LoadingLightbulb text="Connecting wallet..." />
@@ -698,17 +697,29 @@ export const ConnectWalletPopup = () => {
           {step === 'connecting-passkey' && (
             <motion.div
               key="connecting-passkey"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
+              {...stepMotion}
+              transition={{ duration: prefersReducedMotion ? 0 : 0.18, ease: 'easeOut' }}
               className="py-6 sm:py-8"
             >
-              <div className="text-center">
-                <div className="w-16 h-16 sm:w-20 sm:h-20 bg-cyan-500/20 rounded-full flex items-center justify-center mx-auto mb-4 sm:mb-6 animate-pulse">
-                  <Fingerprint className="w-8 h-8 sm:w-10 sm:h-10 text-cyan-400" />
+              <div className="text-center" aria-busy={isPasskeyConnecting}>
+                <div className="relative mx-auto mb-5 flex h-20 w-20 items-center justify-center overflow-hidden border border-white/15 bg-[#0A0A0A]">
+                  <span className="absolute left-0 top-0 h-2 w-2 border-l border-t border-[#FFD700]" />
+                  <span className="absolute right-0 top-0 h-2 w-2 border-r border-t border-[#FFD700]" />
+                  <span className="absolute bottom-0 left-0 h-2 w-2 border-b border-l border-[#FFD700]" />
+                  <span className="absolute bottom-0 right-0 h-2 w-2 border-b border-r border-[#FFD700]" />
+                  {!prefersReducedMotion && (
+                    <motion.span
+                      className="absolute left-3 right-3 top-1/2 h-px bg-[#FFD700]"
+                      animate={{ y: [-22, 22, -22], opacity: [0.2, 0.9, 0.2] }}
+                      transition={{ duration: 1.1, repeat: Infinity, ease: 'easeInOut' }}
+                    />
+                  )}
+                  <Fingerprint className="relative z-10 h-8 w-8 text-[#FFD700]" aria-hidden="true" />
                 </div>
-                <h3 className="text-lg sm:text-xl font-bold text-white mb-2">Authenticating with Passkey</h3>
-                <p className="text-gray-400 text-sm sm:text-base">Use your FaceID, TouchID, or device PIN to continue...</p>
+                <h3 className="mb-2 font-mono text-[11px] font-semibold uppercase tracking-[0.14em] text-[#FFD700]">
+                  Authenticating passkey
+                </h3>
+                <p className="text-sm leading-6 text-gray-400">Use FaceID, TouchID, or your device PIN to continue.</p>
               </div>
             </motion.div>
           )}

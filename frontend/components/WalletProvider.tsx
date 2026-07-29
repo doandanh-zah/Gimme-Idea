@@ -4,8 +4,6 @@ import '../polyfills';
 import React, { useMemo } from 'react';
 import { ConnectionProvider, WalletProvider as SolanaWalletProvider } from '@solana/wallet-adapter-react';
 import { WalletModalProvider } from '@solana/wallet-adapter-react-ui';
-import { PhantomWalletAdapter } from '@solana/wallet-adapter-phantom';
-import { SolflareWalletAdapter } from '@solana/wallet-adapter-solflare';
 import { WalletAdapterNetwork } from '@solana/wallet-adapter-base';
 import { clusterApiUrl } from '@solana/web3.js';
 
@@ -24,18 +22,14 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
     [network]
   );
 
-  // Configure supported wallets - Only Phantom and Solflare
-  const wallets = useMemo(
-    () => [
-      new PhantomWalletAdapter(),
-      new SolflareWalletAdapter(),
-    ],
-    []
-  );
+  // Phantom and Solflare register via Wallet Standard. Passing their legacy
+  // adapters here duplicates them and can fight over window.solana / window.phantom.
+  // An empty list still picks up Standard wallets through useStandardWalletAdapters.
+  const wallets = useMemo(() => [], []);
 
   return (
     <ConnectionProvider endpoint={endpoint}>
-      <SolanaWalletProvider wallets={wallets} autoConnect={false}>
+      <SolanaWalletProvider wallets={wallets} autoConnect={false} localStorageKey="gimmeWalletName">
         <WalletModalProvider>
           {children}
         </WalletModalProvider>

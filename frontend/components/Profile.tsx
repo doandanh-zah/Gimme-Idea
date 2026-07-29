@@ -5,6 +5,7 @@ import { useAppStore } from '../lib/store';
 import { useAuth } from '../contexts/AuthContext';
 import { useRouter, usePathname } from 'next/navigation';
 import { useWallet } from '@solana/wallet-adapter-react';
+import { useSelectAndConnect } from '@/hooks/useSelectAndConnect';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Camera, Save, AtSign, Code2, Globe, Send, Pencil, Trash2, ArrowLeft, Wallet, Check, Loader2, Lightbulb, MessageSquare, Star, Calendar, Link as LinkIcon, ImageIcon, TrendingUp, Users, Rss, Bookmark, AlertTriangle } from 'lucide-react';
 import { ProjectCard } from './ProjectCard';
@@ -42,7 +43,8 @@ export const Profile = () => {
   const { setShowWalletPopup, refreshUser, isLoading: authLoading } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
-  const { connected, publicKey, connect, select, wallets, disconnect } = useWallet();
+  const { connected, publicKey, disconnect } = useWallet();
+  const { selectAndConnect } = useSelectAndConnect();
   const [isEditing, setIsEditing] = useState(false);
   const [editingProject, setEditingProject] = useState<Project | null>(null);
   const [isReconnecting, setIsReconnecting] = useState(false);
@@ -234,30 +236,27 @@ export const Profile = () => {
 
     setIsReconnecting(true);
     try {
-      // Find the wallet that matches user's saved wallet
-      // Try to connect to any available wallet
-      const availableWallet = wallets.find(w => 
-        w.readyState === 'Installed' || w.readyState === 'Loadable'
-      );
-      
-      if (!availableWallet) {
-        toast.error('No wallet extension found. Please install Phantom or Solflare.');
-        return;
+      // Prefer Phantom, then Solflare — Standard wallets appear once they inject.
+      let selected;
+      try {
+        selected = await selectAndConnect({ walletName: 'Phantom' });
+      } catch {
+        selected = await selectAndConnect({ walletName: 'Solflare' });
       }
 
-      select(availableWallet.adapter.name);
-      await connect();
-      
-      // Check if connected wallet matches
-      if (publicKey && publicKey.toBase58() === displayUser.wallet) {
+      // Read the key from the adapter we just connected (hook publicKey may lag a render).
+      const connectedKey = selected.adapter.publicKey?.toBase58();
+      if (connectedKey && connectedKey === displayUser.wallet) {
         toast.success('Wallet reconnected successfully!');
-      } else if (publicKey) {
+      } else if (connectedKey) {
         toast.error('Connected wallet does not match your profile. Please use the correct wallet.');
         await disconnect();
       }
     } catch (error: any) {
       console.error('Reconnect wallet error:', error);
-      if (!error.message?.includes('User rejected')) {
+      if (error.message?.includes('not found')) {
+        toast.error('No wallet extension found. Please install Phantom or Solflare.');
+      } else if (!error.message?.includes('User rejected') && !error.message?.includes('cancelled')) {
         toast.error('Failed to reconnect wallet');
       }
     } finally {

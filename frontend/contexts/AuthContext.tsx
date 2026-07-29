@@ -2,7 +2,7 @@
 
 import React, { createContext, useContext, useEffect, useState, useCallback, useRef } from 'react';
 import { User as SupabaseUser, Session } from '@supabase/supabase-js';
-import { supabase } from '@/lib/supabase';
+import { hasSupabaseEnv, supabase } from '@/lib/supabase';
 import { apiClient } from '@/lib/api-client';
 import { User } from '@/lib/types';
 import { logger } from '@/lib/logger';
@@ -250,34 +250,70 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [session, processEmailLogin]);
 
   useEffect(() => {
+    const clearAuthHashFromUrl = () => {
+      if (typeof window === 'undefined') return;
+      if (!window.location.hash) return;
+      // Strip OAuth tokens / errors from the URL so a reload does not re-apply them.
+      window.history.replaceState(null, '', window.location.pathname + window.location.search);
+    };
+
     // Handle hash fragment from OAuth redirect (when Supabase redirects to root with hash)
     const handleHashFragment = async () => {
       if (typeof window === 'undefined') return;
       if (!window.location.hash) return;
+      if (!hasSupabaseEnv) {
+        console.warn('[Auth] OAuth hash present but Supabase env is not configured.');
+        clearAuthHashFromUrl();
+        return;
+      }
 
       try {
         const hashParams = new URLSearchParams(window.location.hash.substring(1));
         const accessToken = hashParams.get('access_token');
         const refreshToken = hashParams.get('refresh_token');
+        const hashError = hashParams.get('error_description') || hashParams.get('error');
+
+        if (hashError) {
+          console.error('[Auth] OAuth redirect error:', hashError);
+          clearAuthHashFromUrl();
+          return;
+        }
 
         if (accessToken && refreshToken) {
+          // detectSessionInUrl already processes the hash on getSession(); this is a
+          // fallback for redirects that land on routes where that did not run first.
           const { data, error } = await supabase.auth.setSession({
             access_token: accessToken,
             refresh_token: refreshToken,
           });
 
           if (error) {
-            console.error('Error setting session from hash:', error);
+            // Invalid API key usually means wrong/missing NEXT_PUBLIC_SUPABASE_ANON_KEY
+            // at build/runtime, not a bad user password.
+            console.error('Error setting session from hash:', error.message || error);
+            if (
+              error.message?.toLowerCase().includes('invalid api key') ||
+              error.message?.toLowerCase().includes('bad_jwt')
+            ) {
+              try {
+                await supabase.auth.signOut({ scope: 'local' });
+              } catch {
+                // ignore cleanup failures
+              }
+            }
           }
 
+          // Always clear tokens from the URL (success or failure) to avoid loops.
+          clearAuthHashFromUrl();
+
           if (data?.session) {
-            // Clean up URL after successful session set
-            window.history.replaceState(null, '', window.location.pathname);
+            // Session applied; AuthContext listeners handle user hydration.
           }
         }
       } catch (err) {
         // Avoid "Uncaught (in promise) undefined" which can stall the app
         console.error('Error handling auth hash fragment:', err);
+        clearAuthHashFromUrl();
       }
     };
 
@@ -343,7 +379,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         logger.debug('[Auth] Supabase session:', session ? 'found' : 'not found', error?.message);
 
         if (error) {
-          console.error('[Auth] Error getting session:', error);
+          console.error('[Auth] Error getting session:', error.message || error);
+          // Stale/corrupt local session or bad anon key — drop local auth so the UI recovers.
+          if (
+            error.message?.toLowerCase().includes('invalid api key') ||
+            error.message?.toLowerCase().includes('invalid jwt') ||
+            error.message?.toLowerCase().includes('bad_jwt')
+          ) {
+            try {
+              await supabase.auth.signOut({ scope: 'local' });
+            } catch {
+              // ignore
+            }
+          }
+          setSession(null);
+          setSupabaseUser(null);
           setIsLoading(false);
           return;
         }

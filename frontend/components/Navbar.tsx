@@ -47,7 +47,7 @@ const Navbar = () => {
   const [showUserMenu, setShowUserMenu] = React.useState(false);
   const [showSearch, setShowSearch] = React.useState(false);
   const [showNotifications, setShowNotifications] = React.useState(false);
-  const [showMoreMenu, setShowMoreMenu] = React.useState(false); // New state for 'More' menu
+  const [showMoreMenu, setShowMoreMenu] = React.useState(false);
   const [respondingInviteId, setRespondingInviteId] = React.useState<string | null>(null);
 
   // Dynamic Menu State
@@ -98,20 +98,37 @@ const Navbar = () => {
 
   const searchInputRef = useRef<HTMLInputElement>(null);
   const notificationRef = useRef<HTMLDivElement>(null);
-  const moreMenuRef = useRef<HTMLDivElement>(null); // Ref for 'More' menu
+  const moreMenuRef = useRef<HTMLDivElement>(null);
+  const userMenuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (notificationRef.current && !notificationRef.current.contains(event.target as Node)) {
         setShowNotifications(false);
       }
-      // Handle click outside for 'More' menu
       if (moreMenuRef.current && !moreMenuRef.current.contains(event.target as Node)) {
         setShowMoreMenu(false);
+      }
+      if (userMenuRef.current && !userMenuRef.current.contains(event.target as Node)) {
+        setShowUserMenu(false);
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  useEffect(() => {
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setShowMoreMenu(false);
+        setShowNotifications(false);
+        setShowUserMenu(false);
+        setIsOpen(false);
+      }
+    };
+
+    document.addEventListener('keydown', handleEscape);
+    return () => document.removeEventListener('keydown', handleEscape);
   }, []);
 
   useEffect(() => {
@@ -126,12 +143,14 @@ const Navbar = () => {
 
   const handleNotificationClick = () => {
     setShowNotifications(!showNotifications);
-    setShowMoreMenu(false); // Close other menus
+    setShowMoreMenu(false);
+    setShowUserMenu(false);
   };
 
   const handleMoreMenuClick = () => {
     setShowMoreMenu(!showMoreMenu);
-    setShowNotifications(false); // Close other menus
+    setShowNotifications(false);
+    setShowUserMenu(false);
   };
 
   const navLinks = [
@@ -182,26 +201,35 @@ const Navbar = () => {
                     <button
                       type="button"
                       onClick={handleMoreMenuClick}
-                      className={`flex min-h-[40px] items-center gap-1.5 px-3 py-2 text-[11px] font-mono uppercase tracking-[0.12em] transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#FFD700]
+                      aria-haspopup="menu"
+                      aria-expanded={showMoreMenu}
+                      aria-controls="desktop-more-menu"
+                      className={`flex min-h-[40px] items-center gap-2 px-3 py-2 text-[11px] font-mono uppercase tracking-[0.12em] transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#FFD700]
                       ${showMoreMenu ? 'text-[#FFD700]' : 'text-gray-400 hover:text-white'}`}
                     >
+                      <link.icon className="h-4 w-4" aria-hidden="true" />
                       <span>{link.name}</span>
                     </button>
                     <AnimatePresence>
                       {showMoreMenu && (
                         <motion.div
-                          initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                          id="desktop-more-menu"
+                          role="menu"
+                          initial={{ opacity: 0, y: 8, scale: 0.98 }}
                           animate={{ opacity: 1, y: 0, scale: 1 }}
-                          exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                          className="absolute top-full left-0 mt-0 w-48 bg-[#0a0a0a] border border-white/10 overflow-hidden z-50 py-1"
+                          exit={{ opacity: 0, y: 8, scale: 0.98 }}
+                          transition={{ duration: 0.16, ease: 'easeOut' }}
+                          className="absolute left-0 top-full z-50 mt-2 w-64 overflow-hidden rounded-[4px] border border-white/15 bg-[#050505] p-2 shadow-2xl shadow-black/50"
                         >
                           {moreLinks.map((subLink: any) => {
                             const isLocked = subLink.status === 'locked';
                             const style = subLink.highlight || {};
+                            const itemColor = style.textColor || undefined;
 
                             return (
                               <button
                                 type="button"
+                                role="menuitem"
                                 key={subLink.id || subLink.name}
                                 onClick={() => {
                                   if (!isLocked) {
@@ -211,25 +239,28 @@ const Navbar = () => {
                                 }}
                                 disabled={isLocked}
                                 style={{
-                                  borderColor: style.borderColor || 'transparent',
-                                  boxShadow: style.glow && style.borderColor ? `0 0 10px ${style.borderColor}40` : 'none'
+                                  borderLeftColor: style.borderColor || 'transparent',
                                 }}
-                                className={`flex min-h-[40px] w-full items-center justify-between gap-2 border-l-2 px-4 py-3 text-left text-sm transition-all focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-[#FFD700]
+                                className={`group flex min-h-[44px] w-full items-center justify-between gap-3 border-l-2 px-3 py-2.5 text-left transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-[#FFD700]
                               ${isLocked
-                                    ? 'text-gray-500 cursor-not-allowed bg-white/[0.02]'
-                                    : 'text-gray-300 hover:bg-white/5 hover:text-white'
+                                    ? 'cursor-not-allowed bg-white/[0.02] text-gray-500'
+                                    : 'text-gray-300 hover:bg-white/[0.04] hover:text-white'
                                   }`}
                               >
-                                <div className="flex items-center gap-2">
-                                  <subLink.icon className={`w-4 h-4 ${style.textColor ? '' : ''}`} style={{ color: style.textColor }} />
-                                  <span style={{ color: style.textColor }}>{subLink.name}</span>
+                                <div className="flex min-w-0 items-center gap-3">
+                                  <span className="flex h-8 w-8 items-center justify-center border border-white/10 bg-white/[0.03] text-gray-400 transition-colors group-hover:border-[#FFD700]/35 group-hover:text-[#FFD700]">
+                                    <subLink.icon className="h-4 w-4" style={{ color: itemColor }} aria-hidden="true" />
+                                  </span>
+                                  <span className="truncate font-mono text-[11px] uppercase tracking-[0.12em]" style={{ color: itemColor }}>
+                                    {subLink.name}
+                                  </span>
                                 </div>
 
                                 {isLocked ? (
-                                  <Lock className="w-3 h-3 text-gray-600" />
+                                  <Lock className="h-3.5 w-3.5 text-gray-600" aria-hidden="true" />
                                 ) : (
                                   style.badge && (
-                                    <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-white/10 font-bold border border-white/10"
+                                    <span className="border border-white/10 px-1.5 py-0.5 font-mono text-[9px] font-bold uppercase tracking-[0.1em]"
                                       style={{
                                         color: style.borderColor || 'white',
                                         borderColor: style.borderColor || 'rgba(255,255,255,0.1)'
@@ -486,15 +517,22 @@ const Navbar = () => {
                 </div>
 
                 {/* User Menu */}
-                <div className="relative group">
+                <div className="relative group" ref={userMenuRef}>
                   <button
                     type="button"
                     aria-label="Open user menu"
-                    onClick={() => setShowUserMenu(!showUserMenu)}
-                    className="flex min-h-[40px] items-center gap-1 rounded-full border border-white/10 bg-white/5 px-1 py-1 transition-all hover:bg-white/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#FFD700] sm:gap-2 sm:pr-3"
+                    aria-haspopup="menu"
+                    aria-expanded={showUserMenu}
+                    aria-controls="navbar-user-menu"
+                    onClick={() => {
+                      setShowUserMenu(!showUserMenu);
+                      setShowMoreMenu(false);
+                      setShowNotifications(false);
+                    }}
+                    className="flex min-h-[40px] items-center gap-1 rounded-[4px] border border-white/15 bg-white/[0.03] px-1 py-1 transition-colors hover:border-white/25 hover:bg-white/[0.05] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#FFD700] sm:gap-2 sm:pr-3"
                   >
-                    <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-gradient-to-br from-purple-500 to-blue-500 overflow-hidden relative flex-shrink-0">
-                      {user.avatar && (
+                    <div className="relative flex h-7 w-7 flex-shrink-0 items-center justify-center overflow-hidden border border-white/10 bg-[#111] sm:h-8 sm:w-8">
+                      {user.avatar ? (
                         <Image
                           src={user.avatar}
                           alt={user.username}
@@ -502,6 +540,8 @@ const Navbar = () => {
                           height={32}
                           className="w-full h-full object-cover"
                         />
+                      ) : (
+                        <UserIcon className="h-4 w-4 text-[#FFD700]" aria-hidden="true" />
                       )}
                     </div>
                     <div className="hidden sm:flex flex-col items-start min-w-0">
@@ -516,39 +556,47 @@ const Navbar = () => {
 
                   {/* Dropdown Menu */}
                   {showUserMenu && (
-                    <div className="absolute top-full right-0 mt-2 w-48 sm:w-56 bg-[#0F0F0F] border border-white/10 rounded-xl shadow-xl overflow-hidden py-1 z-50">
-                      <div className="px-3 sm:px-4 py-2 sm:py-3 border-b border-white/5">
-                        <p className="text-xs sm:text-sm font-medium text-white truncate">{user.username}</p>
-                        <p className="text-[10px] sm:text-xs text-gray-400 truncate">{user.email || user.wallet}</p>
+                    <div
+                      id="navbar-user-menu"
+                      role="menu"
+                      className="absolute right-0 top-full z-50 mt-2 w-56 overflow-hidden rounded-[4px] border border-white/15 bg-[#050505] p-2 shadow-2xl shadow-black/50 sm:w-64"
+                    >
+                      <div className="border-b border-white/10 px-2 py-3">
+                        <p className="truncate font-mono text-[11px] uppercase tracking-[0.12em] text-white">{user.username}</p>
+                        <p className="mt-1 truncate text-xs text-gray-500">{user.email || user.wallet}</p>
                       </div>
                       <button
                         type="button"
+                        role="menuitem"
                         onClick={() => { router.push('/profile'); setShowUserMenu(false); }}
-                        className="w-full text-left px-3 sm:px-4 py-2 sm:py-3 text-xs sm:text-sm text-gray-300 hover:bg-white/5 hover:text-white flex items-center gap-2"
+                        className="mt-1 flex min-h-[40px] w-full items-center gap-3 px-2 py-2 text-left text-sm text-gray-300 transition-colors hover:bg-white/[0.04] hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-[#FFD700]"
                       >
                         <UserIcon className="w-4 h-4" /> My Profile
                       </button>
 
                       <button
                         type="button"
+                        role="menuitem"
                         onClick={() => { router.push('/settings/tokens'); setShowUserMenu(false); }}
-                        className="w-full text-left px-3 sm:px-4 py-2 sm:py-3 text-xs sm:text-sm text-gray-300 hover:bg-white/5 hover:text-white flex items-center gap-2"
+                        className="flex min-h-[40px] w-full items-center gap-3 px-2 py-2 text-left text-sm text-gray-300 transition-colors hover:bg-white/[0.04] hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-[#FFD700]"
                       >
                         <Lock className="w-4 h-4" /> API Tokens
                       </button>
                       {user.needsWalletConnect && (
                         <button
                           type="button"
+                          role="menuitem"
                           onClick={() => { setShowWalletPopup(true); setShowUserMenu(false); }}
-                          className="w-full text-left px-3 sm:px-4 py-2 sm:py-3 text-xs sm:text-sm text-yellow-400 hover:bg-yellow-500/10 flex items-center gap-2"
+                          className="flex min-h-[40px] w-full items-center gap-3 px-2 py-2 text-left text-sm text-[#FFD700] transition-colors hover:bg-[#FFD700]/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-[#FFD700]"
                         >
                           <Wallet className="w-4 h-4" /> Connect Wallet
                         </button>
                       )}
                       <button
                         type="button"
+                        role="menuitem"
                         onClick={() => { signOut(); setShowUserMenu(false); router.push('/landing'); }}
-                        className="w-full text-left px-3 sm:px-4 py-2 sm:py-3 text-xs sm:text-sm text-red-400 hover:bg-red-500/10 flex items-center gap-2 border-t border-white/5"
+                        className="mt-1 flex min-h-[40px] w-full items-center gap-3 border-t border-white/10 px-2 py-2 text-left text-sm text-red-400 transition-colors hover:bg-red-500/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-[#FFD700]"
                       >
                         <LogOut className="w-4 h-4" /> Log Out
                       </button>
@@ -577,25 +625,34 @@ const Navbar = () => {
                     <button
                       type="button"
                       onClick={() => setShowMoreMenu(!showMoreMenu)}
-                      className="w-full px-3 py-3 hover:bg-white/5 text-gray-300 text-left flex items-center gap-3 font-mono text-xs uppercase tracking-wider"
+                      aria-expanded={showMoreMenu}
+                      aria-haspopup="menu"
+                      className={`flex min-h-[44px] w-full items-center gap-3 border-l-2 px-3 py-3 text-left font-mono text-xs uppercase tracking-wider transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-[#FFD700] ${
+                        showMoreMenu
+                          ? 'border-l-[#FFD700] bg-[#FFD700]/[0.04] text-white'
+                          : 'border-l-transparent text-gray-300 hover:bg-white/[0.04] hover:text-white'
+                      }`}
                     >
                       <link.icon className="w-4 h-4" />
                       {link.name}
                     </button>
                     {showMoreMenu && (
-                      <div>
+                      <div role="menu" className="ml-3 border-l border-white/10 py-1">
                         {moreLinks.map((subLink) => (
                           <button
                             type="button"
+                            role="menuitem"
                             key={subLink.name}
                             onClick={() => {
                               router.push(subLink.route);
                               setIsOpen(false);
                               setShowMoreMenu(false);
                             }}
-                            className="w-full text-left pl-10 pr-3 py-2.5 text-xs text-gray-400 hover:bg-white/5 flex items-center gap-3 font-mono uppercase tracking-wider"
+                            className="flex min-h-[40px] w-full items-center gap-3 px-3 py-2.5 text-left font-mono text-xs uppercase tracking-wider text-gray-400 transition-colors hover:bg-white/[0.04] hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-[#FFD700]"
                           >
-                            <subLink.icon className="w-3.5 h-3.5" />
+                            <span className="flex h-7 w-7 items-center justify-center border border-white/10 bg-white/[0.03]">
+                              <subLink.icon className="h-3.5 w-3.5" />
+                            </span>
                             {subLink.name}
                           </button>
                         ))}

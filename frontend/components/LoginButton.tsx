@@ -1,10 +1,10 @@
 'use client';
 
 import React, { useState } from 'react';
-import { motion } from 'framer-motion';
 import { Wallet } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import toast from 'react-hot-toast';
+import { LoadingDots } from './LoadingSpinner';
 
 export const LoginButton = () => {
   const { signInWithGoogle, signInWithWallet, isLoading } = useAuth();
@@ -39,35 +39,33 @@ export const LoginButton = () => {
 
   return (
     <div className="flex items-center gap-2">
-      <motion.button
+      <button
         type="button"
-        whileHover={{ scale: 1.05 }}
-        whileTap={{ scale: 0.95 }}
         onClick={handleWalletLogin}
         disabled={loadingWallet}
         aria-label="Sign in with wallet"
         title="Sign in with wallet"
-        className="flex h-10 w-10 items-center justify-center rounded-full border border-white/15 bg-white/10 text-white transition hover:bg-white/20 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#FFD700] disabled:cursor-not-allowed disabled:opacity-70"
+        aria-busy={loadingWallet}
+        className="flex h-10 min-w-10 items-center justify-center rounded-[4px] border border-white/15 bg-white/[0.03] px-3 text-gray-300 transition-colors hover:border-white/30 hover:bg-white/[0.05] hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#FFD700] disabled:cursor-not-allowed disabled:opacity-70"
       >
         {loadingWallet ? (
-          <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+          <LoadingDots className="text-gray-300" />
         ) : (
           <Wallet className="w-4 h-4" aria-hidden="true" />
         )}
-      </motion.button>
+      </button>
 
-      <motion.button
+      <button
         type="button"
-        whileHover={{ scale: 1.05 }}
-        whileTap={{ scale: 0.95 }}
         onClick={handleGoogleLogin}
         disabled={loadingGoogle}
         aria-label="Sign in with Google"
         title="Sign in with Google"
-        className="flex h-10 w-10 items-center justify-center rounded-full bg-white text-black transition hover:bg-gray-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#FFD700] disabled:cursor-not-allowed disabled:opacity-70"
+        aria-busy={loadingGoogle}
+        className="flex h-10 min-w-10 items-center justify-center gap-2 rounded-[4px] border border-[#FFD700] bg-[#FFD700] px-3 text-black transition-colors hover:bg-[#FDB931] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#FFD700] disabled:cursor-not-allowed disabled:opacity-70"
       >
         {loadingGoogle ? (
-          <div className="w-4 h-4 border-2 border-black/30 border-t-black rounded-full animate-spin" />
+          <LoadingDots className="text-black" />
         ) : (
           <svg className="w-4 h-4" viewBox="0 0 24 24" aria-hidden="true">
             <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
@@ -76,7 +74,10 @@ export const LoginButton = () => {
             <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" />
           </svg>
         )}
-      </motion.button>
+        <span className="hidden font-mono text-[11px] font-semibold uppercase tracking-[0.08em] lg:inline">
+          Sign in
+        </span>
+      </button>
     </div>
   );
 };

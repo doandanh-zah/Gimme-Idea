@@ -6,6 +6,7 @@ import { X, Wallet, AlertCircle, RefreshCw, ArrowRight, Smartphone, Fingerprint 
 import { useWallet } from '@solana/wallet-adapter-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { usePasskeyWallet } from '@/contexts/LazorkitContext';
+import { useSelectAndConnect } from '@/hooks/useSelectAndConnect';
 import { apiClient } from '@/lib/api-client';
 import { LoadingLightbulb } from './LoadingLightbulb';
 import toast from 'react-hot-toast';
@@ -34,7 +35,8 @@ export const WalletRequiredModal: React.FC<WalletRequiredModalProps> = ({
   onSuccess
 }) => {
   const { user, setUser, refreshUser } = useAuth();
-  const { wallets, select, connect, publicKey, signMessage, connected, disconnect } = useWallet();
+  const { publicKey, signMessage, connected, disconnect } = useWallet();
+  const { wallets, selectAndConnect } = useSelectAndConnect();
   const { isPasskeyConnected, passkeyWalletAddress, connectPasskey, disconnectPasskey, signPasskeyMessage, isPasskeyConnecting } = usePasskeyWallet();
   const [isProcessing, setIsProcessing] = useState(false);
   const [step, setStep] = useState<'prompt' | 'select' | 'connecting'>('prompt');
@@ -187,79 +189,34 @@ export const WalletRequiredModal: React.FC<WalletRequiredModalProps> = ({
 
     setIsProcessing(true);
     try {
-      let availableWallet;
-      
-      if (isMobileAdapter) {
-        availableWallet = wallets.find(w => 
-          w.adapter.name.toLowerCase().includes('mobile') ||
-          w.adapter.name.toLowerCase().includes('solana mobile')
-        );
-      } else {
-        availableWallet = wallets.find(w =>
-          w.adapter.name.toLowerCase().includes(walletName.toLowerCase())
-        );
-      }
-      
-      if (!availableWallet) {
-        toast.error(`${walletName} wallet not found. Please install it first.`);
-        setIsProcessing(false);
-        return;
-      }
-
       isReconnectingRef.current = true;
-      select(availableWallet.adapter.name);
-      await connect();
+      await selectAndConnect({ walletName, isMobileAdapter });
       // The useEffect above will handle verification after publicKey updates
     } catch (error: any) {
       console.error('Reconnect error:', error);
       isReconnectingRef.current = false;
       setIsProcessing(false);
-      if (!error.message?.includes('User rejected')) {
+      if (error.message?.includes('not found')) {
+        toast.error(error.message);
+      } else if (!error.message?.includes('User rejected') && !error.message?.includes('cancelled')) {
         toast.error('Failed to reconnect wallet');
       }
     }
   };
 
   const handleConnectWallet = async (walletName: string, isMobileAdapter?: boolean) => {
-    let selectedWallet;
-    
-    // For Mobile Wallet Adapter, find the adapter with "Mobile" in its name
-    if (isMobileAdapter) {
-      selectedWallet = wallets.find(w =>
-        w.adapter.name.toLowerCase().includes('mobile') ||
-        w.adapter.name.toLowerCase().includes('solana mobile')
-      );
-    } else {
-      selectedWallet = wallets.find(w =>
-        w.adapter.name.toLowerCase().includes(walletName.toLowerCase())
-      );
-    }
-
-    if (!selectedWallet) {
-      // On mobile, if no mobile adapter found, try to find a regular wallet
-      if (isMobileAdapter) {
-        selectedWallet = wallets.find(w =>
-          w.adapter.name.toLowerCase().includes('phantom') ||
-          w.adapter.name.toLowerCase().includes('solflare')
-        );
-      }
-      
-      if (!selectedWallet) {
-        toast.error(`${walletName} wallet not found. Please install a Solana wallet app.`);
-        return;
-      }
-    }
-
     try {
       setStep('connecting');
-      select(selectedWallet.adapter.name);
-      await connect();
+      await selectAndConnect({ walletName, isMobileAdapter });
     } catch (error: any) {
       if (error.message?.includes('MetaMask') || error.message?.includes('Ethereum')) {
+        setStep('select');
         return;
       }
       console.error('Wallet connection error:', error);
-      if (!error.message?.includes('User rejected')) {
+      if (error.message?.includes('not found')) {
+        toast.error(error.message);
+      } else if (!error.message?.includes('User rejected') && !error.message?.includes('cancelled')) {
         toast.error('Failed to connect wallet');
       }
       setStep('select');

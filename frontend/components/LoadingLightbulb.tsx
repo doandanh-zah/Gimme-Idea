@@ -1,7 +1,8 @@
+'use client';
 
 import React from 'react';
-import { motion } from 'framer-motion';
-import { Zap, X } from 'lucide-react';
+import { motion, useReducedMotion } from 'framer-motion';
+import { Check, X, Zap } from 'lucide-react';
 
 export type LoadingStatus = 'loading' | 'success' | 'error';
 
@@ -10,114 +11,113 @@ interface LoadingLightbulbProps {
   status?: LoadingStatus;
 }
 
-export const LoadingLightbulb: React.FC<LoadingLightbulbProps> = ({ 
-  text = "Loading...", 
-  status = 'loading' 
+export const LoadingLightbulb: React.FC<LoadingLightbulbProps> = ({
+  text = 'Loading...',
+  status = 'loading',
 }) => {
   const isSuccess = status === 'success';
   const isError = status === 'error';
+  const prefersReducedMotion = useReducedMotion();
+
+  const statusLabel = status === 'loading' ? 'Processing' : isSuccess ? 'Success' : 'Error';
+  const statusColor = isSuccess ? 'text-[#14F195]' : isError ? 'text-red-400' : 'text-[#FFD700]';
+  const frameBorder = isSuccess
+    ? 'border-[#14F195]/55'
+    : isError
+      ? 'border-red-500/55'
+      : 'border-white/15';
 
   return (
-    <div className="flex flex-col items-center justify-center p-8 bg-black/80 backdrop-blur-xl rounded-3xl border border-white/10 shadow-[0_0_50px_rgba(0,0,0,0.8)] z-50 min-w-[300px]">
-      <div className="relative w-24 h-24 flex items-center justify-center mb-8">
-        
-        {/* Dynamic Background Glow */}
-        <motion.div 
-            animate={{ 
-                scale: isSuccess ? [1, 1.5, 1.2] : 1,
-                opacity: isSuccess ? 0.8 : 0.5 
-            }}
-            transition={{ duration: 0.5 }}
-            className={`absolute inset-0 blur-[40px] rounded-full transition-colors duration-500 ${
-            isSuccess ? 'bg-green-500' : isError ? 'bg-red-500' : 'bg-gold/40'
-        }`} />
+    <div
+      className="modal-panel z-50 flex min-w-[300px] flex-col items-center justify-center p-6 text-center"
+      role="status"
+      aria-live="polite"
+    >
+      <div
+        className={`relative mb-6 flex h-20 w-20 items-center justify-center overflow-hidden rounded-[4px] border bg-[#0A0A0A] ${frameBorder}`}
+      >
+        <span className="absolute left-0 top-0 h-2 w-2 border-l border-t border-[#FFD700]" />
+        <span className="absolute right-0 top-0 h-2 w-2 border-r border-t border-[#FFD700]" />
+        <span className="absolute bottom-0 left-0 h-2 w-2 border-b border-l border-[#FFD700]" />
+        <span className="absolute bottom-0 right-0 h-2 w-2 border-b border-r border-[#FFD700]" />
 
-        {/* Loading Spinner Ring */}
         {status === 'loading' && (
-             <motion.div
-                className="absolute inset-0 rounded-full border-2 border-transparent border-t-gold border-r-gold"
-                animate={{ rotate: 360 }}
-                transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-             />
+          <>
+            <div className="absolute inset-4 grid grid-cols-2 gap-1.5">
+              {Array.from({ length: 4 }).map((_, index) => (
+                <motion.span
+                  key={index}
+                  className="border border-white/[0.06] bg-white/[0.07]"
+                  animate={prefersReducedMotion ? undefined : { opacity: [0.2, 0.72, 0.2] }}
+                  transition={{
+                    duration: 0.9,
+                    repeat: Infinity,
+                    delay: index * 0.12,
+                    ease: 'easeInOut',
+                  }}
+                />
+              ))}
+            </div>
+            <motion.span
+              className="absolute left-3 right-3 top-1/2 h-px bg-[#FFD700]"
+              animate={prefersReducedMotion ? undefined : { y: [-22, 22, -22], opacity: [0.2, 0.9, 0.2] }}
+              transition={{ duration: 1.1, repeat: Infinity, ease: 'easeInOut' }}
+            />
+          </>
         )}
 
-        {/* Success Rings Effect */}
-        {isSuccess && (
-            <>
-                <motion.div 
-                    initial={{ scale: 0.8, opacity: 0 }}
-                    animate={{ scale: 2, opacity: 0 }}
-                    transition={{ duration: 0.8, ease: "easeOut" }}
-                    className="absolute inset-0 border border-green-500 rounded-full"
-                />
-                <motion.div 
-                    initial={{ scale: 0.8, opacity: 0 }}
-                    animate={{ scale: 1.5, opacity: 0 }}
-                    transition={{ duration: 0.8, delay: 0.2, ease: "easeOut" }}
-                    className="absolute inset-0 border border-green-400 rounded-full"
-                />
-                {/* Particle Burst */}
-                {[...Array(8)].map((_, i) => (
-                    <motion.div
-                        key={i}
-                        className="absolute w-1.5 h-1.5 bg-green-400 rounded-full"
-                        initial={{ x: 0, y: 0, opacity: 1, scale: 0 }}
-                        animate={{ 
-                            x: Math.cos(i * 45 * (Math.PI / 180)) * 50,
-                            y: Math.sin(i * 45 * (Math.PI / 180)) * 50,
-                            opacity: 0,
-                            scale: 1
-                        }}
-                        transition={{ duration: 0.6, ease: "easeOut" }}
-                    />
-                ))}
-            </>
+        {isSuccess && !prefersReducedMotion && (
+          <motion.span
+            className="absolute inset-2 border border-[#14F195]"
+            initial={{ opacity: 0.75, scale: 0.9 }}
+            animate={{ opacity: 0, scale: 1.35 }}
+            transition={{ duration: 0.55, ease: 'easeOut' }}
+          />
         )}
 
-        {/* Center Icon Container */}
-        <motion.div 
-            initial={{ scale: 0.8 }}
-            animate={{ scale: isSuccess ? 1.1 : 1 }}
-            transition={{ type: "spring", stiffness: 200, damping: 10 }}
-            className={`relative z-10 w-20 h-20 rounded-full flex items-center justify-center border transition-colors duration-300 ${
-                isSuccess 
-                ? 'bg-green-500 border-green-400 shadow-[0_0_20px_rgba(20,241,149,0.5)]' 
-                : isError 
-                    ? 'bg-red-500/10 border-red-500' 
-                    : 'bg-[#0F0F0F] border-white/10'
-            }`}
+        {isError && (
+          <span className="absolute inset-x-3 top-1/2 h-px rotate-45 bg-red-500/60" />
+        )}
+
+        <motion.div
+          key={status}
+          initial={{ opacity: prefersReducedMotion ? 1 : 0, scale: prefersReducedMotion ? 1 : 0.94 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: prefersReducedMotion ? 0 : 0.18, ease: 'easeOut' }}
+          className={`relative z-10 flex h-10 w-10 items-center justify-center border ${
+            isSuccess
+              ? 'border-[#14F195] bg-[#14F195] text-black'
+              : isError
+                ? 'border-red-500/70 bg-red-500/10 text-red-400'
+                : 'border-[#FFD700]/50 bg-[#050505] text-[#FFD700]'
+          }`}
         >
-            {status === 'loading' ? (
-                <Zap className="w-10 h-10 text-gold animate-pulse" fill="#FFD700" />
-            ) : isSuccess ? (
-                <svg className="w-10 h-10 text-black" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={4}>
-                    <motion.path
-                        initial={{ pathLength: 0 }}
-                        animate={{ pathLength: 1 }}
-                        transition={{ duration: 0.4, ease: "easeInOut" }}
-                        d="M5 13l4 4L19 7"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                    />
-                </svg>
-            ) : (
-                <X className="w-10 h-10 text-red-500" strokeWidth={3} />
-            )}
+          {status === 'loading' ? (
+            <motion.span
+              animate={prefersReducedMotion ? undefined : { opacity: [0.55, 1, 0.55] }}
+              transition={{ duration: 0.9, repeat: Infinity, ease: 'easeInOut' }}
+            >
+              <Zap className="h-5 w-5" fill="#FFD700" />
+            </motion.span>
+          ) : isSuccess ? (
+            <Check className="h-5 w-5" strokeWidth={3} />
+          ) : (
+            <X className="h-5 w-5" strokeWidth={3} />
+          )}
         </motion.div>
       </div>
 
-      <div className="text-center relative z-10">
-        <motion.h3 
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            key={status} // Re-animate on status change
-            className={`text-xl font-bold font-display mb-2 ${
-                isSuccess ? 'text-[#14F195]' : isError ? 'text-red-500' : 'text-white'
-            }`}
+      <div className="relative z-10 text-center">
+        <motion.h3
+          initial={{ opacity: prefersReducedMotion ? 1 : 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: prefersReducedMotion ? 0 : 0.18 }}
+          key={status}
+          className={`mb-2 font-mono text-[11px] font-semibold uppercase tracking-[0.14em] ${statusColor}`}
         >
-            {status === 'loading' ? 'Processing' : status === 'success' ? 'Success!' : 'Error'}
+          {statusLabel}
         </motion.h3>
-        <p className="text-sm text-gray-400 font-mono">{text}</p>
+        <p className="max-w-[260px] text-sm leading-6 text-gray-400">{text}</p>
       </div>
     </div>
   );
