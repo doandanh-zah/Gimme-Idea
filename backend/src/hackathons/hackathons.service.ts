@@ -99,9 +99,12 @@ export class HackathonsService {
       return { success: false, error: error.message };
     }
 
+    // Dynamic .select(string) loses Supabase row typing → cast after null-check
+    const rows = (data || []) as any[];
+
     // Get participant counts and rounds for each hackathon
     const hackathonsWithCounts = await Promise.all(
-      (data || []).map(async (h) => {
+      rows.map(async (h: any) => {
         const { count } = await supabase
           .from("hackathon_registrations")
           .select("id", { count: "exact", head: true })
@@ -238,23 +241,26 @@ export class HackathonsService {
       return { success: false, error: "Hackathon not found" };
     }
 
+    // Dynamic .select(string) loses Supabase row typing
+    const row = data as any;
+
     // Get participant count
     const { count: participantsCount } = await supabase
       .from("hackathon_registrations")
       .select("id", { count: "exact", head: true })
-      .eq("hackathon_id", data.id);
+      .eq("hackathon_id", row.id);
 
     // Get submission count
     const { count: submissionsCount } = await supabase
       .from("hackathon_submissions")
       .select("id", { count: "exact", head: true })
-      .eq("hackathon_id", data.id);
+      .eq("hackathon_id", row.id);
 
     // Get teams count
     const { count: teamsCount } = await supabase
       .from("hackathon_teams")
       .select("id", { count: "exact", head: true })
-      .eq("hackathon_id", data.id);
+      .eq("hackathon_id", row.id);
 
     // Get rounds (V2 format)
     const { data: rounds } = await supabase
@@ -262,7 +268,7 @@ export class HackathonsService {
       .select(
         "round_number, title, description, round_type, mode, teams_advancing, bonus_teams, start_date, end_date, results_date, status",
       )
-      .eq("hackathon_id", data.id)
+      .eq("hackathon_id", row.id)
       .order("round_number", { ascending: true });
 
     // Get prizes
@@ -271,37 +277,37 @@ export class HackathonsService {
       .select(
         "id, round_number, rank, title, prize_amount, description, winner_team_id, announced_at",
       )
-      .eq("hackathon_id", data.id)
+      .eq("hackathon_id", row.id)
       .order("round_number", { ascending: true })
       .order("rank", { ascending: true });
 
     const hackathon = {
-      id: data.id,
-      slug: data.slug,
-      title: data.title,
-      tagline: data.tagline,
-      description: data.description,
-      coverImage: data.cover_image,
-      imageUrl: data.cover_image, // Use cover_image as imageUrl
-      mode: data.mode || "online",
-      currency: data.currency || "VND",
-      status: data.status,
-      prizePool: data.prize_pool,
-      maxParticipants: data.max_participants,
+      id: row.id,
+      slug: row.slug,
+      title: row.title,
+      tagline: row.tagline,
+      description: row.description,
+      coverImage: row.cover_image,
+      imageUrl: row.cover_image, // Use cover_image as imageUrl
+      mode: row.mode || "online",
+      currency: row.currency || "VND",
+      status: row.status,
+      prizePool: row.prize_pool,
+      maxParticipants: row.max_participants,
       // Use submission dates as start/end fallback
-      startDate: data.submission_start || data.registration_start,
-      endDate: data.judging_end || data.submission_end,
-      registrationStart: data.registration_start,
-      registrationEnd: data.registration_end,
-      submissionStart: data.submission_start,
-      submissionEnd: data.submission_end,
-      judgingStart: data.judging_start,
-      judgingEnd: data.judging_end,
-      isFeatured: data.is_featured,
-      judgingCriteria: data.judging_criteria,
-      currentRound: data.current_round,
-      totalRounds: data.total_rounds || 3,
-      createdAt: data.created_at,
+      startDate: row.submission_start || row.registration_start,
+      endDate: row.judging_end || row.submission_end,
+      registrationStart: row.registration_start,
+      registrationEnd: row.registration_end,
+      submissionStart: row.submission_start,
+      submissionEnd: row.submission_end,
+      judgingStart: row.judging_start,
+      judgingEnd: row.judging_end,
+      isFeatured: row.is_featured,
+      judgingCriteria: row.judging_criteria,
+      currentRound: row.current_round,
+      totalRounds: row.total_rounds || 3,
+      createdAt: row.created_at,
       participantsCount: participantsCount || 0,
       submissionsCount: submissionsCount || 0,
       teamsCount: teamsCount || 0,

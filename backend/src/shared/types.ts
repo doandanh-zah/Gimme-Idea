@@ -35,6 +35,9 @@ export interface Project {
   solution?: string;
   opportunity?: string;
   isAnonymous?: boolean;
+  isVerified?: boolean;
+  hackathonId?: string;
+  hackathonTrack?: string;
   createdAt: string;
   comments?: Comment[];
 

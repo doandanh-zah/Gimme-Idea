@@ -539,7 +539,6 @@ export class ProjectsService {
       problem: project.problem,
       solution: project.solution,
       opportunity: project.opportunity,
-      isAnonymous: project.is_anonymous,
       createdAt: project.created_at,
       // Include comments
       comments: comments
