@@ -29,6 +29,7 @@ const walletAllowed = [
   /^components\/WalletProvider\.tsx$/,
   /^components\/WalletRequiredModal\.tsx$/,
   /^contexts\/LazorkitContext\.tsx$/,
+  /^hooks\/useSelectAndConnect\.ts$/,
   /^lib\/metadao\//,
   /^lib\/solana\//,
   /^lib\/useWalletAuth\.ts$/,
