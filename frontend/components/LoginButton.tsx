@@ -17,7 +17,19 @@ export const LoginButton = () => {
       await signInWithGoogle();
     } catch (error: any) {
       console.error('Google login error:', error);
-      toast.error('Failed to sign in with Google. Please try again.');
+      const message = error?.message || 'Failed to sign in with Google. Please try again.';
+      if (
+        String(message).toLowerCase().includes('invalid api key') ||
+        String(message).toLowerCase().includes('not configured') ||
+        String(message).toLowerCase().includes('3-part jwt')
+      ) {
+        toast.error(
+          'Google sign-in misconfigured: set the full Supabase anon key on Vercel and redeploy.',
+          { duration: 6000 }
+        );
+      } else {
+        toast.error(message);
+      }
       setIsSigningInGoogle(false);
     }
   };
@@ -25,6 +37,9 @@ export const LoginButton = () => {
   const handleWalletLogin = async () => {
     try {
       setIsSigningInWallet(true);
+      // Prefetch wallet surface before opening so Standard adapters can
+      // register before the user picks Phantom/Solflare.
+      void import('@/components/wallet/WalletSurface');
       await signInWithWallet();
       setIsSigningInWallet(false);
     } catch (error: any) {

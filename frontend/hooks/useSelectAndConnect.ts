@@ -1,13 +1,24 @@
 'use client';
 
-import { useCallback, useEffect, useRef } from 'react';
+import { useCallback, useRef } from 'react';
 import { useWallet, type Wallet } from '@solana/wallet-adapter-react';
-import type { WalletName } from '@solana/wallet-adapter-base';
+import type { Adapter, WalletName } from '@solana/wallet-adapter-base';
+import { WalletReadyState } from '@solana/wallet-adapter-base';
 
 export type FindWalletOptions = {
   walletName: string;
   isMobileAdapter?: boolean;
 };
+
+const SELECT_TIMEOUT_MS = 15_000;
+const CONNECT_TIMEOUT_MS = 60_000;
+const POLL_MS = 50;
+
+function sleep(ms: number) {
+  return new Promise<void>((resolve) => {
+    window.setTimeout(resolve, ms);
+  });
+}
 
 /**
  * Find a wallet adapter by display name. Prefer Mobile Wallet Adapter when
@@ -42,80 +53,184 @@ function findWalletAdapter(
   return selected;
 }
 
-type PendingConnect = {
-  walletName: WalletName;
-  resolve: () => void;
-  reject: (error: unknown) => void;
-};
+function isAdapterReady(adapter: Adapter, readyState: WalletReadyState) {
+  return (
+    readyState === WalletReadyState.Installed ||
+    readyState === WalletReadyState.Loadable ||
+    adapter.readyState === WalletReadyState.Installed ||
+    adapter.readyState === WalletReadyState.Loadable
+  );
+}
 
 /**
  * Reliably select + connect a wallet without the classic race where
  * `select()` updates React state and an immediate `connect()` throws
- * WalletNotSelectedError because the selected adapter has not committed yet.
+ * WalletNotSelectedError, or where adapter-level connection is already
+ * established but React `connected`/`publicKey` never re-sync after a
+ * lazy WalletProvider remount.
+ *
+ * Strategy (aligned with current wallet-adapter + Wallet Standard usage):
+ * 1. Resolve the target adapter from the wallets list
+ * 2. `select(name)` and wait until the provider commits that selection
+ * 3. Call `adapter.connect()` on the selected adapter instance (not only
+ *    the context `connect()`, which can no-op when adapter.connected is
+ *    already true without emitting events)
+ * 4. Resolve only once `adapter.publicKey` is available
  */
 export function useSelectAndConnect() {
-  const { wallets, select, connect, wallet, connected } = useWallet();
-  const pendingRef = useRef<PendingConnect | null>(null);
-  const connectRef = useRef(connect);
-  connectRef.current = connect;
+  const { wallets, select, wallet, connected } = useWallet();
+  const walletRef = useRef(wallet);
+  const walletsRef = useRef(wallets);
+  walletRef.current = wallet;
+  walletsRef.current = wallets;
 
-  useEffect(() => {
-    const pending = pendingRef.current;
-    if (!pending || !wallet) return;
-    if (wallet.adapter.name !== pending.walletName) return;
+  const waitForSelectedWallet = useCallback(
+    async (walletName: WalletName, adapter: Adapter): Promise<Wallet> => {
+      const deadline = Date.now() + SELECT_TIMEOUT_MS;
 
-    pendingRef.current = null;
+      while (Date.now() < deadline) {
+        const current = walletRef.current;
+        if (current && current.adapter.name === walletName) {
+          return current;
+        }
 
-    if (wallet.adapter.connected || connected) {
-      pending.resolve();
+        // Provider may not have re-rendered yet; adapter instance is still valid.
+        const fromList = walletsRef.current.find((w) => w.adapter === adapter);
+        if (fromList && walletRef.current?.adapter.name === walletName) {
+          return fromList;
+        }
+
+        await sleep(POLL_MS);
+      }
+
+      // Last chance: selection may have committed without matching our ref timing.
+      const latest = walletRef.current;
+      if (latest && latest.adapter.name === walletName) {
+        return latest;
+      }
+
+      throw new Error('Wallet selection timed out. Please try again.');
+    },
+    []
+  );
+
+  const ensureAdapterConnected = useCallback(async (adapter: Adapter) => {
+    if (adapter.publicKey) {
       return;
     }
 
-    connectRef
-      .current()
-      .then(() => pending.resolve())
-      .catch((error) => pending.reject(error));
-  }, [wallet, connected]);
+    if (!isAdapterReady(adapter, adapter.readyState)) {
+      // Brief wait for Wallet Standard readyState to settle after provider mount.
+      const readyDeadline = Date.now() + 3_000;
+      while (Date.now() < readyDeadline && !isAdapterReady(adapter, adapter.readyState)) {
+        await sleep(POLL_MS);
+      }
+    }
+
+    if (!isAdapterReady(adapter, adapter.readyState)) {
+      throw new Error(
+        `${adapter.name} is not ready. Unlock the extension and try again.`
+      );
+    }
+
+    // Connect via the adapter instance so we do not depend on React state
+    // catching up. If already connected, many adapters resolve without a
+    // new popup; we still verify publicKey below.
+    if (!adapter.connected || !adapter.publicKey) {
+      const connectPromise = adapter.connect();
+      const timeoutPromise = new Promise<never>((_, reject) => {
+        window.setTimeout(() => {
+          reject(new Error('Wallet connection timed out. Please try again.'));
+        }, CONNECT_TIMEOUT_MS);
+      });
+      await Promise.race([connectPromise, timeoutPromise]);
+    }
+
+    const pubkeyDeadline = Date.now() + 5_000;
+    while (!adapter.publicKey && Date.now() < pubkeyDeadline) {
+      await sleep(POLL_MS);
+    }
+
+    if (!adapter.publicKey) {
+      throw new Error(
+        'Wallet connected but no public key was returned. Please try again.'
+      );
+    }
+  }, []);
 
   const selectAndConnect = useCallback(
     async (options: FindWalletOptions): Promise<Wallet> => {
-      const selected = findWalletAdapter(wallets, options);
+      const selected = findWalletAdapter(walletsRef.current, options);
       if (!selected) {
         throw new Error(
-          `${options.walletName} wallet not found. Please install a Solana wallet app.`
+          `${options.walletName} wallet not found. Please install a Solana wallet extension or app.`
         );
       }
 
       const walletName = selected.adapter.name as WalletName;
+      const adapter = selected.adapter;
 
-      // Already selected and connected — nothing to do.
-      if (wallet?.adapter.name === walletName && (wallet.adapter.connected || connected)) {
-        return selected;
+      // Already selected in provider and adapter has a key — done.
+      if (
+        walletRef.current?.adapter.name === walletName &&
+        (adapter.publicKey || (connected && walletRef.current.adapter.publicKey))
+      ) {
+        if (!adapter.publicKey && walletRef.current.adapter.publicKey) {
+          return walletRef.current;
+        }
+        if (adapter.publicKey) {
+          return selected;
+        }
       }
 
-      // Already selected but not connected — connect immediately.
-      if (wallet?.adapter.name === walletName) {
-        await connectRef.current();
-        return selected;
-      }
-
-      await new Promise<void>((resolve, reject) => {
-        pendingRef.current = { walletName, resolve, reject };
+      // Select when needed. changeWallet no-ops if name already matches.
+      if (walletRef.current?.adapter.name !== walletName) {
         select(walletName);
+        await waitForSelectedWallet(walletName, adapter);
+      }
 
-        // Safety timeout so a stuck pending select does not hang the UI forever.
-        window.setTimeout(() => {
-          if (pendingRef.current?.walletName === walletName) {
-            pendingRef.current = null;
-            reject(new Error('Wallet selection timed out. Please try again.'));
+      // One retry: first connect can fail when Standard wallets register
+      // slightly after the lazy WalletProvider mounts, or when a previous
+      // provider teardown left the extension in a half-connected state.
+      let lastError: unknown;
+      for (let attempt = 0; attempt < 2; attempt += 1) {
+        try {
+          await ensureAdapterConnected(adapter);
+          const committed =
+            walletRef.current?.adapter.name === walletName
+              ? walletRef.current
+              : selected;
+          return committed;
+        } catch (error) {
+          lastError = error;
+          const message = error instanceof Error ? error.message : String(error);
+          const retryable =
+            message.includes('WalletNotSelected') ||
+            message.includes('not ready') ||
+            message.includes('timed out') ||
+            message.includes('Unexpected error');
+
+          if (!retryable || attempt === 1) {
+            throw error;
           }
-        }, 15000);
-      });
 
-      return selected;
+          // Re-select then retry connect once.
+          select(walletName);
+          await waitForSelectedWallet(walletName, adapter);
+          await sleep(150);
+        }
+      }
+
+      throw lastError instanceof Error
+        ? lastError
+        : new Error('Failed to connect wallet');
     },
-    [wallets, select, wallet, connected]
+    [connected, ensureAdapterConnected, select, waitForSelectedWallet]
   );
 
-  return { wallets, selectAndConnect, findWalletAdapter: (opts: FindWalletOptions) => findWalletAdapter(wallets, opts) };
+  return {
+    wallets,
+    selectAndConnect,
+    findWalletAdapter: (opts: FindWalletOptions) => findWalletAdapter(wallets, opts),
+  };
 }

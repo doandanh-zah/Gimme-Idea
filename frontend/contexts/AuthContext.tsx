@@ -307,6 +307,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             if (isRecoverableSupabaseAuthError(error)) {
               await clearSupabaseLocalSession();
             }
+            if (String(error.message || error).toLowerCase().includes('invalid api key')) {
+              console.error(
+                '[Auth] Supabase rejected the anon key. Production NEXT_PUBLIC_SUPABASE_ANON_KEY must be the full 3-part JWT from the Supabase dashboard.'
+              );
+            }
           }
 
           // Always clear tokens from the URL (success or failure) to avoid loops.
@@ -551,6 +556,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [clearSupabaseLocalSession, processEmailLogin]);
 
   const signInWithGoogle = async () => {
+    if (!hasSupabaseEnv) {
+      throw new Error(
+        'Google sign-in is not configured: NEXT_PUBLIC_SUPABASE_ANON_KEY must be the full 3-part JWT from the Supabase dashboard (Project Settings → API → anon public).'
+      );
+    }
+
     await clearSupabaseLocalSession();
     clearSupabaseAuthCallbackParams();
     setSession(null);

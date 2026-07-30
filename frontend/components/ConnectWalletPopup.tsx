@@ -37,15 +37,16 @@ export const ConnectWalletPopup = () => {
     setIsNewUser,
     user,
     setUser,
-    refreshUser,
     signInWithGoogle,
     isLoading,
   } = useAuth();
-  const { publicKey, signMessage, connected, disconnect } = useWallet();
+  const { disconnect } = useWallet();
   const { wallets, selectAndConnect } = useSelectAndConnect();
   const { isPasskeyConnected, passkeyWalletAddress, connectPasskey, disconnectPasskey, signPasskeyMessage, isPasskeyConnecting } = usePasskeyWallet();
   const [isSigningInGoogle, setIsSigningInGoogle] = useState(false);
   const prefersReducedMotion = useReducedMotion();
+  const userRef = useRef(user);
+  userRef.current = user;
   
   // Flag to prevent multiple API calls
   const isLinkingRef = useRef(false);
@@ -76,108 +77,120 @@ export const ConnectWalletPopup = () => {
     }
   }, [showWalletPopup]);
 
-  // Handle wallet connection, then either link to an email account or sign in wallet-first.
-  useEffect(() => {
-    const linkWalletToAccount = async () => {
-      // Prevent multiple calls
-      if (isLinkingRef.current) return;
-      
-      if (step === 'connecting' && connected && publicKey && signMessage) {
-        isLinkingRef.current = true;
-        
-        try {
-          const timestamp = new Date().toISOString();
-          const walletAddress = publicKey.toBase58();
-          const message = user
-            ? `Link wallet to GimmeIdea\n\nTimestamp: ${timestamp}\nWallet: ${walletAddress}\nEmail: ${user.email}`
-            : `Sign in to GimmeIdea\n\nTimestamp: ${timestamp}\nWallet: ${walletAddress}`;
+  /**
+   * Sign + login/link using the connected adapter directly.
+   * Avoids depending on React `connected`/`publicKey` which can lag or miss
+   * events when WalletProvider is remounted lazily for each popup open.
+   */
+  const authenticateWithAdapter = async (adapter: {
+    publicKey: { toBase58(): string } | null;
+    signMessage?: (message: Uint8Array) => Promise<Uint8Array>;
+  }) => {
+    if (isLinkingRef.current) return;
+    isLinkingRef.current = true;
 
-          const encodedMessage = new TextEncoder().encode(message);
-          const signature = await signMessage(encodedMessage);
-          const signatureBase58 = bs58.encode(signature);
+    const currentUser = userRef.current;
 
-          if (!user) {
-            const response = await apiClient.login({
-              publicKey: walletAddress,
-              signature: signatureBase58,
-              message,
-            });
+    try {
+      const publicKey = adapter.publicKey;
+      if (!publicKey) {
+        throw new Error('Wallet connected but no public key was returned');
+      }
+      if (!adapter.signMessage) {
+        throw new Error('This wallet does not support message signing');
+      }
 
-            if (!response.success || !response.data) {
-              throw new Error(response.error || 'Wallet login failed');
-            }
+      const timestamp = new Date().toISOString();
+      const walletAddress = publicKey.toBase58();
+      const message = currentUser
+        ? `Link wallet to GimmeIdea\n\nTimestamp: ${timestamp}\nWallet: ${walletAddress}\nEmail: ${currentUser.email}`
+        : `Sign in to GimmeIdea\n\nTimestamp: ${timestamp}\nWallet: ${walletAddress}`;
 
-            markBackendSessionPresent();
+      const encodedMessage = new TextEncoder().encode(message);
+      const signature = await adapter.signMessage(encodedMessage);
+      const signatureBase58 = bs58.encode(signature);
 
-            const userData = {
-              id: response.data.user.id,
-              wallet: response.data.user.wallet || walletAddress,
-              username: response.data.user.username,
-              reputation: response.data.user.reputationScore || 0,
-              balance: response.data.user.balance || 0,
-              projects: [],
-              avatar: response.data.user.avatar,
-              coverImage: response.data.user.coverImage,
-              bio: response.data.user.bio,
-              socials: response.data.user.socialLinks,
-              email: response.data.user.email,
-              authProvider: response.data.user.authProvider || 'wallet',
-              authId: response.data.user.authId,
-              needsWalletConnect: response.data.user.needsWalletConnect || false,
-            };
+      if (!currentUser) {
+        const response = await apiClient.login({
+          publicKey: walletAddress,
+          signature: signatureBase58,
+          message,
+        });
 
-            setUser(userData);
-            setIsNewUser((response.data.user.loginCount || 0) <= 1);
-            setShowWalletEmailPopup((userData.authProvider || 'wallet') === 'wallet' && !userData.email);
-            setShowWalletPopup(false);
-            toast.success('Signed in with wallet');
+        if (!response.success || !response.data) {
+          throw new Error(response.error || 'Wallet login failed');
+        }
+
+        markBackendSessionPresent();
+
+        const userData = {
+          id: response.data.user.id,
+          wallet: response.data.user.wallet || walletAddress,
+          username: response.data.user.username,
+          reputation: response.data.user.reputationScore || 0,
+          balance: response.data.user.balance || 0,
+          projects: [],
+          avatar: response.data.user.avatar,
+          coverImage: response.data.user.coverImage,
+          bio: response.data.user.bio,
+          socials: response.data.user.socialLinks,
+          email: response.data.user.email,
+          authProvider: response.data.user.authProvider || 'wallet',
+          authId: response.data.user.authId,
+          needsWalletConnect: response.data.user.needsWalletConnect || false,
+        };
+
+        setUser(userData);
+        setIsNewUser((response.data.user.loginCount || 0) <= 1);
+        setShowWalletEmailPopup((userData.authProvider || 'wallet') === 'wallet' && !userData.email);
+        setShowWalletPopup(false);
+        toast.success('Signed in with wallet');
+      } else {
+        const response = await apiClient.linkWallet({
+          walletAddress,
+          signature: signatureBase58,
+          message,
+        });
+
+        if (response.success && response.data) {
+          setUser({
+            ...currentUser,
+            wallet: walletAddress,
+            needsWalletConnect: false,
+            reputation: response.data.user.reputationScore || currentUser.reputation,
+            balance: response.data.user.balance || currentUser.balance,
+          });
+
+          if (response.data.merged) {
+            toast.success('Wallet linked & data merged from existing account!', { duration: 5000 });
           } else {
-            const response = await apiClient.linkWallet({
-              walletAddress,
-              signature: signatureBase58,
-              message,
-            });
-
-            if (response.success && response.data) {
-              setUser({
-                ...user,
-                wallet: walletAddress,
-                needsWalletConnect: false,
-                reputation: response.data.user.reputationScore || user.reputation,
-                balance: response.data.user.balance || user.balance,
-              });
-
-              if (response.data.merged) {
-                toast.success('Wallet linked & data merged from existing account!', { duration: 5000 });
-              } else {
-                toast.success('Wallet connected successfully!');
-              }
-
-              setIsNewUser(false);
-              setShowWalletPopup(false);
-            } else {
-              throw new Error(response.error || 'Failed to link wallet');
-            }
+            toast.success('Wallet connected successfully!');
           }
-        } catch (error: any) {
-          console.error('Wallet auth error:', error);
-          
-          if (error.message?.includes('User rejected') || error.message?.includes('canceled')) {
-            toast.error('Signature cancelled');
-          } else {
-            toast.error(error.message || 'Wallet authentication failed');
-          }
-          
-          // Reset flag and disconnect
-          isLinkingRef.current = false;
-          await disconnect();
-          setStep('select-wallet');
+
+          setIsNewUser(false);
+          setShowWalletPopup(false);
+        } else {
+          throw new Error(response.error || 'Failed to link wallet');
         }
       }
-    };
+    } catch (error: any) {
+      console.error('Wallet auth error:', error);
 
-    linkWalletToAccount();
-  }, [step, connected, publicKey, signMessage, user, setUser, setIsNewUser, setShowWalletEmailPopup, setShowWalletPopup, disconnect]);
+      if (error.message?.includes('User rejected') || error.message?.includes('canceled') || error.message?.includes('cancelled')) {
+        toast.error('Signature cancelled');
+      } else {
+        toast.error(error.message || 'Wallet authentication failed');
+      }
+
+      isLinkingRef.current = false;
+      try {
+        await disconnect();
+      } catch {
+        // ignore disconnect errors during recovery
+      }
+      setStep('select-wallet');
+    }
+  };
 
   // Handle Passkey wallet connection and linking
   useEffect(() => {
@@ -254,11 +267,18 @@ export const ConnectWalletPopup = () => {
   }, [step, isPasskeyConnected, passkeyWalletAddress, signPasskeyMessage, user, setUser, setIsNewUser, setShowWalletPopup, disconnectPasskey]);
 
   const handleConnect = async (walletName: string, isMobileAdapter?: boolean) => {
+    if (isLinkingRef.current) return;
+
     try {
       setStep('connecting');
       // select() is async React state — useSelectAndConnect waits for the
-      // selected adapter before calling connect(), avoiding WalletNotSelectedError.
-      await selectAndConnect({ walletName, isMobileAdapter });
+      // selected adapter, connects via adapter.connect(), and only resolves
+      // once publicKey is available (fixes first-click silent failures).
+      const selected = await selectAndConnect({ walletName, isMobileAdapter });
+      await authenticateWithAdapter(selected.adapter as {
+        publicKey: { toBase58(): string } | null;
+        signMessage?: (message: Uint8Array) => Promise<Uint8Array>;
+      });
     } catch (error: any) {
       // Ignore errors from other wallet extensions (like MetaMask)
       if (error.message?.includes('MetaMask') || 
@@ -269,14 +289,15 @@ export const ConnectWalletPopup = () => {
       
       console.error('Wallet connection error:', error);
       
-      if (error.message?.includes('not found')) {
+      if (error.message?.includes('not found') || error.message?.includes('not ready') || error.message?.includes('timed out')) {
         toast.error(error.message);
       } else if (error.message?.includes('User rejected') || error.message?.includes('canceled') || error.message?.includes('cancelled')) {
         toast.error('Connection cancelled');
       } else {
-        toast.error('Failed to connect wallet');
+        toast.error(error.message || 'Failed to connect wallet');
       }
       
+      isLinkingRef.current = false;
       setStep('select-wallet');
     }
   };
@@ -308,8 +329,14 @@ export const ConnectWalletPopup = () => {
     try {
       setIsSigningInGoogle(true);
       await signInWithGoogle();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Google sign in error:', error);
+      const message = error?.message || 'Failed to sign in with Google';
+      if (String(message).toLowerCase().includes('invalid api key') || String(message).toLowerCase().includes('not configured')) {
+        toast.error('Google sign-in is misconfigured (invalid Supabase API key). Please redeploy with the full anon key.');
+      } else {
+        toast.error(message);
+      }
       setIsSigningInGoogle(false);
     }
   };

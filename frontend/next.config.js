@@ -92,6 +92,35 @@ function getOrigin(value) {
   }
 }
 
+// Fail loud on Vercel when the anon key is truncated/placeholder.
+// A 2-segment JWT ships as "Invalid API key" after Google OAuth redirect.
+(function assertSupabaseAnonKeyShape() {
+  const key = (process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '').trim();
+  if (!key) {
+    if (process.env.VERCEL) {
+      console.warn(
+        '[next.config] NEXT_PUBLIC_SUPABASE_ANON_KEY is missing on Vercel. Google login will not work.'
+      );
+    }
+    return;
+  }
+  const parts = key.split('.');
+  const looksPlaceholder =
+    key === 'public-anon-key' ||
+    key.includes('your_supabase') ||
+    key.includes('YOUR_');
+  if (looksPlaceholder || parts.length !== 3 || parts.some((p) => !p)) {
+    const message =
+      `[next.config] NEXT_PUBLIC_SUPABASE_ANON_KEY must be the full 3-part Supabase JWT ` +
+      `(header.payload.signature). Got ${parts.length} segment(s), length ${key.length}. ` +
+      `Fix the Vercel env value (Project Settings → API → anon public) and redeploy.`;
+    if (process.env.VERCEL) {
+      throw new Error(message);
+    }
+    console.warn(message);
+  }
+})();
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   outputFileTracingRoot: __dirname,

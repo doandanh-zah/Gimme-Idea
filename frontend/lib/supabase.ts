@@ -4,16 +4,45 @@ import { createClient } from "@supabase/supabase-js";
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim();
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY?.trim();
 
-export const hasSupabaseEnv = Boolean(supabaseUrl && supabaseAnonKey);
+/**
+ * Supabase anon keys are JWTs with 3 base64url segments (header.payload.sig).
+ * Production once shipped a truncated 2-segment value, which makes every
+ * auth call fail with "Invalid API key" after Google OAuth returns.
+ */
+export function isValidSupabaseAnonKey(key: string | undefined | null): boolean {
+  if (!key) return false;
+  const trimmed = key.trim();
+  if (
+    trimmed === "public-anon-key" ||
+    trimmed.includes("your_supabase") ||
+    trimmed.length < 100
+  ) {
+    return false;
+  }
+  const parts = trimmed.split(".");
+  return parts.length === 3 && parts.every((part) => part.length > 0);
+}
+
+export const hasSupabaseEnv = Boolean(
+  supabaseUrl &&
+    supabaseUrl.includes("supabase.co") &&
+    !supabaseUrl.includes("example.supabase") &&
+    isValidSupabaseAnonKey(supabaseAnonKey)
+);
 
 // Never hard-crash at module import time during build.
 // Use safe placeholders so static generation can complete,
 // while runtime env on Vercel should provide real values.
-// NOTE: placeholders produce AuthApiError "Invalid API key" if used at runtime —
-// always set NEXT_PUBLIC_SUPABASE_* in .env.local / Vercel before testing auth.
+// NOTE: placeholders / truncated JWTs produce AuthApiError "Invalid API key"
+// if used at runtime — always set the FULL NEXT_PUBLIC_SUPABASE_ANON_KEY
+// (header.payload.signature) in .env.local / Vercel before testing auth.
 const resolvedSupabaseUrl = supabaseUrl || "https://example.supabase.co";
-const resolvedSupabaseAnonKey = supabaseAnonKey || "public-anon-key";
-const supabaseProjectRef = (() => {
+const resolvedSupabaseAnonKey =
+  isValidSupabaseAnonKey(supabaseAnonKey) && supabaseAnonKey
+    ? supabaseAnonKey
+    : "public-anon-key";
+
+export const supabaseProjectRef = (() => {
   try {
     return new URL(resolvedSupabaseUrl).hostname.split(".")[0] || null;
   } catch {
@@ -81,10 +110,19 @@ export function isRecoverableSupabaseAuthError(error: unknown) {
   );
 }
 
-if (!hasSupabaseEnv && typeof window !== "undefined") {
-  console.warn(
-    "[supabase] Missing NEXT_PUBLIC_SUPABASE_URL / NEXT_PUBLIC_SUPABASE_ANON_KEY. Auth/data features will be unavailable until env vars are configured."
-  );
+if (typeof window !== "undefined") {
+  if (!supabaseUrl || !supabaseAnonKey) {
+    console.warn(
+      "[supabase] Missing NEXT_PUBLIC_SUPABASE_URL / NEXT_PUBLIC_SUPABASE_ANON_KEY. Auth/data features will be unavailable until env vars are configured."
+    );
+  } else if (!hasSupabaseEnv) {
+    console.error(
+      "[supabase] NEXT_PUBLIC_SUPABASE_ANON_KEY is present but invalid. " +
+        "It must be the full 3-part JWT from Supabase (header.payload.signature). " +
+        `Got ${supabaseAnonKey.split(".").length} segment(s), length ${supabaseAnonKey.length}. ` +
+        "Google login will fail with Invalid API key until Vercel/env is fixed and redeployed."
+    );
+  }
 }
 
 // Create and export Supabase client
