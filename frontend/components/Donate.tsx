@@ -193,8 +193,8 @@ export const Donate = () => {
     };
 
     return (
-        <div className="relative min-h-screen px-4 pt-28 pb-20 sm:px-6">
-            <div className="mx-auto w-full max-w-6xl">
+        <div className="relative min-h-screen page-top">
+            <div className="page-shell">
                 {/* Header */}
                 <motion.div
                     initial={{ opacity: 0, y: -20 }}

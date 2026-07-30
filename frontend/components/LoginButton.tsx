@@ -7,7 +7,7 @@ import toast from 'react-hot-toast';
 import { LoadingDots } from './LoadingSpinner';
 
 export const LoginButton = () => {
-  const { signInWithGoogle, signInWithWallet, isLoading } = useAuth();
+  const { signInWithGoogle, signInWithWallet } = useAuth();
   const [isSigningInGoogle, setIsSigningInGoogle] = useState(false);
   const [isSigningInWallet, setIsSigningInWallet] = useState(false);
 
@@ -15,6 +15,7 @@ export const LoginButton = () => {
     try {
       setIsSigningInGoogle(true);
       await signInWithGoogle();
+      setIsSigningInGoogle(false);
     } catch (error: any) {
       console.error('Google login error:', error);
       const message = error?.message || 'Failed to sign in with Google. Please try again.';
@@ -49,8 +50,8 @@ export const LoginButton = () => {
     }
   };
 
-  const loadingGoogle = isLoading || isSigningInGoogle;
-  const loadingWallet = isLoading || isSigningInWallet;
+  const loadingGoogle = isSigningInGoogle;
+  const loadingWallet = isSigningInWallet;
 
   return (
     <div className="flex items-center gap-2">

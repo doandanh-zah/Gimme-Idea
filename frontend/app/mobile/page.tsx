@@ -23,9 +23,9 @@ const featureRows = [
 
 export default function MobileLandingPage() {
   return (
-    <main className="relative min-h-screen overflow-hidden px-4 pb-20 pt-24 text-white sm:px-6 sm:pt-28">
+    <main className="relative min-h-screen overflow-hidden page-top text-white">
 
-      <div className="mx-auto max-w-6xl">
+      <div className="page-shell">
         <header className="border-b border-white/10 pb-8">
           <p className="ui-eyebrow">Mobile build</p>
           <div className="mt-5 grid gap-8 lg:grid-cols-[1fr_360px] lg:items-end">

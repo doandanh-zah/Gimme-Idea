@@ -38,7 +38,8 @@ class ErrorBoundary extends Component<Props, State> {
   render() {
     if (this.state.hasError) {
       return (
-        <div className="min-h-screen bg-[#0A0A0A] text-white flex items-center justify-center px-6">
+        <div className="min-h-screen bg-[#0A0A0A] text-white page-top">
+          <div className="page-shell flex min-h-[60vh] items-center justify-center">
           <div className="text-center max-w-md">
             {/* Icon */}
             <div className="mb-6 flex justify-center">
@@ -81,6 +82,7 @@ class ErrorBoundary extends Component<Props, State> {
                 Go Home
               </button>
             </div>
+          </div>
           </div>
         </div>
       );

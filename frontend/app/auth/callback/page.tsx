@@ -112,11 +112,13 @@ export default function AuthCallback() {
   }, [router]);
 
   return (
-    <main className="flex min-h-screen items-center justify-center px-4 py-20 text-gray-300 sm:px-6">
-      <section className="w-full max-w-sm border border-white/10 bg-white/[0.03] p-6 text-center">
-        <Loader2 className="mx-auto h-8 w-8 animate-spin text-[#FFD700]" aria-hidden="true" />
-        <h1 className="mt-5 text-xl font-semibold text-white">Signing in</h1>
-        <p className="mt-2 text-sm leading-6 text-gray-400">Checking your session and sending you back to Gimme Idea.</p>
+    <main className="min-h-screen page-top text-gray-300">
+      <section className="page-shell flex min-h-[60vh] items-center justify-center">
+        <div className="w-full max-w-sm border border-white/10 bg-white/[0.03] p-6 text-center">
+          <Loader2 className="mx-auto h-8 w-8 animate-spin text-[#FFD700]" aria-hidden="true" />
+          <h1 className="mt-5 text-xl font-semibold text-white">Signing in</h1>
+          <p className="mt-2 text-sm leading-6 text-gray-400">Checking your session and sending you back to Gimme Idea.</p>
+        </div>
       </section>
     </main>
   );

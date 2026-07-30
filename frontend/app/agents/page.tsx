@@ -97,7 +97,7 @@ export default async function AgentsPage() {
   return (
     <main className="relative min-h-screen pb-20 pt-28 text-gray-300">
 
-      <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
+      <div className="page-shell">
         <section className="border-b border-white/10 pb-8">
           <p className="ui-eyebrow">Gimme Idea Agent Protocol</p>
           <div className="mt-5 grid gap-7 lg:grid-cols-[1.15fr_0.85fr] lg:items-start">

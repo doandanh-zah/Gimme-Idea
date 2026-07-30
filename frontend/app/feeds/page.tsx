@@ -466,7 +466,7 @@ export default function FeedsPage() {
   return (
     <main className="relative min-h-screen pb-20 text-gray-300">
 
-      <div className="mx-auto max-w-7xl px-4 pt-28 sm:px-6 lg:px-8">
+      <div className="page-shell page-top">
         <header className="mb-10 flex flex-col gap-5 border-b border-white/10 pb-8 sm:flex-row sm:items-end sm:justify-between">
           <div className="max-w-2xl">
             <p className="ui-eyebrow">Curated collections</p>

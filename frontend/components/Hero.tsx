@@ -1,143 +1,174 @@
 'use client';
 
 import React from 'react';
-import { ArrowUpRight, LayoutGrid, Plus } from 'lucide-react';
+import Image from 'next/image';
+import Link from 'next/link';
+import { motion, useReducedMotion } from 'framer-motion';
+import {
+  ArrowRight,
+  Coins,
+  LayoutGrid,
+  MessageSquareText,
+  Plus,
+  Radio,
+  ShieldCheck,
+  Sparkles,
+  Users,
+  Zap,
+} from 'lucide-react';
 import { useAppStore } from '../lib/store';
-import { useRouter } from 'next/navigation';
 
-const heroSteps = [
-  {
-    n: '01',
-    t: 'Publish',
-    d: 'Drop a raw idea — problem, solution, opportunity.',
-  },
-  {
-    n: '02',
-    t: 'Signal',
-    d: 'Community votes, comments, and AI feedback stack up.',
-  },
-  {
-    n: '03',
-    t: 'Build',
-    d: 'Find co-founders, pools, and builders ready to ship.',
-  },
-];
+const heroMetrics = [
+  { label: 'Validate', value: 'Ideas', detail: 'Votes, replies, AI critique', icon: Sparkles },
+  { label: 'Find', value: 'Builders', detail: 'Feeds, profiles, network signal', icon: Users },
+  { label: 'Fund', value: 'Support', detail: 'Solana-native tips and backing', icon: Coins },
+] as const;
 
-const metricCells = [
-  { k: 'Chain', v: 'Solana' },
-  { k: 'Signal', v: 'Votes' },
-  { k: 'AI', v: 'Sensei' },
-];
+const signalRows = [
+  { label: 'Problem pull', value: 'High', tone: 'text-[#14F195]' },
+  { label: 'Builder interest', value: 'Rising', tone: 'text-[#FFD700]' },
+  { label: 'GTM clarity', value: 'Needs edge', tone: 'text-[#C4B5FD]' },
+] as const;
 
-function HeroStepsPanel() {
-  return (
-    <>
-      <div className="border border-white/10 bg-[#0a0a0a]">
-        <div className="flex items-center justify-between px-4 py-3 border-b border-white/10">
-          <span className="font-mono text-[10px] tracking-[0.16em] uppercase text-gray-500">
-            How it works
-          </span>
-          <span className="font-mono text-[10px] text-[#FFD700]">01 — 03</span>
-        </div>
-
-        {heroSteps.map((step, i) => (
-          <div
-            key={step.n}
-            className={`grid grid-cols-[48px_1fr] gap-3 px-4 py-5 ${
-              i < 2 ? 'border-b border-white/10' : ''
-            }`}
-          >
-            <span className="font-quantico text-xl font-bold text-[#FFD700]">{step.n}</span>
-            <div>
-              <div className="flex items-center gap-2 mb-1">
-                <h3 className="font-display font-semibold text-white text-lg tracking-tight">
-                  {step.t}
-                </h3>
-                <ArrowUpRight className="w-3.5 h-3.5 text-gray-600" />
-              </div>
-              <p className="text-sm text-gray-500 leading-relaxed">{step.d}</p>
-            </div>
-          </div>
-        ))}
-      </div>
-
-      <div className="mt-3 grid grid-cols-3 border border-white/10 border-t-0 bg-[#0a0a0a] divide-x divide-white/10">
-        {metricCells.map((cell) => (
-          <div key={cell.k} className="px-3 py-3 text-center">
-            <div className="font-mono text-[9px] tracking-widest uppercase text-gray-600 mb-1">
-              {cell.k}
-            </div>
-            <div className="text-sm font-semibold text-white">{cell.v}</div>
-          </div>
-        ))}
-      </div>
-    </>
-  );
-}
+const proofChips = [
+  { label: 'Public feedback', icon: MessageSquareText },
+  { label: 'Solana builders', icon: Radio },
+  { label: 'Verified actions', icon: ShieldCheck },
+  { label: 'Fast iteration', icon: Zap },
+] as const;
 
 const Hero: React.FC = () => {
   const openSubmitModal = useAppStore((state) => state.openSubmitModal);
-  const router = useRouter();
+  const prefersReducedMotion = useReducedMotion();
+
+  const reveal = prefersReducedMotion
+    ? { initial: { opacity: 1 }, animate: { opacity: 1 } }
+    : {
+        initial: { opacity: 0, y: 14 },
+        animate: { opacity: 1, y: 0 },
+        transition: { duration: 0.4, ease: 'easeOut' as const },
+      };
 
   return (
-    <>
-      <section className="relative flex min-h-[100svh] flex-col justify-center overflow-hidden px-4 pb-28 pt-28 sm:px-6 sm:pt-32 lg:pb-16">
-        <div className="max-w-6xl mx-auto w-full">
-          {/* Top strip */}
-          <div className="flex flex-wrap items-center justify-between gap-3 mb-10 sm:mb-14 pb-4 border-b border-white/10">
-            <span className="ui-eyebrow">Solana mainnet</span>
-            <span className="font-mono text-[11px] tracking-widest uppercase text-gray-500">
-              Idea · Feedback · Build
-            </span>
+    <section className="landing-hero relative isolate overflow-hidden border-b border-white/10">
+      <Image
+        src="/OG-img.png"
+        alt=""
+        fill
+        priority
+        sizes="100vw"
+        className="landing-hero-image object-cover"
+      />
+      <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(5,5,5,0.94)_0%,rgba(5,5,5,0.82)_48%,rgba(5,5,5,0.56)_100%)]" />
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_72%_26%,rgba(255,215,0,0.18),transparent_32%),linear-gradient(180deg,rgba(5,5,5,0.22),#050505_96%)]" />
+      <div className="landing-grid absolute inset-0 opacity-60" />
+      <div className="landing-scan absolute inset-x-0 top-0 h-px bg-[#FFD700]/50" />
+
+      <div className="page-shell relative z-10 flex min-h-[92svh] flex-col justify-center py-28 sm:py-32 lg:py-36">
+        <motion.div {...reveal} className="max-w-4xl">
+          <div className="mb-5 inline-flex min-h-[32px] items-center gap-2 border border-white/10 bg-black/35 px-3 font-mono text-[11px] uppercase text-[#FFD700] backdrop-blur">
+            <Radio className="h-3.5 w-3.5" aria-hidden="true" />
+            Solana idea validation network
           </div>
 
-          <div className="grid lg:grid-cols-12 gap-10 lg:gap-8 items-end">
-            {/* Copy — 7 cols */}
-            <div className="lg:col-span-7 space-y-8">
-              <h1 className="font-display font-bold tracking-tight leading-[0.95] text-[clamp(2.75rem,8vw,5.5rem)]">
-                <span className="block text-white">Ship faster</span>
-                <span className="block text-white">
-                  with{' '}
-                  <span className="text-[#FFD700]">real</span>
-                </span>
-                <span className="block">
-                  <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#9945FF] to-[#FFD700]">
-                    feedback.
-                  </span>
-                </span>
-              </h1>
+          <h1 className="font-display text-5xl font-bold leading-none text-white sm:text-6xl lg:text-7xl">
+            Gimme Idea
+          </h1>
+          <p className="mt-6 max-w-2xl text-base leading-7 text-gray-200 sm:text-lg">
+            A clean place to publish startup ideas, collect honest builder signal, and turn early
+            comments into decisions before the product sprint gets expensive.
+          </p>
 
-              <p className="text-base sm:text-lg text-gray-400 max-w-lg leading-relaxed border-l-2 border-[#FFD700]/40 pl-4">
-                Share concepts, get honest input from builders, and find what the community actually
-                wants — before you write the first line of code.
-              </p>
+          <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+            <button type="button" onClick={() => openSubmitModal('idea')} className="btn-primary">
+              <Plus className="h-4 w-4" aria-hidden="true" />
+              Submit idea
+            </button>
+            <Link href="/idea" className="btn-ghost bg-black/30 backdrop-blur">
+              <LayoutGrid className="h-4 w-4" aria-hidden="true" />
+              Browse ideas
+            </Link>
+          </div>
+        </motion.div>
 
-              <div className="flex flex-col sm:flex-row gap-3 pt-1">
-                <button type="button" onClick={() => openSubmitModal('idea')} className="btn-primary">
-                  <Plus className="w-4 h-4" />
-                  Share your idea
-                </button>
-                <button type="button" onClick={() => router.push('/idea')} className="btn-ghost">
-                  <LayoutGrid className="w-4 h-4" />
-                  Browse ideas
-                </button>
-              </div>
+        <motion.div
+          {...(prefersReducedMotion
+            ? { initial: { opacity: 1 }, animate: { opacity: 1 } }
+            : {
+                initial: { opacity: 0, y: 16 },
+                animate: { opacity: 1, y: 0 },
+                transition: { duration: 0.4, delay: 0.12, ease: 'easeOut' as const },
+              })}
+          className="mt-12 grid gap-3 lg:grid-cols-[minmax(0,1fr)_360px]"
+        >
+          <div className="grid border border-white/10 bg-black/45 backdrop-blur md:grid-cols-3 md:divide-x md:divide-white/10">
+            {heroMetrics.map((metric) => {
+              const Icon = metric.icon;
+              return (
+                <div key={metric.label} className="min-h-[118px] border-b border-white/10 p-4 last:border-b-0 md:border-b-0">
+                  <div className="mb-5 flex items-center justify-between">
+                    <span className="font-mono text-[10px] uppercase text-gray-500">
+                      {metric.label}
+                    </span>
+                    <Icon className="h-4 w-4 text-[#FFD700]" aria-hidden="true" />
+                  </div>
+                  <div className="font-display text-2xl font-bold text-white">{metric.value}</div>
+                  <p className="mt-1 text-xs leading-5 text-gray-400">{metric.detail}</p>
+                </div>
+              );
+            })}
+          </div>
+
+          <div className="border border-white/10 bg-black/55 backdrop-blur">
+            <div className="flex min-h-[42px] items-center justify-between border-b border-white/10 px-4">
+              <span className="font-mono text-[10px] uppercase text-gray-500">
+                Live signal stack
+              </span>
+              <span className="landing-signal-dot" aria-hidden="true" />
             </div>
-
-            {/* Side panel — 5 cols: editorial index, not fake terminal */}
-            <div className="hidden lg:col-span-5 lg:block">
-              <HeroStepsPanel />
+            <div className="divide-y divide-white/10">
+              {signalRows.map((row) => (
+                <div key={row.label} className="flex min-h-[44px] items-center justify-between gap-4 px-4">
+                  <span className="text-sm text-gray-400">{row.label}</span>
+                  <span className={`font-mono text-[11px] uppercase ${row.tone}`}>{row.value}</span>
+                </div>
+              ))}
+            </div>
+            <div className="flex min-h-[44px] items-center justify-between border-t border-white/10 px-4 text-xs text-gray-500">
+              <span>Next review</span>
+              <span className="font-mono text-[#FFD700]">Community queue</span>
             </div>
           </div>
-        </div>
-      </section>
+        </motion.div>
 
-      <div className="px-4 pb-12 sm:px-6 lg:hidden">
-        <div className="max-w-6xl mx-auto">
-          <HeroStepsPanel />
-        </div>
+        <motion.div
+          {...(prefersReducedMotion
+            ? { initial: { opacity: 1 }, animate: { opacity: 1 } }
+            : {
+                initial: { opacity: 0 },
+                animate: { opacity: 1 },
+                transition: { duration: 0.35, delay: 0.22, ease: 'easeOut' as const },
+              })}
+          className="mt-4 flex flex-wrap gap-2"
+        >
+          {proofChips.map((chip) => {
+            const Icon = chip.icon;
+            return (
+              <span
+                key={chip.label}
+                className="inline-flex min-h-[32px] items-center gap-2 border border-white/10 bg-black/35 px-3 text-xs text-gray-300 backdrop-blur"
+              >
+                <Icon className="h-3.5 w-3.5 text-[#FFD700]" aria-hidden="true" />
+                {chip.label}
+              </span>
+            );
+          })}
+        </motion.div>
       </div>
-    </>
+
+      <div className="pointer-events-none absolute inset-x-0 bottom-0 h-20 bg-gradient-to-t from-[#050505] to-transparent" />
+      <ArrowRight className="pointer-events-none absolute bottom-8 right-6 hidden h-5 w-5 text-[#FFD700]/70 sm:block" />
+    </section>
   );
 };
 

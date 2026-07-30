@@ -324,7 +324,7 @@ export const ProjectDetail = () => {
     <motion.div 
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      className="pt-32 pb-20 px-6 max-w-5xl mx-auto min-h-screen"
+      className="page-shell min-h-screen pt-28 pb-20"
     >
       {/* Back Button */}
       <button

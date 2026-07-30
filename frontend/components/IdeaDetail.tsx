@@ -21,8 +21,7 @@ import { createUniqueSlug } from '../lib/slug-utils';
 import AdminDeleteButton from './AdminDeleteButton';
 import AdminBadge, { GimmeSenseiBadge } from './AdminBadge';
 import { RelatedProjectsModal } from './RelatedProjectsModal';
-import { ProposalSendModal } from './ProposalSendModal';
-import { CreatePoolButton } from './ideas/CreatePoolButton';
+
 import { useWallet, useConnection } from '@solana/wallet-adapter-react';
 import { PublicKey, Transaction, SystemProgram, LAMPORTS_PER_SOL } from '@solana/web3.js';
 
@@ -531,14 +530,11 @@ const CommentItem: React.FC<CommentItemProps> = ({ comment, projectId, isReply =
                     />
                     {!comment.isAnonymous && comment.author?.username && ideaOwnerUsername &&
                         comment.author.username === ideaOwnerUsername && (
-                            <span className="text-[10px] bg-amber-500/20 text-amber-400 px-1.5 py-0.5 rounded-full border border-amber-500/30 font-medium">
-                                Idea Owner
+                            <span className="inline-flex items-center border border-white/15 bg-white/[0.04] px-1.5 py-0.5 font-mono text-[10px] font-semibold uppercase tracking-[0.1em] text-gray-300">
+                                Owner
                             </span>
                         )}
-                    {/* Gimme Sensei AI Badge */}
-                    {comment.is_ai_generated && (
-                        <GimmeSenseiBadge />
-                    )}
+                    {comment.is_ai_generated && <GimmeSenseiBadge />}
                     <span className="text-xs text-gray-600">{new Date(timestamp).toLocaleDateString()}</span>
                     {tipsAmount > 0 && (
                         <span className="text-[10px] bg-gold/10 text-gold px-1.5 py-0.5 rounded border border-gold/20 flex items-center gap-1">
@@ -770,7 +766,7 @@ export const IdeaDetail = () => {
     const [paymentRecipient, setPaymentRecipient] = useState('');
 
     // Support/Deposit (Commit-to-Build)
-    const [showProposalModal, setShowProposalModal] = useState(false);
+
     const [recipientWallet, setRecipientWallet] = useState('');
     const [selectedCommentId, setSelectedCommentId] = useState<string | null>(null);
 
@@ -907,17 +903,13 @@ export const IdeaDetail = () => {
         },
     });
 
-    const refreshIdeaAndProposals = async () => {
-        if (!project?.id) return;
-        await fetchProjectById(project.id);
-    };
-
     if (!project) return null;
 
     if (viewGate?.blocked) {
         return (
-            <div className="min-h-screen pt-28 px-4">
-                <div className="max-w-xl mx-auto rounded-2xl border border-[#FFD700]/30 bg-[#12131a] p-6 text-center">
+            <div className="min-h-screen page-top">
+                <div className="page-shell">
+                <div className="mx-auto max-w-xl rounded-2xl border border-[#FFD700]/30 bg-[#12131a] p-6 text-center">
                     <h2 className="text-2xl font-bold text-[#FFD700] mb-3">Daily limit reached</h2>
                     <p className="text-gray-300 mb-5">{viewGate.message}</p>
                     <div className="flex gap-3 justify-center">
@@ -934,6 +926,7 @@ export const IdeaDetail = () => {
                             Back
                         </button>
                     </div>
+                </div>
                 </div>
             </div>
         );
@@ -1189,7 +1182,7 @@ export const IdeaDetail = () => {
     };
 
     return (
-        <div className="min-h-screen pt-20 sm:pt-24 pb-28 px-4 sm:px-6">
+        <div className="page-shell min-h-screen pt-20 sm:pt-24 pb-28">
             <div className="max-w-3xl mx-auto">
                 <button type="button" onClick={() => router.push('/idea')} className="inline-flex items-center gap-2 text-gray-500 hover:text-white mb-8 text-xs font-mono uppercase tracking-wider min-h-[40px]">
                     <ArrowLeft className="w-3.5 h-3.5" /> Back to ideas
@@ -1308,30 +1301,6 @@ export const IdeaDetail = () => {
                     </div>
                 </div>
 
-                {/* On-chain Actions */}
-                <div className="mb-10 border border-white/10 bg-[#0a0a0a] p-5 space-y-4">
-                    <div className="flex items-center justify-between gap-3">
-                        <h3 className="text-[11px] font-bold text-white uppercase tracking-[0.14em] font-mono">
-                            On-chain actions
-                        </h3>
-                        {project.finalDecision ? (
-                            <span className="text-xs text-[#FFD700] font-mono">Final: {project.finalDecision}</span>
-                        ) : null}
-                    </div>
-                    {!project.proposalPubkey ? (
-                        <CreatePoolButton idea={project} onCreated={refreshIdeaAndProposals} />
-                    ) : (
-                        <button
-                            type="button"
-                            onClick={() => setShowProposalModal(true)}
-                            className="btn-primary !min-h-[40px] !text-xs"
-                        >
-                            Send Proposal
-                        </button>
-                    )}
-                </div>
-
-
                 {/* Comments */}
                 <div className="border-t border-white/10 pt-12">
                     <h3 className="text-2xl font-bold mb-8">Discussion ({project.comments?.length || 0})</h3>
@@ -1381,26 +1350,29 @@ export const IdeaDetail = () => {
             </div>
 
             {showBuyOptions && (
-                <div className="fixed inset-0 z-50 modal-overlay flex items-center justify-center p-4" onClick={() => setShowBuyOptions(false)}>
-                    <div className="w-full max-w-md rounded-2xl border border-white/10 bg-[#0D0D12] p-5" onClick={(e) => e.stopPropagation()}>
-                        <h3 className="text-lg font-bold text-[#FFD700] mb-2">Choose a plan</h3>
-                        <p className="text-xs text-gray-400 mb-4">Pay instantly with wallet, or continue to Billing for Visa/Mastercard checkout.</p>
+                <div className="fixed inset-0 z-50 flex items-center justify-center px-4" onClick={() => setShowBuyOptions(false)}>
+                    <div className="absolute inset-0 modal-overlay" aria-hidden="true" />
+                    <div className="modal-frame max-w-md p-5" onClick={(e) => e.stopPropagation()} role="dialog" aria-modal="true" aria-labelledby="buy-options-title">
+                        <p className="ui-eyebrow mb-3">Billing</p>
+                        <h3 id="buy-options-title" className="modal-title mb-2">Choose a plan</h3>
+                        <p className="modal-description mb-4">Pay instantly with wallet, or continue to Billing for Visa/Mastercard checkout.</p>
                         <div className="space-y-2">
-                            <button disabled={isBuyingPack} onClick={() => handlePurchase('pack')} className="w-full text-left bg-white/10 hover:bg-white/20 rounded-xl px-4 py-3">
+                            <button type="button" disabled={isBuyingPack} onClick={() => handlePurchase('pack')} className="modal-option block">
                                 <div className="text-white font-semibold">$1 • 5 question credits</div>
                                 <div className="text-xs text-gray-400">Pay once, use anytime</div>
                             </button>
-                            <button disabled={isBuyingPack} onClick={() => handlePurchase('pro5')} className="w-full text-left bg-white/10 hover:bg-white/20 rounded-xl px-4 py-3">
+                            <button type="button" disabled={isBuyingPack} onClick={() => handlePurchase('pro5')} className="modal-option block">
                                 <div className="text-white font-semibold">$5 / month • Unlimited idea views</div>
                                 <div className="text-xs text-gray-400">Question pack purchase still available</div>
                             </button>
-                            <button disabled={isBuyingPack} onClick={() => handlePurchase('pro10')} className="w-full text-left bg-[#FFD700] text-black rounded-xl px-4 py-3">
+                            <button type="button" disabled={isBuyingPack} onClick={() => handlePurchase('pro10')} className="modal-option modal-option-active block">
                                 <div className="font-bold">$10 / month • Unlimited views + unlimited AI</div>
-                                <div className="text-xs opacity-80">Best for heavy usage</div>
+                                <div className="text-xs text-gray-400">Best for heavy usage</div>
                             </button>
                             <button
+                                type="button"
                                 onClick={() => router.push('/billing')}
-                                className="w-full bg-white/10 hover:bg-white/20 rounded-xl px-4 py-2.5 text-sm text-white"
+                                className="btn-ghost w-full"
                             >
                                 Pay with Visa / Mastercard
                             </button>
@@ -1410,11 +1382,15 @@ export const IdeaDetail = () => {
             )}
 
             {showGtmChat && (
-                <div className="fixed inset-0 z-50 modal-overlay flex items-end sm:items-center justify-center p-0 sm:p-4" onClick={() => setShowGtmChat(false)}>
-                    <div className="w-full sm:max-w-2xl h-[88vh] sm:h-auto sm:max-h-[88vh] rounded-t-2xl sm:rounded-2xl border border-white/10 bg-[#0D0D12] overflow-hidden flex flex-col" onClick={(e) => e.stopPropagation()}>
-                        <div className="px-4 sm:px-5 py-4 border-b border-white/10 flex items-center justify-between">
-                            <h3 className="text-base sm:text-lg font-bold text-[#FFD700]">Brainstorm with Gimme Sensei</h3>
-                            <button onClick={() => setShowGtmChat(false)} className="text-gray-400 hover:text-white"><X className="w-5 h-5" /></button>
+                <div className="fixed inset-0 z-50 flex items-end justify-center px-0 sm:items-center sm:px-4" onClick={() => setShowGtmChat(false)}>
+                    <div className="absolute inset-0 modal-overlay" aria-hidden="true" />
+                    <div className="modal-frame h-[88vh] max-w-2xl flex flex-col sm:h-auto sm:max-h-[88vh]" onClick={(e) => e.stopPropagation()} role="dialog" aria-modal="true" aria-labelledby="gtm-chat-title">
+                        <div className="modal-header">
+                            <div>
+                                <p className="ui-eyebrow mb-2">AI</p>
+                                <h3 id="gtm-chat-title" className="modal-title">Brainstorm with Gimme Sensei</h3>
+                            </div>
+                            <button type="button" onClick={() => setShowGtmChat(false)} className="modal-close" aria-label="Close GTM chat"><X className="w-5 h-5" /></button>
                         </div>
                         <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-white/[0.02]">
                             {gtmMessages.map((m, idx) => (
@@ -1429,9 +1405,10 @@ export const IdeaDetail = () => {
                                 {getAssessmentQuestion(assessmentStep).choices.map((choice) => (
                                     <button
                                         key={choice}
+                                        type="button"
                                         onClick={() => handleAnswerAssessment(choice)}
                                         disabled={isGtmSending}
-                                        className="bg-white/10 hover:bg-white/20 text-white rounded-lg px-3 py-2 text-sm text-left"
+                                        className="modal-option px-3 py-2 text-sm"
                                     >
                                         {choice}
                                     </button>
@@ -1442,15 +1419,16 @@ export const IdeaDetail = () => {
                                     value={customAnswer}
                                     onChange={(e) => setCustomAnswer(e.target.value)}
                                     placeholder="Or add custom answer..."
-                                    className="flex-1 bg-[#12131a] border border-white/10 rounded-full px-4 py-2 text-sm text-white outline-none"
+                                    className="field-input flex-1"
                                 />
                                 <button
+                                    type="button"
                                     onClick={() => {
                                         if (!customAnswer.trim()) return;
                                         handleAnswerAssessment(customAnswer.trim());
                                         setCustomAnswer('');
                                     }}
-                                    className="bg-white/10 text-white px-3 py-2 rounded-full text-sm"
+                                    className="btn-ghost min-h-[44px] px-3 py-2 text-sm"
                                 >
                                     Add
                                 </button>
@@ -1458,9 +1436,10 @@ export const IdeaDetail = () => {
 
                             {assessmentAnswers.length >= 2 && (
                                 <button
+                                    type="button"
                                     onClick={handleGenerateAdvice}
                                     disabled={isGtmSending}
-                                    className="w-full bg-[#FFD700] text-black rounded-full px-4 py-2.5 text-sm font-bold disabled:opacity-60"
+                                    className="btn-primary w-full text-sm disabled:opacity-60"
                                 >
                                     Get Advice
                                 </button>
@@ -1469,14 +1448,6 @@ export const IdeaDetail = () => {
                     </div>
                 </div>
             )}
-
-            <ProposalSendModal
-                isOpen={showProposalModal}
-                onClose={() => setShowProposalModal(false)}
-                projectId={project.id}
-                daoAddress={project.governanceRealmAddress}
-                onSubmitted={refreshIdeaAndProposals}
-            />
 
             <PaymentModal
                 isOpen={showPayment}

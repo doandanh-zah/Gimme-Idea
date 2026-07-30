@@ -215,9 +215,6 @@ export const SubmissionModal = () => {
 
   // Visual Theme Constants
   const isProject = submitType === 'project';
-  const themeColor = isProject ? 'from-[#9945FF] to-[#7c3aed]' : 'from-[#FFD700] to-[#FDB931]';
-  const borderColor = isProject ? 'border-[#9945FF]/30' : 'border-[#FFD700]/30';
-  const shadowColor = isProject ? 'shadow-[#9945FF]/20' : 'shadow-[#FFD700]/20';
   
   // Dynamic Styles for Success State
   const gridColor = isProject ? 'rgba(20, 241, 149, 0.2)' : 'rgba(255, 215, 0, 0.2)';
@@ -324,34 +321,40 @@ export const SubmissionModal = () => {
                 initial={{ scale: 0.95, opacity: 0, y: 20 }}
                 animate={{ scale: 1, opacity: 1, y: 0 }}
                 exit={{ scale: 0.95, opacity: 0, y: 20 }}
-                className="relative w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden mx-2 sm:mx-4"
+                className="relative w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden"
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby="submission-title"
             >
                 {/* Main Container */}
-                <div className="relative bg-[#0D0D12] border border-white/10 rounded-2xl overflow-hidden flex flex-col max-h-[90vh]">
+                <div className="modal-frame flex flex-col max-h-[90vh]">
                     
                     {/* Header */}
-                    <div className="relative px-4 sm:px-8 py-4 sm:py-6 border-b border-white/10 flex-shrink-0">
+                    <div className="modal-header flex-shrink-0">
                         <div className="relative z-10 flex justify-between items-center gap-3">
                             <div className="flex items-center gap-3 sm:gap-4 min-w-0">
                                 <div 
-                                    className={`w-10 h-10 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center bg-gradient-to-br ${themeColor} text-white flex-shrink-0`}
+                                    className={`modal-icon ${isProject ? 'text-[#9945FF]' : ''}`}
                                 >
                                     {isProject ? <Rocket className="w-5 h-5 sm:w-6 sm:h-6" /> : <Lightbulb className="w-5 h-5 sm:w-6 sm:h-6" />}
                                 </div>
                                 <div className="min-w-0">
-                                    <h2 className="text-base sm:text-xl font-bold text-white truncate">
+                                    <p className="ui-eyebrow mb-2">{isProject ? 'Project' : 'Idea'}</p>
+                                    <h2 id="submission-title" className="modal-title truncate">
                                         {isProject ? 'Launch Project' : 'Share Your Idea'}
                                     </h2>
-                                    <p className="text-xs sm:text-sm text-gray-400 mt-0.5 truncate">
+                                    <p className="modal-description truncate">
                                         {isProject ? 'Showcase your build' : 'Validate your concept'}
                                     </p>
                                 </div>
                             </div>
                             <button 
+                                type="button"
                                 onClick={closeSubmitModal} 
-                                className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-white/5 hover:bg-white/10 flex items-center justify-center transition-all text-gray-400 hover:text-white border border-white/10 hover:border-white/20 flex-shrink-0"
+                                className="modal-close flex-shrink-0"
+                                aria-label="Close submission dialog"
                             >
-                                <X className="w-5 h-5" />
+                                <X className="w-5 h-5" aria-hidden="true" />
                             </button>
                         </div>
                     </div>
@@ -363,20 +366,20 @@ export const SubmissionModal = () => {
                             {/* Common Fields */}
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
                                 <div className="space-y-2 md:col-span-2">
-                                    <label className="text-xs font-bold text-gray-400 uppercase tracking-wider ml-1 flex items-center gap-2">
+                                    <label className="field-label flex items-center gap-2">
                                         {submitType === 'idea' ? 'Idea Name' : 'Project Name'}
                                         <span className="text-red-400">*</span>
                                     </label>
                                     <input 
                                         value={formData.title}
                                         onChange={(e) => setFormData({...formData, title: e.target.value})}
-                                        className="w-full bg-[#141419] border border-white/10 rounded-xl px-4 sm:px-5 py-3 sm:py-4 outline-none focus:border-white/30 text-white placeholder:text-gray-600 transition-all font-medium hover:border-white/20 focus:shadow-[0_0_20px_rgba(255,255,255,0.05)] text-sm sm:text-base"
+                                        className="field-input font-medium"
                                         placeholder={submitType === 'idea' ? "e.g. Decentralized Uber for Solana" : "e.g. SolStream Protocol"}
                                     />
                                 </div>
                                 
                                 <div className="space-y-2 md:col-span-2">
-                                    <label className="text-xs font-bold text-gray-400 uppercase tracking-wider ml-1 flex items-center gap-2">
+                                    <label className="field-label flex items-center gap-2">
                                         Categories
                                         <span className="text-red-400">*</span>
                                         <span className="text-gray-600 font-normal text-[10px]">(Select up to 3)</span>
@@ -392,7 +395,7 @@ export const SubmissionModal = () => {
                                                     toggleCategory(cat);
                                                 }}
                                                 aria-pressed={formData.categories.includes(cat)}
-                                                className={`px-4 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 ${
+                                                className={`min-h-[40px] border px-4 py-2.5 text-sm font-medium transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#FFD700] ${
                                                     formData.categories.includes(cat)
                                                         ? isProject
                                                             ? 'bg-[#9945FF] text-white border border-[#9945FF]'
@@ -411,17 +414,17 @@ export const SubmissionModal = () => {
                         {isProject && (
                             <>
                                 <div className="space-y-2">
-                                    <label className="text-xs font-bold text-gray-400 uppercase tracking-wider ml-1">Elevator Pitch *</label>
+                                    <label className="field-label">Elevator Pitch *</label>
                                     <textarea 
                                         value={formData.description}
                                         onChange={(e) => setFormData({...formData, description: e.target.value})}
-                                        className="w-full bg-[#1A1A1A] border border-white/10 rounded-xl px-5 py-4 outline-none focus:border-white/30 text-white h-32 resize-none placeholder:text-gray-600 leading-relaxed"
+                                        className="field-input field-textarea h-32 leading-relaxed"
                                         placeholder="Describe your project's value proposition in 2-3 sentences..."
                                     />
                                 </div>
                                 
                                 <div className="space-y-2">
-                                    <label className="text-xs font-bold text-gray-400 uppercase tracking-wider ml-1">Project Banner</label>
+                                    <label className="field-label">Project Banner</label>
                                     <div 
                                         onClick={() => !isUploadingImage && fileInputRef.current?.click()}
                                         className={`border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition-all relative h-48 flex flex-col items-center justify-center overflow-hidden group/upload bg-[#1A1A1A] ${
@@ -455,22 +458,22 @@ export const SubmissionModal = () => {
 
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                     <div className="space-y-2">
-                                        <label className="text-xs font-bold text-gray-400 uppercase tracking-wider ml-1">Website / Repo</label>
+                                        <label className="field-label">Website / Repo</label>
                                         <input 
                                             value={formData.website}
                                             onChange={(e) => setFormData({...formData, website: e.target.value})}
-                                            className="w-full bg-[#1A1A1A] border border-white/10 rounded-xl px-5 py-4 outline-none focus:border-white/30 text-white placeholder:text-gray-600"
+                                            className="field-input"
                                             placeholder="https://..."
                                         />
                                     </div>
                                     <div className="space-y-2">
-                                        <label className="text-xs font-bold text-gray-400 uppercase tracking-wider ml-1">Bounty (USDC)</label>
+                                        <label className="field-label">Bounty (USDC)</label>
                                         <div className="relative">
                                             <input 
                                                 type="number"
                                                 value={formData.bounty}
                                                 onChange={(e) => setFormData({...formData, bounty: e.target.value})}
-                                                className="w-full bg-[#1A1A1A] border border-white/10 rounded-xl px-5 py-4 outline-none focus:border-white/30 text-white placeholder:text-gray-600 pr-16"
+                                                className="field-input pr-16"
                                                 placeholder="0.00"
                                             />
                                             <span className="absolute right-5 top-1/2 -translate-y-1/2 text-sm font-bold text-gray-500">USDC</span>
@@ -488,29 +491,29 @@ export const SubmissionModal = () => {
                                     <MarkdownGuide />
                                 </div>
                                 <div className="space-y-2">
-                                    <label className="text-xs font-bold text-gray-400 uppercase tracking-wider ml-1">The Problem *</label>
+                                    <label className="field-label">The Problem *</label>
                                     <textarea 
                                         value={formData.problem}
                                         onChange={(e) => setFormData({...formData, problem: e.target.value})}
-                                        className="w-full bg-[#1A1A1A] border border-white/10 rounded-xl px-5 py-4 outline-none focus:border-white/30 text-white h-24 resize-none placeholder:text-gray-600"
+                                        className="field-input field-textarea h-24"
                                         placeholder="What pain point are you solving?"
                                     />
                                 </div>
                                 <div className="space-y-2">
-                                    <label className="text-xs font-bold text-gray-400 uppercase tracking-wider ml-1">The Solution *</label>
+                                    <label className="field-label">The Solution *</label>
                                     <textarea 
                                         value={formData.solution}
                                         onChange={(e) => setFormData({...formData, solution: e.target.value})}
-                                        className="w-full bg-[#1A1A1A] border border-white/10 rounded-xl px-5 py-4 outline-none focus:border-white/30 text-white h-24 resize-none placeholder:text-gray-600"
+                                        className="field-input field-textarea h-24"
                                         placeholder="How does your idea solve this?"
                                     />
                                 </div>
                                 <div className="space-y-2">
-                                    <label className="text-xs font-bold text-gray-400 uppercase tracking-wider ml-1">Opportunity</label>
+                                    <label className="field-label">Opportunity</label>
                                     <textarea
                                         value={formData.opportunity}
                                         onChange={(e) => setFormData({...formData, opportunity: e.target.value})}
-                                        className="w-full bg-[#1A1A1A] border border-white/10 rounded-xl px-5 py-4 outline-none focus:border-white/30 text-white h-24 resize-none placeholder:text-gray-600"
+                                        className="field-input field-textarea h-24"
                                         placeholder="Market size, timing, potential..."
                                     />
                                 </div>
@@ -521,8 +524,8 @@ export const SubmissionModal = () => {
 
                         {/* Tags */}
                         <div className="space-y-2">
-                            <label className="text-xs font-bold text-gray-400 uppercase tracking-wider ml-1">Tags</label>
-                            <div className="w-full bg-[#1A1A1A] border border-white/10 rounded-xl px-4 py-3 flex flex-wrap gap-2 min-h-[56px] focus-within:border-white/30 transition-colors">
+                            <label className="field-label">Tags</label>
+                            <div className="field-input flex flex-wrap gap-2 min-h-[56px]">
                                 {tags.map(tag => (
                                     <span key={tag} className={`text-xs px-3 py-1.5 rounded-lg flex items-center gap-1.5 font-bold ${isProject ? 'bg-purple-500/20 text-purple-300' : 'bg-yellow-500/20 text-yellow-300'}`}>
                                         #{tag}
@@ -543,15 +546,11 @@ export const SubmissionModal = () => {
                 </div>
 
                 {/* Footer Action */}
-                <div className="p-6 border-t border-white/10 bg-[#0A0A0F] flex-shrink-0">
+                <div className="modal-footer flex-shrink-0">
                     <button
                         type="submit"
                         form="submission-form"
-                        className={`w-full py-4 rounded-xl font-bold text-lg flex items-center justify-center gap-3 transition-all hover:opacity-90 ${
-                            isProject 
-                                ? 'bg-[#9945FF] text-white' 
-                                : 'bg-[#FFD700] text-black'
-                        }`}
+                        className={`w-full font-bold text-lg ${isProject ? 'btn-ghost !border-[#9945FF]/45 !text-white hover:!bg-[#9945FF]/15' : 'btn-primary'}`}
                     >
                         {isProject ? <Rocket className="w-5 h-5" /> : <Lightbulb className="w-5 h-5" />}
                         <span>{isProject ? 'Launch Project' : 'Publish Idea'}</span>

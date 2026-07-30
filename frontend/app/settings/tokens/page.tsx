@@ -223,8 +223,8 @@ If you are unsure about enum values, ask me. Category must be one of: DeFi, NFT,
   };
 
   return (
-    <main className="min-h-screen px-4 pb-20 pt-28 text-gray-300 sm:px-6">
-      <div className="mx-auto max-w-5xl">
+    <main className="min-h-screen page-top pb-20 text-gray-300">
+      <div className="page-shell">
         <header className="border-b border-white/10 pb-8">
           <p className="ui-eyebrow">Developer access</p>
           <h1 className="mt-4 flex items-center gap-3 text-3xl font-semibold tracking-tight text-white sm:text-4xl">
@@ -458,8 +458,8 @@ If you are unsure about enum values, ask me. Category must be one of: DeFi, NFT,
 
       {showGuide ? (
         <div className="fixed inset-0 z-[100] flex items-center justify-center px-4" role="dialog" aria-modal="true" aria-labelledby="pat-guide-title">
-          <button type="button" aria-label="Close PAT guide" className="absolute inset-0 bg-black/75" onClick={() => setShowGuide(false)} />
-          <div className="relative max-h-[85vh] w-full max-w-2xl overflow-auto border border-[#FFD700]/25 bg-[#12100A] p-5 shadow-2xl sm:p-6">
+          <button type="button" aria-label="Close PAT guide" className="absolute inset-0 modal-overlay" onClick={() => setShowGuide(false)} />
+          <div className="modal-frame max-h-[85vh] max-w-2xl overflow-auto p-5 sm:p-6">
             <div className="mb-5 flex items-start justify-between gap-4">
               <div>
                 <h2 id="pat-guide-title" className="text-xl font-semibold text-yellow-50">PAT Guide</h2>
@@ -534,8 +534,8 @@ Content-Type: application/json`}
 
       {showCreateConfirm ? (
         <div className="fixed inset-0 z-[110] flex items-center justify-center px-4" role="dialog" aria-modal="true" aria-labelledby="create-token-title">
-          <button type="button" aria-label="Cancel token creation" className="absolute inset-0 bg-black/75" onClick={() => setShowCreateConfirm(false)} />
-          <div className="relative w-full max-w-lg border border-white/10 bg-[#0D0D12] p-5 shadow-2xl">
+          <button type="button" aria-label="Cancel token creation" className="absolute inset-0 modal-overlay" onClick={() => setShowCreateConfirm(false)} />
+          <div className="modal-frame max-w-lg p-5">
             <ShieldAlert className="h-7 w-7 text-[#FFD700]" />
             <h2 id="create-token-title" className="mt-4 text-lg font-semibold text-white">Before you create a token</h2>
             <p className="mt-2 text-sm leading-6 text-gray-400">
@@ -575,8 +575,8 @@ Content-Type: application/json`}
 
       {revokeCandidate ? (
         <div className="fixed inset-0 z-[120] flex items-center justify-center px-4" role="dialog" aria-modal="true" aria-labelledby="revoke-token-title">
-          <button type="button" aria-label="Cancel token revoke" className="absolute inset-0 bg-black/75" onClick={() => setRevokeCandidate(null)} />
-          <div className="relative w-full max-w-md border border-red-400/25 bg-[#0D0D12] p-5 shadow-2xl">
+          <button type="button" aria-label="Cancel token revoke" className="absolute inset-0 modal-overlay" onClick={() => setRevokeCandidate(null)} />
+          <div className="modal-frame max-w-md p-5">
             <AlertTriangle className="h-7 w-7 text-red-300" />
             <h2 id="revoke-token-title" className="mt-4 text-lg font-semibold text-white">Revoke this token?</h2>
             <p className="mt-2 text-sm leading-6 text-gray-400">

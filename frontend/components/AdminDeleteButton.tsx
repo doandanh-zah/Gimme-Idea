@@ -94,22 +94,26 @@ export default function AdminDeleteButton({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm"
+            className="fixed inset-0 z-50 flex items-center justify-center px-4"
             onClick={() => !isDeleting && setShowConfirm(false)}
           >
+            <div className="absolute inset-0 modal-overlay" aria-hidden="true" />
             <motion.div
               initial={{ scale: 0.95, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.95, opacity: 0 }}
               onClick={(e) => e.stopPropagation()}
-              className="w-full max-w-md mx-4 p-6 bg-[#111] border border-red-500/30 rounded-2xl shadow-xl"
+              className="modal-frame max-w-md p-6"
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="admin-delete-title"
             >
               <div className="flex items-center gap-3 mb-4">
-                <div className="p-2 rounded-full bg-red-500/20">
+                <div className="border border-red-500/25 bg-red-500/15 p-2">
                   <AlertTriangle className="w-6 h-6 text-red-400" />
                 </div>
                 <div>
-                  <h3 className="text-lg font-semibold text-white">Admin Delete</h3>
+                  <h3 id="admin-delete-title" className="text-lg font-semibold text-white">Admin Delete</h3>
                   <p className="text-sm text-gray-400">This action cannot be undone</p>
                 </div>
               </div>
@@ -118,7 +122,7 @@ export default function AdminDeleteButton({
                 <p className="text-gray-300 mb-2">
                   You are about to delete:
                 </p>
-                <div className="p-3 bg-white/5 rounded-lg border border-white/10">
+                <div className="modal-section">
                   <p className="font-medium text-white truncate">{projectTitle}</p>
                 </div>
                 <p className="text-sm text-gray-500 mt-2">
@@ -136,14 +140,14 @@ export default function AdminDeleteButton({
                 <button
                   onClick={() => setShowConfirm(false)}
                   disabled={isDeleting}
-                  className="flex-1 px-4 py-2.5 text-sm font-medium text-gray-300 bg-white/5 border border-white/10 rounded-lg hover:bg-white/10 transition-colors disabled:opacity-50"
+                  className="btn-ghost flex-1 disabled:opacity-50"
                 >
                   Cancel
                 </button>
                 <button
                   onClick={handleDelete}
                   disabled={isDeleting}
-                  className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium text-white bg-red-500 rounded-lg hover:bg-red-600 transition-colors disabled:opacity-50"
+                  className="inline-flex min-h-[44px] flex-1 items-center justify-center gap-2 border border-red-400/30 bg-red-400/10 px-4 text-sm font-medium text-red-100 transition hover:bg-red-400/15 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-300 disabled:opacity-50"
                 >
                   {isDeleting ? (
                     <>

@@ -38,7 +38,6 @@ export const ConnectWalletPopup = () => {
     user,
     setUser,
     signInWithGoogle,
-    isLoading,
   } = useAuth();
   const { disconnect } = useWallet();
   const { wallets, selectAndConnect } = useSelectAndConnect();
@@ -329,6 +328,7 @@ export const ConnectWalletPopup = () => {
     try {
       setIsSigningInGoogle(true);
       await signInWithGoogle();
+      setIsSigningInGoogle(false);
     } catch (error: any) {
       console.error('Google sign in error:', error);
       const message = error?.message || 'Failed to sign in with Google';
@@ -513,11 +513,11 @@ export const ConnectWalletPopup = () => {
                 <button
                   type="button"
                   onClick={handleGoogleSignIn}
-                  disabled={isLoading || isSigningInGoogle}
-                  aria-busy={isLoading || isSigningInGoogle}
+                  disabled={isSigningInGoogle}
+                  aria-busy={isSigningInGoogle}
                   className="btn-ghost w-full"
                 >
-                  {isLoading || isSigningInGoogle ? (
+                  {isSigningInGoogle ? (
                     <LoadingDots className="text-white" />
                   ) : (
                     <svg className="h-4 w-4" viewBox="0 0 24 24" aria-hidden="true">

@@ -140,7 +140,7 @@ export default function Dashboard({ mode }: DashboardProps) {
 
   return (
     <div className="min-h-screen pb-28 relative">
-      <div className="pt-24 sm:pt-28 px-4 sm:px-6 max-w-5xl mx-auto">
+      <div className="page-shell pt-24 sm:pt-28 pb-20">
         {/* Editorial page header */}
         <header className="mb-8 sm:mb-10">
           <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-6 pb-6 border-b border-white/10">

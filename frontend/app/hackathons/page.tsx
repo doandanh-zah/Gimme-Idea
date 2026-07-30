@@ -116,8 +116,8 @@ function formatDate(value?: string) {
 
 function HackathonsSkeleton() {
   return (
-    <main className="min-h-screen px-4 pb-16 pt-28 sm:px-6">
-      <div className="mx-auto max-w-7xl">
+    <main className="min-h-screen page-top">
+      <div className="page-shell">
         <div className="h-4 w-28 animate-pulse bg-white/10" />
         <div className="mt-4 h-10 w-full max-w-lg animate-pulse bg-white/10" />
         <div className="mt-3 h-5 w-full max-w-2xl animate-pulse bg-white/10" />
@@ -385,8 +385,8 @@ export default function HackathonsList() {
   }
 
   return (
-    <main className="min-h-screen px-4 pb-16 pt-28 text-gray-300 sm:px-6">
-      <div className="mx-auto max-w-7xl space-y-8">
+    <main className="min-h-screen page-top text-gray-300">
+      <div className="page-shell space-y-8">
         <header className="border-b border-white/10 pb-6">
           <p className="ui-eyebrow">Build competitions</p>
           <div className="mt-4 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">

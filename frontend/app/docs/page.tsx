@@ -333,8 +333,8 @@ const DocsPage = () => {
 
   return (
     <main className="min-h-screen text-gray-300">
-      <section className="border-b border-white/10 px-4 pb-10 pt-28 sm:px-6">
-        <div className="mx-auto max-w-7xl">
+      <section className="border-b border-white/10 pb-10 pt-28">
+        <div className="page-shell">
           <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
             <div className="max-w-3xl">
               <p className="ui-eyebrow">{t.badge}</p>
@@ -385,7 +385,7 @@ const DocsPage = () => {
       </section>
 
       <div className="sticky top-16 z-40 border-b border-white/10 bg-black/90 backdrop-blur-xl">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6">
+        <div className="page-shell">
           <div className="flex overflow-x-auto gap-0 py-4 scrollbar-hide">
             {sections.map((section) => (
               <button
@@ -402,7 +402,7 @@ const DocsPage = () => {
         </div>
       </div>
 
-      <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6">
+      <div className="page-shell py-10">
         {activeSection === 'overview' && (
           <section className="space-y-10">
             <div className="border border-white/10 bg-white/[0.03] p-5 sm:p-7">

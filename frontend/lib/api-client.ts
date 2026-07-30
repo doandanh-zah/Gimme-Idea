@@ -40,7 +40,12 @@ function clearDedupedApiCache() {
  */
 type ApiRequestOptions = RequestInit & {
   suppressAuthEvent?: boolean;
+  timeoutMs?: number;
 };
+
+const AUTH_RESTORE_TIMEOUT_MS = 5_000;
+const DEFAULT_GET_TIMEOUT_MS = 12_000;
+const DEFAULT_MUTATION_TIMEOUT_MS = 30_000;
 
 function mergeHeaders(headers?: HeadersInit): Record<string, string> {
   const merged: Record<string, string> = {
@@ -73,9 +78,16 @@ async function apiFetch<T>(
   endpoint: string,
   options: ApiRequestOptions = {}
 ): Promise<ApiResponse<T>> {
-  const { suppressAuthEvent = false, ...fetchOptions } = options;
+  const { suppressAuthEvent = false, timeoutMs: configuredTimeoutMs, ...fetchOptions } = options;
   const token = getLegacyAuthToken();
   const method = (fetchOptions.method || "GET").toUpperCase();
+  const timeoutMs =
+    configuredTimeoutMs ??
+    (endpoint === "/auth/me"
+      ? AUTH_RESTORE_TIMEOUT_MS
+      : method === "GET"
+        ? DEFAULT_GET_TIMEOUT_MS
+        : DEFAULT_MUTATION_TIMEOUT_MS);
   const dedupeKey =
     method === "GET" && !fetchOptions.signal && DEDUPED_GET_ENDPOINTS.has(endpoint)
       ? `${endpoint}|${token || "cookie"}`
@@ -104,11 +116,20 @@ async function apiFetch<T>(
   }
 
   const request = (async (): Promise<ApiResponse<T>> => {
+    const timeoutController =
+      !fetchOptions.signal && timeoutMs > 0 && typeof AbortController !== "undefined"
+        ? new AbortController()
+        : null;
+    const timeoutId = timeoutController
+      ? setTimeout(() => timeoutController.abort(), timeoutMs)
+      : null;
+
     try {
       const response = await fetch(`${API_URL}${endpoint}`, {
         ...fetchOptions,
         credentials: fetchOptions.credentials ?? "include",
         headers,
+        signal: fetchOptions.signal ?? timeoutController?.signal,
       });
 
       let data: any = null;
@@ -183,12 +204,20 @@ async function apiFetch<T>(
 
       return data;
     } catch (error: any) {
-      console.error("API fetch error:", error);
+      if (error?.name === "AbortError") {
+        console.warn(`[API] ${endpoint} timed out after ${timeoutMs}ms`);
+      } else {
+        console.error("API fetch error:", error);
+      }
       return {
         success: false,
         error: "Backend server in maintenance",
         errorType: "backend_unavailable",
       };
+    } finally {
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+      }
     }
   })();
 
@@ -273,6 +302,18 @@ export const apiClient = {
     }
     const query = searchParams.toString();
     return apiFetch<any[]>(`/projects${query ? `?${query}` : ""}`);
+  },
+
+  getRecommendedProjects: (params?: { limit?: number; category?: string }) => {
+    const searchParams = new URLSearchParams();
+    if (params?.limit) {
+      searchParams.append("limit", String(params.limit));
+    }
+    if (params?.category) {
+      searchParams.append("category", params.category);
+    }
+    const query = searchParams.toString();
+    return apiFetch<any[]>(`/projects/recommended${query ? `?${query}` : ""}`);
   },
 
   getProject: (id: string, signal?: AbortSignal) =>

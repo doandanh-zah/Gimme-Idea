@@ -73,8 +73,8 @@ export default function AgentAuthPage() {
   };
 
   return (
-    <main className="min-h-screen px-4 pb-20 pt-28 text-gray-300 sm:px-6">
-      <div className="mx-auto max-w-4xl">
+    <main className="min-h-screen page-top text-gray-300">
+      <div className="page-shell">
         <header className="border-b border-white/10 pb-8">
           <p className="ui-eyebrow">Agent auth</p>
           <h1 className="mt-4 flex items-center gap-3 text-3xl font-semibold tracking-tight text-white sm:text-4xl">

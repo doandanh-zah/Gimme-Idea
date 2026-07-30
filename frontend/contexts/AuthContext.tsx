@@ -74,6 +74,23 @@ interface AuthContextType {
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
+const AUTH_INIT_TIMEOUT_MS = 8_000;
+
+function withTimeout<T>(promise: Promise<T>, ms: number, label: string): Promise<T> {
+  let timeoutId: ReturnType<typeof setTimeout> | undefined;
+
+  const timeout = new Promise<T>((_, reject) => {
+    timeoutId = setTimeout(() => {
+      reject(new Error(`${label} timed out after ${ms}ms`));
+    }, ms);
+  });
+
+  return Promise.race([promise, timeout]).finally(() => {
+    if (timeoutId) {
+      clearTimeout(timeoutId);
+    }
+  });
+}
 
 const authUsersAreEquivalent = (a: User | null, b: User | null): boolean => {
   if (a === b) return true;
@@ -385,7 +402,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       logger.debug('[Auth] Initializing auth...');
 
       try {
-        const { data: { session }, error } = await supabase.auth.getSession();
+        const { data: { session }, error } = await withTimeout(
+          supabase.auth.getSession(),
+          AUTH_INIT_TIMEOUT_MS,
+          'Supabase session restore'
+        );
 
         logger.debug('[Auth] Supabase session:', session ? 'found' : 'not found', error?.message);
 

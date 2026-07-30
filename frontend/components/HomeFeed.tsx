@@ -1,430 +1,363 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Lightbulb, Rss, MessageCircle, ExternalLink, ArrowRight } from 'lucide-react';
-import { useRouter } from 'next/navigation';
+import React from 'react';
+import Link from 'next/link';
 import Image from 'next/image';
+import { motion, useReducedMotion } from 'framer-motion';
+import {
+  Activity,
+  ArrowRight,
+  ArrowUpRight,
+  ExternalLink,
+  Lightbulb,
+  MessageCircle,
+  Radio,
+  Rss,
+  ShieldCheck,
+  Trophy,
+  Users,
+  Zap,
+} from 'lucide-react';
+import { useAppStore } from '@/lib/store';
 
-// Constellation items configuration
 const FEATURES = [
   {
     id: 'ideas',
+    index: '01',
     name: 'Ideas',
-    description: 'Discover and share innovative concepts. The heart of our innovation ecosystem.',
+    description: 'Publish raw concepts, collect votes, and pressure-test demand.',
     icon: Lightbulb,
-    color: '#FFD700',
     route: '/idea',
-    external: false,
+    cta: 'Browse ideas',
+    signal: 'Open validation',
   },
   {
     id: 'feeds',
-    name: 'Feeds',
-    description: 'Curated collections of ideas. Follow topics that interest you.',
+    index: '02',
+    name: 'GmiFeeds',
+    description: 'Follow curated collections across markets, hackathons, and builder needs.',
     icon: Rss,
-    color: '#14F195',
     route: '/feeds',
-    external: false,
+    cta: 'Open feeds',
+    signal: 'Topic radar',
   },
   {
     id: 'gtm',
+    index: '03',
     name: 'GTM Assistant',
-    description: 'Validate ideas with guided questions, PMF signals, and action-focused go-to-market prompts.',
+    description: 'Turn early comments into sharper customer, wedge, and launch hypotheses.',
     icon: MessageCircle,
-    color: '#FF6B6B',
     route: '/idea',
-    external: false,
+    cta: 'Start GTM',
+    signal: 'AI critique',
   },
-];
+] as const;
 
 const PARTNERS = [
   {
     id: 'dsuc',
     name: 'DUT Superteam University Club',
     shortName: 'DSUC',
-    description: 'The first Solana blockchain club of Danang University of Science and Technology. Building the next generation of Web3 developers.',
+    description:
+      'The first Solana blockchain club of Danang University of Science and Technology.',
     logo: '/dsuc.png',
-    gradient: 'linear-gradient(135deg, #3366ff 0%, #00ccff 60%, #99ff66 100%)',
     route: 'https://dsuc.fun',
-    external: true,
-    hasFullLogo: true, // Logo has its own background
+    hasFullLogo: true,
   },
   {
     id: 'superteamvn',
     name: 'Superteam Vietnam',
     shortName: 'Superteam VN',
-    description: 'Talent Layer of Solana in Vietnam. Empowering builders across the nation.',
+    description: 'Talent layer of Solana in Vietnam. Empowering builders nationwide.',
     logo: '/superteamvn.png',
-    gradient: 'linear-gradient(135deg, #EF4444 0%, #FACC15 100%)',
     route: 'https://vn.superteam.fun',
-    external: true,
-    hasFullLogo: true, // Logo has its own background
+    hasFullLogo: true,
   },
   {
     id: 'solana',
     name: 'Solana Foundation',
     shortName: 'Solana',
-    description: 'A decentralized blockchain built for scale. Fast, secure, and energy-efficient.',
+    description: 'A decentralized blockchain built for scale, speed, and composability.',
     logo: '/SOLANA.png',
-    gradient: 'linear-gradient(135deg, #9945FF 0%, #14F195 50%, #00D1FF 100%)',
     route: 'https://solana.com',
-    external: true,
     hasFullLogo: false,
   },
-];
+] as const;
+
+const QUICK_LINKS = [
+  { name: 'Leaderboard', route: '/leaderboard', icon: Trophy },
+  { name: 'Agents', route: '/agents', icon: Users },
+  { name: 'Docs', route: '/docs', icon: ArrowUpRight },
+] as const;
+
+const HOME_METRICS = [
+  { label: 'Signal loops', value: '3', detail: 'Idea, feed, GTM', icon: Activity },
+  { label: 'Builder paths', value: '5', detail: 'From draft to mainnet', icon: Zap },
+  { label: 'Network layer', value: 'VN', detail: 'DSUC + Superteam', icon: Radio },
+] as const;
+
+const WORKFLOW = [
+  {
+    title: 'Scan demand',
+    body: 'Move through public ideas, comments, and feed clusters before picking what to build.',
+  },
+  {
+    title: 'Post the wedge',
+    body: 'Share the raw version early enough for builders to challenge the problem and scope.',
+  },
+  {
+    title: 'Collect proof',
+    body: 'Use votes, replies, and mentor feedback as the first proof layer for the next sprint.',
+  },
+] as const;
 
 export default function HomeFeed() {
-  const router = useRouter();
-  const [hoveredItem, setHoveredItem] = useState<string | null>(null);
-  const [isMobile, setIsMobile] = useState(false);
+  const openSubmitModal = useAppStore((s) => s.openSubmitModal);
+  const prefersReducedMotion = useReducedMotion();
 
-  useEffect(() => {
-    const checkMobile = () => setIsMobile(window.innerWidth < 768);
-    checkMobile();
-    window.addEventListener('resize', checkMobile);
-    return () => window.removeEventListener('resize', checkMobile);
-  }, []);
-
-  const handleClick = (route: string, external?: boolean) => {
-    if (external) {
-      window.open(route, '_blank');
-    } else {
-      router.push(route);
-    }
-  };
+  const fade = (delay = 0) =>
+    prefersReducedMotion
+      ? { initial: { opacity: 1 }, animate: { opacity: 1 } }
+      : {
+          initial: { opacity: 0, y: 12 },
+          animate: { opacity: 1, y: 0 },
+          transition: { duration: 0.35, delay, ease: 'easeOut' as const },
+        };
 
   return (
-    <div className="min-h-screen relative overflow-hidden">
-      <div className={`${isMobile ? 'pt-20 px-4 pb-24' : 'pt-24 md:pt-28 px-4 sm:px-6'} max-w-6xl mx-auto`}>
-        {/* Hero Section */}
-        <motion.div 
-          initial={{ opacity: 0, y: 20 }} 
-          animate={{ opacity: 1, y: 0 }} 
-          transition={{ duration: 0.5 }}
-          className="text-center mb-12 md:mb-16"
-        >
-          {/* Logo */}
-          <motion.div 
-            className="inline-flex items-center justify-center mb-6 cursor-pointer"
-            whileHover={{ scale: 1.05 }}
-            onClick={() => handleClick('/idea')}
-          >
-            <div className="relative">
-              <div className="absolute inset-0 bg-[#FFD700]/20 rounded-full blur-2xl scale-150" />
-              <Image 
-                src="/logo-gmi.png" 
-                alt="Gimme Idea" 
-                width={isMobile ? 80 : 100}
-                height={isMobile ? 80 : 100}
-                className="relative object-contain drop-shadow-[0_0_30px_rgba(255,215,0,0.4)]"
-              />
-            </div>
-          </motion.div>
-          
-          <h1 className={`${isMobile ? 'text-2xl' : 'text-4xl md:text-5xl'} font-bold mb-4 tracking-tight`}>
-            <span className="font-quantico">
-              <span className="text-white">Gimme</span>
-              <span className="text-[#FFD700]">Idea</span>
+    <div className="relative min-h-screen">
+      <div className="page-shell page-top pb-28 md:pb-16">
+        <motion.header {...fade(0)} className="mb-12 border-b border-white/10 pb-8">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <span className="ui-eyebrow">Home</span>
+            <span className="font-mono text-[11px] uppercase text-gray-500">
+              Idea / signal / build
             </span>
-          </h1>
-          <p className={`text-gray-400 ${isMobile ? 'text-sm' : 'text-base md:text-lg'} max-w-xl mx-auto`}>
-            Where innovative ideas meet the Solana ecosystem
-          </p>
-        </motion.div>
+          </div>
 
-        {/* Features Grid */}
-        <motion.div 
-          initial={{ opacity: 0, y: 30 }} 
-          animate={{ opacity: 1, y: 0 }} 
-          transition={{ duration: 0.5, delay: 0.2 }}
-          className={`grid ${isMobile ? 'grid-cols-1 gap-4' : 'grid-cols-3 gap-6'} mb-12 md:mb-16`}
-        >
-          {FEATURES.map((feature, index) => {
-            const Icon = feature.icon;
-            const isHovered = hoveredItem === feature.id;
-            
-            return (
-              <motion.div
-                key={feature.id}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.3 + index * 0.1 }}
-                className="group relative cursor-pointer"
-                onMouseEnter={() => setHoveredItem(feature.id)}
-                onMouseLeave={() => setHoveredItem(null)}
-                onClick={() => handleClick(feature.route, feature.external)}
-              >
-                <div 
-                  className="relative p-6 rounded-2xl border border-white/10 bg-white/[0.02] backdrop-blur-sm transition-all duration-300 h-full"
-                  style={{
-                    borderColor: isHovered ? `${feature.color}40` : 'rgba(255,255,255,0.1)',
-                    boxShadow: isHovered ? `0 0 40px ${feature.color}20` : 'none',
-                  }}
+          <div className="mt-8 grid gap-8 lg:grid-cols-[minmax(0,1fr)_360px] lg:items-end">
+            <div className="max-w-3xl">
+              <h1 className="font-display text-[clamp(2.25rem,6vw,4rem)] font-bold leading-[1.02] text-white">
+                Builder workspace for ideas with real signal.
+              </h1>
+              <p className="mt-5 max-w-2xl text-sm leading-7 text-gray-400 sm:text-base">
+                Track fresh concepts, curated feeds, partner networks, and GTM critique from one
+                consistent workspace before committing a sprint.
+              </p>
+              <div className="mt-7 flex flex-wrap gap-2.5">
+                <button
+                  type="button"
+                  onClick={() => openSubmitModal('idea')}
+                  className="btn-primary"
                 >
-                  {/* Glow effect */}
-                  <div 
-                    className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"
-                    style={{ background: `radial-gradient(circle at 50% 0%, ${feature.color}10, transparent 70%)` }}
-                  />
-                  
-                  <div className="relative z-10">
-                    <div 
-                      className="w-12 h-12 rounded-xl flex items-center justify-center mb-4 transition-transform duration-300 group-hover:scale-110"
-                      style={{ backgroundColor: `${feature.color}15` }}
-                    >
-                      <Icon className="w-6 h-6" style={{ color: feature.color }} />
-                    </div>
-                    
-                    <h3 className="text-lg font-bold text-white mb-2">{feature.name}</h3>
-                    <p className="text-sm text-gray-400 leading-relaxed mb-4">{feature.description}</p>
-                    
-                    <div 
-                      className="flex items-center gap-2 text-sm font-medium transition-all duration-300"
-                      style={{ color: feature.color }}
-                    >
-                      <span>Explore</span>
-                      <ArrowRight className="w-4 h-4 transition-transform duration-300 group-hover:translate-x-1" />
-                    </div>
-                  </div>
-                </div>
-              </motion.div>
-            );
-          })}
-        </motion.div>
+                  Submit idea
+                  <ArrowRight className="h-4 w-4" aria-hidden="true" />
+                </button>
+                <Link href="/idea" className="btn-ghost">
+                  Explore feed
+                </Link>
+              </div>
+            </div>
 
-        {/* Partners Section */}
-        <motion.div 
-          initial={{ opacity: 0, y: 30 }} 
-          animate={{ opacity: 1, y: 0 }} 
-          transition={{ duration: 0.5, delay: 0.4 }}
-        >
-          <h2 className={`${isMobile ? 'text-lg' : 'text-xl'} font-semibold text-white/80 mb-6 text-center`}>
-            Powered by Our Partners
-          </h2>
-          
-          <div className={`grid ${isMobile ? 'grid-cols-1 gap-3' : 'grid-cols-3 gap-6'}`}>
-            {PARTNERS.map((partner, index) => {
-              const isHovered = hoveredItem === partner.id;
-              
+            <div className="border border-white/10 bg-[#0a0a0a]">
+              <div className="flex items-center justify-between border-b border-white/10 px-4 py-3">
+                <span className="font-mono text-[10px] uppercase text-gray-500">
+                  Today signal
+                </span>
+                <span className="font-mono text-[10px] text-[#14F195]">Live</span>
+              </div>
+              <div className="divide-y divide-white/10">
+                {HOME_METRICS.map((metric) => {
+                  const Icon = metric.icon;
+                  return (
+                    <div
+                      key={metric.label}
+                      className="grid min-h-[72px] grid-cols-[44px_1fr_auto] items-center gap-3 px-4 py-3"
+                    >
+                      <span className="flex h-10 w-10 items-center justify-center border border-white/10 bg-white/[0.03] text-[#FFD700]">
+                        <Icon className="h-4 w-4" aria-hidden="true" />
+                      </span>
+                      <div className="min-w-0">
+                        <div className="font-mono text-[10px] uppercase text-gray-500">
+                          {metric.label}
+                        </div>
+                        <div className="mt-1 truncate text-sm text-gray-300">{metric.detail}</div>
+                      </div>
+                      <div className="font-mono text-xl font-bold tabular-nums text-white">
+                        {metric.value}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        </motion.header>
+
+        <motion.section {...fade(0.08)} className="mb-14 sm:mb-16">
+          <div className="mb-5 flex items-end justify-between gap-4">
+            <div>
+              <div className="ui-eyebrow mb-2">Workspace</div>
+              <h2 className="font-display text-xl font-bold text-white sm:text-2xl">
+                Main paths
+              </h2>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
+            {FEATURES.map((feature, index) => {
+              const Icon = feature.icon;
               return (
-                <motion.div
-                  key={partner.id}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.5 + index * 0.1 }}
-                  className="group relative"
-                  onMouseEnter={() => setHoveredItem(partner.id)}
-                  onMouseLeave={() => setHoveredItem(null)}
-                >
-                  {/* Horizontal Card - Logo + Name */}
-                  <div 
-                    className="relative px-4 py-3 rounded-xl border border-white/10 bg-white/[0.02] backdrop-blur-sm transition-all duration-300 cursor-pointer flex items-center gap-3"
-                    style={{
-                      borderColor: isHovered ? 'rgba(255,255,255,0.3)' : 'rgba(255,255,255,0.1)',
-                    }}
-                    onClick={() => handleClick(partner.route, partner.external)}
+                <motion.div key={feature.id} {...fade(0.12 + index * 0.04)}>
+                  <Link
+                    href={feature.route}
+                    className="group block min-h-[224px] border border-white/10 bg-[#0a0a0a] p-5 transition-colors duration-150 hover:border-[#FFD700]/35 hover:bg-[#FFD700]/[0.02] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#FFD700]"
                   >
-                    {/* Logo */}
-                    <div 
-                      className={`w-10 h-10 sm:w-12 sm:h-12 rounded-lg flex items-center justify-center overflow-hidden transition-all duration-300 group-hover:scale-110 flex-shrink-0 ${partner.hasFullLogo ? '' : ''}`}
-                      style={{ background: partner.hasFullLogo ? 'transparent' : partner.gradient }}
-                    >
-                      <Image 
-                        src={partner.logo} 
-                        alt={partner.name} 
-                        width={partner.hasFullLogo ? 48 : 28}
-                        height={partner.hasFullLogo ? 48 : 28}
-                        className={partner.hasFullLogo ? "w-full h-full object-cover rounded-lg" : "object-contain"}
-                      />
+                    <div className="mb-5 flex items-center justify-between">
+                      <span className="flex h-10 w-10 items-center justify-center border border-white/10 bg-[#111] text-[#FFD700] transition-colors duration-150 group-hover:border-[#FFD700]/40">
+                        <Icon className="h-5 w-5" aria-hidden="true" />
+                      </span>
+                      <span className="font-mono text-[10px] uppercase text-gray-600">
+                        {feature.index}
+                      </span>
                     </div>
-                    
-                    {/* Name */}
-                    <h3 className="font-bold text-white text-xs sm:text-sm">{partner.shortName}</h3>
-                  </div>
-
-                  {/* Hover Popup with Strong Glitch Effect */}
-                  <AnimatePresence>
-                    {isHovered && (
-                      <>
-                        <motion.div
-                          initial={{ opacity: 0, y: 10, scale: 0.95 }}
-                          animate={{ opacity: 1, y: 0, scale: 1 }}
-                          exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                          transition={{ duration: 0.2 }}
-                          className={
-                            isMobile 
-                              ? "absolute z-50 left-0 right-0 bottom-full mb-2 w-full" 
-                              : "absolute z-50 left-1/2 -translate-x-1/2 bottom-full mb-3 w-80 pointer-events-none"
-                          }
-                        >
-                        <motion.div 
-                          className="relative p-5 rounded-xl border border-[#FFD700]/30 bg-[#0a0a10]/98 backdrop-blur-xl shadow-2xl overflow-hidden"
-                          animate={{
-                            boxShadow: [
-                              '0 0 20px rgba(255, 215, 0, 0.2), 0 0 40px rgba(153, 69, 255, 0.1)',
-                              '0 0 30px rgba(255, 215, 0, 0.3), 0 0 50px rgba(153, 69, 255, 0.2)',
-                              '0 0 20px rgba(255, 215, 0, 0.2), 0 0 40px rgba(153, 69, 255, 0.1)',
-                            ],
-                          }}
-                          transition={{ duration: 2, repeat: Infinity }}
-                        >
-                          {/* Animated scanline */}
-                          <div className="absolute inset-0 overflow-hidden pointer-events-none">
-                            <div className="absolute inset-0 bg-[repeating-linear-gradient(0deg,transparent,transparent_2px,rgba(255,215,0,0.02)_2px,rgba(255,215,0,0.02)_4px)]" />
-                            <motion.div 
-                              className="absolute left-0 right-0 h-20 bg-gradient-to-b from-[#FFD700]/10 to-transparent"
-                              animate={{ top: ['-80px', '100%'] }}
-                              transition={{ duration: 3, repeat: Infinity, ease: 'linear' }}
-                            />
-                          </div>
-                          
-                          {/* Glitch border effects - Yellow & Purple */}
-                          <div className="absolute inset-0 rounded-xl">
-                            <motion.div 
-                              className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-[#FFD700] to-transparent"
-                              animate={{ opacity: [0.5, 1, 0.5], x: [-5, 5, -5] }}
-                              transition={{ duration: 0.5, repeat: Infinity }}
-                            />
-                            <motion.div 
-                              className="absolute bottom-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-[#9945FF] to-transparent"
-                              animate={{ opacity: [0.5, 1, 0.5], x: [5, -5, 5] }}
-                              transition={{ duration: 0.5, repeat: Infinity, delay: 0.1 }}
-                            />
-                            <div className="absolute top-0 bottom-0 left-0 w-[2px] bg-gradient-to-b from-[#FFD700] via-transparent to-[#9945FF] opacity-50" />
-                            <div className="absolute top-0 bottom-0 right-0 w-[2px] bg-gradient-to-b from-[#9945FF] via-transparent to-[#FFD700] opacity-50" />
-                          </div>
-                          
-                          {/* Content */}
-                          <div className="relative z-10">
-                            {/* Header with logo */}
-                            <div className="flex items-center gap-3 mb-4">
-                              <motion.div 
-                                className={`w-12 h-12 rounded-lg flex items-center justify-center overflow-hidden flex-shrink-0 ring-2 ring-[#FFD700]/30`}
-                                style={{ background: partner.hasFullLogo ? 'transparent' : partner.gradient }}
-                                animate={{
-                                  boxShadow: [
-                                    '0 0 10px rgba(255, 215, 0, 0.3)',
-                                    '0 0 20px rgba(255, 215, 0, 0.5)',
-                                    '0 0 10px rgba(255, 215, 0, 0.3)',
-                                  ],
-                                }}
-                                transition={{ duration: 1.5, repeat: Infinity }}
-                              >
-                                <Image 
-                                  src={partner.logo} 
-                                  alt={partner.name} 
-                                  width={partner.hasFullLogo ? 48 : 28}
-                                  height={partner.hasFullLogo ? 48 : 28}
-                                  className={partner.hasFullLogo ? "w-full h-full object-cover rounded-lg" : "object-contain"}
-                                />
-                              </motion.div>
-                              <div className="flex-1 min-w-0">
-                                {/* Glitch Title with Framer Motion */}
-                                <motion.h4 
-                                  className="font-bold text-base text-[#FFD700]"
-                                  animate={{
-                                    textShadow: [
-                                      '0 0 10px rgba(255, 215, 0, 0.8)',
-                                      '-2px 0 rgba(153, 69, 255, 0.8), 2px 0 rgba(255, 215, 0, 0.8)',
-                                      '2px 0 rgba(153, 69, 255, 0.8), -2px 0 rgba(255, 215, 0, 0.8)',
-                                      '0 0 10px rgba(255, 215, 0, 0.8)',
-                                    ],
-                                  }}
-                                  transition={{ duration: 0.3, repeat: Infinity }}
-                                >
-                                  {partner.name}
-                                </motion.h4>
-                                <div className="flex items-center gap-1.5 text-[11px] text-[#FFD700]/70 mt-0.5">
-                                  <ExternalLink className="w-3 h-3" />
-                                  <motion.span
-                                    animate={{ opacity: [0.7, 1, 0.7] }}
-                                    transition={{ duration: 1, repeat: Infinity }}
-                                  >
-                                    {partner.route.replace('https://', '')}
-                                  </motion.span>
-                                </div>
-                              </div>
-                            </div>
-                            
-                            {/* Description */}
-                            <motion.p 
-                              className="text-sm text-gray-300 leading-relaxed mb-4"
-                              animate={{
-                                x: [0, -1, 1, 0],
-                                opacity: [1, 0.95, 1],
-                              }}
-                              transition={{ duration: 3, repeat: Infinity }}
-                            >
-                              {partner.description}
-                            </motion.p>
-                            
-                            {/* Terminal style footer */}
-                            <div className="pt-3 border-t border-[#FFD700]/20">
-                              <div className="flex items-center gap-2 text-xs">
-                                <motion.span 
-                                  className="text-[#FFD700] font-mono font-bold"
-                                  animate={{ opacity: [1, 0.3, 1] }}
-                                  transition={{ duration: 0.8, repeat: Infinity }}
-                                >
-                                  {'>'}
-                                </motion.span>
-                                <motion.span 
-                                  className="text-[#FFD700]/70 font-mono tracking-wider"
-                                  animate={{ 
-                                    opacity: [0.7, 1, 0.7],
-                                    textShadow: [
-                                      'none',
-                                      '0 0 5px rgba(255, 215, 0, 0.5)',
-                                      'none',
-                                    ],
-                                  }}
-                                  transition={{ duration: 1.5, repeat: Infinity }}
-                                >
-                                  CLICK_TO_CONNECT
-                                </motion.span>
-                                <motion.span 
-                                  className="text-[#9945FF] font-mono ml-auto"
-                                  animate={{ opacity: [1, 0, 1] }}
-                                  transition={{ duration: 1, repeat: Infinity }}
-                                >
-                                  █
-                                </motion.span>
-                              </div>
-                            </div>
-                          </div>
-                          
-                          {/* Arrow pointing down - hide on mobile */}
-                          {!isMobile && (
-                            <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-4 h-4 bg-[#0a0a10] border-r-2 border-b-2 border-[#FFD700]/30 transform rotate-45" />
-                          )}
-                        </motion.div>
-                      </motion.div>
-                      </>
-                    )}
-                  </AnimatePresence>
+                    <div className="mb-2 font-mono text-[11px] font-semibold uppercase text-white">
+                      {feature.name}
+                    </div>
+                    <p className="min-h-[72px] text-sm leading-6 text-gray-400">
+                      {feature.description}
+                    </p>
+                    <div className="mt-5 flex items-center justify-between gap-3 border-t border-white/10 pt-4">
+                      <span className="font-mono text-[10px] uppercase text-gray-500">
+                        {feature.signal}
+                      </span>
+                      <span className="inline-flex items-center gap-1.5 font-mono text-[11px] uppercase text-[#FFD700]">
+                        {feature.cta}
+                        <ArrowRight className="h-3.5 w-3.5 transition-transform duration-150 group-hover:translate-x-1" />
+                      </span>
+                    </div>
+                  </Link>
                 </motion.div>
               );
             })}
           </div>
-        </motion.div>
+        </motion.section>
 
-        {/* Bottom CTA */}
-        <motion.div 
-          initial={{ opacity: 0 }} 
-          animate={{ opacity: 1 }} 
-          transition={{ duration: 0.5, delay: 0.7 }}
-          className="text-center mt-12 md:mt-16 pb-8"
+        <motion.section {...fade(0.16)} className="mb-14 sm:mb-16">
+          <div className="grid border border-white/10 bg-[#0a0a0a] lg:grid-cols-[300px_1fr]">
+            <div className="border-b border-white/10 p-5 lg:border-b-0 lg:border-r">
+              <div className="ui-eyebrow mb-3">Operating loop</div>
+              <h2 className="font-display text-2xl font-bold text-white">Validate before build.</h2>
+              <p className="mt-3 text-sm leading-6 text-gray-500">
+                A simple loop for deciding what deserves more time, money, and team attention.
+              </p>
+            </div>
+            <div className="grid divide-y divide-white/10 md:grid-cols-3 md:divide-x md:divide-y-0">
+              {WORKFLOW.map((item, index) => (
+                <div key={item.title} className="p-5">
+                  <div className="mb-4 font-mono text-xl font-bold text-[#FFD700]">
+                    0{index + 1}
+                  </div>
+                  <h3 className="mb-2 font-mono text-[11px] font-semibold uppercase text-white">
+                    {item.title}
+                  </h3>
+                  <p className="text-sm leading-6 text-gray-500">{item.body}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </motion.section>
+
+        <motion.section {...fade(0.22)} className="mb-14 sm:mb-16">
+          <div className="grid grid-cols-1 border border-white/10 bg-[#0a0a0a] sm:grid-cols-3 sm:divide-x sm:divide-white/10">
+            {QUICK_LINKS.map((link) => {
+              const Icon = link.icon;
+              return (
+                <Link
+                  key={link.name}
+                  href={link.route}
+                  className="group flex min-h-[56px] items-center justify-between gap-3 border-b border-white/10 px-4 py-4 transition-colors duration-150 last:border-b-0 hover:bg-white/[0.03] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-[#FFD700] sm:border-b-0"
+                >
+                  <span className="flex items-center gap-3">
+                    <Icon className="h-4 w-4 text-gray-500 transition-colors duration-150 group-hover:text-[#FFD700]" />
+                    <span className="font-mono text-[11px] uppercase text-gray-300 group-hover:text-white">
+                      {link.name}
+                    </span>
+                  </span>
+                  <ArrowUpRight className="h-3.5 w-3.5 text-gray-600 transition-colors duration-150 group-hover:text-[#FFD700]" />
+                </Link>
+              );
+            })}
+          </div>
+        </motion.section>
+
+        <motion.section {...fade(0.28)} className="mb-14 sm:mb-16">
+          <div className="mb-5">
+            <div className="ui-eyebrow mb-2">Network</div>
+            <h2 className="font-display text-xl font-bold text-white sm:text-2xl">Partners</h2>
+          </div>
+
+          <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
+            {PARTNERS.map((partner) => (
+              <a
+                key={partner.id}
+                href={partner.route}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="group block min-h-[164px] border border-white/10 bg-[#0a0a0a] p-4 transition-colors duration-150 hover:border-white/25 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#FFD700]"
+              >
+                <div className="mb-3 flex items-center gap-3">
+                  <div
+                    className={`flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden border border-white/10 ${
+                      partner.hasFullLogo ? 'bg-transparent' : 'bg-[#111]'
+                    }`}
+                  >
+                    <Image
+                      src={partner.logo}
+                      alt={partner.name}
+                      width={partner.hasFullLogo ? 44 : 28}
+                      height={partner.hasFullLogo ? 44 : 28}
+                      className={partner.hasFullLogo ? 'h-full w-full object-cover' : 'object-contain'}
+                    />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <div className="font-mono text-[11px] font-semibold uppercase text-white">
+                      {partner.shortName}
+                    </div>
+                    <div className="mt-0.5 flex items-center gap-1 font-mono text-[10px] text-gray-500">
+                      <ExternalLink className="h-3 w-3" />
+                      <span className="truncate">{partner.route.replace(/^https?:\/\//, '')}</span>
+                    </div>
+                  </div>
+                  <ArrowUpRight className="h-4 w-4 shrink-0 text-gray-600 transition-colors duration-150 group-hover:text-[#FFD700]" />
+                </div>
+                <p className="text-xs leading-6 text-gray-500">{partner.description}</p>
+              </a>
+            ))}
+          </div>
+        </motion.section>
+
+        <motion.section
+          {...fade(0.34)}
+          className="border border-white/10 border-l-2 border-l-[#FFD700] bg-[#0a0a0a] px-5 py-8 sm:px-8"
         >
-          <motion.button
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            onClick={() => handleClick('/idea')}
-            className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-gradient-to-r from-[#FFD700] to-[#FFA500] text-black font-semibold text-sm transition-all duration-300 hover:shadow-[0_0_30px_rgba(255,215,0,0.4)]"
-          >
-            Start Exploring
-            <ArrowRight className="w-4 h-4" />
-          </motion.button>
-        </motion.div>
+          <div className="ui-eyebrow mb-3">Next step</div>
+          <h2 className="mb-3 max-w-xl font-display text-2xl font-bold text-white sm:text-3xl">
+            Put one idea under pressure today.
+          </h2>
+          <p className="mb-6 max-w-lg text-sm leading-6 text-gray-400">
+            Drop the raw version, collect objections, and decide what should move into build mode.
+          </p>
+          <div className="flex flex-wrap gap-2.5">
+            <button type="button" onClick={() => openSubmitModal('idea')} className="btn-primary">
+              Submit idea
+            </button>
+            <Link href="/idea" className="btn-ghost">
+              Browse ideas
+              <ArrowRight className="h-4 w-4" aria-hidden="true" />
+            </Link>
+          </div>
+        </motion.section>
       </div>
     </div>
   );

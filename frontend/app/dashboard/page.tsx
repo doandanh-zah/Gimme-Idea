@@ -97,7 +97,7 @@ export default function Dashboard() {
   return (
     <main className="relative min-h-screen pb-20 text-gray-300">
 
-      <div className="mx-auto max-w-7xl px-4 pt-28 sm:px-6 lg:px-8">
+      <div className="page-shell page-top">
         <header className="mb-10 border-b border-white/10 pb-8">
           <div className="flex flex-col gap-5 md:flex-row md:items-end md:justify-between">
             <div className="max-w-2xl">

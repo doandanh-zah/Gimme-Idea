@@ -252,20 +252,35 @@ export function ProposalSendModal({
   return (
     <AnimatePresence>
       <div className="fixed inset-0 z-[120] flex items-center justify-center px-4">
-        <div className="absolute inset-0 bg-black/80" onClick={submitting ? undefined : onClose} />
+        <button
+          type="button"
+          aria-label="Close proposal dialog"
+          tabIndex={-1}
+          className="absolute inset-0 modal-overlay"
+          onClick={submitting ? undefined : onClose}
+        />
 
         <motion.div
           initial={{ opacity: 0, scale: 0.96 }}
           animate={{ opacity: 1, scale: 1 }}
           exit={{ opacity: 0, scale: 0.96 }}
-          className="relative w-full max-w-xl rounded-2xl border border-white/10 bg-[#0F0F0F] p-5"
+          className="modal-frame max-w-xl p-5"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="send-proposal-title"
         >
-          <button className="absolute top-3 right-3 text-gray-400" onClick={onClose}>
-            <X className="w-5 h-5" />
+          <button
+            type="button"
+            className="modal-close"
+            onClick={onClose}
+            aria-label="Close proposal dialog"
+          >
+            <X className="w-5 h-5" aria-hidden="true" />
           </button>
 
-          <h3 className="text-lg font-bold text-white">Send Proposal</h3>
-          <p className="text-xs text-gray-400 mt-1">
+          <p className="ui-eyebrow mb-3">Governance</p>
+          <h3 id="send-proposal-title" className="modal-title">Send Proposal</h3>
+          <p className="modal-description">
             Submit a real on-chain proposal (wallet signature required), then store mapping in DB.
           </p>
           <div className="mt-2 text-[11px] text-gray-500 space-y-1">
@@ -281,39 +296,55 @@ export function ProposalSendModal({
             href="https://www.metadao.fi/"
             target="_blank"
             rel="noopener noreferrer"
-            className="mt-2 inline-flex items-center gap-1 text-xs text-blue-300 hover:underline"
+            className="mt-2 inline-flex min-h-[40px] items-center gap-1 text-xs text-[#FFD700] hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#FFD700]"
           >
             Open MetaDAO official app <ExternalLink className="w-3 h-3" />
           </a>
 
           <div className="mt-4 space-y-3">
-            <input
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              placeholder="Proposal title"
-              className="w-full rounded-xl bg-white/5 border border-white/10 px-3 py-2 text-sm text-white"
-            />
-            <textarea
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              rows={4}
-              placeholder="Rationale, recipient, amount, milestones, execution note"
-              className="w-full rounded-xl bg-white/5 border border-white/10 px-3 py-2 text-sm text-white"
-            />
+            <div>
+              <label className="field-label" htmlFor="proposal-title">Proposal title</label>
+              <input
+                id="proposal-title"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                placeholder="Proposal title"
+                className="field-input"
+              />
+            </div>
+            <div>
+              <label className="field-label" htmlFor="proposal-description">Description</label>
+              <textarea
+                id="proposal-description"
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                rows={4}
+                placeholder="Rationale, recipient, amount, milestones, execution note"
+                className="field-input field-textarea"
+              />
+            </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-              <input
-                value={recipientWallet}
-                onChange={(e) => setRecipientWallet(e.target.value)}
-                placeholder="Recipient wallet (required)"
-                className="w-full rounded-xl bg-white/5 border border-white/10 px-3 py-2 text-sm text-white"
-              />
-              <input
-                value={amountUsdc}
-                onChange={(e) => setAmountUsdc(e.target.value)}
-                placeholder="Amount USDC (required)"
-                inputMode="decimal"
-                className="w-full rounded-xl bg-white/5 border border-white/10 px-3 py-2 text-sm text-white"
-              />
+              <div>
+                <label className="field-label" htmlFor="proposal-recipient">Recipient wallet</label>
+                <input
+                  id="proposal-recipient"
+                  value={recipientWallet}
+                  onChange={(e) => setRecipientWallet(e.target.value)}
+                  placeholder="Recipient wallet (required)"
+                  className="field-input"
+                />
+              </div>
+              <div>
+                <label className="field-label" htmlFor="proposal-amount">Amount USDC</label>
+                <input
+                  id="proposal-amount"
+                  value={amountUsdc}
+                  onChange={(e) => setAmountUsdc(e.target.value)}
+                  placeholder="Amount USDC (required)"
+                  inputMode="decimal"
+                  className="field-input"
+                />
+              </div>
             </div>
           </div>
 
@@ -324,9 +355,10 @@ export function ProposalSendModal({
           ) : null}
 
           <button
+            type="button"
             onClick={submit}
             disabled={submitting}
-            className="mt-4 w-full rounded-xl bg-[#FFD700] text-black font-bold py-2.5 disabled:opacity-60 inline-flex items-center justify-center gap-2"
+            className="btn-primary mt-4 w-full disabled:opacity-60"
           >
             <Send className="w-4 h-4" /> {submitting ? 'Sending...' : 'Send Proposal'}
           </button>

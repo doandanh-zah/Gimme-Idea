@@ -574,14 +574,17 @@ export const AIChatModal: React.FC<AIChatModalProps> = ({ isOpen, onClose }) => 
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
         onClick={onClose}
-        className="absolute inset-0 bg-black/85 backdrop-blur-sm"
+        className="absolute inset-0 modal-overlay"
       />
 
       <motion.div
         initial={{ scale: 0.95, opacity: 0, y: 20 }}
         animate={{ scale: 1, opacity: 1, y: 0 }}
         exit={{ scale: 0.95, opacity: 0, y: 20 }}
-        className="relative w-full max-w-5xl h-[90vh] sm:h-[85vh] bg-[#0a0a0f] border border-white/10 rounded-2xl shadow-2xl overflow-hidden flex flex-col sm:flex-row mx-2"
+        className="modal-frame max-w-5xl h-[90vh] sm:h-[85vh] flex flex-col sm:flex-row"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="ai-chat-title"
       >
         {/* Sidebar - History (slide from left on mobile, fixed width on desktop) */}
         <AnimatePresence>
@@ -605,14 +608,17 @@ export const AIChatModal: React.FC<AIChatModalProps> = ({ isOpen, onClose }) => 
               <div className="p-4 border-b border-white/10 flex items-center justify-between">
                 <button
                   onClick={createNewSession}
-                  className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-[#FFD700] text-black rounded-xl font-bold hover:bg-[#FFD700]/90 transition-colors text-sm"
+                  type="button"
+                  className="btn-primary flex-1 text-sm"
                 >
                   <Plus className="w-4 h-4" />
                   New Chat
                 </button>
                 <button
                   onClick={() => setShowHistory(false)}
-                  className="sm:hidden ml-2 p-2 text-gray-400 hover:text-white"
+                  type="button"
+                  className="sm:hidden ml-2 flex min-h-[40px] min-w-[40px] items-center justify-center text-gray-400 hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#FFD700]"
+                  aria-label="Close chat history"
                 >
                   <X className="w-5 h-5" />
                 </button>
@@ -622,25 +628,32 @@ export const AIChatModal: React.FC<AIChatModalProps> = ({ isOpen, onClose }) => 
                 {sessions.map(session => (
                   <div
                     key={session.id}
-                    onClick={() => {
-                      setActiveSessionId(session.id);
-                      setShowHistory(false);
-                    }}
-                    className={`group flex items-center gap-2 px-3 py-2.5 rounded-lg cursor-pointer transition-colors ${
+                    className={`group flex w-full min-h-[40px] items-center gap-2 px-3 py-2.5 text-left transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#FFD700] ${
                       session.id === activeSessionId
                         ? 'bg-[#FFD700]/20 text-white'
                         : 'text-gray-400 hover:bg-white/5 hover:text-white'
                     }`}
                   >
-                    <MessageCircle className="w-4 h-4 flex-shrink-0" />
-                    <span className="flex-1 truncate text-sm">{session.title}</span>
-                    {session.isLocked && <Lock className="w-3 h-3 text-[#FFD700]" />}
                     <button
+                      type="button"
+                      onClick={() => {
+                        setActiveSessionId(session.id);
+                        setShowHistory(false);
+                      }}
+                      className="flex min-h-[32px] min-w-0 flex-1 items-center gap-2 text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#FFD700]"
+                    >
+                      <MessageCircle className="w-4 h-4 flex-shrink-0" />
+                      <span className="flex-1 truncate text-sm">{session.title}</span>
+                      {session.isLocked && <Lock className="w-3 h-3 text-[#FFD700]" />}
+                    </button>
+                    <button
+                      type="button"
                       onClick={(e) => {
                         e.stopPropagation();
                         deleteSession(session.id);
                       }}
-                      className="opacity-0 group-hover:opacity-100 p-1 hover:bg-red-500/20 rounded transition-all"
+                      className="flex min-h-[32px] min-w-[32px] items-center justify-center opacity-0 transition-all hover:bg-red-500/20 group-hover:opacity-100 focus-visible:opacity-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-300"
+                      aria-label={`Delete ${session.title}`}
                     >
                       <Trash2 className="w-3 h-3 text-red-400" />
                     </button>
@@ -659,7 +672,9 @@ export const AIChatModal: React.FC<AIChatModalProps> = ({ isOpen, onClose }) => 
             <div className="flex items-center gap-2 sm:gap-3">
               <button
                 onClick={() => setShowHistory(!showHistory)}
-                className={`p-2 rounded-lg transition-colors ${showHistory ? 'bg-[#FFD700]/20 text-[#FFD700]' : 'bg-white/5 text-gray-400 hover:text-white'}`}
+                type="button"
+                className={`flex min-h-[40px] min-w-[40px] items-center justify-center border transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#FFD700] ${showHistory ? 'border-[#FFD700]/40 bg-[#FFD700]/10 text-[#FFD700]' : 'border-white/10 bg-white/5 text-gray-400 hover:text-white'}`}
+                aria-label="Toggle chat history"
               >
                 <History className="w-4 h-4 sm:w-5 sm:h-5" />
               </button>
@@ -668,14 +683,16 @@ export const AIChatModal: React.FC<AIChatModalProps> = ({ isOpen, onClose }) => 
                   <img src="/logo-gmi.png" alt="Gimme Idea" className="w-full h-full object-cover" />
                 </div>
                 <div>
-                  <h2 className="text-sm sm:text-lg font-bold text-white">Gimme Sensei</h2>
+                  <h2 id="ai-chat-title" className="text-sm sm:text-lg font-bold text-white">Gimme Sensei</h2>
                   <p className="text-[10px] sm:text-xs text-gray-500">AI Idea Finder</p>
                 </div>
               </div>
             </div>
             <button
+              type="button"
               onClick={onClose}
-              className="p-2 rounded-lg bg-white/5 text-gray-400 hover:text-white hover:bg-white/10 transition-colors"
+              className="flex min-h-[40px] min-w-[40px] items-center justify-center border border-white/10 bg-white/5 text-gray-400 transition-colors hover:bg-white/10 hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#FFD700]"
+              aria-label="Close AI chat"
             >
               <X className="w-5 h-5" />
             </button>
@@ -751,7 +768,8 @@ export const AIChatModal: React.FC<AIChatModalProps> = ({ isOpen, onClose }) => 
                 </div>
                 <button
                   onClick={handleUnlockClick}
-                  className="w-full sm:w-auto px-4 py-2 bg-[#FFD700] text-black rounded-lg font-bold text-xs sm:text-sm hover:bg-[#FFD700]/90 transition-colors"
+                  type="button"
+                  className="btn-primary min-h-[40px] w-full px-4 py-2 text-xs sm:w-auto sm:text-sm"
                 >
                   Unlock Chat
                 </button>
@@ -769,13 +787,15 @@ export const AIChatModal: React.FC<AIChatModalProps> = ({ isOpen, onClose }) => 
                   onChange={(e) => setInput(e.target.value)}
                   onKeyPress={(e) => e.key === 'Enter' && !isLoading && handleSend()}
                   placeholder="Type your message..."
-                  className="flex-1 bg-[#1a1a22] border border-white/10 rounded-xl px-3 sm:px-4 py-2.5 sm:py-3 text-white text-xs sm:text-sm placeholder:text-gray-600 outline-none focus:border-[#FFD700]/30 transition-colors"
+                  className="field-input flex-1 text-xs sm:text-sm"
                   disabled={isLoading}
                 />
                 <button
+                  type="button"
                   onClick={handleSend}
                   disabled={isLoading || !input.trim()}
-                  className="px-3 sm:px-5 py-2.5 sm:py-3 bg-[#FFD700] text-black rounded-xl font-bold hover:bg-[#FFD700]/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                  className="btn-primary px-3 py-2.5 disabled:cursor-not-allowed disabled:opacity-50 sm:px-5 sm:py-3"
+                  aria-label="Send message"
                 >
                   <Send className="w-4 h-4" />
                 </button>
@@ -794,20 +814,30 @@ export const AIChatModal: React.FC<AIChatModalProps> = ({ isOpen, onClose }) => 
             exit={{ opacity: 0 }}
             className="fixed inset-0 z-[110] flex items-center justify-center px-4"
           >
-            <div className="absolute inset-0 bg-black/90" onClick={() => setShowDonateModal(false)} />
+            <button
+              type="button"
+              aria-label="Close unlock chat dialog"
+              tabIndex={-1}
+              className="absolute inset-0 modal-overlay"
+              onClick={() => setShowDonateModal(false)}
+            />
             <motion.div
               initial={{ scale: 0.95, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.95, opacity: 0 }}
-              className="relative bg-[#12131a] border border-[#FFD700]/30 rounded-2xl p-6 max-w-md w-full"
+              className="modal-frame max-w-md p-6"
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="unlock-chat-title"
             >
-              <h3 className="text-lg sm:text-xl font-bold text-white mb-2">Unlock Chat</h3>
-              <p className="text-gray-400 text-xs sm:text-sm mb-4">
+              <p className="ui-eyebrow mb-3">AI Chat</p>
+              <h3 id="unlock-chat-title" className="modal-title mb-2">Unlock Chat</h3>
+              <p className="modal-description mb-4">
                 Support Gimme Idea with a small donation to continue your conversation with AI.
               </p>
 
               {/* Verified Transaction Notice */}
-              <div className="bg-green-500/10 border border-green-500/20 rounded-xl p-3 mb-4">
+              <div className="border border-green-500/20 bg-green-500/10 p-3 mb-4">
                 <div className="flex items-start gap-2">
                   <Shield className="w-4 h-4 text-green-400 mt-0.5 flex-shrink-0" />
                   <p className="text-green-400 text-xs">
@@ -817,16 +847,17 @@ export const AIChatModal: React.FC<AIChatModalProps> = ({ isOpen, onClose }) => 
               </div>
 
               <div className="mb-4 sm:mb-6">
-                <label className="text-[10px] sm:text-xs text-gray-500 uppercase tracking-wider mb-2 block">Amount (USD)</label>
+                <label className="field-label">Amount (USD)</label>
                 <div className="flex gap-1.5 sm:gap-2 mb-3">
                   {[1, 2, 5, 10].map(amt => (
                     <button
                       key={amt}
+                      type="button"
                       onClick={() => setDonationAmount(amt)}
-                      className={`flex-1 py-2 sm:py-2.5 rounded-lg font-bold text-xs sm:text-sm transition-all ${
+                      className={`flex-1 min-h-[40px] border px-2 py-2 text-xs font-bold transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#FFD700] sm:py-2.5 sm:text-sm ${
                         donationAmount === amt
-                          ? 'bg-[#FFD700] text-black'
-                          : 'bg-white/5 text-gray-400 hover:bg-white/10'
+                          ? 'border-[#FFD700] bg-[#FFD700] text-black'
+                          : 'border-white/10 bg-white/5 text-gray-400 hover:bg-white/10'
                       }`}
                     >
                       ${amt}
@@ -840,9 +871,10 @@ export const AIChatModal: React.FC<AIChatModalProps> = ({ isOpen, onClose }) => 
 
               <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
                 <button
+                  type="button"
                   onClick={handleDonation}
                   disabled={isProcessingPayment}
-                  className="flex-1 py-2.5 sm:py-3 bg-[#FFD700] text-black rounded-xl font-bold hover:bg-[#FFD700]/90 transition-colors disabled:opacity-50 flex items-center justify-center gap-2 text-sm"
+                  className="btn-primary flex-1 text-sm disabled:opacity-50"
                 >
                   {isProcessingPayment ? (
                     <>
@@ -857,8 +889,9 @@ export const AIChatModal: React.FC<AIChatModalProps> = ({ isOpen, onClose }) => 
                   )}
                 </button>
                 <button
+                  type="button"
                   onClick={() => setShowDonateModal(false)}
-                  className="px-4 py-2.5 sm:py-3 bg-white/5 text-gray-400 rounded-xl hover:bg-white/10 transition-colors text-sm"
+                  className="btn-ghost px-4 py-2.5 text-sm sm:py-3"
                 >
                   Cancel
                 </button>

@@ -268,24 +268,33 @@ export const ImageCropper: React.FC<ImageCropperProps> = ({
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
-        className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4"
+        className="fixed inset-0 z-50 flex items-center justify-center px-4"
         onClick={onClose}
       >
+        <div className="absolute inset-0 modal-overlay" aria-hidden="true" />
         <motion.div
           initial={{ scale: 0.9, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
           exit={{ scale: 0.9, opacity: 0 }}
-          className="bg-[#1a1a1a] rounded-2xl border border-white/10 w-full max-w-lg overflow-hidden"
+          className="modal-frame max-w-lg"
           onClick={e => e.stopPropagation()}
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="image-cropper-title"
         >
           {/* Header */}
-          <div className="flex items-center justify-between p-4 border-b border-white/10">
-            <h3 className="text-lg font-bold text-white">{title}</h3>
+          <div className="modal-header">
+            <div>
+              <p className="ui-eyebrow mb-2">Image</p>
+              <h3 id="image-cropper-title" className="modal-title">{title}</h3>
+            </div>
             <button
+              type="button"
               onClick={onClose}
-              className="p-2 hover:bg-white/10 rounded-full transition-colors"
+              className="modal-close"
+              aria-label="Close image cropper"
             >
-              <X className="w-5 h-5" />
+              <X className="w-5 h-5" aria-hidden="true" />
             </button>
           </div>
 
@@ -341,9 +350,11 @@ export const ImageCropper: React.FC<ImageCropperProps> = ({
               {/* Zoom Controls */}
               <div className="flex items-center gap-4 mt-4">
                 <button
+                  type="button"
                   onClick={handleZoomOut}
-                  className="p-2 bg-white/10 hover:bg-white/20 rounded-full transition-colors disabled:opacity-30"
+                  className="flex min-h-[40px] min-w-[40px] items-center justify-center border border-white/10 bg-white/10 transition-colors hover:bg-white/20 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#FFD700] disabled:opacity-30"
                   disabled={scale <= minScale}
+                  aria-label="Zoom out"
                 >
                   <ZoomOut className="w-5 h-5" />
                 </button>
@@ -353,17 +364,21 @@ export const ImageCropper: React.FC<ImageCropperProps> = ({
                 </div>
                 
                 <button
+                  type="button"
                   onClick={handleZoomIn}
-                  className="p-2 bg-white/10 hover:bg-white/20 rounded-full transition-colors disabled:opacity-30"
+                  className="flex min-h-[40px] min-w-[40px] items-center justify-center border border-white/10 bg-white/10 transition-colors hover:bg-white/20 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#FFD700] disabled:opacity-30"
                   disabled={scale >= 3}
+                  aria-label="Zoom in"
                 >
                   <ZoomIn className="w-5 h-5" />
                 </button>
                 
                 <button
+                  type="button"
                   onClick={handleReset}
-                  className="p-2 bg-white/10 hover:bg-white/20 rounded-full transition-colors ml-2"
+                  className="ml-2 flex min-h-[40px] min-w-[40px] items-center justify-center border border-white/10 bg-white/10 transition-colors hover:bg-white/20 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#FFD700]"
                   title="Reset"
+                  aria-label="Reset crop"
                 >
                   <RotateCcw className="w-5 h-5" />
                 </button>
@@ -372,17 +387,19 @@ export const ImageCropper: React.FC<ImageCropperProps> = ({
           </div>
 
           {/* Actions */}
-          <div className="flex gap-3 p-4 border-t border-white/10">
+          <div className="modal-footer">
             <button
+              type="button"
               onClick={onClose}
-              className="flex-1 py-2.5 bg-white/5 hover:bg-white/10 border border-white/20 rounded-full transition-colors font-medium"
+              className="btn-ghost flex-1"
             >
               Cancel
             </button>
             <button
+              type="button"
               onClick={cropImage}
               disabled={isProcessing}
-              className="flex-1 py-2.5 bg-white text-black rounded-full font-bold hover:bg-gray-200 transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
+              className="btn-primary flex-1 disabled:opacity-50"
             >
               {isProcessing ? (
                 'Processing...'

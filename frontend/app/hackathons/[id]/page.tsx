@@ -726,8 +726,8 @@ export default function HackathonDashboard() {
    // Loading state
    if (isLoadingHackathon) {
       return (
-         <main className="min-h-screen px-4 pb-16 pt-28 sm:px-6">
-            <div className="mx-auto max-w-7xl">
+         <main className="min-h-screen page-top">
+            <div className="page-shell">
                <div className="flex items-center gap-3 text-sm text-gray-400">
                   <Loader2 className="h-4 w-4 animate-spin text-[#FFD700]" aria-hidden="true" />
                   Loading hackathon
@@ -746,21 +746,23 @@ export default function HackathonDashboard() {
    // Error/Not Found state
    if (hackathonError || !hackathon) {
       return (
-         <main className="flex min-h-screen items-center justify-center px-4 py-20 text-gray-300 sm:px-6">
-            <section className="w-full max-w-lg border border-white/10 bg-white/[0.03] p-6 text-center sm:p-8">
-               <AlertCircle className="mx-auto h-11 w-11 text-red-200" aria-hidden="true" />
-               <h1 className="mt-4 text-2xl font-semibold text-white">Hackathon not found</h1>
-               <p className="mt-2 text-sm leading-6 text-gray-400">
-                  {hackathonError || "The hackathon you're looking for doesn't exist or has been removed."}
-               </p>
-               <Link
-                  href="/hackathons"
-                  className="btn-primary mx-auto mt-6"
-               >
-                  <ArrowLeft className="w-4 h-4" aria-hidden="true" />
-                  Back to hackathons
-               </Link>
-            </section>
+         <main className="min-h-screen page-top text-gray-300">
+            <div className="page-shell flex min-h-[60vh] items-center justify-center">
+               <section className="w-full max-w-lg border border-white/10 bg-white/[0.03] p-6 text-center sm:p-8">
+                  <AlertCircle className="mx-auto h-11 w-11 text-red-200" aria-hidden="true" />
+                  <h1 className="mt-4 text-2xl font-semibold text-white">Hackathon not found</h1>
+                  <p className="mt-2 text-sm leading-6 text-gray-400">
+                     {hackathonError || "The hackathon you're looking for doesn't exist or has been removed."}
+                  </p>
+                  <Link
+                     href="/hackathons"
+                     className="btn-primary mx-auto mt-6"
+                  >
+                     <ArrowLeft className="w-4 h-4" aria-hidden="true" />
+                     Back to hackathons
+                  </Link>
+               </section>
+            </div>
          </main>
       );
    }
@@ -2385,28 +2387,33 @@ export default function HackathonDashboard() {
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   exit={{ opacity: 0 }}
-                  className="fixed inset-0 z-50 flex items-center justify-center p-4"
+                  className="fixed inset-0 z-50 flex items-center justify-center px-4"
                >
                   <button
                      type="button"
                      aria-label="Close team settings"
-                     className="absolute inset-0 bg-black/70"
+                     className="absolute inset-0 modal-overlay"
                      onClick={() => setIsTeamSettingsOpen(false)}
                   />
                   <motion.div
                      initial={{ scale: 0.9, y: 50 }}
                      animate={{ scale: 1, y: 0 }}
                      exit={{ scale: 0.9, y: 50 }}
-                     className="relative w-full max-w-lg overflow-hidden border border-white/10 bg-surface shadow-lg"
+                     className="modal-frame max-w-lg"
+                     role="dialog"
+                     aria-modal="true"
+                     aria-labelledby="team-settings-title"
                   >
                      {/* Header */}
-                     <div className="flex items-center justify-between p-4 border-b border-white/10">
-                        <h2 className="text-lg font-bold text-white font-quantico flex items-center gap-2">
+                     <div className="modal-header">
+                        <h2 id="team-settings-title" className="modal-title flex items-center gap-2">
                            <Settings className="w-5 h-5 text-gold" /> Team Settings
                         </h2>
                         <button
+                           type="button"
                            onClick={() => setIsTeamSettingsOpen(false)}
-                           className="text-gray-400 hover:text-white transition-colors"
+                           className="modal-close"
+                           aria-label="Close team settings"
                         >
                            <X className="w-5 h-5" />
                         </button>
@@ -2416,7 +2423,8 @@ export default function HackathonDashboard() {
                      <div className="flex p-2 gap-2 border-b border-white/5">
                         <button
                            onClick={() => setTeamSettingsTab('team')}
-                           className={`flex-1 py-2 px-4 rounded-lg text-sm font-medium transition-all ${teamSettingsTab === 'team'
+                           type="button"
+                           className={`flex-1 border px-4 py-2 text-sm font-medium transition-all focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#FFD700] ${teamSettingsTab === 'team'
                                  ? 'bg-gold/20 text-gold border border-gold/30'
                                  : 'text-gray-400 hover:text-white hover:bg-white/5'
                               }`}
@@ -2428,7 +2436,8 @@ export default function HackathonDashboard() {
                         </button>
                         <button
                            onClick={() => setTeamSettingsTab('members')}
-                           className={`flex-1 py-2 px-4 rounded-lg text-sm font-medium transition-all ${teamSettingsTab === 'members'
+                           type="button"
+                           className={`flex-1 border px-4 py-2 text-sm font-medium transition-all focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#FFD700] ${teamSettingsTab === 'members'
                                  ? 'bg-gold/20 text-gold border border-gold/30'
                                  : 'text-gray-400 hover:text-white hover:bg-white/5'
                               }`}

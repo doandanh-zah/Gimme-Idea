@@ -9,8 +9,8 @@ import { WalletRouteBoundary } from '../../../components/wallet/WalletRouteBound
 
 function ProfileSkeleton() {
   return (
-    <main className="min-h-screen px-4 pb-16 pt-28 sm:px-6">
-      <div className="mx-auto max-w-6xl">
+    <main className="min-h-screen page-top">
+      <div className="page-shell">
         <div className="flex items-center gap-3 text-sm text-gray-400">
           <Loader2 className="h-4 w-4 animate-spin text-[#FFD700]" aria-hidden="true" />
           Loading profile

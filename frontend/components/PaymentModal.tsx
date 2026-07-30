@@ -240,8 +240,14 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center px-3 sm:px-4">
-        <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" onClick={processing ? undefined : onClose} />
+    <div className="fixed inset-0 z-[100] flex items-center justify-center px-4">
+        <button
+            type="button"
+            aria-label="Close payment dialog"
+            tabIndex={-1}
+            className="absolute inset-0 modal-overlay"
+            onClick={processing ? undefined : onClose}
+        />
         
         <motion.div 
             initial={{ scale: 0.9, opacity: 0 }}
@@ -252,17 +258,22 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
             }}
             exit={{ scale: 0.9, opacity: 0 }}
             transition={{ duration: 0.3 }}
-            className="relative w-full max-w-md bg-[#0F0F0F] border rounded-2xl p-4 sm:p-6 shadow-2xl overflow-hidden min-h-[350px] sm:min-h-[400px] flex flex-col"
+            className="modal-frame max-w-md p-4 sm:p-6 overflow-hidden min-h-[350px] sm:min-h-[400px] flex flex-col"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="payment-title"
             style={{
                 boxShadow: status === 'success' ? '0 0 40px rgba(20, 241, 149, 0.1)' : '0 0 20px rgba(0,0,0,0.5)'
             }}
         >
             {/* Close Button */}
             <button 
+                type="button"
                 onClick={onClose} 
-                className="absolute top-3 right-3 sm:top-4 sm:right-4 text-gray-400 hover:text-white z-20"
+                className="modal-close"
+                aria-label="Close payment dialog"
             >
-                <X className="w-5 h-5" />
+                <X className="w-5 h-5" aria-hidden="true" />
             </button>
 
             <AnimatePresence mode="wait">
@@ -312,7 +323,7 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
                                 initial={{ opacity: 0, y: 10 }}
                                 animate={{ opacity: 1, y: 0 }}
                                 transition={{ delay: 0.5 }}
-                                className="bg-white/5 border border-white/10 rounded-xl p-3 sm:p-4 w-full max-w-[280px] mx-auto mt-4"
+                                className="modal-section w-full max-w-[280px] mx-auto mt-4"
                             >
                                 <div className="flex justify-between text-xs sm:text-sm mb-2">
                                     <span className="text-gray-400">Amount</span>
@@ -356,10 +367,10 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
                     >
                         <div className="flex items-center gap-2 mb-4">
                             <Shield className="w-5 h-5 text-green-400" />
-                            <h2 className="text-xl sm:text-2xl font-bold">Confirm Transaction</h2>
+                            <h2 id="payment-title" className="text-xl sm:text-2xl font-bold">Confirm Transaction</h2>
                         </div>
                         
-                        <div className="bg-white/5 border border-white/10 rounded-xl p-4 mb-4">
+                        <div className="modal-section mb-4">
                             <p className="text-gray-400 text-xs mb-3 uppercase font-mono">Transaction Details</p>
                             
                             <div className="space-y-3">
@@ -390,7 +401,7 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
                             </div>
                         </div>
 
-                        <div className="bg-green-500/10 border border-green-500/20 rounded-xl p-3 mb-4">
+                        <div className="border border-green-500/20 bg-green-500/10 p-3 mb-4">
                             <div className="flex items-start gap-2">
                                 <Shield className="w-4 h-4 text-green-400 mt-0.5 flex-shrink-0" />
                                 <p className="text-green-400 text-xs">
@@ -401,14 +412,16 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
 
                         <div className="flex gap-3 mt-auto">
                             <button 
+                                type="button"
                                 onClick={() => setShowPreview(false)}
-                                className="flex-1 py-3 bg-white/10 text-white font-medium rounded-xl hover:bg-white/20 transition-colors text-sm"
+                                className="btn-ghost flex-1 text-sm"
                             >
                                 Back
                             </button>
                             <button 
+                                type="button"
                                 onClick={handlePayment}
-                                className="flex-1 py-3 bg-white text-black font-bold rounded-xl hover:bg-accent transition-colors text-sm"
+                                className="btn-primary flex-1 text-sm"
                             >
                                 Confirm & Send
                             </button>
@@ -422,21 +435,23 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
                         exit={{ opacity: 0 }}
                         className="h-full flex flex-col"
                     >
-                        <h2 className="text-xl sm:text-2xl font-bold mb-1">
+                        <p className="ui-eyebrow mb-3">{context === 'project' ? 'Support' : 'Tip'}</p>
+                        <h2 id="payment-title" className="text-xl sm:text-2xl font-bold mb-1">
                             {context === 'project' ? 'Support Project' : 'Tip Contributor'}
                         </h2>
                         <p className="text-gray-400 text-xs sm:text-sm mb-4 sm:mb-6">Send SOL to <span className="text-white font-bold">{recipientName}</span></p>
 
                         <div className="space-y-3 sm:space-y-4 mb-6 sm:mb-8">
                             <div>
-                                <label className="block text-[10px] sm:text-xs text-gray-500 mb-1 font-mono uppercase">Amount (SOL)</label>
+                                <label className="field-label" htmlFor="payment-amount">Amount (SOL)</label>
                                 <div className="relative">
                                     <input
+                                        id="payment-amount"
                                         type="number"
                                         value={amount}
                                         onChange={(e) => setAmount(e.target.value)}
                                         step="0.1"
-                                        className="w-full bg-white/5 border border-white/10 rounded-xl p-3 sm:p-4 text-xl sm:text-2xl font-bold outline-none focus:border-primary transition-colors text-white"
+                                        className="field-input pr-16 text-xl font-bold sm:text-2xl"
                                     />
                                     <span className="absolute right-3 sm:right-4 top-1/2 -translate-y-1/2 text-gray-500 font-mono text-sm sm:text-base">SOL</span>
                                 </div>
@@ -444,10 +459,11 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
                             <div className="flex gap-1.5 sm:gap-2">
                                 {['0.1', '0.5', '1', '2', '5'].map((val) => (
                                     <button 
+                                        type="button"
                                         key={val}
                                         onClick={() => setAmount(val)}
-                                        className={`flex-1 py-2 rounded-lg text-xs sm:text-sm font-medium border transition-all ${
-                                            amount === val ? 'bg-primary/20 border-primary text-white' : 'bg-transparent border-white/10 text-gray-400 hover:bg-white/5'
+                                        className={`flex-1 min-h-[40px] border px-2 py-2 text-xs font-medium transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#FFD700] sm:text-sm ${
+                                            amount === val ? 'border-[#FFD700]/55 bg-[#FFD700]/10 text-[#FFD700]' : 'border-white/10 bg-transparent text-gray-400 hover:bg-white/5'
                                         }`}
                                     >
                                         {val}
@@ -457,8 +473,9 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
                         </div>
 
                         <button 
+                            type="button"
                             onClick={initiatePayment}
-                            className="w-full py-3 sm:py-4 bg-white text-black font-bold rounded-xl hover:bg-accent transition-colors flex items-center justify-center gap-2 mt-auto text-sm sm:text-base"
+                            className="btn-primary mt-auto w-full text-sm sm:text-base"
                         >
                             Continue
                         </button>

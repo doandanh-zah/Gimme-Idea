@@ -172,9 +172,9 @@ export default function ProjectsPage() {
   );
 
   return (
-    <main className="relative min-h-screen overflow-hidden px-4 pb-20 pt-24 sm:px-6 sm:pt-28">
+    <main className="relative min-h-screen overflow-hidden page-top">
 
-      <div className="mx-auto max-w-6xl">
+      <div className="page-shell">
         <header className="border-b border-white/10 pb-8">
           <p className="ui-eyebrow">Capital signal</p>
           <div className="mt-5 flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">

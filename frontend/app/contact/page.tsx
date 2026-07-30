@@ -167,7 +167,7 @@ function ContactPage() {
   return (
     <main className="relative min-h-screen pb-20 pt-28 text-gray-300">
 
-      <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
+      <div className="page-shell">
         <header className="border-b border-white/10 pb-8">
           <p className="ui-eyebrow">Contact</p>
           <div className="mt-5 grid gap-7 lg:grid-cols-[1fr_0.72fr] lg:items-end">

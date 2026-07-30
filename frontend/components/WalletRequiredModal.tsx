@@ -254,12 +254,12 @@ export const WalletRequiredModal: React.FC<WalletRequiredModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center px-3 sm:px-4">
+    <div className="fixed inset-0 z-[100] flex items-center justify-center px-4">
       <motion.div 
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
-        className="absolute inset-0 bg-black/80 backdrop-blur-md"
+        className="absolute inset-0 modal-overlay"
         onClick={onClose}
       />
       
@@ -267,15 +267,18 @@ export const WalletRequiredModal: React.FC<WalletRequiredModalProps> = ({
         initial={{ scale: 0.9, opacity: 0, y: 20 }}
         animate={{ scale: 1, opacity: 1, y: 0 }}
         exit={{ scale: 0.9, opacity: 0, y: 20 }}
-        className="relative w-full max-w-md bg-[#0F0F0F] border border-white/10 rounded-2xl sm:rounded-3xl p-5 sm:p-8 shadow-2xl overflow-hidden"
+        className="modal-frame max-w-md p-5 sm:p-8"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="wallet-required-title"
       >
-        <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-purple-500 via-[#FFD700] to-green-500" />
-
         <button
+          type="button"
           onClick={onClose}
-          className="absolute top-3 right-3 sm:top-4 sm:right-4 p-2 text-gray-400 hover:text-white transition-colors"
+          className="modal-close"
+          aria-label="Close wallet dialog"
         >
-          <X className="w-5 h-5" />
+          <X className="w-5 h-5" aria-hidden="true" />
         </button>
 
         <AnimatePresence mode="wait">
@@ -287,19 +290,20 @@ export const WalletRequiredModal: React.FC<WalletRequiredModalProps> = ({
               exit={{ opacity: 0 }}
               className="text-center"
             >
-              <div className="w-16 h-16 sm:w-20 sm:h-20 bg-purple-500/20 rounded-full flex items-center justify-center mx-auto mb-4 sm:mb-6">
+              <div className="modal-icon mx-auto mb-4 h-16 w-16 sm:mb-6">
                 {mode === 'reconnect' ? (
-                  <RefreshCw className="w-8 h-8 sm:w-10 sm:h-10 text-purple-400" />
+                  <RefreshCw className="w-8 h-8 sm:w-9 sm:h-9" aria-hidden="true" />
                 ) : (
-                  <Wallet className="w-8 h-8 sm:w-10 sm:h-10 text-purple-400" />
+                  <Wallet className="w-8 h-8 sm:w-9 sm:h-9" aria-hidden="true" />
                 )}
               </div>
               
-              <h2 className="text-xl sm:text-2xl font-bold text-white mb-2 sm:mb-3">{getTitle()}</h2>
+              <p className="ui-eyebrow mx-auto mb-3 w-fit">Wallet</p>
+              <h2 id="wallet-required-title" className="text-xl sm:text-2xl font-bold text-white mb-2 sm:mb-3">{getTitle()}</h2>
               <p className="text-gray-400 text-sm sm:text-base mb-4 sm:mb-6 leading-relaxed">{getDescription()}</p>
 
               {user?.wallet && mode === 'reconnect' && (
-                <div className="bg-white/5 border border-white/10 rounded-xl p-3 sm:p-4 mb-4 sm:mb-6">
+                <div className="modal-section mb-4 sm:mb-6">
                   <p className="text-[10px] sm:text-xs text-gray-500 mb-1">Your linked wallet:</p>
                   <p className="text-xs sm:text-sm font-mono text-white">
                     {user.wallet.slice(0, 6)}...{user.wallet.slice(-4)}
@@ -310,9 +314,10 @@ export const WalletRequiredModal: React.FC<WalletRequiredModalProps> = ({
               <div className="flex gap-3 justify-center">
                 {mode === 'reconnect' ? (
                   <button
+                    type="button"
                     onClick={handleReconnect}
                     disabled={isProcessing}
-                    className="px-5 sm:px-8 py-2.5 sm:py-3 bg-gradient-to-r from-purple-600 to-purple-500 hover:from-purple-500 hover:to-purple-400 text-white font-bold rounded-full transition-all transform hover:scale-105 shadow-lg disabled:opacity-50 flex items-center gap-2 text-sm sm:text-base"
+                    className="btn-primary disabled:opacity-50"
                   >
                     {isProcessing ? (
                       <>Processing...</>
@@ -326,8 +331,9 @@ export const WalletRequiredModal: React.FC<WalletRequiredModalProps> = ({
                   </button>
                 ) : (
                   <button
+                    type="button"
                     onClick={() => setStep('select')}
-                    className="px-5 sm:px-8 py-2.5 sm:py-3 bg-gradient-to-r from-purple-600 to-purple-500 hover:from-purple-500 hover:to-purple-400 text-white font-bold rounded-full transition-all transform hover:scale-105 shadow-lg flex items-center gap-2 text-sm sm:text-base"
+                    className="btn-primary"
                   >
                     <Wallet className="w-4 h-4" />
                     Select Wallet
@@ -346,11 +352,12 @@ export const WalletRequiredModal: React.FC<WalletRequiredModalProps> = ({
               exit={{ opacity: 0, x: -20 }}
               className="text-center"
             >
-              <div className="w-14 h-14 sm:w-16 sm:h-16 bg-purple-500/20 rounded-full flex items-center justify-center mx-auto mb-4 sm:mb-6">
-                <Wallet className="w-7 h-7 sm:w-8 sm:h-8 text-purple-400" />
+              <div className="modal-icon mx-auto mb-4 h-14 w-14 sm:mb-6 sm:h-16 sm:w-16">
+                <Wallet className="w-7 h-7 sm:w-8 sm:h-8" aria-hidden="true" />
               </div>
               
-              <h2 className="text-xl sm:text-2xl font-bold text-white mb-2">
+              <p className="ui-eyebrow mx-auto mb-3 w-fit">Wallet</p>
+              <h2 id="wallet-required-title" className="text-xl sm:text-2xl font-bold text-white mb-2">
                 {mode === 'reconnect' ? 'Reconnect Wallet' : 'Select Wallet'}
               </h2>
               <p className="text-gray-400 text-sm sm:text-base mb-4 sm:mb-6">
@@ -360,7 +367,7 @@ export const WalletRequiredModal: React.FC<WalletRequiredModalProps> = ({
               </p>
 
               {user?.wallet && mode === 'reconnect' && (
-                <div className="bg-white/5 border border-white/10 rounded-xl p-3 mb-4 text-left">
+                <div className="modal-section mb-4 text-left">
                   <p className="text-[10px] sm:text-xs text-gray-500 mb-1">Your linked wallet:</p>
                   <p className="text-xs sm:text-sm font-mono text-white">
                     {user.wallet.slice(0, 6)}...{user.wallet.slice(-4)}
@@ -373,6 +380,7 @@ export const WalletRequiredModal: React.FC<WalletRequiredModalProps> = ({
                 {isMobile ? (
                   walletOptions.map((wallet) => (
                     <button
+                      type="button"
                       key={wallet.name}
                       onClick={() => {
                         if (wallet.isPasskey) {
@@ -384,10 +392,10 @@ export const WalletRequiredModal: React.FC<WalletRequiredModalProps> = ({
                         }
                       }}
                       disabled={isProcessing || isPasskeyConnecting}
-                      className={`w-full flex items-center justify-between p-3 sm:p-4 rounded-xl border border-white/5 bg-white/5 transition-all duration-300 group ${wallet.color} disabled:opacity-50`}
+                      className={`modal-option justify-between group ${wallet.color} disabled:opacity-50`}
                     >
                       <div className="flex items-center gap-3 sm:gap-4">
-                        <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-white/10 flex items-center justify-center p-2 sm:p-2.5">
+                        <div className="flex h-10 w-10 items-center justify-center border border-white/10 bg-white/10 p-2 sm:h-12 sm:w-12 sm:p-2.5">
                           {wallet.isMobileAdapter ? (
                             <Smartphone className="w-6 h-6 text-purple-400" />
                           ) : wallet.isPasskey ? (
@@ -414,15 +422,16 @@ export const WalletRequiredModal: React.FC<WalletRequiredModalProps> = ({
                     if (wallet.isPasskey) {
                       return (
                         <button
+                          type="button"
                           key={wallet.name}
                           onClick={() => {
                             mode === 'reconnect' ? handlePasskeyReconnect() : handleConnectWallet(wallet.name, false);
                           }}
                           disabled={isProcessing || isPasskeyConnecting}
-                          className={`w-full flex items-center justify-between p-3 sm:p-4 rounded-xl border border-white/5 bg-white/5 transition-all duration-300 group ${wallet.color} disabled:opacity-50`}
+                          className={`modal-option justify-between group ${wallet.color} disabled:opacity-50`}
                         >
                           <div className="flex items-center gap-3 sm:gap-4">
-                            <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-white/10 flex items-center justify-center p-2 sm:p-2.5">
+                            <div className="flex h-10 w-10 items-center justify-center border border-white/10 bg-white/10 p-2 sm:h-12 sm:w-12 sm:p-2.5">
                               <Fingerprint className="w-6 h-6 text-green-400" />
                             </div>
                             <div className="text-left">
@@ -444,6 +453,7 @@ export const WalletRequiredModal: React.FC<WalletRequiredModalProps> = ({
 
                     return (
                       <button
+                        type="button"
                         key={wallet.name}
                         onClick={() => {
                           mode === 'reconnect' 
@@ -451,10 +461,10 @@ export const WalletRequiredModal: React.FC<WalletRequiredModalProps> = ({
                             : handleConnectWallet(wallet.name, wallet.isMobileAdapter);
                         }}
                         disabled={isProcessing}
-                        className={`w-full flex items-center justify-between p-3 sm:p-4 rounded-xl border border-white/5 bg-white/5 transition-all duration-300 group ${wallet.color} disabled:opacity-50`}
+                        className={`modal-option justify-between group ${wallet.color} disabled:opacity-50`}
                       >
                         <div className="flex items-center gap-3 sm:gap-4">
-                          <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-white/10 flex items-center justify-center p-2 sm:p-2.5">
+                          <div className="flex h-10 w-10 items-center justify-center border border-white/10 bg-white/10 p-2 sm:h-12 sm:w-12 sm:p-2.5">
                             <img src={wallet.icon} alt={wallet.name} className="w-full h-full object-contain" />
                           </div>
                           <span className="font-bold text-base sm:text-lg text-white">{wallet.name}</span>

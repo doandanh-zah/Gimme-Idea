@@ -11,8 +11,8 @@ export default function BillingPage() {
   return (
     <Suspense
       fallback={
-        <main className="relative min-h-screen px-4 pt-28 pb-20 sm:px-6">
-          <div className="mx-auto max-w-4xl">
+        <main className="relative min-h-screen page-top">
+          <div className="page-shell">
             <div className="h-8 w-24 animate-pulse bg-white/10" />
             <div className="mt-8 h-10 w-48 animate-pulse bg-white/10" />
             <div className="mt-6 h-40 animate-pulse border border-white/10 bg-white/[0.03]" />
@@ -74,9 +74,9 @@ function BillingContent() {
   };
 
   return (
-    <main className="relative min-h-screen px-4 pt-28 pb-20 text-gray-300 sm:px-6">
+    <main className="relative min-h-screen page-top text-gray-300">
 
-      <div className="mx-auto max-w-5xl">
+      <div className="page-shell">
         <button
           type="button"
           onClick={() => router.back()}

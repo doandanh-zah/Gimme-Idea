@@ -25,7 +25,7 @@ export default function LeaderboardPage() {
   return (
     <main className="relative min-h-screen pb-20 pt-28 text-white">
 
-      <div className="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8">
+      <div className="page-shell">
         <Link
           href="/home"
           className="mb-8 inline-flex min-h-[40px] items-center gap-2 text-sm text-gray-400 transition hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#FFD700]"

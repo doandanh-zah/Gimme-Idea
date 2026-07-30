@@ -3,7 +3,6 @@ export const runtime = "nodejs";
 import './globals.css';
 import { Metadata } from 'next';
 import ClientLayout from './ClientLayout';
-import Script from 'next/script';
 
 export const metadata: Metadata = {
   title: 'Gimme Idea | Share your idea and feedback to earn',
@@ -84,13 +83,16 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <Script id="browser-global-shim" strategy="beforeInteractive">
-        {`
-          window.global = window.global || window;
-          window.globalThis = window.globalThis || window;
-        `}
-      </Script>
       <head>
+        <script
+          id="browser-global-shim"
+          dangerouslySetInnerHTML={{
+            __html: `
+              window.global = window.global || window;
+              window.globalThis = window.globalThis || window;
+            `,
+          }}
+        />
         {/* JSON-LD Schema for SEO */}
         <script
           type="application/ld+json"

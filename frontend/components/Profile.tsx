@@ -449,9 +449,9 @@ export const Profile = () => {
     <motion.main
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
-      className="min-h-screen px-4 pb-24 pt-24 sm:px-6 sm:pt-28"
+      className="min-h-screen page-top pb-24"
     >
-      <div className="mx-auto max-w-5xl">
+      <div className="page-shell">
         {!isOwnProfile && (
           <button
             type="button"

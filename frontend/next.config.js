@@ -131,11 +131,19 @@ const nextConfig = {
   },
 
   async headers() {
+    const isDevelopment = process.env.NODE_ENV !== 'production';
     const apiOrigin = getOrigin(process.env.NEXT_PUBLIC_API_URL);
     const backendOrigins = Array.from(new Set([
       apiOrigin,
       "https://gimme-idea-c53h.onrender.com",
     ].filter(Boolean)));
+
+    const scriptSrc = [
+      "script-src 'self' 'unsafe-inline'",
+      isDevelopment ? "'unsafe-eval'" : null,
+      "https://www.googletagmanager.com",
+      "https://www.google-analytics.com",
+    ].filter(Boolean).join(" ");
 
     const csp = [
       "default-src 'self'",
@@ -143,7 +151,7 @@ const nextConfig = {
       "object-src 'none'",
       "frame-ancestors 'self'",
       "form-action 'self' mailto:",
-      "script-src 'self' 'unsafe-inline' https://www.googletagmanager.com https://www.google-analytics.com",
+      scriptSrc,
       "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
       "style-src-elem 'self' 'unsafe-inline' https://fonts.googleapis.com",
       "img-src 'self' data: blob: https: http://localhost:*",

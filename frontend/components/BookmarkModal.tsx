@@ -121,11 +121,14 @@ export const BookmarkModal: React.FC<BookmarkModalProps> = ({
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
-        className="fixed inset-0 z-50 flex items-center justify-center p-4"
+        className="fixed inset-0 z-50 flex items-center justify-center px-4"
       >
         {/* Backdrop */}
-        <div
-          className="absolute inset-0 bg-black/80 backdrop-blur-sm"
+        <button
+          type="button"
+          aria-label="Close save to feed dialog"
+          tabIndex={-1}
+          className="absolute inset-0 modal-overlay"
           onClick={onClose}
         />
 
@@ -134,29 +137,37 @@ export const BookmarkModal: React.FC<BookmarkModalProps> = ({
           initial={{ scale: 0.95, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
           exit={{ scale: 0.95, opacity: 0 }}
-          className="relative w-full max-w-md bg-[#0F0F0F] border border-white/10 rounded-2xl shadow-2xl overflow-hidden max-h-[80vh] flex flex-col"
+          className="modal-frame max-w-md max-h-[82vh] flex flex-col"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="bookmark-title"
         >
           {/* Header */}
-          <div className="flex items-center justify-between p-5 border-b border-white/10 flex-shrink-0">
-            <div>
-              <h2 className="text-lg font-bold text-white flex items-center gap-2">
-                <Bookmark className="w-5 h-5 text-[#FFD700]" />
-                Save to Feed
-              </h2>
-              <p className="text-xs text-gray-400 mt-1 line-clamp-1">
-                {projectTitle}
-              </p>
+          <div className="modal-header flex-shrink-0">
+            <div className="flex min-w-0 items-start gap-3">
+              <div className="modal-icon">
+                <Bookmark className="w-5 h-5" aria-hidden="true" />
+              </div>
+              <div className="min-w-0">
+                <p className="ui-eyebrow mb-2">Save</p>
+                <h2 id="bookmark-title" className="modal-title">Save to Feed</h2>
+                <p className="modal-description line-clamp-1">
+                  {projectTitle}
+                </p>
+              </div>
             </div>
             <button
+              type="button"
               onClick={onClose}
-              className="p-2 hover:bg-white/10 rounded-lg transition-colors"
+              className="modal-close"
+              aria-label="Close save to feed dialog"
             >
-              <X className="w-5 h-5 text-gray-400" />
+              <X className="w-5 h-5" aria-hidden="true" />
             </button>
           </div>
 
           {/* Content */}
-          <div className="flex-grow overflow-y-auto p-4">
+          <div className="modal-body flex-grow overflow-y-auto">
             {isLoading ? (
               <div className="flex items-center justify-center py-8">
                 <Loader2 className="w-6 h-6 animate-spin text-[#FFD700]" />
@@ -165,21 +176,24 @@ export const BookmarkModal: React.FC<BookmarkModalProps> = ({
               <>
                 {/* Create new feed */}
                 {showCreateNew ? (
-                  <div className="mb-4 p-4 bg-white/5 rounded-xl border border-white/10">
+                  <div className="modal-section mb-4">
                     <input
+                      id="new-feed-name"
+                      aria-label="New feed name"
                       type="text"
                       value={newFeedName}
                       onChange={(e) => setNewFeedName(e.target.value)}
                       placeholder="Feed name..."
                       maxLength={100}
                       autoFocus
-                      className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-[#FFD700]/50 text-sm"
+                      className="field-input"
                     />
                     <div className="flex gap-2 mt-3">
                       <button
+                        type="button"
                         onClick={handleCreateAndAdd}
                         disabled={isCreating || !newFeedName.trim()}
-                        className="flex-1 py-2 bg-[#FFD700] text-black rounded-lg font-medium text-sm hover:bg-[#FFD700]/90 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                        className="btn-primary min-h-[40px] flex-1 px-3 py-2 text-sm disabled:cursor-not-allowed"
                       >
                         {isCreating ? (
                           <Loader2 className="w-4 h-4 animate-spin" />
@@ -191,11 +205,12 @@ export const BookmarkModal: React.FC<BookmarkModalProps> = ({
                         )}
                       </button>
                       <button
+                        type="button"
                         onClick={() => {
                           setShowCreateNew(false);
                           setNewFeedName('');
                         }}
-                        className="px-4 py-2 bg-white/10 text-gray-300 rounded-lg text-sm hover:bg-white/20"
+                        className="btn-ghost min-h-[40px] px-3 py-2 text-sm"
                       >
                         Cancel
                       </button>
@@ -203,8 +218,9 @@ export const BookmarkModal: React.FC<BookmarkModalProps> = ({
                   </div>
                 ) : (
                   <button
+                    type="button"
                     onClick={() => setShowCreateNew(true)}
-                    className="w-full mb-4 p-4 border-2 border-dashed border-white/10 rounded-xl text-gray-400 hover:border-[#FFD700]/50 hover:text-[#FFD700] transition-colors flex items-center justify-center gap-2"
+                    className="mb-4 flex min-h-[48px] w-full items-center justify-center gap-2 border border-dashed border-white/15 bg-white/[0.02] p-4 text-gray-400 transition-colors hover:border-[#FFD700]/50 hover:text-[#FFD700] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#FFD700]"
                   >
                     <Plus className="w-5 h-5" />
                     Create new feed
@@ -214,20 +230,21 @@ export const BookmarkModal: React.FC<BookmarkModalProps> = ({
                 {/* Feeds list */}
                 {feeds.length > 0 ? (
                   <div className="space-y-2">
-                    <p className="text-xs text-gray-500 mb-3">Your feeds</p>
+                    <p className="field-label mb-3">Your feeds</p>
                     {feeds.map((feed) => (
                       <button
+                        type="button"
                         key={feed.id}
                         onClick={() => handleToggleBookmark(feed)}
                         disabled={savingFeedId === feed.id}
-                        className={`w-full p-4 rounded-xl border transition-all flex items-center justify-between ${
+                        className={`modal-option justify-between ${
                           feed.hasItem
-                            ? 'bg-[#FFD700]/10 border-[#FFD700]/30'
-                            : 'bg-white/5 border-white/10 hover:border-white/20'
+                            ? 'modal-option-active'
+                            : ''
                         }`}
                       >
                         <div className="flex items-center gap-3">
-                          <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
+                          <div className={`flex h-10 w-10 items-center justify-center border ${
                             feed.hasItem ? 'bg-[#FFD700]/20' : 'bg-white/10'
                           }`}>
                             <Rss className={`w-5 h-5 ${feed.hasItem ? 'text-[#FFD700]' : 'text-gray-400'}`} />

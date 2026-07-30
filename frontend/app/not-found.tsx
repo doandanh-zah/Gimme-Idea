@@ -5,8 +5,9 @@ import { ArrowLeft, Home, Search } from 'lucide-react';
 
 export default function NotFound() {
   return (
-    <main className="flex min-h-screen items-center justify-center px-4 py-20 text-gray-300 sm:px-6">
-      <section className="w-full max-w-xl border border-white/10 bg-white/[0.03] p-6 text-center sm:p-8">
+    <main className="min-h-screen page-top text-gray-300">
+      <section className="page-shell flex min-h-[60vh] items-center justify-center">
+        <div className="w-full max-w-xl border border-white/10 bg-white/[0.03] p-6 text-center sm:p-8">
         <Search className="mx-auto h-11 w-11 text-[#FFD700]" aria-hidden="true" />
         <p className="ui-eyebrow mt-6 justify-center">404</p>
         <h1 className="mt-3 text-3xl font-semibold tracking-tight text-white sm:text-4xl">Page not found</h1>
@@ -23,6 +24,7 @@ export default function NotFound() {
             <ArrowLeft className="h-4 w-4" aria-hidden="true" />
             Go back
           </button>
+        </div>
         </div>
       </section>
     </main>

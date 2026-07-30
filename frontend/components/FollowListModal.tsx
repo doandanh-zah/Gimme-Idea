@@ -42,23 +42,30 @@ export const FollowListModal: React.FC<FollowListModalProps> = ({
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
-        className="modal-overlay fixed inset-0 z-50 flex items-center justify-center p-4"
+        className="fixed inset-0 z-50 flex items-center justify-center px-4"
         onClick={onClose}
       >
+        <div className="absolute inset-0 modal-overlay" aria-hidden="true" />
         <motion.div
           initial={{ scale: 0.95, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
           exit={{ scale: 0.95, opacity: 0 }}
           onClick={(e) => e.stopPropagation()}
-          className="modal-panel w-full max-w-md max-h-[80vh] overflow-hidden"
+          className="modal-frame max-w-md max-h-[80vh]"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="follow-list-title"
         >
           {/* Header */}
-          <div className="flex items-center justify-between p-4 border-b border-white/10">
-            <h2 className="text-lg font-bold text-white">{username}</h2>
+          <div className="modal-header">
+            <div>
+              <p className="ui-eyebrow mb-2">Network</p>
+              <h2 id="follow-list-title" className="modal-title">{username}</h2>
+            </div>
             <button
               type="button"
               onClick={onClose}
-              className="inline-flex min-h-[40px] min-w-[40px] items-center justify-center text-gray-400 transition hover:bg-white/10 hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#FFD700]"
+              className="modal-close"
               aria-label="Close follow list"
             >
               <X className="w-5 h-5" aria-hidden="true" />

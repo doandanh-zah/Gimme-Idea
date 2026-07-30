@@ -4,11 +4,9 @@ import { useState, useEffect } from 'react';
 import { ChevronDown, ThumbsUp, MessageCircle, User } from 'lucide-react';
 import { Project } from '../lib/types';
 import { useRouter } from 'next/navigation';
-import axios from 'axios';
 import { createUniqueSlug } from '../lib/slug-utils';
 import { LoadingSpinner } from './LoadingSpinner';
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+import { apiClient } from '../lib/api-client';
 
 const createSummary = (problem?: string, solution?: string): string => {
   if (!problem && !solution) return 'No description available';
@@ -54,13 +52,18 @@ export const RecommendedIdeas = () => {
   useEffect(() => {
     const fetchRecommended = async () => {
       try {
-        const categoryParam = selectedCategory === 'All' ? '' : `&category=${selectedCategory}`;
-        const response = await axios.get(`${API_URL}/projects/recommended?limit=3${categoryParam}`);
-        if (response.data.success) {
-          setRecommendedIdeas(response.data.data);
+        const response = await apiClient.getRecommendedProjects({
+          limit: 3,
+          category: selectedCategory === 'All' ? undefined : selectedCategory,
+        });
+
+        if (response.success && Array.isArray(response.data)) {
+          setRecommendedIdeas(response.data);
+        } else {
+          setRecommendedIdeas([]);
         }
       } catch (error) {
-        console.error('Failed to fetch recommended ideas:', error);
+        setRecommendedIdeas([]);
       } finally {
         setIsLoading(false);
       }

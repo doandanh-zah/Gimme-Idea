@@ -2,8 +2,9 @@ import { Clock, Mail, Wrench } from 'lucide-react';
 
 export default function MaintenancePage() {
   return (
-    <main className="flex min-h-screen items-center justify-center px-4 py-20 text-gray-300 sm:px-6">
-      <section className="w-full max-w-lg border border-white/10 bg-white/[0.03] p-6 text-center sm:p-8">
+    <main className="min-h-screen page-top text-gray-300">
+      <section className="page-shell flex min-h-[60vh] items-center justify-center">
+        <div className="w-full max-w-lg border border-white/10 bg-white/[0.03] p-6 text-center sm:p-8">
         <div className="mx-auto flex h-14 w-14 items-center justify-center border border-[#FFD700]/30 bg-[#FFD700]/10">
           <Wrench className="h-7 w-7 text-[#FFD700]" />
         </div>
@@ -34,6 +35,7 @@ export default function MaintenancePage() {
             Contact us
           </a>
         </p>
+        </div>
       </section>
     </main>
   );

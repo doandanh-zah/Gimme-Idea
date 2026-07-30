@@ -12,8 +12,8 @@ import { useProjectDetailQuery } from '../../../hooks/useProjectsQuery';
 
 function IdeaDetailSkeleton() {
   return (
-    <main className="min-h-screen px-4 pb-16 pt-28 sm:px-6">
-      <div className="mx-auto max-w-6xl">
+    <main className="min-h-screen page-top pb-16">
+      <div className="page-shell">
         <div className="flex items-center gap-3 text-sm text-gray-400">
           <Loader2 className="h-4 w-4 animate-spin text-[#FFD700]" aria-hidden="true" />
           Loading idea
@@ -63,8 +63,8 @@ export default function IdeaDetailPage() {
 
   if (isBackendMaintenance) {
     return (
-      <div className="min-h-screen px-4 sm:px-6 pt-28 sm:pt-32">
-        <div className="max-w-5xl mx-auto">
+      <div className="min-h-screen page-top">
+        <div className="page-shell">
           <BackendMaintenancePlaceholder description="Unable to load idea details because the backend is under maintenance." />
         </div>
       </div>
@@ -73,22 +73,24 @@ export default function IdeaDetailPage() {
 
   if (notFound && !detailQuery.isLoading) {
     return (
-      <main className="min-h-screen px-4 pb-16 pt-28 text-gray-300 sm:px-6">
-        <section className="mx-auto max-w-2xl border border-white/10 bg-white/[0.03] p-6 text-center sm:p-8">
-          <AlertTriangle className="mx-auto h-10 w-10 text-red-200" aria-hidden="true" />
-          <h1 className="mt-4 text-2xl font-semibold text-white">Idea not found</h1>
-          <p className="mt-2 text-sm leading-6 text-gray-400">This idea does not exist, moved, or has been removed.</p>
-          <div className="mt-6 flex flex-col justify-center gap-2 sm:flex-row">
-            <Link href="/idea" className="btn-ghost">
-              <ArrowLeft className="h-4 w-4" aria-hidden="true" />
-              Back to ideas
-            </Link>
-            <button type="button" onClick={() => void detailQuery.refetch()} className="btn-primary">
-              <RefreshCw className="h-4 w-4" aria-hidden="true" />
-              Retry
-            </button>
-          </div>
-        </section>
+      <main className="min-h-screen page-top text-gray-300">
+        <div className="page-shell">
+          <section className="mx-auto w-full max-w-2xl border border-white/10 bg-white/[0.03] p-6 text-center sm:p-8">
+            <AlertTriangle className="mx-auto h-10 w-10 text-red-200" aria-hidden="true" />
+            <h1 className="mt-4 text-2xl font-semibold text-white">Idea not found</h1>
+            <p className="mt-2 text-sm leading-6 text-gray-400">This idea does not exist, moved, or has been removed.</p>
+            <div className="mt-6 flex flex-col justify-center gap-2 sm:flex-row">
+              <Link href="/idea" className="btn-ghost">
+                <ArrowLeft className="h-4 w-4" aria-hidden="true" />
+                Back to ideas
+              </Link>
+              <button type="button" onClick={() => void detailQuery.refetch()} className="btn-primary">
+                <RefreshCw className="h-4 w-4" aria-hidden="true" />
+                Retry
+              </button>
+            </div>
+          </section>
+        </div>
       </main>
     );
   }

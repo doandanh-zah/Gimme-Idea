@@ -1550,8 +1550,8 @@ function AdminDashboardContent() {
   ];
 
   return (
-    <div className="min-h-screen pt-28 pb-20 px-4">
-      <div className="max-w-6xl mx-auto">
+    <div className="min-h-screen page-top">
+      <div className="page-shell">
         {/* Header */}
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
           <div>
@@ -2631,23 +2631,28 @@ function AdminDashboardContent() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4"
+              className="fixed inset-0 z-50 flex items-center justify-center px-4"
               onClick={() => setShowHackathonForm(false)}
             >
+              <div className="absolute inset-0 modal-overlay" aria-hidden="true" />
               <motion.div
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.95 }}
-                className="bg-[#111] border border-white/10 rounded-xl w-full max-w-4xl max-h-[90vh] overflow-y-auto"
+                className="modal-frame max-w-4xl max-h-[90vh] overflow-y-auto"
                 onClick={(e) => e.stopPropagation()}
+                role="dialog"
+                aria-modal="true"
               >
-                <div className="p-6 border-b border-white/10 flex items-center justify-between sticky top-0 bg-[#111] z-10">
-                  <h2 className="text-xl font-bold text-white">
+                <div className="modal-header sticky top-0 z-10 bg-[#0a0a0a]">
+                  <h2 className="modal-title">
                     {editingHackathon ? 'Edit Hackathon' : 'Create Hackathon'}
                   </h2>
                   <button
+                    type="button"
                     onClick={() => setShowHackathonForm(false)}
-                    className="p-2 text-gray-400 hover:text-white hover:bg-white/10 rounded-lg"
+                    className="modal-close"
+                    aria-label="Close hackathon form"
                   >
                     <X className="w-5 h-5" />
                   </button>
@@ -3639,24 +3644,29 @@ function AdminDashboardContent() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4"
+              className="fixed inset-0 z-50 flex items-center justify-center px-4"
               onClick={() => setShowScoreModal(false)}
             >
+              <div className="absolute inset-0 modal-overlay" aria-hidden="true" />
               <motion.div
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.95 }}
-                className="bg-[#111] border border-white/10 rounded-xl w-full max-w-md"
+                className="modal-frame max-w-md"
                 onClick={(e) => e.stopPropagation()}
+                role="dialog"
+                aria-modal="true"
               >
-                <div className="p-6 border-b border-white/10 flex items-center justify-between">
-                  <h2 className="text-xl font-bold text-white flex items-center gap-2">
+                <div className="modal-header">
+                  <h2 className="modal-title flex items-center gap-2">
                     <Target className="w-5 h-5 text-amber-400" />
                     Score Submission
                   </h2>
                   <button
+                    type="button"
                     onClick={() => setShowScoreModal(false)}
-                    className="p-2 text-gray-400 hover:text-white hover:bg-white/10 rounded-lg"
+                    className="modal-close"
+                    aria-label="Close score modal"
                   >
                     <X className="w-5 h-5" />
                   </button>
@@ -3733,18 +3743,19 @@ function AdminDashboardContent() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm overflow-y-auto"
+              className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto px-4"
               onClick={() => setShowRoundsModal(false)}
             >
+              <div className="absolute inset-0 modal-overlay" aria-hidden="true" />
               <motion.div
                 initial={{ scale: 0.95, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
                 exit={{ scale: 0.95, opacity: 0 }}
                 onClick={(e) => e.stopPropagation()}
-                className="bg-[#111] border border-white/10 rounded-2xl w-full max-w-4xl my-8"
+                className="modal-frame max-w-4xl my-8"
               >
                 {/* Modal Header */}
-                <div className="p-6 border-b border-white/10">
+                <div className="modal-header">
                   <div className="flex items-center justify-between">
                     <div>
                       <h2 className="text-xl font-bold text-white flex items-center gap-3">
@@ -3756,8 +3767,10 @@ function AdminDashboardContent() {
                       </p>
                     </div>
                     <button
+                      type="button"
                       onClick={() => setShowRoundsModal(false)}
-                      className="p-2 text-gray-400 hover:text-white hover:bg-white/10 rounded-lg"
+                      className="modal-close"
+                      aria-label="Close rounds modal"
                     >
                       <X className="w-5 h-5" />
                     </button>

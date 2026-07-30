@@ -171,11 +171,11 @@ export const EditProjectModal = ({ project, isOpen, onClose, onSave }: EditProje
   if (!isOpen || !project) return null;
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center px-2 sm:px-4">
+    <div className="fixed inset-0 z-[100] flex items-center justify-center px-4">
       <motion.div 
         initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
         onClick={onClose}
-        className="absolute inset-0 bg-black/80 backdrop-blur-sm"
+        className="absolute inset-0 modal-overlay"
       />
 
       <motion.div 
@@ -183,28 +183,34 @@ export const EditProjectModal = ({ project, isOpen, onClose, onSave }: EditProje
         animate={{ scale: 1, opacity: 1, y: 0 }}
         exit={{ scale: 0.95, opacity: 0, y: 20 }}
         className="relative w-full max-w-4xl max-h-[90vh] flex flex-col"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="edit-project-title"
       >
-        <div className="relative bg-[#0D0D12] border border-white/10 rounded-2xl overflow-hidden flex flex-col max-h-[90vh]">
+        <div className="modal-frame flex flex-col max-h-[90vh]">
           
           {/* Header */}
-          <div className="relative px-4 sm:px-8 py-4 sm:py-6 border-b border-white/10 flex-shrink-0">
+          <div className="modal-header flex-shrink-0">
             <div className="relative z-10 flex justify-between items-center">
               <div className="flex items-center gap-3 sm:gap-4">
-                <div className={`w-10 h-10 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center text-white ${isIdea ? 'bg-[#FFD700]' : 'bg-[#9945FF]'}`}>
+                <div className={`modal-icon ${isIdea ? '' : 'text-[#9945FF]'}`}>
                   {isIdea ? <Lightbulb className="w-5 h-5 sm:w-6 sm:h-6" /> : <Rocket className="w-5 h-5 sm:w-6 sm:h-6" />}
                 </div>
                 <div>
-                  <h2 className="text-lg sm:text-xl font-bold text-white">
+                  <p className="ui-eyebrow mb-2">{isIdea ? 'Idea' : 'Project'}</p>
+                  <h2 id="edit-project-title" className="modal-title">
                     Edit {isIdea ? 'Idea' : 'Project'}
                   </h2>
-                  <p className="text-xs sm:text-sm text-gray-400 mt-0.5 hidden sm:block">
+                  <p className="modal-description hidden sm:block">
                     Update your {isIdea ? 'idea' : 'project'} details
                   </p>
                 </div>
               </div>
               <button 
+                type="button"
                 onClick={onClose} 
-                className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-white/5 hover:bg-white/10 flex items-center justify-center transition-all text-gray-400 hover:text-white border border-white/10 hover:border-white/20"
+                className="modal-close"
+                aria-label={`Close edit ${isIdea ? 'idea' : 'project'} dialog`}
               >
                 <X className="w-4 h-4 sm:w-5 sm:h-5" />
               </button>
@@ -217,21 +223,21 @@ export const EditProjectModal = ({ project, isOpen, onClose, onSave }: EditProje
               
               {/* Title */}
               <div className="space-y-2">
-                <label className="text-xs font-bold text-gray-400 uppercase tracking-wider ml-1 flex items-center gap-2">
+                <label className="field-label flex items-center gap-2">
                   {isIdea ? 'Idea Name' : 'Project Name'}
                   <span className="text-red-400">*</span>
                 </label>
                 <input 
                   value={formData.title}
                   onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                  className="w-full bg-[#141419] border border-white/10 rounded-xl px-5 py-4 outline-none focus:border-white/30 text-white placeholder:text-gray-600 transition-all font-medium hover:border-white/20"
+                  className="field-input font-medium"
                   placeholder={isIdea ? "e.g. Decentralized Uber for Solana" : "e.g. SolStream Protocol"}
                 />
               </div>
 
               {/* Categories */}
               <div className="space-y-2">
-                <label className="text-[10px] sm:text-xs font-bold text-gray-400 uppercase tracking-wider ml-1 flex items-center gap-2">
+                <label className="field-label flex items-center gap-2">
                   Categories
                   <span className="text-red-400">*</span>
                   <span className="text-gray-600 font-normal text-[10px]">(Up to 3)</span>
@@ -242,7 +248,7 @@ export const EditProjectModal = ({ project, isOpen, onClose, onSave }: EditProje
                       key={cat}
                       type="button"
                       onClick={() => toggleCategory(cat)}
-                      className={`px-2.5 sm:px-4 py-2 sm:py-2.5 rounded-xl text-xs sm:text-sm font-medium transition-all duration-200 ${
+                      className={`min-h-[40px] border px-2.5 py-2 text-xs font-medium transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#FFD700] sm:px-4 sm:py-2.5 sm:text-sm ${
                         formData.categories.includes(cat)
                           ? isIdea
                             ? 'bg-[#FFD700] text-black border border-[#FFD700]'
@@ -260,40 +266,40 @@ export const EditProjectModal = ({ project, isOpen, onClose, onSave }: EditProje
               {isIdea && (
                 <>
                   <div className="space-y-2">
-                    <label className="text-xs font-bold text-gray-400 uppercase tracking-wider ml-1 flex items-center gap-2">
+                    <label className="field-label flex items-center gap-2">
                       Problem <span className="text-red-400">*</span>
                       <MarkdownGuide />
                     </label>
                     <textarea 
                       value={formData.problem}
                       onChange={(e) => setFormData({ ...formData, problem: e.target.value })}
-                      className="w-full bg-[#141419] border border-white/10 rounded-xl px-5 py-4 outline-none focus:border-white/30 text-white h-32 resize-none placeholder:text-gray-600 leading-relaxed"
+                      className="field-input field-textarea h-32 leading-relaxed"
                       placeholder="What problem does this idea solve?"
                     />
                   </div>
 
                   <div className="space-y-2">
-                    <label className="text-xs font-bold text-gray-400 uppercase tracking-wider ml-1 flex items-center gap-2">
+                    <label className="field-label flex items-center gap-2">
                       Opportunity
                       <MarkdownGuide />
                     </label>
                     <textarea 
                       value={formData.opportunity}
                       onChange={(e) => setFormData({ ...formData, opportunity: e.target.value })}
-                      className="w-full bg-[#141419] border border-white/10 rounded-xl px-5 py-4 outline-none focus:border-white/30 text-white h-24 resize-none placeholder:text-gray-600 leading-relaxed"
+                      className="field-input field-textarea h-24 leading-relaxed"
                       placeholder="Why is this a good opportunity? (Market size, timing, etc.)"
                     />
                   </div>
 
                   <div className="space-y-2">
-                    <label className="text-xs font-bold text-gray-400 uppercase tracking-wider ml-1 flex items-center gap-2">
+                    <label className="field-label flex items-center gap-2">
                       Solution <span className="text-red-400">*</span>
                       <MarkdownGuide />
                     </label>
                     <textarea 
                       value={formData.solution}
                       onChange={(e) => setFormData({ ...formData, solution: e.target.value })}
-                      className="w-full bg-[#141419] border border-white/10 rounded-xl px-5 py-4 outline-none focus:border-white/30 text-white h-32 resize-none placeholder:text-gray-600 leading-relaxed"
+                      className="field-input field-textarea h-32 leading-relaxed"
                       placeholder="How does your idea solve this problem?"
                     />
                   </div>
@@ -306,41 +312,41 @@ export const EditProjectModal = ({ project, isOpen, onClose, onSave }: EditProje
               {!isIdea && (
                 <>
                   <div className="space-y-2">
-                    <label className="text-xs font-bold text-gray-400 uppercase tracking-wider ml-1 flex items-center gap-2">
+                    <label className="field-label flex items-center gap-2">
                       Description <span className="text-red-400">*</span>
                       <MarkdownGuide />
                     </label>
                     <textarea 
                       value={formData.description}
                       onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                      className="w-full bg-[#141419] border border-white/10 rounded-xl px-5 py-4 outline-none focus:border-white/30 text-white h-32 resize-none placeholder:text-gray-600 leading-relaxed"
+                      className="field-input field-textarea h-32 leading-relaxed"
                       placeholder="Describe your project..."
                     />
                   </div>
 
                   <div className="space-y-2">
-                    <label className="text-xs font-bold text-gray-400 uppercase tracking-wider ml-1">Website</label>
+                    <label className="field-label">Website</label>
                     <input 
                       value={formData.website}
                       onChange={(e) => setFormData({ ...formData, website: e.target.value })}
-                      className="w-full bg-[#141419] border border-white/10 rounded-xl px-5 py-4 outline-none focus:border-white/30 text-white placeholder:text-gray-600 transition-all"
+                      className="field-input"
                       placeholder="https://your-project.com"
                     />
                   </div>
 
                   <div className="space-y-2">
-                    <label className="text-xs font-bold text-gray-400 uppercase tracking-wider ml-1">Bounty (USDC)</label>
+                    <label className="field-label">Bounty (USDC)</label>
                     <input 
                       type="number"
                       value={formData.bounty}
                       onChange={(e) => setFormData({ ...formData, bounty: e.target.value })}
-                      className="w-full bg-[#141419] border border-white/10 rounded-xl px-5 py-4 outline-none focus:border-white/30 text-white placeholder:text-gray-600 transition-all"
+                      className="field-input"
                       placeholder="0"
                     />
                   </div>
 
                   <div className="space-y-2">
-                    <label className="text-xs font-bold text-gray-400 uppercase tracking-wider ml-1">Project Banner</label>
+                    <label className="field-label">Project Banner</label>
                     <div 
                       onClick={() => !isUploadingImage && fileInputRef.current?.click()}
                       className={`border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition-all relative h-48 flex flex-col items-center justify-center overflow-hidden bg-[#141419] ${
@@ -376,8 +382,8 @@ export const EditProjectModal = ({ project, isOpen, onClose, onSave }: EditProje
 
               {/* Tags */}
               <div className="space-y-2">
-                <label className="text-xs font-bold text-gray-400 uppercase tracking-wider ml-1">Tags</label>
-                <div className="bg-[#141419] border border-white/10 rounded-xl px-4 py-3 flex flex-wrap gap-2 items-center min-h-[52px]">
+                <label className="field-label">Tags</label>
+                <div className="field-input flex flex-wrap gap-2 items-center min-h-[52px]">
                   {tags.map(tag => (
                     <span key={tag} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/10 text-white text-sm">
                       {tag}
@@ -399,13 +405,12 @@ export const EditProjectModal = ({ project, isOpen, onClose, onSave }: EditProje
           </div>
 
           {/* Footer */}
-          <div className="p-4 sm:p-6 border-t border-white/10 bg-[#0A0A0F] flex-shrink-0">
+          <div className="modal-footer flex-shrink-0">
             <button 
+              type="button"
               onClick={handleSubmit}
               disabled={isSaving}
-              className={`w-full py-3 sm:py-4 rounded-xl font-bold text-base sm:text-lg flex items-center justify-center gap-2 sm:gap-3 transition-all hover:opacity-90 disabled:opacity-50 ${
-                isIdea ? 'bg-[#FFD700] text-black' : 'bg-[#9945FF] text-white'
-              }`}
+              className={`w-full font-bold text-base sm:text-lg disabled:opacity-50 ${isIdea ? 'btn-primary' : 'btn-ghost !border-[#9945FF]/45 !text-white hover:!bg-[#9945FF]/15'}`}
             >
               {isSaving ? (
                 <Loader2 className="w-4 h-4 sm:w-5 sm:h-5 animate-spin" />

@@ -279,31 +279,29 @@ export const RelatedProjectsModal: React.FC<RelatedProjectsModalProps> = ({
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
-                className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm"
+                className="fixed inset-0 z-50 flex items-center justify-center px-4"
                 onClick={onClose}
             >
+                <div className="absolute inset-0 modal-overlay" aria-hidden="true" />
                 <motion.div
                     initial={{ opacity: 0, scale: 0.95, y: 20 }}
                     animate={{ opacity: 1, scale: 1, y: 0 }}
                     exit={{ opacity: 0, scale: 0.95, y: 20 }}
                     transition={{ duration: 0.2 }}
-                    className="w-full max-w-4xl max-h-[92vh] overflow-hidden rounded-[28px] border border-white/10 bg-[#0D1118] shadow-2xl"
-                    style={{ boxShadow: '0 28px 90px rgba(6, 182, 212, 0.12)' }}
+                    className="modal-frame max-w-4xl max-h-[92vh]"
                     onClick={(e) => e.stopPropagation()}
+                    role="dialog"
+                    aria-modal="true"
+                    aria-labelledby="related-projects-title"
                 >
-                    <div className="relative border-b border-white/10 bg-[radial-gradient(circle_at_top_left,rgba(34,211,238,0.16),transparent_34%),radial-gradient(circle_at_top_right,rgba(250,204,21,0.1),transparent_28%),linear-gradient(180deg,rgba(255,255,255,0.03),rgba(255,255,255,0))]">
-                        <div className="absolute inset-0 bg-[linear-gradient(135deg,rgba(255,255,255,0.04),transparent_35%,transparent_65%,rgba(255,255,255,0.02))]" />
-                        <div className="relative z-10 px-6 py-6 sm:px-8 sm:py-7">
+                    <div className="modal-header block">
                             <div className="flex items-start gap-4">
-                                <div className="hidden h-14 w-14 items-center justify-center rounded-2xl border border-cyan-300/20 bg-cyan-400/10 sm:flex">
-                                    <Search className="h-7 w-7 text-cyan-200" />
+                                <div className="modal-icon hidden h-14 w-14 sm:flex">
+                                    <Search className="h-7 w-7" aria-hidden="true" />
                                 </div>
                                 <div className="min-w-0 flex-1">
-                                    <div className="inline-flex items-center gap-2 rounded-full border border-cyan-400/20 bg-cyan-400/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.22em] text-cyan-200">
-                                        <Sparkles className="h-3.5 w-3.5" />
-                                        Related Projects
-                                    </div>
-                                    <h2 className="mt-4 font-display text-2xl font-bold tracking-tight text-white sm:text-3xl">
+                                    <p className="ui-eyebrow mb-3">Related Projects</p>
+                                    <h2 id="related-projects-title" className="font-display text-2xl font-bold tracking-tight text-white sm:text-3xl">
                                         Similar products around this idea
                                     </h2>
                                     <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-300 sm:text-[15px]">
@@ -312,13 +310,13 @@ export const RelatedProjectsModal: React.FC<RelatedProjectsModalProps> = ({
                                         with AI-discovered references and community submissions.
                                     </p>
                                     <div className="mt-4 flex flex-wrap items-center gap-2">
-                                        <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs font-semibold text-slate-200">
+                                        <span className="border border-white/10 bg-white/5 px-3 py-1 text-xs font-semibold text-slate-200">
                                             {totalProjects} total
                                         </span>
-                                        <span className="rounded-full border border-cyan-400/20 bg-cyan-400/10 px-3 py-1 text-xs font-semibold text-cyan-100">
+                                        <span className="border border-cyan-400/20 bg-cyan-400/10 px-3 py-1 text-xs font-semibold text-cyan-100">
                                             {aiDetected.length} AI matches
                                         </span>
-                                        <span className="rounded-full border border-amber-300/20 bg-amber-300/10 px-3 py-1 text-xs font-semibold text-amber-100">
+                                        <span className="border border-amber-300/20 bg-amber-300/10 px-3 py-1 text-xs font-semibold text-amber-100">
                                             {userPinned.length} community pins
                                         </span>
                                     </div>
@@ -328,8 +326,9 @@ export const RelatedProjectsModal: React.FC<RelatedProjectsModalProps> = ({
                             <div className="mt-6 flex flex-wrap items-center gap-2">
                                 {user && canPinAsUploader && !userHasPinned && !showPinForm && (
                                     <button
+                                        type="button"
                                         onClick={() => setShowPinForm(true)}
-                                        className="inline-flex items-center gap-2 rounded-full border border-amber-300/20 bg-amber-300/10 px-4 py-2 text-sm font-medium text-amber-50 transition-all hover:bg-amber-300/15"
+                                        className="btn-ghost min-h-[40px] border-amber-300/25 px-3 py-2 text-sm text-amber-50 hover:bg-amber-300/10"
                                     >
                                         <Plus className="h-4 w-4" />
                                         Pin Your Project
@@ -338,18 +337,20 @@ export const RelatedProjectsModal: React.FC<RelatedProjectsModalProps> = ({
                                 {user && canPinAsUploader && (
                                     <>
                                         <button
+                                            type="button"
                                             onClick={handleClearProjects}
                                             disabled={aiDetected.length === 0}
-                                            className="inline-flex items-center gap-2 rounded-full border border-red-400/20 bg-red-400/10 px-4 py-2 text-sm font-medium text-red-200 transition-all hover:bg-red-400/15 disabled:cursor-not-allowed disabled:border-white/10 disabled:bg-white/5 disabled:text-slate-500"
+                                            className="btn-ghost min-h-[40px] border-red-400/25 px-3 py-2 text-sm text-red-200 hover:bg-red-400/10 disabled:cursor-not-allowed disabled:border-white/10 disabled:bg-white/5 disabled:text-slate-500"
                                             title="Clear all AI-detected projects"
                                         >
                                             <Trash2 className="h-4 w-4" />
                                             Clear AI Results
                                         </button>
                                         <button
+                                            type="button"
                                             onClick={searchForRelatedProjects}
                                             disabled={isSearching}
-                                            className="inline-flex items-center gap-2 rounded-full border border-cyan-400/20 bg-cyan-400/10 px-4 py-2 text-sm font-medium text-cyan-100 transition-all hover:bg-cyan-400/15 disabled:cursor-not-allowed disabled:opacity-50"
+                                            className="btn-ghost min-h-[40px] border-cyan-400/25 px-3 py-2 text-sm text-cyan-100 hover:bg-cyan-400/10 disabled:cursor-not-allowed disabled:opacity-50"
                                         >
                                             {isSearching ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
                                             Search the web
@@ -357,13 +358,14 @@ export const RelatedProjectsModal: React.FC<RelatedProjectsModalProps> = ({
                                     </>
                                 )}
                                 <button
+                                    type="button"
                                     onClick={onClose}
-                                    className="ml-auto inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/10 bg-white/5 transition-colors hover:bg-white/10"
+                                    className="modal-close"
+                                    aria-label="Close related projects dialog"
                                 >
-                                    <X className="h-5 w-5 text-slate-300" />
+                                    <X className="h-5 w-5" aria-hidden="true" />
                                 </button>
                             </div>
-                        </div>
                     </div>
 
                     <div
@@ -381,7 +383,7 @@ export const RelatedProjectsModal: React.FC<RelatedProjectsModalProps> = ({
                         ) : (
                             <div className="space-y-6 px-6 py-6 sm:px-8 sm:py-8">
                                 {aiSummary && (
-                                    <div className="rounded-3xl border border-cyan-400/15 bg-cyan-400/10 p-5">
+                                    <div className="border border-cyan-400/15 bg-cyan-400/10 p-5">
                                         <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.22em] text-cyan-200/80">
                                             <Sparkles className="h-3.5 w-3.5" />
                                             AI Summary
@@ -393,11 +395,11 @@ export const RelatedProjectsModal: React.FC<RelatedProjectsModalProps> = ({
                                 )}
 
                                 {canPinAsUploader ? (
-                                    <div className="rounded-2xl border border-amber-300/20 bg-amber-300/10 px-4 py-3 text-sm text-amber-50/90">
+                                    <div className="border border-amber-300/20 bg-amber-300/10 px-4 py-3 text-sm text-amber-50/90">
                                         You uploaded this idea. Pin your project here to advertise your live build to visitors.
                                     </div>
                                 ) : (
-                                    <div className="rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3 text-sm text-slate-300">
+                                    <div className="border border-white/10 bg-white/[0.03] px-4 py-3 text-sm text-slate-300">
                                         Only idea uploader can pin a project here
                                         {ideaUploaderName ? ` (${ideaUploaderName})` : ''}.
                                     </div>
@@ -409,7 +411,7 @@ export const RelatedProjectsModal: React.FC<RelatedProjectsModalProps> = ({
                                             initial={{ opacity: 0, y: 8 }}
                                             animate={{ opacity: 1, y: 0 }}
                                             exit={{ opacity: 0, y: 8 }}
-                                            className="rounded-3xl border border-amber-300/20 bg-amber-300/10 p-4"
+                                            className="border border-amber-300/20 bg-amber-300/10 p-4"
                                         >
                                             <h4 className="flex items-center gap-2 text-sm font-semibold text-amber-50">
                                                 <LinkIcon className="h-4 w-4" />
@@ -417,40 +419,48 @@ export const RelatedProjectsModal: React.FC<RelatedProjectsModalProps> = ({
                                             </h4>
                                             <div className="mt-3 space-y-3">
                                                 <input
+                                                    id="pin-project-title"
                                                     type="text"
                                                     placeholder="Project title"
                                                     value={pinFormData.title}
                                                     onChange={(e) => setPinFormData({ ...pinFormData, title: e.target.value })}
-                                                    className="w-full rounded-2xl border border-white/10 bg-black/20 px-3 py-2.5 text-sm text-white placeholder:text-slate-500 focus:border-amber-300/40 focus:outline-none"
+                                                    className="field-input"
+                                                    aria-label="Pinned project title"
                                                 />
                                                 <input
+                                                    id="pin-project-url"
                                                     type="url"
                                                     placeholder="https://project-url.com"
                                                     value={pinFormData.url}
                                                     onChange={(e) => setPinFormData({ ...pinFormData, url: e.target.value })}
-                                                    className="w-full rounded-2xl border border-white/10 bg-black/20 px-3 py-2.5 text-sm text-white placeholder:text-slate-500 focus:border-amber-300/40 focus:outline-none"
+                                                    className="field-input"
+                                                    aria-label="Pinned project URL"
                                                 />
                                                 <textarea
+                                                    id="pin-project-description"
                                                     placeholder="Short description"
                                                     value={pinFormData.description}
                                                     onChange={(e) => setPinFormData({ ...pinFormData, description: e.target.value })}
                                                     rows={3}
-                                                    className="w-full resize-none rounded-2xl border border-white/10 bg-black/20 px-3 py-2.5 text-sm text-white placeholder:text-slate-500 focus:border-amber-300/40 focus:outline-none"
+                                                    className="field-input field-textarea"
+                                                    aria-label="Pinned project description"
                                                 />
                                                 <div className="flex items-center justify-end gap-2">
                                                     <button
+                                                        type="button"
                                                         onClick={() => {
                                                             setShowPinForm(false);
                                                             setPinFormData({ title: '', url: '', description: '' });
                                                         }}
-                                                        className="px-3 py-2 text-xs font-medium text-slate-300 transition-colors hover:text-white"
+                                                        className="btn-ghost min-h-[40px] px-3 py-2 text-xs"
                                                     >
                                                         Cancel
                                                     </button>
                                                     <button
+                                                        type="button"
                                                         onClick={handlePinProject}
                                                         disabled={isPinning}
-                                                        className="inline-flex items-center gap-2 rounded-full bg-amber-300 px-4 py-2 text-xs font-semibold text-black transition-colors hover:bg-amber-200 disabled:opacity-50"
+                                                        className="btn-primary min-h-[40px] px-4 py-2 text-xs disabled:opacity-50"
                                                     >
                                                         {isPinning ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Pin className="h-3.5 w-3.5" />}
                                                         {isPinning ? 'Pinning...' : 'Pin Project'}
@@ -466,7 +476,7 @@ export const RelatedProjectsModal: React.FC<RelatedProjectsModalProps> = ({
                                 </AnimatePresence>
 
                                 {isSearching && (
-                                    <div className="relative overflow-hidden rounded-3xl border border-cyan-400/20 bg-cyan-400/10 p-6">
+                                    <div className="relative overflow-hidden border border-cyan-400/20 bg-cyan-400/10 p-6">
                                         <div className="absolute inset-0 bg-[radial-gradient(circle_at_right,rgba(34,211,238,0.18),transparent_30%)]" />
                                         <div className="relative flex items-center gap-4">
                                             <Loader2 className="h-9 w-9 animate-spin text-cyan-200" />
@@ -483,7 +493,7 @@ export const RelatedProjectsModal: React.FC<RelatedProjectsModalProps> = ({
                                 <section className="space-y-4">
                                     <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                                         <div className="flex items-center gap-3">
-                                            <div className="flex h-10 w-10 items-center justify-center rounded-2xl border border-cyan-400/20 bg-cyan-400/10">
+                                            <div className="flex h-10 w-10 items-center justify-center border border-cyan-400/20 bg-cyan-400/10">
                                                 <Search className="h-4 w-4 text-cyan-200" />
                                             </div>
                                             <div>
@@ -491,7 +501,7 @@ export const RelatedProjectsModal: React.FC<RelatedProjectsModalProps> = ({
                                                 <p className="text-sm text-slate-400">Clean, ranked references from the current search.</p>
                                             </div>
                                         </div>
-                                        <span className="w-fit rounded-full border border-cyan-400/20 bg-cyan-400/10 px-3 py-1 text-xs font-semibold text-cyan-100">
+                                        <span className="w-fit border border-cyan-400/20 bg-cyan-400/10 px-3 py-1 text-xs font-semibold text-cyan-100">
                                             {rankedAiProjects.length} visible
                                         </span>
                                     </div>

@@ -9,7 +9,7 @@ import { LoadingDots } from './LoadingSpinner';
 export const ConnectReminderModal = () => {
   const isConnectReminderOpen = useAppStore((state) => state.isConnectReminderOpen);
   const closeConnectReminder = useAppStore((state) => state.closeConnectReminder);
-  const { signInWithGoogle, signInWithWallet, isLoading } = useAuth();
+  const { signInWithGoogle, signInWithWallet } = useAuth();
   const [isSigningInGoogle, setIsSigningInGoogle] = React.useState(false);
   const [isSigningInWallet, setIsSigningInWallet] = React.useState(false);
 
@@ -33,6 +33,7 @@ export const ConnectReminderModal = () => {
     try {
       setIsSigningInGoogle(true);
       await signInWithGoogle();
+      setIsSigningInGoogle(false);
     } catch (error) {
       console.error('Sign in error:', error);
       setIsSigningInGoogle(false);
@@ -44,14 +45,15 @@ export const ConnectReminderModal = () => {
     try {
       setIsSigningInWallet(true);
       await signInWithWallet();
+      setIsSigningInWallet(false);
     } catch (error) {
       console.error('Wallet sign in error:', error);
       setIsSigningInWallet(false);
     }
   };
 
-  const loadingGoogle = isLoading || isSigningInGoogle;
-  const loadingWallet = isLoading || isSigningInWallet;
+  const loadingGoogle = isSigningInGoogle;
+  const loadingWallet = isSigningInWallet;
 
   return (
     <div className="fixed inset-0 z-[150] flex items-center justify-center px-4">

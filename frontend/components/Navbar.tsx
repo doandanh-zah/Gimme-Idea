@@ -168,14 +168,13 @@ const Navbar = () => {
   return (
     <>
       <nav className="fixed top-0 left-0 right-0 z-50 border-b border-white/10 bg-[#050505]/95">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between relative">
+        <div className="page-shell h-14 flex items-center justify-between relative">
           {/* Logo - links to landing page */}
-          <button
-            type="button"
+          <Link
+            href="/landing"
             onClick={() => {
               setView('landing');
               setSelectedProject(null);
-              router.push('/landing');
             }}
             className="flex items-center gap-2 group shrink-0"
           >
@@ -193,10 +192,10 @@ const Navbar = () => {
               <span className="text-white">Gimme</span>
               <span className="text-[#FFD700]">Idea</span>
             </span>
-          </button>
+          </Link>
 
-          {/* Desktop Links — editorial mono */}
-          <div className={`hidden md:flex items-center gap-1 ${showSearch ? 'opacity-0 pointer-events-none' : 'opacity-100'} transition-opacity duration-200`}>
+          {/* Desktop Links — editorial mono + icons with active transition */}
+          <div className={`hidden md:flex items-center gap-0.5 ${showSearch ? 'opacity-0 pointer-events-none' : 'opacity-100'} transition-opacity duration-200`}>
             {navLinks.map((link) => {
               if (link.isDropdown) {
                 return (
@@ -207,11 +206,22 @@ const Navbar = () => {
                       aria-haspopup="menu"
                       aria-expanded={showMoreMenu}
                       aria-controls="desktop-more-menu"
-                      className={`flex min-h-[40px] items-center gap-2 px-3 py-2 text-[11px] font-mono uppercase tracking-[0.12em] transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#FFD700]
+                      className={`group relative flex min-h-[40px] items-center gap-2 px-3 py-2 text-[11px] font-mono uppercase tracking-[0.12em] transition-all duration-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#FFD700]
                       ${showMoreMenu ? 'text-[#FFD700]' : 'text-gray-400 hover:text-white'}`}
                     >
-                      <link.icon className="h-4 w-4" aria-hidden="true" />
+                      <span
+                        className={`flex h-7 w-7 items-center justify-center border transition-all duration-200 ${
+                          showMoreMenu
+                            ? 'border-[#FFD700]/50 bg-[#FFD700]/10 text-[#FFD700]'
+                            : 'border-transparent bg-transparent text-gray-500 group-hover:border-white/15 group-hover:bg-white/[0.04] group-hover:text-white'
+                        }`}
+                      >
+                        <link.icon className="h-3.5 w-3.5 transition-transform duration-200 group-hover:scale-110" aria-hidden="true" />
+                      </span>
                       <span>{link.name}</span>
+                      {showMoreMenu && (
+                        <span className="absolute left-3 right-3 -bottom-[13px] h-0.5 bg-[#FFD700]" />
+                      )}
                     </button>
                     <AnimatePresence>
                       {showMoreMenu && (
@@ -229,26 +239,41 @@ const Navbar = () => {
                             const style = subLink.highlight || {};
                             const itemColor = style.textColor || undefined;
 
+                            if (isLocked) {
+                              return (
+                                <button
+                                  type="button"
+                                  role="menuitem"
+                                  key={subLink.id || subLink.name}
+                                  disabled
+                                  style={{
+                                    borderLeftColor: style.borderColor || 'transparent',
+                                  }}
+                                  className="group flex min-h-[44px] w-full cursor-not-allowed items-center justify-between gap-3 border-l-2 bg-white/[0.02] px-3 py-2.5 text-left text-gray-500 transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-[#FFD700]"
+                                >
+                                  <div className="flex min-w-0 items-center gap-3">
+                                    <span className="flex h-8 w-8 items-center justify-center border border-white/10 bg-white/[0.03] text-gray-400">
+                                      <subLink.icon className="h-4 w-4" style={{ color: itemColor }} aria-hidden="true" />
+                                    </span>
+                                    <span className="truncate font-mono text-[11px] uppercase tracking-[0.12em]" style={{ color: itemColor }}>
+                                      {subLink.name}
+                                    </span>
+                                  </div>
+                                  <Lock className="h-3.5 w-3.5 text-gray-600" aria-hidden="true" />
+                                </button>
+                              );
+                            }
+
                             return (
-                              <button
-                                type="button"
+                              <Link
                                 role="menuitem"
                                 key={subLink.id || subLink.name}
-                                onClick={() => {
-                                  if (!isLocked) {
-                                    router.push(subLink.route);
-                                    setShowMoreMenu(false);
-                                  }
-                                }}
-                                disabled={isLocked}
+                                href={subLink.route}
+                                onClick={() => setShowMoreMenu(false)}
                                 style={{
                                   borderLeftColor: style.borderColor || 'transparent',
                                 }}
-                                className={`group flex min-h-[44px] w-full items-center justify-between gap-3 border-l-2 px-3 py-2.5 text-left transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-[#FFD700]
-                              ${isLocked
-                                    ? 'cursor-not-allowed bg-white/[0.02] text-gray-500'
-                                    : 'text-gray-300 hover:bg-white/[0.04] hover:text-white'
-                                  }`}
+                                className="group flex min-h-[44px] w-full items-center justify-between gap-3 border-l-2 px-3 py-2.5 text-left text-gray-300 transition-colors hover:bg-white/[0.04] hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-[#FFD700]"
                               >
                                 <div className="flex min-w-0 items-center gap-3">
                                   <span className="flex h-8 w-8 items-center justify-center border border-white/10 bg-white/[0.03] text-gray-400 transition-colors group-hover:border-[#FFD700]/35 group-hover:text-[#FFD700]">
@@ -259,20 +284,16 @@ const Navbar = () => {
                                   </span>
                                 </div>
 
-                                {isLocked ? (
-                                  <Lock className="h-3.5 w-3.5 text-gray-600" aria-hidden="true" />
-                                ) : (
-                                  style.badge && (
-                                    <span className="border border-white/10 px-1.5 py-0.5 font-mono text-[9px] font-bold uppercase tracking-[0.1em]"
-                                      style={{
-                                        color: style.borderColor || 'white',
-                                        borderColor: style.borderColor || 'rgba(255,255,255,0.1)'
-                                      }}>
-                                      {style.badge}
-                                    </span>
-                                  )
+                                {style.badge && (
+                                  <span className="border border-white/10 px-1.5 py-0.5 font-mono text-[9px] font-bold uppercase tracking-[0.1em]"
+                                    style={{
+                                      color: style.borderColor || 'white',
+                                      borderColor: style.borderColor || 'rgba(255,255,255,0.1)'
+                                    }}>
+                                    {style.badge}
+                                  </span>
                                 )}
-                              </button>
+                              </Link>
                             )
                           })}
                         </motion.div>
@@ -283,19 +304,35 @@ const Navbar = () => {
               }
 
               const isActive = pathname === link.route || (link.route !== '/' && pathname?.startsWith(link.route));
+              const Icon = link.icon;
               return (
-                <button
+                <Link
                   key={link.name}
-                  type="button"
-                  onClick={() => router.push(link.route)}
-                  className={`relative px-3 py-2 text-[11px] font-mono uppercase tracking-[0.12em] transition-colors
+                  href={link.route || '/'}
+                  className={`group relative flex min-h-[40px] items-center gap-2 px-3 py-2 text-[11px] font-mono uppercase tracking-[0.12em] transition-all duration-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#FFD700]
                   ${isActive ? 'text-white' : 'text-gray-400 hover:text-white'}`}
                 >
-                  {link.name}
-                  {isActive && (
-                    <span className="absolute left-3 right-3 -bottom-[13px] h-0.5 bg-[#FFD700]" />
-                  )}
-                </button>
+                  <span
+                    className={`flex h-7 w-7 items-center justify-center border transition-all duration-200 ${
+                      isActive
+                        ? 'border-[#FFD700]/50 bg-[#FFD700]/10 text-[#FFD700]'
+                        : 'border-transparent bg-transparent text-gray-500 group-hover:border-white/15 group-hover:bg-white/[0.04] group-hover:text-white'
+                    }`}
+                  >
+                    <Icon
+                      className={`h-3.5 w-3.5 transition-transform duration-200 ${
+                        isActive ? 'scale-100' : 'group-hover:scale-110'
+                      }`}
+                      aria-hidden="true"
+                    />
+                  </span>
+                  <span className="transition-colors duration-200">{link.name}</span>
+                  <span
+                    className={`absolute left-3 right-3 -bottom-[13px] h-0.5 origin-left bg-[#FFD700] transition-transform duration-200 ease-out ${
+                      isActive ? 'scale-x-100' : 'scale-x-0 group-hover:scale-x-50 group-hover:opacity-40'
+                    }`}
+                  />
+                </Link>
               );
             })}
           </div>
@@ -570,23 +607,23 @@ const Navbar = () => {
                         <p className="truncate font-mono text-[11px] uppercase tracking-[0.12em] text-white">{user.username}</p>
                         <p className="mt-1 truncate text-xs text-gray-500">{user.email || user.wallet}</p>
                       </div>
-                      <button
-                        type="button"
+                      <Link
                         role="menuitem"
-                        onClick={() => { router.push('/profile'); setShowUserMenu(false); }}
+                        href="/profile"
+                        onClick={() => setShowUserMenu(false)}
                         className="mt-1 flex min-h-[40px] w-full items-center gap-3 px-2 py-2 text-left text-sm text-gray-300 transition-colors hover:bg-white/[0.04] hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-[#FFD700]"
                       >
                         <UserIcon className="w-4 h-4" /> My Profile
-                      </button>
+                      </Link>
 
-                      <button
-                        type="button"
+                      <Link
                         role="menuitem"
-                        onClick={() => { router.push('/settings/tokens'); setShowUserMenu(false); }}
+                        href="/settings/tokens"
+                        onClick={() => setShowUserMenu(false)}
                         className="flex min-h-[40px] w-full items-center gap-3 px-2 py-2 text-left text-sm text-gray-300 transition-colors hover:bg-white/[0.04] hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-[#FFD700]"
                       >
                         <Lock className="w-4 h-4" /> API Tokens
-                      </button>
+                      </Link>
                       {user.needsWalletConnect && (
                         <button
                           type="button"
@@ -644,12 +681,11 @@ const Navbar = () => {
                     {showMoreMenu && (
                       <div role="menu" className="ml-3 border-l border-white/10 py-1">
                         {moreLinks.map((subLink) => (
-                          <button
-                            type="button"
+                          <Link
                             role="menuitem"
                             key={subLink.name}
+                            href={subLink.route}
                             onClick={() => {
-                              router.push(subLink.route);
                               setIsOpen(false);
                               setShowMoreMenu(false);
                             }}
@@ -659,7 +695,7 @@ const Navbar = () => {
                               <subLink.icon className="h-3.5 w-3.5" />
                             </span>
                             {subLink.name}
-                          </button>
+                          </Link>
                         ))}
                       </div>
                     )}
@@ -667,83 +703,121 @@ const Navbar = () => {
                 );
               }
               return (
-                <button
-                  type="button"
+                <Link
                   key={link.name}
-                  onClick={() => {
-                    router.push(link.route);
-                    setIsOpen(false);
-                  }}
+                  href={link.route || '/'}
+                  onClick={() => setIsOpen(false)}
                   className="w-full px-3 py-3 hover:bg-white/5 text-gray-300 text-left flex items-center gap-3 font-mono text-xs uppercase tracking-wider"
                 >
                   <link.icon className="w-4 h-4" />
                   {link.name}
-                </button>
+                </Link>
               );
             })}
             {user && (
-              <button
-                type="button"
-                onClick={() => {
-                  router.push('/profile');
-                  setIsOpen(false);
-                }}
+              <Link
+                href="/profile"
+                onClick={() => setIsOpen(false)}
                 className="w-full px-3 py-3 hover:bg-white/5 text-gray-300 text-left flex items-center gap-3 border-t border-white/10 font-mono text-xs uppercase tracking-wider"
               >
                 <UserIcon className="w-4 h-4" /> My Profile
-              </button>
+              </Link>
             )}
           </div>
         )}
       </nav>
 
-      {/* Mobile Bottom Tab Bar — flat dock */}
-      <div className="md:hidden fixed bottom-0 left-0 right-0 z-50 border-t border-white/10 bg-[#050505]">
+      {/* Mobile Bottom Tab Bar — flat dock with active icon frames */}
+      <div className="md:hidden fixed bottom-0 left-0 right-0 z-50 border-t border-white/10 bg-[#050505]/95 backdrop-blur-sm">
         <div className="grid grid-cols-5 items-center px-2 py-2 safe-area-pb">
-          <button
-            type="button"
-            onClick={() => router.push('/home')}
-            className={`flex flex-col items-center gap-0.5 min-h-[44px] justify-center text-[9px] font-mono uppercase tracking-wider ${pathname?.startsWith('/home') ? 'text-[#FFD700]' : 'text-gray-500'}`}
-          >
-            <LayoutGrid className="w-5 h-5" />
-            Home
-          </button>
-          <button
-            type="button"
-            onClick={() => router.push('/idea')}
-            className={`flex flex-col items-center gap-0.5 min-h-[44px] justify-center text-[9px] font-mono uppercase tracking-wider ${pathname?.startsWith('/idea') ? 'text-[#FFD700]' : 'text-gray-500'}`}
-          >
-            <Lightbulb className="w-5 h-5" />
-            Ideas
-          </button>
+          {[
+            { label: 'Home', route: '/home', icon: LayoutGrid, match: '/home' },
+            { label: 'Ideas', route: '/idea', icon: Lightbulb, match: '/idea' },
+          ].map((tab) => {
+            const active = pathname?.startsWith(tab.match);
+            const TabIcon = tab.icon;
+            return (
+              <Link
+                key={tab.label}
+                href={tab.route}
+                className={`flex min-h-[44px] flex-col items-center justify-center gap-1 text-[9px] font-mono uppercase tracking-wider transition-colors duration-200 ${
+                  active ? 'text-[#FFD700]' : 'text-gray-500'
+                }`}
+              >
+                <span
+                  className={`flex h-8 w-8 items-center justify-center border transition-all duration-200 ${
+                    active
+                      ? 'border-[#FFD700]/45 bg-[#FFD700]/10'
+                      : 'border-transparent'
+                  }`}
+                >
+                  <TabIcon className={`h-5 w-5 transition-transform duration-200 ${active ? 'scale-105' : ''}`} />
+                </span>
+                {tab.label}
+              </Link>
+            );
+          })}
 
           <div className="flex justify-center">
             <button
               type="button"
               onClick={() => openSubmitModal('idea')}
-              className="w-11 h-11 rounded-sm bg-[#FFD700] text-black flex items-center justify-center"
+              className="flex h-11 w-11 items-center justify-center border border-[#FFD700] bg-[#FFD700] text-black transition-transform duration-200 active:scale-95"
               aria-label="Create idea"
             >
-              <Plus className="w-6 h-6" />
+              <Plus className="h-6 w-6" />
             </button>
           </div>
 
-          <button
-            type="button"
-            onClick={() => router.push('/feeds')}
-            className={`flex flex-col items-center gap-0.5 min-h-[44px] justify-center text-[9px] font-mono uppercase tracking-wider ${pathname?.startsWith('/feeds') ? 'text-[#FFD700]' : 'text-gray-500'}`}
-          >
-            <Rss className="w-5 h-5" />
-            Feeds
-          </button>
-          <button
-            type="button"
-            onClick={() => (user ? router.push('/profile') : openConnectReminder())}
-            className={`flex flex-col items-center gap-0.5 min-h-[44px] justify-center text-[9px] font-mono uppercase tracking-wider ${pathname?.startsWith('/profile') ? 'text-[#FFD700]' : 'text-gray-500'}`}
-          >
-            <UserIcon className="w-5 h-5" />
-            You
-          </button>
+          {[
+            { label: 'Feeds', route: '/feeds', icon: Rss, match: '/feeds' },
+            {
+              label: 'You',
+              route: '/profile',
+              icon: UserIcon,
+              match: '/profile',
+              onClick: () => (user ? router.push('/profile') : openConnectReminder()),
+            },
+          ].map((tab) => {
+            const active = pathname?.startsWith(tab.match);
+            const TabIcon = tab.icon;
+            const tabClassName = `flex min-h-[44px] flex-col items-center justify-center gap-1 text-[9px] font-mono uppercase tracking-wider transition-colors duration-200 ${
+              active ? 'text-[#FFD700]' : 'text-gray-500'
+            }`;
+            const tabContent = (
+              <>
+                <span
+                  className={`flex h-8 w-8 items-center justify-center border transition-all duration-200 ${
+                    active
+                      ? 'border-[#FFD700]/45 bg-[#FFD700]/10'
+                      : 'border-transparent'
+                  }`}
+                >
+                  <TabIcon className={`h-5 w-5 transition-transform duration-200 ${active ? 'scale-105' : ''}`} />
+                </span>
+                {tab.label}
+              </>
+            );
+
+            return tab.onClick ? (
+              <button
+                key={tab.label}
+                type="button"
+                onClick={tab.onClick}
+                className={tabClassName}
+              >
+                {tabContent}
+              </button>
+            ) : (
+              <Link
+                key={tab.label}
+                href={tab.route}
+                className={tabClassName}
+              >
+                {tabContent}
+              </Link>
+            );
+          })}
         </div>
       </div>
     </>

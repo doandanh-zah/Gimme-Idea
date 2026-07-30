@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Loader2, Globe, Lock, Link2, Image as ImageIcon } from 'lucide-react';
+import { X, Loader2, Globe, Link2, Rss } from 'lucide-react';
 import { apiClient } from '@/lib/api-client';
 import { Feed } from '@/lib/types';
 import toast from 'react-hot-toast';
@@ -63,11 +63,14 @@ export const CreateFeedModal: React.FC<CreateFeedModalProps> = ({
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
-        className="fixed inset-0 z-50 flex items-center justify-center p-4"
+        className="fixed inset-0 z-50 flex items-center justify-center px-4"
       >
         {/* Backdrop */}
-        <div
-          className="absolute inset-0 bg-black/80 backdrop-blur-sm"
+        <button
+          type="button"
+          aria-label="Close create feed dialog"
+          tabIndex={-1}
+          className="absolute inset-0 modal-overlay"
           onClick={onClose}
         />
 
@@ -76,68 +79,85 @@ export const CreateFeedModal: React.FC<CreateFeedModalProps> = ({
           initial={{ scale: 0.95, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
           exit={{ scale: 0.95, opacity: 0 }}
-          className="relative w-full max-w-md bg-[#0F0F0F] border border-white/10 rounded-2xl shadow-2xl overflow-hidden"
+          className="modal-frame max-w-md"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="create-feed-title"
         >
           {/* Header */}
-          <div className="flex items-center justify-between p-5 border-b border-white/10">
-            <h2 className="text-xl font-bold text-white">Create New Feed</h2>
+          <div className="modal-header">
+            <div className="flex min-w-0 items-start gap-3">
+              <div className="modal-icon">
+                <Rss className="h-5 w-5" aria-hidden="true" />
+              </div>
+              <div className="min-w-0">
+                <p className="ui-eyebrow mb-2">GmiFeeds</p>
+                <h2 id="create-feed-title" className="modal-title">Create Feed</h2>
+                <p className="modal-description">Collect ideas under a focused public or unlisted feed.</p>
+              </div>
+            </div>
             <button
+              type="button"
               onClick={onClose}
-              className="p-2 hover:bg-white/10 rounded-lg transition-colors"
+              className="modal-close"
+              aria-label="Close create feed dialog"
             >
-              <X className="w-5 h-5 text-gray-400" />
+              <X className="w-5 h-5" aria-hidden="true" />
             </button>
           </div>
 
           {/* Form */}
-          <form onSubmit={handleSubmit} className="p-5 space-y-5">
+          <form onSubmit={handleSubmit} className="modal-body space-y-5">
             {/* Name */}
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">
+              <label className="field-label" htmlFor="feed-name">
                 Feed Name *
               </label>
               <input
+                id="feed-name"
                 type="text"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 placeholder="e.g., DeFi Ideas to Watch"
                 maxLength={100}
-                className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:border-[#FFD700]/50 transition-colors"
+                className="field-input"
               />
-              <p className="text-xs text-gray-500 mt-1">{name.length}/100</p>
+              <p className="field-help">{name.length}/100</p>
             </div>
 
             {/* Description */}
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">
+              <label className="field-label" htmlFor="feed-description">
                 Description
               </label>
               <textarea
+                id="feed-description"
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
                 placeholder="What kind of ideas will you collect here?"
                 maxLength={500}
                 rows={3}
-                className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:border-[#FFD700]/50 transition-colors resize-none"
+                className="field-input field-textarea"
               />
-              <p className="text-xs text-gray-500 mt-1">{description.length}/500</p>
+              <p className="field-help">{description.length}/500</p>
             </div>
 
             {/* Visibility */}
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-3">
+              <p className="field-label">
                 Visibility
-              </label>
+              </p>
               <div className="space-y-2">
                 {/* Public */}
                 <button
                   type="button"
                   onClick={() => setVisibility('public')}
-                  className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl border transition-all text-left ${
+                  className={`modal-option ${
                     visibility === 'public'
-                      ? 'bg-[#FFD700]/20 border-[#FFD700]/50'
-                      : 'bg-white/5 border-white/10 hover:bg-white/10'
+                      ? 'modal-option-active'
+                      : ''
                   }`}
+                  aria-pressed={visibility === 'public'}
                 >
                   <Globe className={`w-5 h-5 ${visibility === 'public' ? 'text-[#FFD700]' : 'text-gray-400'}`} />
                   <div>
@@ -150,15 +170,16 @@ export const CreateFeedModal: React.FC<CreateFeedModalProps> = ({
                 <button
                   type="button"
                   onClick={() => setVisibility('unlisted')}
-                  className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl border transition-all text-left ${
+                  className={`modal-option ${
                     visibility === 'unlisted'
-                      ? 'bg-blue-500/20 border-blue-500/50'
-                      : 'bg-white/5 border-white/10 hover:bg-white/10'
+                      ? 'modal-option-active'
+                      : ''
                   }`}
+                  aria-pressed={visibility === 'unlisted'}
                 >
-                  <Link2 className={`w-5 h-5 ${visibility === 'unlisted' ? 'text-blue-400' : 'text-gray-400'}`} />
+                  <Link2 className={`w-5 h-5 ${visibility === 'unlisted' ? 'text-[#FFD700]' : 'text-gray-400'}`} />
                   <div>
-                    <p className={`font-medium ${visibility === 'unlisted' ? 'text-blue-400' : 'text-white'}`}>Unlisted</p>
+                    <p className={`font-medium ${visibility === 'unlisted' ? 'text-[#FFD700]' : 'text-white'}`}>Unlisted</p>
                     <p className="text-xs text-gray-500">Not in Discover, but anyone with link can view</p>
                   </div>
                 </button>
@@ -169,7 +190,7 @@ export const CreateFeedModal: React.FC<CreateFeedModalProps> = ({
             <button
               type="submit"
               disabled={isLoading || !name.trim()}
-              className="w-full py-3 bg-gradient-to-r from-[#FFD700] to-[#FDB931] text-black rounded-xl font-bold hover:shadow-lg hover:shadow-[#FFD700]/20 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              className="btn-primary w-full disabled:cursor-not-allowed"
             >
               {isLoading ? (
                 <>

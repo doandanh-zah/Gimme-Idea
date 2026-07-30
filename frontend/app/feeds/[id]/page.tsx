@@ -50,8 +50,8 @@ const VISIBILITY_CONFIG = {
 
 function FeedDetailSkeleton() {
   return (
-    <main className="min-h-screen px-4 pb-20 pt-28 sm:px-6">
-      <div className="mx-auto max-w-7xl">
+    <main className="min-h-screen page-top">
+      <div className="page-shell">
         <div className="h-10 w-36 animate-pulse bg-white/10" />
         <div className="mt-6 border border-white/10 bg-white/[0.03] p-6">
           <div className="h-14 w-14 animate-pulse bg-white/10" />
@@ -232,22 +232,24 @@ export default function FeedDetailPage() {
 
   if (!feed) {
     return (
-      <main className="flex min-h-screen items-center justify-center px-4 py-20 text-gray-300 sm:px-6">
-        <section className="w-full max-w-lg border border-white/10 bg-white/[0.03] p-6 text-center">
-          <ShieldOff className="mx-auto h-12 w-12 text-red-300" />
-          <h1 className="mt-4 text-2xl font-semibold text-white">Feed not available</h1>
-          <p className="mt-2 text-sm leading-6 text-gray-400">{error || 'This feed may be private or does not exist.'}</p>
-          <div className="mt-6 flex flex-wrap justify-center gap-2">
-            <button type="button" onClick={() => router.push('/feeds')} className="btn-ghost">
-              <ArrowLeft className="h-4 w-4" />
-              Back to GmiFeeds
-            </button>
-            <button type="button" onClick={() => void loadFeed()} className="btn-primary">
-              <RefreshCw className="h-4 w-4" />
-              Retry
-            </button>
-          </div>
-        </section>
+      <main className="min-h-screen page-top text-gray-300">
+        <div className="page-shell flex min-h-[60vh] items-center justify-center">
+          <section className="w-full max-w-lg border border-white/10 bg-white/[0.03] p-6 text-center">
+            <ShieldOff className="mx-auto h-12 w-12 text-red-300" />
+            <h1 className="mt-4 text-2xl font-semibold text-white">Feed not available</h1>
+            <p className="mt-2 text-sm leading-6 text-gray-400">{error || 'This feed may be private or does not exist.'}</p>
+            <div className="mt-6 flex flex-wrap justify-center gap-2">
+              <button type="button" onClick={() => router.push('/feeds')} className="btn-ghost">
+                <ArrowLeft className="h-4 w-4" />
+                Back to GmiFeeds
+              </button>
+              <button type="button" onClick={() => void loadFeed()} className="btn-primary">
+                <RefreshCw className="h-4 w-4" />
+                Retry
+              </button>
+            </div>
+          </section>
+        </div>
       </main>
     );
   }
@@ -259,8 +261,8 @@ export default function FeedDetailPage() {
   const VisibilityIcon = visibility.icon;
 
   return (
-    <main className="min-h-screen px-4 pb-20 pt-28 text-gray-300 sm:px-6">
-      <div className="mx-auto max-w-7xl">
+    <main className="min-h-screen page-top text-gray-300">
+      <div className="page-shell">
         <button
           type="button"
           onClick={() => router.push('/feeds')}
@@ -503,14 +505,14 @@ export default function FeedDetailPage() {
       />
 
       {showDeleteModal ? (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-labelledby="delete-feed-title">
+        <div className="fixed inset-0 z-50 flex items-center justify-center px-4" role="dialog" aria-modal="true" aria-labelledby="delete-feed-title">
           <button
             type="button"
             aria-label="Cancel feed deletion"
-            className="absolute inset-0 bg-black/75"
+            className="absolute inset-0 modal-overlay"
             onClick={() => !isDeleting && setShowDeleteModal(false)}
           />
-          <div className="relative w-full max-w-md border border-white/10 bg-[#0D0D12] p-6 shadow-2xl">
+          <div className="modal-frame max-w-md p-6">
             <AlertTriangle className="mx-auto h-10 w-10 text-red-300" />
             <h3 id="delete-feed-title" className="mt-4 text-center text-xl font-semibold text-white">Delete Feed?</h3>
             <p className="mt-2 text-center text-sm leading-6 text-gray-400">

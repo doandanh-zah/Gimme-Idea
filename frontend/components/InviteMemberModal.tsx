@@ -98,40 +98,54 @@ const InviteMemberModal: React.FC<InviteMemberModalProps> = ({
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
-                    className="fixed inset-0 bg-black/70 z-50 flex justify-center items-center p-4"
+                    className="fixed inset-0 z-50 flex items-center justify-center px-4"
                     onClick={onClose}
                 >
+                    <div className="absolute inset-0 modal-overlay" aria-hidden="true" />
                     <motion.div
                         initial={{ scale: 0.9, y: 50 }}
                         animate={{ scale: 1, y: 0 }}
                         exit={{ scale: 0.9, y: 50 }}
-                        className="bg-surface border border-white/10 rounded-xl shadow-lg w-full max-w-lg relative overflow-hidden"
+                        className="modal-frame max-w-lg"
                         onClick={(e) => e.stopPropagation()}
+                        role="dialog"
+                        aria-modal="true"
+                        aria-labelledby="invite-member-title"
                     >
                         {/* Header */}
-                        <div className="flex items-center justify-between p-4 border-b border-white/10">
-                            <h2 className="text-lg font-bold text-white font-quantico flex items-center gap-2">
-                                <UserPlus className="w-5 h-5 text-gold" /> Invite Member
-                            </h2>
+                        <div className="modal-header">
+                            <div className="flex items-start gap-3">
+                                <div className="modal-icon">
+                                    <UserPlus className="w-5 h-5" aria-hidden="true" />
+                                </div>
+                                <div>
+                                    <p className="ui-eyebrow mb-2">Team</p>
+                                    <h2 id="invite-member-title" className="modal-title">Invite Member</h2>
+                                    <p className="modal-description">Search a username and invite them to join.</p>
+                                </div>
+                            </div>
                             <button
+                                type="button"
                                 onClick={onClose}
-                                className="text-gray-400 hover:text-white transition-colors"
+                                className="modal-close"
+                                aria-label="Close invite member dialog"
                             >
-                                <X className="w-5 h-5" />
+                                <X className="w-5 h-5" aria-hidden="true" />
                             </button>
                         </div>
 
                         {/* Search Input */}
-                        <div className="p-4 border-b border-white/5">
+                        <div className="border-b border-white/10 p-4">
                             <div className="relative">
                                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
                                 <input
+                                    aria-label="Search username"
                                     type="text"
                                     placeholder="Search by username (min 2 characters)..."
                                     value={searchQuery}
                                     onChange={(e) => setSearchQuery(e.target.value)}
                                     autoFocus
-                                    className="w-full bg-black/30 border border-white/10 rounded-lg pl-10 pr-4 py-3 text-sm text-white focus:border-gold/50 focus:outline-none placeholder-gray-500"
+                                    className="field-input pl-10"
                                 />
                                 {isSearching && (
                                     <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gold animate-spin" />
@@ -140,7 +154,7 @@ const InviteMemberModal: React.FC<InviteMemberModalProps> = ({
                         </div>
 
                         {/* Search Results */}
-                        <div className="p-4 max-h-[350px] overflow-y-auto">
+                        <div className="modal-body max-h-[350px] overflow-y-auto">
                             {searchQuery.length < 2 ? (
                                 <div className="text-center py-8 text-gray-500 text-sm">
                                     <Search className="w-8 h-8 mx-auto mb-3 opacity-30" />
@@ -162,7 +176,7 @@ const InviteMemberModal: React.FC<InviteMemberModalProps> = ({
                                     {searchResults.map((user) => (
                                         <div
                                             key={user.id}
-                                            className="flex items-center justify-between bg-black/20 border border-white/5 p-3 rounded-lg hover:border-white/10 transition-colors"
+                                            className="flex items-center justify-between border border-white/10 bg-black/20 p-3 transition-colors hover:border-white/20"
                                         >
                                             <div className="flex items-center gap-3 min-w-0 flex-1">
                                                 {user.avatar ? (
@@ -174,7 +188,7 @@ const InviteMemberModal: React.FC<InviteMemberModalProps> = ({
                                                         className="rounded-full shrink-0"
                                                     />
                                                 ) : (
-                                                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-500 to-blue-500 flex items-center justify-center text-sm font-bold text-white shrink-0">
+                                                    <div className="flex h-10 w-10 shrink-0 items-center justify-center border border-white/10 bg-[#111] text-sm font-bold text-[#FFD700]">
                                                         {user.username.charAt(0).toUpperCase()}
                                                     </div>
                                                 )}
@@ -193,9 +207,10 @@ const InviteMemberModal: React.FC<InviteMemberModalProps> = ({
                                                 </div>
                                             </div>
                                             <button
+                                                type="button"
                                                 onClick={() => handleInvite(user.id)}
                                                 disabled={invitingUserId === user.id}
-                                                className="shrink-0 ml-3 bg-gold text-black text-xs font-bold px-4 py-2 rounded-lg hover:bg-gold/90 transition-colors flex items-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed"
+                                                className="btn-primary ml-3 min-h-[40px] shrink-0 px-3 py-2 text-xs disabled:cursor-not-allowed"
                                             >
                                                 {invitingUserId === user.id ? (
                                                     <>
@@ -216,7 +231,7 @@ const InviteMemberModal: React.FC<InviteMemberModalProps> = ({
                         </div>
 
                         {/* Footer hint */}
-                        <div className="px-4 py-3 bg-black/20 border-t border-white/5">
+                        <div className="modal-footer block">
                             <p className="text-[10px] text-gray-500 text-center">
                                 Invited users will receive a notification and can accept or decline.
                             </p>
