@@ -446,17 +446,64 @@ export class ProjectsService {
 
     if (!project && shortIdSuffix) {
       const legacySlugPrefix = slugWithoutIdSuffix || idOrSlug;
-      const { data: projects } = await supabase
+      // Only treat as slug-prefix search when the route key is longer than
+      // the bare 8-char id (e.g. "my-idea-bb26ac99"). Bare prefixes are
+      // handled by find_project_by_id_prefix below.
+      if (legacySlugPrefix.length > shortIdSuffix.length) {
+        const { data: projects } = await supabase
+          .from("projects")
+          .select(selectQuery)
+          .like("slug", `${legacySlugPrefix}%`)
+          .limit(2);
+
+        if (projects?.length === 1) {
+          project = projects[0];
+          error = null;
+        } else if (projects && projects.length > 1) {
+          throw new BadRequestException("Ambiguous project slug");
+        }
+      }
+    }
+
+    // Bare UUID prefix (e.g. /idea/bb26ac99) — used when projects.slug is null.
+    // Prefer UUID first-segment range (no custom RPC required), then RPC fallback.
+    if (!project && shortIdSuffix && /^[a-f0-9]{8}$/i.test(idOrSlug)) {
+      const prefix = shortIdSuffix.toLowerCase();
+
+      const { data: ranged } = await supabase
         .from("projects")
         .select(selectQuery)
-        .like("slug", `${legacySlugPrefix}%`)
+        .gte("id", `${prefix}-0000-0000-0000-000000000000`)
+        .lte("id", `${prefix}-ffff-ffff-ffff-ffffffffffff`)
         .limit(2);
 
-      if (projects?.length === 1) {
-        project = projects[0];
+      if (ranged?.length === 1) {
+        project = ranged[0];
         error = null;
-      } else if (projects && projects.length > 1) {
-        throw new BadRequestException("Ambiguous project slug");
+      } else if (ranged && ranged.length > 1) {
+        throw new BadRequestException("Ambiguous project id prefix");
+      } else {
+        const { data: resolvedId, error: prefixError } = await supabase.rpc(
+          "find_project_by_id_prefix",
+          { prefix }
+        );
+
+        if (!prefixError && resolvedId) {
+          const result = await supabase
+            .from("projects")
+            .select(selectQuery)
+            .eq("id", resolvedId)
+            .single();
+
+          if (result.data) {
+            project = result.data;
+            error = null;
+          }
+        } else if (prefixError) {
+          this.logger.warn(
+            `find_project_by_id_prefix failed for ${prefix}: ${prefixError.message}`
+          );
+        }
       }
     }
 
@@ -570,6 +617,43 @@ export class ProjectsService {
     };
   }
 
+  /** URL slug from title (ASCII, hyphenated). */
+  private slugifyTitle(title: string): string {
+    const base = (title || "idea")
+      .toLowerCase()
+      .trim()
+      .replace(/[^\w\s-]/g, "")
+      .replace(/\s+/g, "-")
+      .replace(/-+/g, "-")
+      .replace(/^-+|-+$/g, "")
+      .slice(0, 180);
+    return base || "idea";
+  }
+
+  /**
+   * Allocate a unique projects.slug. Retries on collision.
+   */
+  private async allocateProjectSlug(
+    supabase: ReturnType<SupabaseService["getAdminClient"]>,
+    title: string,
+    projectId?: string
+  ): Promise<string> {
+    const base = this.slugifyTitle(title);
+    for (let attempt = 0; attempt < 12; attempt += 1) {
+      const candidate =
+        attempt === 0 ? base : `${base}-${Math.random().toString(36).slice(2, 6)}`;
+      let query = supabase.from("projects").select("id").eq("slug", candidate).limit(1);
+      if (projectId) {
+        query = query.neq("id", projectId);
+      }
+      const { data } = await query;
+      if (!data?.length) {
+        return candidate;
+      }
+    }
+    return `${base}-${Date.now().toString(36)}`;
+  }
+
   /**
    * Create new project
    */
@@ -579,10 +663,13 @@ export class ProjectsService {
   ): Promise<ApiResponse<Project>> {
     const supabase = this.supabaseService.getAdminClient();
 
+    const slug = await this.allocateProjectSlug(supabase, createDto.title);
+
     const newProject = {
       type: createDto.type || "project",
       author_id: userId,
       title: createDto.title,
+      slug,
       description: createDto.description,
       category: createDto.category,
       stage: createDto.stage,

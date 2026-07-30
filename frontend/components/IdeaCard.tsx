@@ -5,6 +5,7 @@ import { MessageSquare, User, Sparkles, ChevronRight } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { Project } from '../lib/types';
 import { useAppStore } from '../lib/store';
+import { createUniqueSlug } from '../lib/slug-utils';
 import toast from 'react-hot-toast';
 
 interface IdeaCardProps {
@@ -18,7 +19,9 @@ export const IdeaCard: React.FC<IdeaCardProps> = ({ project }) => {
   const openConnectReminder = useAppStore((state) => state.openConnectReminder);
 
   const handleClick = () => {
-    const slug = project.slug || project.id.substring(0, 8);
+    // Prefer DB slug; fallback to title+full-UUID so backend can resolve reliably.
+    // Bare 8-char prefixes 404 when projects.slug is null.
+    const slug = project.slug || createUniqueSlug(project.title || 'idea', project.id);
     router.push(`/idea/${slug}`);
   };
 
