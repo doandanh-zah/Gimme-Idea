@@ -556,6 +556,126 @@ body {
     #050505;
 }
 
+.landing-card {
+  position: relative;
+  isolation: isolate;
+  transition:
+    transform 0.15s ease-out,
+    border-color 0.15s ease-out,
+    background-color 0.15s ease-out;
+}
+
+.landing-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  opacity: 0;
+  pointer-events: none;
+  background:
+    linear-gradient(135deg, rgba(255, 215, 0, 0.08), transparent 36%),
+    linear-gradient(315deg, rgba(20, 241, 149, 0.05), transparent 42%);
+  transition: opacity 0.15s ease-out;
+}
+
+.landing-hero-beam,
+.landing-section-beam,
+.landing-cta-beam,
+.landing-rail-glow {
+  position: absolute;
+  pointer-events: none;
+}
+
+.landing-hero-beam {
+  width: 44rem;
+  height: 1px;
+  opacity: 0.42;
+  background: linear-gradient(90deg, transparent, rgba(255, 215, 0, 0.7), transparent);
+  transform-origin: center;
+}
+
+.landing-hero-beam-one {
+  top: 26%;
+  right: -8rem;
+  transform: rotate(-18deg);
+}
+
+.landing-hero-beam-two {
+  right: -10rem;
+  bottom: 28%;
+  background: linear-gradient(90deg, transparent, rgba(20, 241, 149, 0.48), transparent);
+  transform: rotate(16deg);
+}
+
+.landing-section-beam {
+  top: 0;
+  bottom: 0;
+  left: 12%;
+  width: 1px;
+  opacity: 0.5;
+  background: linear-gradient(180deg, transparent, rgba(255, 215, 0, 0.24), transparent);
+}
+
+.landing-section-beam-right {
+  left: auto;
+  right: 14%;
+  background: linear-gradient(180deg, transparent, rgba(153, 69, 255, 0.24), transparent);
+}
+
+.landing-cta-beam {
+  inset: 0;
+  opacity: 0.38;
+  background:
+    linear-gradient(110deg, transparent 12%, rgba(255, 215, 0, 0.1) 34%, transparent 56%),
+    linear-gradient(250deg, transparent 20%, rgba(20, 241, 149, 0.08) 44%, transparent 70%);
+}
+
+.landing-rail-glow {
+  inset: 0;
+  opacity: 0.5;
+  background: linear-gradient(90deg, transparent, rgba(255, 215, 0, 0.08), transparent);
+}
+
+.landing-circuit {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.18;
+  background-image:
+    linear-gradient(90deg, transparent 0 28px, rgba(255, 215, 0, 0.14) 28px 29px, transparent 29px 72px),
+    linear-gradient(0deg, transparent 0 34px, rgba(20, 241, 149, 0.1) 34px 35px, transparent 35px 88px);
+  background-size: 144px 144px;
+  mask-image: linear-gradient(90deg, transparent, #000 24%, #000 76%, transparent);
+}
+
+.landing-circuit-hero {
+  opacity: 0.22;
+  mask-image: linear-gradient(90deg, transparent, #000 40%, #000 100%);
+}
+
+.landing-circuit-soft {
+  opacity: 0.12;
+}
+
+.landing-signal-cell,
+.landing-signal-row,
+.landing-meter {
+  position: relative;
+  overflow: hidden;
+}
+
+.landing-signal-cell::after,
+.landing-signal-row::after,
+.landing-meter::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0;
+  transform: translateX(-55%);
+  background: linear-gradient(100deg, transparent, rgba(255, 255, 255, 0.055), transparent);
+}
+
 .landing-flow-line {
   position: absolute;
   top: 9rem;
@@ -605,6 +725,39 @@ body {
   .landing-signal-dot {
     animation: landing-pulse 1.8s cubic-bezier(0, 0, 0.2, 1) infinite;
   }
+
+  .landing-hero-image {
+    animation: landing-image-drift 12s cubic-bezier(0.4, 0, 0.2, 1) infinite alternate;
+  }
+
+  .landing-hero-beam-one {
+    animation: landing-beam-slide 6s cubic-bezier(0.4, 0, 0.2, 1) infinite alternate;
+  }
+
+  .landing-hero-beam-two {
+    animation: landing-beam-slide-reverse 7s cubic-bezier(0.4, 0, 0.2, 1) infinite alternate;
+  }
+
+  .landing-section-beam {
+    animation: landing-section-beam 5s cubic-bezier(0.4, 0, 0.2, 1) infinite alternate;
+  }
+
+  .landing-signal-cell::after,
+  .landing-signal-row::after,
+  .landing-meter::after {
+    animation: landing-row-sweep 4.8s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+  }
+}
+
+@media (hover: hover) and (prefers-reduced-motion: no-preference) {
+  .landing-card:hover {
+    transform: translateY(-2px);
+    border-color: rgba(255, 215, 0, 0.28);
+  }
+
+  .landing-card:hover::before {
+    opacity: 1;
+  }
 }
 
 @keyframes landing-scan {
@@ -621,6 +774,64 @@ body {
   100% {
     opacity: 0;
     transform: translateY(92svh);
+  }
+}
+
+@keyframes landing-image-drift {
+  from {
+    transform: scale(1);
+  }
+  to {
+    transform: scale(1.025);
+  }
+}
+
+@keyframes landing-beam-slide {
+  from {
+    opacity: 0.24;
+    transform: translateX(0) rotate(-18deg);
+  }
+  to {
+    opacity: 0.52;
+    transform: translateX(-72px) rotate(-18deg);
+  }
+}
+
+@keyframes landing-beam-slide-reverse {
+  from {
+    opacity: 0.18;
+    transform: translateX(-36px) rotate(16deg);
+  }
+  to {
+    opacity: 0.44;
+    transform: translateX(42px) rotate(16deg);
+  }
+}
+
+@keyframes landing-section-beam {
+  from {
+    opacity: 0.18;
+    transform: translateY(-20px);
+  }
+  to {
+    opacity: 0.5;
+    transform: translateY(20px);
+  }
+}
+
+@keyframes landing-row-sweep {
+  0%,
+  42% {
+    opacity: 0;
+    transform: translateX(-55%);
+  }
+  56% {
+    opacity: 1;
+  }
+  78%,
+  100% {
+    opacity: 0;
+    transform: translateX(70%);
   }
 }
 

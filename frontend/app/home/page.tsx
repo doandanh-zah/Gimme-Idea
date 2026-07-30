@@ -1,8 +1,7 @@
 'use client';
 
-import React from 'react';
-import HomeFeed from '@/components/HomeFeed';
+import LandingExperience from '@/components/LandingExperience';
 
 export default function HomePage() {
-  return <HomeFeed />;
+  return <LandingExperience />;
 }

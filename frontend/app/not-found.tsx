@@ -16,7 +16,7 @@ export default function NotFound() {
         </p>
 
         <div className="mt-7 flex flex-col justify-center gap-2 sm:flex-row">
-          <Link href="/landing" className="btn-primary">
+          <Link href="/home" className="btn-primary">
             <Home className="h-4 w-4" aria-hidden="true" />
             Go home
           </Link>

@@ -7,7 +7,7 @@ export default function TermsPage() {
 
       <div className="page-shell">
         <Link
-          href="/landing"
+          href="/home"
           className="mb-8 inline-flex min-h-[40px] items-center gap-2 text-sm text-gray-400 transition hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#FFD700]"
         >
           <ArrowLeft className="h-4 w-4" />
