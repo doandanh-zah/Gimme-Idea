@@ -6,35 +6,36 @@ import Link from 'next/link';
 import { motion, useReducedMotion } from 'framer-motion';
 import {
   ArrowRight,
-  Coins,
+  Compass,
   LayoutGrid,
   MessageSquareText,
   Plus,
   Radio,
   ShieldCheck,
   Sparkles,
+  Target,
   Users,
   Zap,
 } from 'lucide-react';
 import { useAppStore } from '../lib/store';
 
-const heroMetrics = [
-  { label: 'Validate', value: 'Ideas', detail: 'Votes, replies, AI critique', icon: Sparkles },
-  { label: 'Find', value: 'Builders', detail: 'Feeds, profiles, network signal', icon: Users },
-  { label: 'Fund', value: 'Support', detail: 'Solana-native tips and backing', icon: Coins },
+const briefFields = [
+  { label: 'Problem', value: 'Who hurts?', detail: 'Customer, pain, current workaround', icon: Target },
+  { label: 'Market pull', value: 'Why now?', detail: 'Timing, demand, comparable behavior', icon: Compass },
+  { label: 'Solana fit', value: 'Why here?', detail: 'Wallets, speed, composability, payments', icon: Zap },
 ] as const;
 
-const signalRows = [
-  { label: 'Problem pull', value: 'High', tone: 'text-[#14F195]' },
-  { label: 'Builder interest', value: 'Rising', tone: 'text-[#FFD700]' },
-  { label: 'GTM clarity', value: 'Needs edge', tone: 'text-[#C4B5FD]' },
+const evidenceRows = [
+  { label: 'Customer evidence', value: 'Named behavior', tone: 'text-[#14F195]' },
+  { label: 'Open request', value: 'Builder / capital / critique', tone: 'text-[#FFD700]' },
+  { label: 'Kill criteria', value: 'What would prove it wrong', tone: 'text-[#C4B5FD]' },
 ] as const;
 
 const proofChips = [
-  { label: 'Public feedback', icon: MessageSquareText },
-  { label: 'Solana builders', icon: Radio },
-  { label: 'Verified actions', icon: ShieldCheck },
-  { label: 'Fast iteration', icon: Zap },
+  { label: 'Structured idea briefs', icon: MessageSquareText },
+  { label: 'Public critique trail', icon: Radio },
+  { label: 'Wallet-aware support', icon: ShieldCheck },
+  { label: 'Builder-ready context', icon: Users },
 ] as const;
 
 const Hero: React.FC = () => {
@@ -75,8 +76,8 @@ const Hero: React.FC = () => {
             Gimme Idea
           </h1>
           <p className="mt-6 max-w-2xl text-base leading-7 text-gray-200 sm:text-lg">
-            A clean place to publish startup ideas, collect honest builder signal, and turn early
-            comments into decisions before the product sprint gets expensive.
+            A public memory layer for early Solana startup ideas: each concept keeps its problem,
+            audience, critique, feeds, and support trail in one place.
           </p>
 
           <div className="mt-8 flex flex-col gap-3 sm:flex-row">
@@ -102,18 +103,18 @@ const Hero: React.FC = () => {
           className="mt-12 grid gap-3 lg:grid-cols-[minmax(0,1fr)_360px]"
         >
           <div className="grid border border-white/10 bg-black/45 backdrop-blur md:grid-cols-3 md:divide-x md:divide-white/10">
-            {heroMetrics.map((metric) => {
-              const Icon = metric.icon;
+            {briefFields.map((field) => {
+              const Icon = field.icon;
               return (
-                <div key={metric.label} className="min-h-[118px] border-b border-white/10 p-4 last:border-b-0 md:border-b-0">
+                <div key={field.label} className="min-h-[118px] border-b border-white/10 p-4 last:border-b-0 md:border-b-0">
                   <div className="mb-5 flex items-center justify-between">
                     <span className="font-mono text-[10px] uppercase text-gray-500">
-                      {metric.label}
+                      {field.label}
                     </span>
                     <Icon className="h-4 w-4 text-[#FFD700]" aria-hidden="true" />
                   </div>
-                  <div className="font-display text-2xl font-bold text-white">{metric.value}</div>
-                  <p className="mt-1 text-xs leading-5 text-gray-400">{metric.detail}</p>
+                  <div className="font-display text-2xl font-bold text-white">{field.value}</div>
+                  <p className="mt-1 text-xs leading-5 text-gray-400">{field.detail}</p>
                 </div>
               );
             })}
@@ -122,12 +123,12 @@ const Hero: React.FC = () => {
           <div className="border border-white/10 bg-black/55 backdrop-blur">
             <div className="flex min-h-[42px] items-center justify-between border-b border-white/10 px-4">
               <span className="font-mono text-[10px] uppercase text-gray-500">
-                Live signal stack
+                Idea brief snapshot
               </span>
               <span className="landing-signal-dot" aria-hidden="true" />
             </div>
             <div className="divide-y divide-white/10">
-              {signalRows.map((row) => (
+              {evidenceRows.map((row) => (
                 <div key={row.label} className="flex min-h-[44px] items-center justify-between gap-4 px-4">
                   <span className="text-sm text-gray-400">{row.label}</span>
                   <span className={`font-mono text-[11px] uppercase ${row.tone}`}>{row.value}</span>

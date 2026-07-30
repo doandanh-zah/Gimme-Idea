@@ -9,77 +9,121 @@ import {
   CheckCircle2,
   Coins,
   Compass,
+  FileText,
   Lightbulb,
   MessageSquareText,
   Network,
   Radio,
   ShieldCheck,
   Sparkles,
+  Target,
   Users,
+  Wallet,
   Zap,
 } from 'lucide-react';
 import Hero from '@/components/Hero';
-import StatsDashboard from '@/components/StatsDashboard';
 import { useAppStore } from '@/lib/store';
 
-const problemCards = [
+const audiences = [
   {
-    title: 'Ideas die in private chats',
-    body: 'Good concepts disappear because they never meet builders, critics, or early users at the same time.',
-    icon: MessageSquareText,
-  },
-  {
-    title: 'Validation is too late',
-    body: 'Teams often ask for feedback after scope, deck, and code are already expensive to change.',
-    icon: Compass,
-  },
-  {
-    title: 'Signal is scattered',
-    body: 'Votes, comments, founders, feeds, and support should sit next to the idea instead of across tabs.',
-    icon: Network,
-  },
-] as const;
-
-const loopSteps = [
-  {
-    n: '01',
-    title: 'Publish the raw wedge',
-    body: 'Frame the problem, audience, market, and why Solana is the right execution layer.',
+    title: 'Founders',
+    role: 'Need sharper demand proof before building',
+    body: 'Turn a vague concept into a public brief with problem evidence, target user, Solana fit, and the exact help you need next.',
     icon: Lightbulb,
   },
   {
-    n: '02',
-    title: 'Let builders pressure-test it',
-    body: 'Community replies expose missing demand, weak distribution, and hidden implementation cost.',
-    icon: Users,
+    title: 'Reviewers',
+    role: 'Need a faster way to find useful feedback targets',
+    body: 'Scan ideas by category, vote where demand looks real, and leave critique that becomes part of the idea history.',
+    icon: MessageSquareText,
   },
   {
-    n: '03',
-    title: 'Turn comments into GTM',
-    body: 'Gimme Sensei helps convert messy feedback into customer, positioning, and launch hypotheses.',
+    title: 'Supporters',
+    role: 'Need context before backing early work',
+    body: 'See the public trail behind an idea before sending tips, joining a team, or supporting a pool.',
+    icon: Wallet,
+  },
+] as const;
+
+const ideaAnatomy = [
+  {
+    label: 'Problem evidence',
+    detail: 'Name the user, the painful job, and the workaround they already use.',
+    icon: Target,
+  },
+  {
+    label: 'Why Solana',
+    detail: 'Explain why wallets, speed, composability, payments, or ownership make the idea better.',
+    icon: Zap,
+  },
+  {
+    label: 'Distribution wedge',
+    detail: 'Show the first community, channel, or partner path that can produce users.',
+    icon: Compass,
+  },
+  {
+    label: 'Open request',
+    detail: 'Ask for the next concrete help: critique, cofounder, design, code, capital, or users.',
+    icon: Radio,
+  },
+] as const;
+
+const signalModel = [
+  {
+    title: 'Votes',
+    strong: 'Measure appetite',
+    weak: 'Do not replace comments',
+    note: 'Votes help ideas surface, but a useful vote pattern still needs reasons attached.',
+  },
+  {
+    title: 'Feedback',
+    strong: 'Find hidden risk',
+    weak: 'Must be specific',
+    note: 'The best replies mention user pain, market timing, implementation cost, or GTM gaps.',
+  },
+  {
+    title: 'Feeds',
+    strong: 'Create context',
+    weak: 'Avoid random lists',
+    note: 'A feed should tell builders why an idea belongs to a market, track, or research theme.',
+  },
+  {
+    title: 'Support',
+    strong: 'Shows intent',
+    weak: 'Not a promise',
+    note: 'Wallet-aware support creates a public trail without pretending every idea is fundable.',
+  },
+] as const;
+
+const productLayers = [
+  {
+    title: 'Structured publishing',
+    body: 'Idea submissions capture problem, opportunity, solution, GTM, team context, category, and tags.',
+    icon: FileText,
+  },
+  {
+    title: 'Community discovery',
+    body: 'Public feeds, rankings, profile context, and leaderboards make good critique easier to find.',
+    icon: Network,
+  },
+  {
+    title: 'AI-assisted critique',
+    body: 'Gimme Sensei helps turn messy input into clearer questions, risks, and next hypotheses.',
     icon: Sparkles,
   },
   {
-    n: '04',
-    title: 'Move only proven ideas forward',
-    body: 'Use public signal, feed saves, and supporter intent as the filter before deeper build work.',
-    icon: Zap,
+    title: 'Solana-native support',
+    body: 'Wallet login, donations, tips, and pool support keep economic intent close to the idea.',
+    icon: Coins,
   },
 ] as const;
 
-const builderBenefits = [
-  'Public reputation around the ideas you start or sharpen',
-  'Curated feeds for hackathon tracks, markets, and founder requests',
-  'Solana-native contribution flows through wallet-aware support',
-  'AI mentor feedback that stays attached to the project thread',
-  'Partner network discovery across DSUC, Superteam Vietnam, and builders',
-  'A cleaner handoff from raw idea to team, proof, and roadmap',
-] as const;
-
-const trustSignals = [
-  { label: 'Identity layer', value: 'Wallet + profile', icon: ShieldCheck },
-  { label: 'Economic layer', value: 'Donations + support', icon: Coins },
-  { label: 'Discovery layer', value: 'Feeds + ranking', icon: Radio },
+const reviewRubric = [
+  'Can you describe the first user without saying everyone?',
+  'Is the Solana reason essential or just branding?',
+  'What evidence would make the team stop working on it?',
+  'Who can give the next 10 meaningful replies?',
+  'What would a small prototype prove in one week?',
 ] as const;
 
 const partners = [
@@ -88,18 +132,44 @@ const partners = [
     shortName: 'DSUC',
     logo: '/dsuc.png',
     href: 'https://dsuc.fun',
+    role: 'University builder network',
   },
   {
     name: 'Superteam Vietnam',
     shortName: 'Superteam VN',
     logo: '/superteamvn.png',
     href: 'https://vn.superteam.fun',
+    role: 'Solana talent layer',
   },
   {
     name: 'Solana',
     shortName: 'Solana',
     logo: '/SOLANA.png',
     href: 'https://solana.com',
+    role: 'Execution ecosystem',
+  },
+] as const;
+
+const faqs = [
+  {
+    question: 'Is this only for finished startups?',
+    answer:
+      'No. The strongest use case is earlier: before a product sprint, hackathon build, or fundraising story becomes expensive to change.',
+  },
+  {
+    question: 'What makes a good idea post?',
+    answer:
+      'A clear user, painful problem, why now, why Solana, and the one next request you want from builders.',
+  },
+  {
+    question: 'How should reviewers contribute?',
+    answer:
+      'Leave evidence or objections. A short comment with a specific customer risk is more valuable than generic praise.',
+  },
+  {
+    question: 'Where do feeds fit?',
+    answer:
+      'Feeds group ideas by market, hackathon track, research theme, or founder need so people can review in context.',
   },
 ] as const;
 
@@ -159,22 +229,27 @@ export default function LandingPage() {
           <div className="page-shell">
             <Reveal className="grid gap-10 lg:grid-cols-[360px_1fr] lg:items-start">
               <SectionIntro
-                eyebrow="Why it exists"
-                title="The missing layer between a shower thought and a shipped product."
-                body="Gimme Idea is built for the messy middle: the moment when a concept needs criticism, ranking, distribution clues, and builder context before anyone starts overbuilding."
+                eyebrow="Who it is for"
+                title="Different users need different signal from the same idea."
+                body="A founder, reviewer, and supporter can look at the same thread and each leave with the context they need to make a better next decision."
               />
 
               <div className="grid gap-3 md:grid-cols-3">
-                {problemCards.map((card, index) => {
-                  const Icon = card.icon;
+                {audiences.map((audience, index) => {
+                  const Icon = audience.icon;
                   return (
-                    <Reveal key={card.title} delay={index * 0.04}>
-                      <div className="group min-h-[238px] border border-white/10 bg-[#0a0a0a] p-5 transition-colors duration-150 hover:border-[#FFD700]/35">
-                        <div className="mb-5 flex h-10 w-10 items-center justify-center border border-white/10 text-[#FFD700] transition-colors duration-150 group-hover:border-[#FFD700]/40">
+                    <Reveal key={audience.title} delay={index * 0.04}>
+                      <div className="min-h-[260px] border border-white/10 bg-[#0a0a0a] p-5">
+                        <div className="mb-5 flex h-10 w-10 items-center justify-center border border-white/10 text-[#FFD700]">
                           <Icon className="h-5 w-5" aria-hidden="true" />
                         </div>
-                        <h3 className="font-display text-xl font-bold text-white">{card.title}</h3>
-                        <p className="mt-3 text-sm leading-6 text-gray-500">{card.body}</p>
+                        <div className="font-mono text-[10px] uppercase text-gray-500">
+                          {audience.role}
+                        </div>
+                        <h3 className="mt-3 font-display text-xl font-bold text-white">
+                          {audience.title}
+                        </h3>
+                        <p className="mt-3 text-sm leading-6 text-gray-500">{audience.body}</p>
                       </div>
                     </Reveal>
                   );
@@ -187,31 +262,31 @@ export default function LandingPage() {
         <section className="relative border-b border-white/10 py-16 sm:py-20">
           <div className="landing-flow-line" aria-hidden="true" />
           <div className="page-shell">
-            <Reveal>
+            <Reveal className="mb-10">
               <SectionIntro
-                eyebrow="Validation loop"
-                title="A clean path from raw idea to credible signal."
-                body="The product keeps early discovery practical: publish, pressure-test, extract GTM, then decide whether the idea deserves a team, funding, or a prototype."
+                eyebrow="Submission standard"
+                title="A useful idea post is closer to a research brief than a slogan."
+                body="Gimme Idea works best when the first post gives reviewers enough context to disagree intelligently."
               />
             </Reveal>
 
-            <div className="mt-10 grid gap-3 lg:grid-cols-4">
-              {loopSteps.map((step, index) => {
-                const Icon = step.icon;
+            <div className="grid gap-3 lg:grid-cols-4">
+              {ideaAnatomy.map((item, index) => {
+                const Icon = item.icon;
                 return (
-                  <Reveal key={step.n} delay={index * 0.05}>
-                    <div className="relative min-h-[270px] overflow-hidden border border-white/10 bg-[#0a0a0a] p-5">
+                  <Reveal key={item.label} delay={index * 0.05}>
+                    <div className="relative min-h-[232px] overflow-hidden border border-white/10 bg-[#0a0a0a] p-5">
                       <div className="landing-card-sheen" aria-hidden="true" />
                       <div className="mb-6 flex items-center justify-between">
-                        <span className="font-mono text-2xl font-bold text-[#FFD700]">
-                          {step.n}
+                        <span className="font-mono text-xl font-bold text-[#FFD700]">
+                          0{index + 1}
                         </span>
                         <span className="flex h-10 w-10 items-center justify-center border border-white/10 text-gray-300">
                           <Icon className="h-5 w-5" aria-hidden="true" />
                         </span>
                       </div>
-                      <h3 className="font-display text-xl font-bold text-white">{step.title}</h3>
-                      <p className="mt-3 text-sm leading-6 text-gray-500">{step.body}</p>
+                      <h3 className="font-display text-xl font-bold text-white">{item.label}</h3>
+                      <p className="mt-3 text-sm leading-6 text-gray-500">{item.detail}</p>
                     </div>
                   </Reveal>
                 );
@@ -222,70 +297,36 @@ export default function LandingPage() {
 
         <section className="border-b border-white/10 py-16 sm:py-20">
           <div className="page-shell">
-            <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_340px] lg:items-stretch">
-              <Reveal>
-                <StatsDashboard />
-              </Reveal>
-
-              <Reveal delay={0.08}>
-                <div className="flex h-full flex-col border border-white/10 bg-[#0a0a0a]">
-                  <div className="border-b border-white/10 p-5">
-                    <div className="ui-eyebrow mb-3">Trust stack</div>
-                    <h2 className="font-display text-2xl font-bold text-white">
-                      Signal that stays attached to the idea.
-                    </h2>
-                    <p className="mt-3 text-sm leading-6 text-gray-500">
-                      Every important action should make the project easier to judge later.
-                    </p>
-                  </div>
-                  <div className="divide-y divide-white/10">
-                    {trustSignals.map((signal) => {
-                      const Icon = signal.icon;
-                      return (
-                        <div
-                          key={signal.label}
-                          className="grid min-h-[76px] grid-cols-[44px_1fr] items-center gap-3 px-5 py-4"
-                        >
-                          <span className="flex h-10 w-10 items-center justify-center border border-white/10 text-[#FFD700]">
-                            <Icon className="h-4 w-4" aria-hidden="true" />
-                          </span>
-                          <div>
-                            <div className="font-mono text-[10px] uppercase text-gray-500">
-                              {signal.label}
-                            </div>
-                            <div className="mt-1 text-sm text-white">{signal.value}</div>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              </Reveal>
-            </div>
-          </div>
-        </section>
-
-        <section className="border-b border-white/10 py-16 sm:py-20">
-          <div className="page-shell">
             <Reveal className="grid gap-10 lg:grid-cols-[360px_1fr] lg:items-start">
               <SectionIntro
-                eyebrow="For builders"
-                title="More than a board of random ideas."
-                body="Landing, home, feeds, projects, support, and AI critique are connected around one purpose: help builders spend time on ideas with visible demand."
+                eyebrow="Signal model"
+                title="Not all engagement should be treated as proof."
+                body="The product separates lightweight attention from reusable evidence so builders can tell hype apart from useful demand."
               />
 
-              <div className="grid border border-white/10 bg-[#0a0a0a] sm:grid-cols-2">
-                {builderBenefits.map((benefit, index) => (
-                  <div
-                    key={benefit}
-                    className={`flex min-h-[86px] gap-3 p-4 ${
-                      index % 2 === 0 ? 'sm:border-r sm:border-white/10' : ''
-                    } ${index < 4 ? 'border-b border-white/10' : ''}`}
-                  >
-                    <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-[#14F195]" aria-hidden="true" />
-                    <p className="text-sm leading-6 text-gray-300">{benefit}</p>
-                  </div>
-                ))}
+              <div className="border border-white/10 bg-[#0a0a0a]">
+                <div className="hidden grid-cols-[160px_1fr_1fr] border-b border-white/10 px-4 py-3 font-mono text-[10px] uppercase text-gray-500 md:grid">
+                  <span>Layer</span>
+                  <span>Strong when</span>
+                  <span>Weak when</span>
+                </div>
+                <div className="divide-y divide-white/10">
+                  {signalModel.map((item) => (
+                    <div key={item.title} className="grid gap-4 p-4 md:grid-cols-[160px_1fr_1fr]">
+                      <div>
+                        <div className="font-mono text-[11px] font-semibold uppercase text-[#FFD700]">
+                          {item.title}
+                        </div>
+                        <p className="mt-2 text-xs leading-5 text-gray-500 md:hidden">{item.note}</p>
+                      </div>
+                      <div>
+                        <div className="text-sm font-medium text-white">{item.strong}</div>
+                        <p className="mt-1 hidden text-xs leading-5 text-gray-500 md:block">{item.note}</p>
+                      </div>
+                      <div className="text-sm text-gray-400">{item.weak}</div>
+                    </div>
+                  ))}
+                </div>
               </div>
             </Reveal>
           </div>
@@ -295,9 +336,94 @@ export default function LandingPage() {
           <div className="page-shell">
             <Reveal className="mb-10">
               <SectionIntro
+                eyebrow="Product layers"
+                title="The system keeps context, discovery, critique, and support connected."
+                body="Each layer is useful on its own, but the value comes from keeping them around the same idea thread."
+              />
+            </Reveal>
+
+            <div className="grid gap-3 md:grid-cols-2">
+              {productLayers.map((layer, index) => {
+                const Icon = layer.icon;
+                return (
+                  <Reveal key={layer.title} delay={index * 0.04}>
+                    <div className="grid min-h-[160px] grid-cols-[44px_1fr] gap-4 border border-white/10 bg-[#0a0a0a] p-5">
+                      <span className="flex h-11 w-11 items-center justify-center border border-white/10 text-[#FFD700]">
+                        <Icon className="h-5 w-5" aria-hidden="true" />
+                      </span>
+                      <div>
+                        <h3 className="font-display text-xl font-bold text-white">{layer.title}</h3>
+                        <p className="mt-3 text-sm leading-6 text-gray-500">{layer.body}</p>
+                      </div>
+                    </div>
+                  </Reveal>
+                );
+              })}
+            </div>
+          </div>
+        </section>
+
+        <section className="border-b border-white/10 py-16 sm:py-20">
+          <div className="page-shell">
+            <div className="grid gap-10 lg:grid-cols-[minmax(0,1fr)_360px] lg:items-start">
+              <Reveal>
+                <div>
+                  <SectionIntro
+                    eyebrow="Reviewer rubric"
+                    title="The best comments answer one hard question."
+                    body="This gives the community a shared standard for judging early ideas without turning every thread into noise."
+                  />
+                  <div className="mt-8 border border-white/10 bg-[#0a0a0a]">
+                    {reviewRubric.map((question, index) => (
+                      <div
+                        key={question}
+                        className="grid min-h-[64px] grid-cols-[40px_1fr] items-center gap-3 border-b border-white/10 px-4 last:border-b-0"
+                      >
+                        <span className="font-mono text-sm font-bold text-[#FFD700]">
+                          {String(index + 1).padStart(2, '0')}
+                        </span>
+                        <span className="text-sm leading-6 text-gray-300">{question}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </Reveal>
+
+              <Reveal delay={0.08}>
+                <div className="border border-white/10 border-l-2 border-l-[#14F195] bg-[#0a0a0a] p-5">
+                  <ShieldCheck className="mb-5 h-6 w-6 text-[#14F195]" aria-hidden="true" />
+                  <h3 className="font-display text-2xl font-bold text-white">Trust is contextual.</h3>
+                  <p className="mt-3 text-sm leading-6 text-gray-500">
+                    Profiles, wallet-aware actions, public comments, and feed curation give reviewers
+                    more context than an isolated post can provide.
+                  </p>
+                  <div className="mt-6 grid gap-2 font-mono text-[10px] uppercase text-gray-500">
+                    <div className="flex min-h-[36px] items-center justify-between border border-white/10 px-3">
+                      <span>Identity</span>
+                      <span className="text-white">Profile / wallet</span>
+                    </div>
+                    <div className="flex min-h-[36px] items-center justify-between border border-white/10 px-3">
+                      <span>Evidence</span>
+                      <span className="text-white">Votes / comments</span>
+                    </div>
+                    <div className="flex min-h-[36px] items-center justify-between border border-white/10 px-3">
+                      <span>Intent</span>
+                      <span className="text-white">Tips / support</span>
+                    </div>
+                  </div>
+                </div>
+              </Reveal>
+            </div>
+          </div>
+        </section>
+
+        <section className="border-b border-white/10 py-16 sm:py-20">
+          <div className="page-shell">
+            <Reveal className="mb-10">
+              <SectionIntro
                 eyebrow="Network"
-                title="Built with the Solana builder community in mind."
-                body="The platform gives university builders, ecosystem contributors, and early founders a shared surface for ideas that need sharper feedback."
+                title="Rooted in the Solana builder community."
+                body="The platform is shaped around students, ecosystem contributors, and founders who need faster idea feedback loops."
               />
             </Reveal>
 
@@ -308,7 +434,7 @@ export default function LandingPage() {
                     href={partner.href}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="group flex min-h-[112px] items-center justify-between gap-4 border border-white/10 bg-[#0a0a0a] p-4 transition-colors duration-150 hover:border-[#FFD700]/35 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#FFD700]"
+                    className="group flex min-h-[132px] items-center justify-between gap-4 border border-white/10 bg-[#0a0a0a] p-4 transition-colors duration-150 hover:border-[#FFD700]/35 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#FFD700]"
                   >
                     <span className="flex min-w-0 items-center gap-4">
                       <span className="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden border border-white/10 bg-white/[0.03]">
@@ -317,8 +443,7 @@ export default function LandingPage() {
                           alt={partner.name}
                           width={56}
                           height={56}
-                          className="max-h-10 w-auto object-contain"
-                          style={{ height: 'auto' }}
+                          className="object-contain"
                         />
                       </span>
                       <span className="min-w-0">
@@ -326,7 +451,7 @@ export default function LandingPage() {
                           {partner.shortName}
                         </span>
                         <span className="mt-1 block truncate text-xs text-gray-500">
-                          {partner.href.replace(/^https?:\/\//, '')}
+                          {partner.role}
                         </span>
                       </span>
                     </span>
@@ -338,6 +463,27 @@ export default function LandingPage() {
           </div>
         </section>
 
+        <section className="border-b border-white/10 py-16 sm:py-20">
+          <div className="page-shell">
+            <Reveal className="grid gap-10 lg:grid-cols-[360px_1fr] lg:items-start">
+              <SectionIntro
+                eyebrow="FAQ"
+                title="The product is strict about useful context, not polished decks."
+                body="A rough idea is welcome. A vague idea with no user, no reason, and no request is hard for builders to help."
+              />
+
+              <div className="divide-y divide-white/10 border border-white/10 bg-[#0a0a0a]">
+                {faqs.map((faq) => (
+                  <div key={faq.question} className="p-5">
+                    <h3 className="font-display text-lg font-bold text-white">{faq.question}</h3>
+                    <p className="mt-2 text-sm leading-6 text-gray-500">{faq.answer}</p>
+                  </div>
+                ))}
+              </div>
+            </Reveal>
+          </div>
+        </section>
+
         <section className="relative overflow-hidden py-20 sm:py-24">
           <div className="landing-grid absolute inset-0 opacity-35" aria-hidden="true" />
           <div className="page-shell relative z-10">
@@ -345,13 +491,13 @@ export default function LandingPage() {
               <div className="border border-white/10 border-l-2 border-l-[#FFD700] bg-[#0a0a0a]/90 p-6 backdrop-blur sm:p-8 lg:p-10">
                 <div className="grid gap-8 lg:grid-cols-[1fr_auto] lg:items-end">
                   <div className="max-w-3xl">
-                    <div className="ui-eyebrow mb-3">Next step</div>
+                    <div className="ui-eyebrow mb-3">Start with a real brief</div>
                     <h2 className="font-display text-3xl font-bold leading-tight text-white sm:text-5xl">
-                      Put your idea where builders can challenge it.
+                      Write the idea so someone can challenge it.
                     </h2>
                     <p className="mt-4 max-w-2xl text-sm leading-7 text-gray-400 sm:text-base">
-                      If the idea survives public questions, sharper GTM prompts, and visible
-                      demand, it is ready for a better sprint.
+                      The first post does not need to be perfect. It needs enough evidence and
+                      specificity for the next person to make it sharper.
                     </p>
                   </div>
                   <div className="flex flex-col gap-3 sm:flex-row lg:flex-col">
@@ -363,8 +509,8 @@ export default function LandingPage() {
                       Submit idea
                       <ArrowRight className="h-4 w-4" aria-hidden="true" />
                     </button>
-                    <Link href="/feeds" className="btn-ghost">
-                      Browse feeds
+                    <Link href="/home" className="btn-ghost">
+                      Open home
                     </Link>
                   </div>
                 </div>
