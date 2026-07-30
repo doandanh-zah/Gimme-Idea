@@ -1,10 +1,5 @@
-import { IsUUID, IsOptional, IsInt, Min, Max } from "class-validator";
+import { IsOptional, IsInt, Min, Max } from "class-validator";
 import { Type } from "class-transformer";
-
-export class FollowUserDto {
-  @IsUUID()
-  userId: string;
-}
 
 export class GetFollowersDto {
   @IsOptional()

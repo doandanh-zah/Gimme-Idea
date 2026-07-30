@@ -6,7 +6,7 @@
 /**
  * Escape HTML special characters to prevent XSS
  */
-export function escapeHtml(str: string): string {
+function escapeHtml(str: string): string {
   if (!str) return "";
 
   const htmlEntities: Record<string, string> = {
@@ -24,7 +24,7 @@ export function escapeHtml(str: string): string {
 /**
  * Remove HTML tags from string
  */
-export function stripHtml(str: string): string {
+function stripHtml(str: string): string {
   if (!str) return "";
   return str.replace(/<[^>]*>/g, "");
 }
@@ -72,7 +72,7 @@ export function sanitizeUrl(url: string): string {
  * - Only allow alphanumeric, underscore, dash
  * - Limit length
  */
-export function sanitizeUsername(
+function sanitizeUsername(
   username: string,
   maxLength: number = 30
 ): string {
@@ -87,7 +87,7 @@ export function sanitizeUsername(
 /**
  * Sanitize form data object
  */
-export function sanitizeFormData<T extends Record<string, unknown>>(
+function sanitizeFormData<T extends Record<string, unknown>>(
   data: T
 ): T {
   const sanitized: Record<string, unknown> = {};

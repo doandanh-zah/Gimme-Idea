@@ -58,5 +58,3 @@ export const logger = {
         console.error(...sanitizeArgs(args));
     },
 };
-
-export const isDebugLoggingEnabled = debugEnabled;

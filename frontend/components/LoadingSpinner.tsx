@@ -181,5 +181,3 @@ export const LoadingDots: React.FC<{ className?: string }> = ({ className = '' }
     </span>
   );
 };
-
-export default LoadingSpinner;

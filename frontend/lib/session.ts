@@ -1,5 +1,5 @@
-export const LEGACY_AUTH_TOKEN_KEY = 'auth_token';
-export const AUTH_SESSION_HINT_KEY = 'gimme_auth_session';
+const LEGACY_AUTH_TOKEN_KEY = 'auth_token';
+const AUTH_SESSION_HINT_KEY = 'gimme_auth_session';
 
 export function markBackendSessionPresent() {
   if (typeof window === 'undefined') return;

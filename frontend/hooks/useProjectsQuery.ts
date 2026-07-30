@@ -4,7 +4,7 @@ import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
 import { apiClient } from '../lib/api-client';
 import { normalizeProject } from '../lib/project-normalize';
 
-export const PROJECT_LIST_LIMIT = 9;
+const PROJECT_LIST_LIMIT = 9;
 
 type ProjectListFilters = {
   type: 'project' | 'idea';

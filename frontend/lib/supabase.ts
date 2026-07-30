@@ -13,7 +13,7 @@ export const hasSupabaseEnv = Boolean(supabaseUrl && supabaseAnonKey);
 // always set NEXT_PUBLIC_SUPABASE_* in .env.local / Vercel before testing auth.
 const resolvedSupabaseUrl = supabaseUrl || "https://example.supabase.co";
 const resolvedSupabaseAnonKey = supabaseAnonKey || "public-anon-key";
-export const supabaseProjectRef = (() => {
+const supabaseProjectRef = (() => {
   try {
     return new URL(resolvedSupabaseUrl).hostname.split(".")[0] || null;
   } catch {

@@ -40,7 +40,3 @@ export class NotificationResponseDto {
   read: boolean;
   createdAt: string;
 }
-
-export class NotificationCountDto {
-  unreadCount: number;
-}

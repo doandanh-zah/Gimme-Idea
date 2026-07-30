@@ -13,7 +13,7 @@ export type FindWalletOptions = {
  * Find a wallet adapter by display name. Prefer Mobile Wallet Adapter when
  * requested; fall back to Phantom/Solflare on mobile if MWA is unavailable.
  */
-export function findWalletAdapter(
+function findWalletAdapter(
   wallets: Wallet[],
   { walletName, isMobileAdapter }: FindWalletOptions
 ): Wallet | undefined {

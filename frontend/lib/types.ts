@@ -141,7 +141,7 @@ export interface User {
   followingCount?: number;
 }
 
-export type NotificationType =
+type NotificationType =
   | "follow"
   | "new_post"
   | "comment"
@@ -169,7 +169,7 @@ export interface Notification {
   createdAt: string;
 }
 
-export interface StatMetric {
+interface StatMetric {
   label: string;
   value: string;
   trend?: string;
@@ -187,7 +187,7 @@ export interface JourneyStep {
 // AI-related types
 // ============================================
 
-export interface AIFeedback {
+interface AIFeedback {
   comment: string;
   score: number;
   strengths: string[];
@@ -195,7 +195,7 @@ export interface AIFeedback {
   suggestions: string[];
 }
 
-export interface MarketAssessment {
+interface MarketAssessment {
   score: number;
   assessmentText: string;
   strengths: string[];
@@ -205,7 +205,7 @@ export interface MarketAssessment {
   competitionLevel: "low" | "medium" | "high";
 }
 
-export interface AIQuota {
+interface AIQuota {
   canUse: boolean;
   freeRemaining: number;
   paidCredits: number;

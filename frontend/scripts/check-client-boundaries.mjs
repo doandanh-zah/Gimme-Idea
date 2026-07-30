@@ -13,25 +13,20 @@ const fullStorePattern = /\buseAppStore\s*\(\s*\)/;
 const walletAllowed = [
   /^app\/admin\/AdminDashboardContent\.tsx$/,
   /^components\/wallet\//,
-  /^components\/admin\/FinalizeIdeaButton\.tsx$/,
   /^components\/ideas\/CreatePoolButton\.tsx$/,
-  /^components\/ideas\/TradingWidget\.tsx$/,
   /^components\/AIChatModal\.tsx$/,
   /^components\/ConnectWalletPopup\.tsx$/,
-  /^components\/DaoRequestModal\.tsx$/,
   /^components\/Donate\.tsx$/,
-  /^components\/FundingPoolBox\.tsx$/,
   /^components\/IdeaDetail\.tsx$/,
   /^components\/PaymentModal\.tsx$/,
   /^components\/Profile\.tsx$/,
   /^components\/ProposalSendModal\.tsx$/,
-  /^components\/SupportDepositModal\.tsx$/,
   /^components\/WalletProvider\.tsx$/,
   /^components\/WalletRequiredModal\.tsx$/,
   /^contexts\/LazorkitContext\.tsx$/,
+  /^hooks\/useSelectAndConnect\.ts$/,
   /^lib\/metadao\//,
   /^lib\/solana\//,
-  /^lib\/useWalletAuth\.ts$/,
 ];
 
 function walk(dir) {

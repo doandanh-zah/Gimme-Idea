@@ -1,6 +1,6 @@
 import type { ApiResponse } from "./api-client";
 
-export type ApiError = Error & { errorType?: string };
+type ApiError = Error & { errorType?: string };
 
 /**
  * Unwrap a standard ApiResponse envelope. Throws on failure or missing data.
@@ -18,7 +18,7 @@ export function unwrapApi<T>(
 /**
  * Build an Error that preserves backend errorType (e.g. backend_unavailable).
  */
-export function toApiError(
+function toApiError(
   response: Partial<Pick<ApiResponse<unknown>, "error" | "message" | "errorType">>,
   fallback = "Request failed"
 ): ApiError {

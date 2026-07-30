@@ -1,5 +1,5 @@
 /** Shared sentinel for viewer-scoped query keys when unauthenticated. */
-export const viewerKey = (userId?: string | null) => userId ?? "anonymous";
+const viewerKey = (userId?: string | null) => userId ?? "anonymous";
 
 export const queryKeys = {
   notifications: {

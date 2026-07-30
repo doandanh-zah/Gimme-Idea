@@ -7,7 +7,7 @@ import type { WalletContextState } from '@solana/wallet-adapter-react';
 // MetaDAO SDK (futarchy)
 import { FutarchyClient } from '@metadaoproject/futarchy/v0.7';
 
-export function makeAnchorProvider(connection: Connection, wallet: WalletContextState) {
+function makeAnchorProvider(connection: Connection, wallet: WalletContextState) {
   if (!wallet.publicKey || !wallet.signTransaction) {
     throw new Error('Wallet not connected');
   }

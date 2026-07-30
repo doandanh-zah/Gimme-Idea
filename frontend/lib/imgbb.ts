@@ -59,7 +59,7 @@ interface ImgBBResponse {
  * @param name - Optional name for the image
  * @returns URL of the uploaded image
  */
-export async function uploadToImgBB(
+async function uploadToImgBB(
   file: File | string,
   name?: string
 ): Promise<string> {

@@ -6,7 +6,7 @@
  * Convert a string to URL-friendly slug
  * Example: "My Awesome Idea!" -> "my-awesome-idea"
  */
-export function createSlug(text: string): string {
+function createSlug(text: string): string {
   return text
     .toLowerCase()
     .trim()
@@ -38,7 +38,7 @@ export function createUniqueSlug(text: string, id: string): string {
  * Create idea/project slug - just the title without ID
  * Example: "My Awesome Idea" -> "my-awesome-idea"
  */
-export function createIdeaSlug(title: string): string {
+function createIdeaSlug(title: string): string {
   return createSlug(title);
 }
 
@@ -46,7 +46,7 @@ export function createIdeaSlug(title: string): string {
  * Extract ID from a slug that contains ID suffix
  * Example: "my-idea-abc12345" -> "abc12345" (assuming 8 char ID)
  */
-export function extractIdFromSlug(slug: string): string | null {
+function extractIdFromSlug(slug: string): string | null {
   const uuidSuffix = slug.match(
     /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
   )?.[0];
@@ -69,6 +69,6 @@ export function extractIdFromSlug(slug: string): string | null {
 /**
  * Check if a string looks like a slug (contains only lowercase, numbers, hyphens)
  */
-export function isValidSlug(str: string): boolean {
+function isValidSlug(str: string): boolean {
   return /^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(str);
 }

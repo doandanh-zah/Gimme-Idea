@@ -1,6 +1,6 @@
 export const AUTH_COOKIE_NAME = "gimme_auth_token";
 
-export function parseCookieHeader(cookieHeader?: string): Record<string, string> {
+function parseCookieHeader(cookieHeader?: string): Record<string, string> {
   if (!cookieHeader) return {};
 
   return cookieHeader.split(";").reduce<Record<string, string>>((cookies, part) => {
@@ -12,7 +12,7 @@ export function parseCookieHeader(cookieHeader?: string): Record<string, string>
   }, {});
 }
 
-export function extractBearerToken(request: any): string | undefined {
+function extractBearerToken(request: any): string | undefined {
   const authHeader = request.headers?.authorization;
   if (!authHeader) return undefined;
 

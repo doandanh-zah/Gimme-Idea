@@ -663,5 +663,3 @@ export const RelatedProjectsModal: React.FC<RelatedProjectsModalProps> = ({
         </AnimatePresence>
     );
 };
-
-export default RelatedProjectsModal;

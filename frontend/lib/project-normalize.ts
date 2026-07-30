@@ -38,6 +38,3 @@ export function normalizeProject(raw: any): Project {
 
   return project;
 }
-
-/** @deprecated Prefer normalizeProject — alias for call-site clarity */
-export const mapProject = normalizeProject;
