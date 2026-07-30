@@ -4,8 +4,8 @@
   "description": "Gimme Idea Backend - Solana Feedback Platform API",
   "main": "dist/main.js",
   "scripts": {
-    "prebuild": "node -e \"const fs=require('fs'); for (const p of ['node_modules','package-lock.json']) { try { fs.rmSync(p,{recursive:true,force:true}); } catch (_) {} }\"",
-    "build": "npm install --omit=dev --no-audit --no-fund && node -e \"const fs=require('fs');const p='node_modules/rpc-websockets/node_modules/uuid/package.json';const u=fs.existsSync(p)?JSON.parse(fs.readFileSync(p,'utf8')):JSON.parse(fs.readFileSync('node_modules/uuid/package.json','utf8'));if(u.type==='module'||Number(u.version.split('.')[0])>=10){console.error('Bad uuid for CJS:',u.version,u.type);process.exit(1)}console.log('uuid ok',u.version);require('rpc-websockets');require('@solana/web3.js');\" && node ./node_modules/@nestjs/cli/bin/nest.js build",
+    "prebuild": "node -e \"const fs=require('fs'); try { fs.rmSync('dist',{recursive:true,force:true}); } catch (_) {}\"",
+    "build": "node -e \"const fs=require('fs');const p='node_modules/rpc-websockets/node_modules/uuid/package.json';const u=fs.existsSync(p)?JSON.parse(fs.readFileSync(p,'utf8')):JSON.parse(fs.readFileSync('node_modules/uuid/package.json','utf8'));if(u.type==='module'||Number(u.version.split('.')[0])>=10){console.error('Bad uuid for CJS:',u.version,u.type);process.exit(1)}console.log('uuid ok',u.version);require('rpc-websockets');require('@solana/web3.js');\" && node ./node_modules/@nestjs/cli/bin/nest.js build",
     "start": "nest start",
     "start:dev": "nest start --watch",
     "start:prod": "node dist/main",
@@ -21,7 +21,6 @@
     "@nestjs/passport": "^10.0.3",
     "@nestjs/platform-express": "^10.0.0",
     "@nestjs/throttler": "^6.5.0",
-    "@prisma/client": "5.22.0",
     "@solana/web3.js": "^1.87.6",
     "@supabase/supabase-js": "^2.39.0",
     "bs58": "^5.0.0",
@@ -31,7 +30,6 @@
     "openai": "^6.9.1",
     "passport": "^0.7.0",
     "passport-jwt": "^4.0.1",
-    "prisma": "5.22.0",
     "reflect-metadata": "^0.1.13",
     "rxjs": "^7.8.1",
     "stripe": "^17.7.0",
@@ -48,7 +46,11 @@
     "picomatch": "4.0.5",
     "qs": "6.15.3",
     "tmp": "0.2.7",
-    "webpack": "5.108.4"
+    "webpack": "5.108.4",
+    "rpc-websockets": {
+      "uuid": "8.3.2"
+    },
+    "uuid": "8.3.2"
   },
   "devDependencies": {
     "@nestjs/schematics": "^10.0.0",
@@ -61,11 +63,5 @@
     "ts-loader": "^9.5.1",
     "ts-node": "^10.9.1",
     "tsconfig-paths": "^4.2.0"
-  },
-  "overrides": {
-    "rpc-websockets": {
-      "uuid": "8.3.2"
-    },
-    "uuid": "8.3.2"
   }
 }

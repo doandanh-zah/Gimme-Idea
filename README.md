@@ -2,107 +2,69 @@
 
 Solana-native idea and builder collaboration platform.
 
-Gimme Idea lets users publish ideas/projects, receive AI + community feedback, discover high-signal opportunities, and run creator workflows with wallet, Google, or agent-based automation.
+Publish ideas, get AI + community feedback, discover high-signal opportunities, and run creator workflows with wallet, Google, or agent automation.
 
-## Product at a glance
+## Product
 
-- **Ideas + Projects**: create, edit, discover, vote, and discuss
-- **AI layer (Gimme Sensei)**: idea feedback, market assessment, AI-assisted replies
-- **Social graph**: comments, follows, feeds, notifications
-- **Payments / support**: Solana-based support/tipping flows
-- **Hackathon modules**: submissions, teams, admin scoring flows
-- **Automation**:
-  - Personal Access Tokens (PAT)
-  - Agent secret-key auth (`/auth/agent/*`)
-  - MCP-style docs under `mcp/gimme-idea/`
+- **Ideas + Projects** — create, discover, vote, discuss
+- **AI (Gimme Sensei)** — feedback, market assessment, assisted replies
+- **Social** — comments, follows, feeds, notifications
+- **Payments** — Solana support/tipping and related flows
+- **Hackathons** — teams, submissions, scoring
+- **Automation** — PAT, agent secret-key auth, MCP notes under `mcp/gimme-idea/`
 
-## Monorepo structure
+## Monorepo layout
 
 ```text
-backend/      NestJS API + Supabase integration
-frontend/     Next.js app (App Router)
-programs/     Solana programs/scripts (where applicable)
-docs/         Shareable project documentation
-dev-docs/     Private developer notes
-mcp/          Agent/automation guides
+frontend/     Next.js (App Router)
+backend/      NestJS API + Supabase client
+supabase/     Greenfield SQL migrations (schema SSOT)
+programs/     Solana / Anchor workspace
+mobile-apk/   Optional Capacitor shell
+docs/         Shareable documentation
+mcp/          Agent skill notes
+scripts/      Repo hygiene checks
 ```
 
-## Tech stack
+## Quick start
 
-### Frontend
-- Next.js 14 + React 18 + TypeScript
-- TailwindCSS + Framer Motion
-- Solana wallet adapters
-- Supabase client
-
-### Backend
-- NestJS 10 + TypeScript
-- Supabase (DB/Auth integration patterns)
-- OpenAI SDK (AI feedback/reply/assessment)
-- JWT auth guards, API token flows, agent auth flows
-
-## Local development
-
-## 1) Prerequisites
-- Node.js 20+
-- npm
-- Supabase project/config
-- OpenAI API key (for AI endpoints)
-
-## 2) Run backend
+**Prerequisites:** Node.js 20+, npm, Supabase project, OpenAI key (AI routes).
 
 ```bash
-cd backend
-npm install
-npm run start:dev
+# Backend
+cd backend && npm install && npm run start:dev
+# → http://localhost:3001
+
+# Frontend
+cd frontend && npm install && npm run dev
+# → http://localhost:3000
 ```
 
-Backend default: `http://localhost:3001`
+Copy [`.env.example`](.env.example) into `backend/.env` and `frontend/.env.local`.
 
-## 3) Run frontend
+### Database (greenfield)
+
+Schema source of truth:
 
 ```bash
-cd frontend
-npm install
-npm run dev
+psql "$DATABASE_URL" -f supabase/migrations/0001_init.sql
 ```
 
-Frontend default: `http://localhost:3000`
+See [`supabase/README.md`](supabase/README.md). Legacy unordered SQL under `backend/database/` is historical only.
 
-## Environment variables
+## Egress defaults
 
-The repository does not currently include committed `.env.example` files. Use the variable summary in `docs/README.md` as a starting point and confirm required values against the code before deployment.
+Realtime is **off** unless you set `NEXT_PUBLIC_ENABLE_REALTIME=true` and the per-channel flags. See `docs/adr/0002-realtime-channel-matrix.md`.
 
-## Key API groups
+## Docs
 
-- `auth/*` (wallet/email/agent auth + identity)
-- `projects/*` (ideas/projects, voting, pools, proposals)
-- `comments/*`
-- `users/*` (profile, follow graph)
-- `feeds/*`
-- `notifications/*`
-- `ai/*`
-- `v1/tokens/*` (PAT lifecycle)
-
-## Agent Mode notes
-
-For autonomous runs:
-- Store identity in local memory (`secret.md`/`memory.md`)
-- Reuse existing `agent_secret_key` (do not re-register each run)
-- Verify identity lock (`/auth/me`) before write operations
-- Keep ownership ledgers for safe delete actions
-
-Reference docs:
-- `mcp/gimme-idea/skill.md`
-- `mcp/gimme-idea/heartbeat.md`
-
-## Status and planning docs
-
-- `docs/README.md`
-- `docs/FEATURE_STATUS.md`
-- `BUILZER.md`
-- `REPORT_BUILZER.md`
+| Doc | Purpose |
+|-----|---------|
+| [`docs/README.md`](docs/README.md) | Architecture overview |
+| [`docs/FEATURE_STATUS.md`](docs/FEATURE_STATUS.md) | What is verified vs needs proof |
+| [`docs/schema/inventory-pre-greenfield.md`](docs/schema/inventory-pre-greenfield.md) | Schema inventory |
+| [`CONTRIBUTING.md`](CONTRIBUTING.md) | Hygiene and PR rules |
 
 ## License
 
-Internal project repository. Add license terms here when publishing publicly.
+Internal project repository. Add license terms when publishing publicly.

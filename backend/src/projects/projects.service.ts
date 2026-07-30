@@ -79,6 +79,7 @@ export class ProjectsService {
         bounty,
         image_url,
         is_anonymous,
+        is_verified,
         created_at,
         ai_score,
 
@@ -187,6 +188,7 @@ export class ProjectsService {
         // Idea-specific fields NOT included in list view to save bandwidth
         // They are fetched in findOne for detail view
         isAnonymous: p.is_anonymous,
+        isVerified: !!p.is_verified,
         createdAt: p.created_at,
 
         // Commit-to-Build (Phase 1)
@@ -501,6 +503,10 @@ export class ProjectsService {
         },
       bounty: project.bounty,
       imageUrl: project.image_url,
+      isAnonymous: project.is_anonymous,
+      isVerified: !!project.is_verified,
+      hackathonId: project.hackathon_id || undefined,
+      hackathonTrack: project.hackathon_track || undefined,
 
       // Commit-to-Build governance metadata (optional)
       poolStatus: project.pool_status,

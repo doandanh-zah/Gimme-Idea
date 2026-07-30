@@ -1,6 +1,5 @@
 
-import { JourneyStep } from './types';
-import { Project } from './lib/types';
+import { JourneyStep, Project } from './lib/types';
 import { Lightbulb, Users, Zap, Rocket, Trophy } from 'lucide-react';
 import React from 'react';
 

@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { Project, User, Comment, Notification } from "./types";
+import { normalizeProject } from "./project-normalize";
 import { apiClient } from "./api-client";
 import { buildCommentTree } from "./comment-utils";
 import { supabase } from "./supabase";
@@ -385,11 +386,7 @@ export const useAppStore = create<AppState>((set, get) => ({
       });
 
       if (response.success && response.data) {
-        // Map imageUrl to image for frontend compatibility
-        const newProjects = response.data.map((p) => ({
-          ...p,
-          image: p.imageUrl || p.image,
-        }));
+        const newProjects = response.data.map(normalizeProject);
 
         if (append) {
           // Append to existing projects (for load more)
@@ -473,15 +470,7 @@ export const useAppStore = create<AppState>((set, get) => ({
       // Fetch full project data with comments
       const response = await apiClient.getProject(projectId);
       if (response.success && response.data) {
-        // Map imageUrl to image for frontend compatibility
-        const project = {
-          ...response.data,
-          image: response.data.imageUrl || response.data.image,
-        };
-        // Transform flat comments to nested structure
-        if (project.comments && project.comments.length > 0) {
-          project.comments = buildCommentTree(project.comments);
-        }
+        const project = normalizeProject(response.data);
 
         // Update or add project to store
         const id = project.id;
@@ -545,11 +534,7 @@ export const useAppStore = create<AppState>((set, get) => ({
       set({ isLoading: true });
       const response = await apiClient.createProject(project);
       if (response.success && response.data) {
-        // Map imageUrl to image for frontend compatibility
-        const newProject = {
-          ...response.data,
-          image: response.data.imageUrl || response.data.image,
-        };
+        const newProject = normalizeProject(response.data);
 
         set((state) => {
           // Check for duplicates (prevent race condition with realtime)
@@ -1112,15 +1097,7 @@ export const useAppStore = create<AppState>((set, get) => ({
         // Fetch full project data with comments
         const response = await apiClient.getProject(id);
         if (response.success && response.data) {
-          // Map imageUrl to image for frontend compatibility
-          const project = {
-            ...response.data,
-            image: response.data.imageUrl || response.data.image,
-          };
-          // Transform flat comments to nested structure
-          if (project.comments && project.comments.length > 0) {
-            project.comments = buildCommentTree(project.comments);
-          }
+          const project = normalizeProject(response.data);
 
           if (existingProject) {
             // Update existing project with full data

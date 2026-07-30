@@ -65,7 +65,32 @@ export class HackathonsService {
 
     const { data, error } = await supabase
       .from("hackathons")
-      .select("*")
+      .select(
+        [
+          "id",
+          "slug",
+          "title",
+          "tagline",
+          "description",
+          "cover_image",
+          "mode",
+          "currency",
+          "status",
+          "prize_pool",
+          "max_participants",
+          "submission_start",
+          "registration_start",
+          "judging_end",
+          "submission_end",
+          "registration_end",
+          "judging_start",
+          "is_featured",
+          "judging_criteria",
+          "current_round",
+          "total_rounds",
+          "created_at",
+        ].join(", "),
+      )
       .neq("status", "draft")
       .order("created_at", { ascending: false });
 
@@ -78,21 +103,23 @@ export class HackathonsService {
     const hackathonsWithCounts = await Promise.all(
       (data || []).map(async (h) => {
         const { count } = await supabase
-          .from("hackathon_participants")
-          .select("*", { count: "exact", head: true })
+          .from("hackathon_registrations")
+          .select("id", { count: "exact", head: true })
           .eq("hackathon_id", h.id);
 
         // Try to get rounds (new V2 format)
         const { data: rounds } = await supabase
           .from("hackathon_rounds")
-          .select("*")
+          .select(
+            "round_number, title, description, round_type, mode, teams_advancing, bonus_teams, start_date, end_date, results_date, status",
+          )
           .eq("hackathon_id", h.id)
           .order("round_number", { ascending: true });
 
         // Get teams count
         const { count: teamsCount } = await supabase
           .from("hackathon_teams")
-          .select("*", { count: "exact", head: true })
+          .select("id", { count: "exact", head: true })
           .eq("hackathon_id", h.id);
 
         return {
@@ -151,10 +178,46 @@ export class HackathonsService {
   async getHackathonBySlug(idOrSlug: string): Promise<ApiResponse<any>> {
     const supabase = this.supabaseService.getAdminClient();
 
+    const hackathonDetailSelect = [
+      "id",
+      "slug",
+      "title",
+      "tagline",
+      "description",
+      "organizer_name",
+      "organizer_logo",
+      "organizer_website",
+      "banner_image",
+      "cover_image",
+      "theme_color",
+      "prize_pool",
+      "participants_count",
+      "max_participants",
+      "status",
+      "is_featured",
+      "format",
+      "mode",
+      "currency",
+      "current_round",
+      "total_rounds",
+      "judging_criteria",
+      "registration_start",
+      "registration_end",
+      "submission_start",
+      "submission_end",
+      "judging_start",
+      "judging_end",
+      "allow_team_submissions",
+      "max_team_size",
+      "require_video",
+      "created_at",
+      "updated_at",
+    ].join(", ");
+
     // First try to find by slug
     let { data, error } = await supabase
       .from("hackathons")
-      .select("*")
+      .select(hackathonDetailSelect)
       .eq("slug", idOrSlug)
       .single();
 
@@ -162,7 +225,7 @@ export class HackathonsService {
     if (error || !data) {
       const result = await supabase
         .from("hackathons")
-        .select("*")
+        .select(hackathonDetailSelect)
         .eq("id", idOrSlug)
         .single();
 
@@ -177,33 +240,37 @@ export class HackathonsService {
 
     // Get participant count
     const { count: participantsCount } = await supabase
-      .from("hackathon_participants")
-      .select("*", { count: "exact", head: true })
+      .from("hackathon_registrations")
+      .select("id", { count: "exact", head: true })
       .eq("hackathon_id", data.id);
 
     // Get submission count
     const { count: submissionsCount } = await supabase
       .from("hackathon_submissions")
-      .select("*", { count: "exact", head: true })
+      .select("id", { count: "exact", head: true })
       .eq("hackathon_id", data.id);
 
     // Get teams count
     const { count: teamsCount } = await supabase
       .from("hackathon_teams")
-      .select("*", { count: "exact", head: true })
+      .select("id", { count: "exact", head: true })
       .eq("hackathon_id", data.id);
 
     // Get rounds (V2 format)
     const { data: rounds } = await supabase
       .from("hackathon_rounds")
-      .select("*")
+      .select(
+        "round_number, title, description, round_type, mode, teams_advancing, bonus_teams, start_date, end_date, results_date, status",
+      )
       .eq("hackathon_id", data.id)
       .order("round_number", { ascending: true });
 
     // Get prizes
     const { data: prizes } = await supabase
       .from("hackathon_prizes")
-      .select("*")
+      .select(
+        "id, round_number, rank, title, prize_amount, description, winner_team_id, announced_at",
+      )
       .eq("hackathon_id", data.id)
       .order("round_number", { ascending: true })
       .order("rank", { ascending: true });

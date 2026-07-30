@@ -8,14 +8,18 @@ import { ConnectReminderModal } from '../components/ConnectReminderModal';
 import { SubmissionModal } from '../components/SubmissionModal';
 import { WalletEmailPopup } from '../components/WalletEmailPopup';
 import { WalletSurfaceHost } from '../components/wallet/WalletSurfaceHost';
-import { QueryProvider } from '../components/QueryProvider';
+import { QueryProvider } from '../providers/QueryProvider';
 import ErrorBoundary from '../components/ErrorBoundary';
 import Script from 'next/script';
 import React, { useEffect } from 'react';
 import { useAppStore } from '../lib/store';
 import { AuthQueryCacheBridge } from '../components/AuthQueryCacheBridge';
 
-// Component to sync AuthContext user with Zustand store
+/**
+ * AuthContext is the session source of truth.
+ * Zustand only mirrors `user` for components still reading store.user —
+ * do not write independent login state into the store.
+ */
 function AuthStoreSync() {
   const { user: authUser } = useAuth();
   const setUser = useAppStore((state) => state.setUser);

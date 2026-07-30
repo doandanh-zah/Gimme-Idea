@@ -40,7 +40,14 @@ export interface Project {
     | "DePIN"
     | "Social"
     | "Mobile"
-    | "Security";
+    | "Security"
+    | "Payment"
+    | "Developer Tooling"
+    | "ReFi"
+    | "Content"
+    | "Dapp"
+    | "Blinks"
+    | string;
   stage: "Idea" | "Prototype" | "Devnet" | "Mainnet";
   votes: number;
   feedbackCount: number;
@@ -50,8 +57,12 @@ export interface Project {
 
   // Project specific fields
   image?: string;
+  imageUrl?: string;
   website?: string;
   bounty?: number;
+  isVerified?: boolean;
+  hackathonId?: string;
+  hackathonTrack?: string;
 
   // Idea specific fields (Long text)
   problem?: string;

@@ -101,6 +101,10 @@ export class AuthService {
     );
   }
 
+  /** Columns needed by toUserResponse + JWT — avoid select('*') egress/bloat */
+  private static readonly USER_SELECT =
+    'id, wallet, username, slug, bio, avatar, cover_image, reputation_score, social_links, last_login_at, login_count, created_at, email, auth_provider, auth_id, needs_wallet_connect, followers_count, following_count, role, is_banned, plan_tier, plan_expires_at, balance';
+
   private toUserResponse(user: any): User {
     return {
       id: user.id,
@@ -154,7 +158,7 @@ export class AuthService {
     const supabase = this.supabaseService.getAdminClient();
     let { data: user, error } = await supabase
       .from("users")
-      .select("*")
+      .select(AuthService.USER_SELECT)
       .eq("wallet", publicKey)
       .single();
 
@@ -197,7 +201,7 @@ export class AuthService {
       // Fetch updated user data
       const { data: updatedUser } = await supabase
         .from("users")
-        .select("*")
+        .select(AuthService.USER_SELECT)
         .eq("id", user.id)
         .single();
 
@@ -270,7 +274,7 @@ export class AuthService {
     // Fetch full user data
     const { data: user, error: fetchError } = await supabase
       .from("users")
-      .select("*")
+      .select(AuthService.USER_SELECT)
       .eq("id", user_id)
       .single();
 
@@ -366,7 +370,7 @@ export class AuthService {
           needs_wallet_connect: false,
           ...attempt,
         })
-        .select('*')
+        .select(AuthService.USER_SELECT)
         .single();
 
       if (!error && data) {
@@ -453,7 +457,7 @@ export class AuthService {
 
     const { data: user, error: userErr } = await supabase
       .from('users')
-      .select('*')
+      .select(AuthService.USER_SELECT)
       .eq('id', matched.user_id)
       .single();
 
@@ -669,7 +673,7 @@ export class AuthService {
     // 3. Fetch updated user data
     const { data: user, error: fetchError } = await supabase
       .from("users")
-      .select("*")
+      .select(AuthService.USER_SELECT)
       .eq("id", userId)
       .single();
 
@@ -719,7 +723,7 @@ export class AuthService {
 
     const { data: currentUser, error: fetchError } = await supabase
       .from('users')
-      .select('*')
+      .select(AuthService.USER_SELECT)
       .eq('id', userId)
       .single();
 
@@ -774,7 +778,7 @@ export class AuthService {
         auth_provider: currentUser.auth_provider || 'wallet',
       })
       .eq('id', userId)
-      .select('*')
+      .select(AuthService.USER_SELECT)
       .single();
 
     if (updateError || !updatedUser) {
@@ -815,7 +819,7 @@ export class AuthService {
     const supabase = this.supabaseService.getAdminClient();
     const { data: user, error } = await supabase
       .from("users")
-      .select("*")
+      .select(AuthService.USER_SELECT)
       .eq("id", userId)
       .single();
 

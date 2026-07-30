@@ -7,12 +7,13 @@ This folder is for shareable project documentation. Private notes, investigation
 ## Current Architecture
 
 ```text
-frontend/   Next.js 14 app, React, Tailwind, Zustand
+frontend/   Next.js app, React, Tailwind, Zustand + React Query
 backend/    NestJS API, Supabase/Postgres integration, JWT/PAT auth
+supabase/   Greenfield SQL migrations (schema source of truth)
 programs/   Solana/Anchor program workspace
 mcp/        Agent-facing usage notes
 docs/       Public project documentation
-dev-docs/   Private developer notes
+dev-docs/   Private developer notes (gitignored)
 ```
 
 ## Core Areas
@@ -71,6 +72,8 @@ SOLANA_RPC_URL=
 ```
 
 Realtime is opt-in from the frontend with `NEXT_PUBLIC_ENABLE_REALTIME=true`. Keep it disabled unless a deployment explicitly needs live subscriptions, because Supabase realtime can contribute noticeable egress.
+
+**Database:** apply `supabase/migrations/0001_init.sql` on empty projects. Do not run the unordered files under `backend/database/` on a greenfield database (see `supabase/README.md`).
 
 ## API Surface
 

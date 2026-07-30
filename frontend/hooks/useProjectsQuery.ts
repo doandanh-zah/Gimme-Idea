@@ -2,8 +2,7 @@
 
 import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
 import { apiClient } from '../lib/api-client';
-import { Project } from '../lib/types';
-import { buildCommentTree } from '../lib/comment-utils';
+import { normalizeProject } from '../lib/project-normalize';
 
 export const PROJECT_LIST_LIMIT = 9;
 
@@ -13,19 +12,6 @@ type ProjectListFilters = {
   search?: string;
   limit?: number;
 };
-
-function mapProject(project: any): Project {
-  const mapped = {
-    ...project,
-    image: project.imageUrl || project.image,
-  };
-
-  if (mapped.comments?.length) {
-    mapped.comments = buildCommentTree(mapped.comments);
-  }
-
-  return mapped;
-}
 
 async function fetchProjectPage(filters: ProjectListFilters, offset: number) {
   const limit = filters.limit || PROJECT_LIST_LIMIT;
@@ -41,7 +27,7 @@ async function fetchProjectPage(filters: ProjectListFilters, offset: number) {
     throw new Error(response.error || 'Failed to fetch projects');
   }
 
-  const projects = response.data.map(mapProject);
+  const projects = response.data.map(normalizeProject);
 
   return {
     projects,
@@ -76,7 +62,7 @@ export function useProjectDetailQuery(id: string | null, enabled = true) {
         throw new Error(response.error || 'Project not found');
       }
 
-      return mapProject(response.data);
+      return normalizeProject(response.data);
     },
     enabled: enabled && !!id,
     staleTime: 30_000,

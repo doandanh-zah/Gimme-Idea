@@ -12,6 +12,7 @@ import Image from 'next/image';
 import { LoginButton } from './LoginButton';
 import { useNotifications } from '../hooks/useNotifications';
 import { useTeamInvites } from '../hooks/useTeamInvites';
+import { featureFlags } from '../lib/featureFlags';
 
 const Navbar = () => {
   const openConnectReminder = useAppStore((state) => state.openConnectReminder);
@@ -22,6 +23,7 @@ const Navbar = () => {
   const setSelectedProject = useAppStore((state) => state.setSelectedProject);
 
   const { user, signOut, setShowWalletPopup } = useAuth();
+  const notificationsUiEnabled = featureFlags.enableNotifications;
   const {
     notifications,
     unreadCount,
@@ -40,8 +42,9 @@ const Navbar = () => {
   const router = useRouter();
   const pathname = usePathname();
 
-  // Total notification count (notifications + team invites)
-  const totalUnreadCount = unreadCount + teamInviteCount;
+  // Total badge: product notifications (opt-in) + team invites
+  const totalUnreadCount =
+    (notificationsUiEnabled ? unreadCount : 0) + teamInviteCount;
 
   const [isOpen, setIsOpen] = React.useState(false);
   const [showUserMenu, setShowUserMenu] = React.useState(false);
@@ -331,7 +334,8 @@ const Navbar = () => {
 
             {user ? (
               <div className="flex items-center gap-3 relative">
-                {/* Notifications */}
+                {/* Notifications (hidden when feature flag off and no team invites) */}
+                {(notificationsUiEnabled || teamInviteCount > 0) && (
                 <div className="relative" ref={notificationRef}>
                   <button
                     type="button"
@@ -515,6 +519,7 @@ const Navbar = () => {
                     )}
                   </AnimatePresence>
                 </div>
+                )}
 
                 {/* User Menu */}
                 <div className="relative group" ref={userMenuRef}>

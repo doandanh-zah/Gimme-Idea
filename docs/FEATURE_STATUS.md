@@ -2,6 +2,8 @@
 
 This file is a lightweight status snapshot. It is not a release promise. Before publishing external claims, verify against the current code and deployed environment.
 
+**Last review:** 2026-07-29 (repo hygiene + greenfield schema scaffolding)
+
 ## Recently Verified
 
 - Frontend production build passed after the latest egress optimization pass.
@@ -9,6 +11,8 @@ This file is a lightweight status snapshot. It is not a release promise. Before 
 - Supabase realtime is disabled by default unless `NEXT_PUBLIC_ENABLE_REALTIME=true`.
 - Profile idea lists request a smaller, paginated API shape.
 - Dashboard velocity stats use a compact aggregate endpoint instead of loading a large project list.
+- Repo hygiene pass: junk/legacy SPA removed; schema SSOT is `supabase/migrations/0001_init.sql`.
+- Greenfield schema **not yet cut over in production** — apply + ETL still required (see `scripts/etl/README.md`).
 
 ## Implemented In Code
 

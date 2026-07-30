@@ -11,6 +11,7 @@ import {
   isRealtimeChannelEnabled,
   logRealtimeLifecycle,
 } from "../lib/realtime/registry";
+import { featureFlags } from "../lib/featureFlags";
 import { useThrottledCallback } from "./useDebounce";
 
 export function useNotifications() {
@@ -20,6 +21,7 @@ export function useNotifications() {
   const [unreadCount, setUnreadCount] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
   const subscriptionRef = useRef<any>(null);
+  const notificationsEnabled = featureFlags.enableNotifications;
 
   const notificationsQuery = useQuery({
     queryKey: ["notifications", userId],
@@ -31,7 +33,7 @@ export function useNotifications() {
 
       return ((response as any).notifications || []) as Notification[];
     },
-    enabled: !!userId,
+    enabled: notificationsEnabled && !!userId,
     staleTime: 30_000,
     refetchOnWindowFocus: false,
   });
@@ -46,7 +48,7 @@ export function useNotifications() {
 
       return (response as any).unreadCount || 0;
     },
-    enabled: !!userId,
+    enabled: notificationsEnabled && !!userId,
     staleTime: 30_000,
     refetchOnWindowFocus: false,
   });
@@ -66,7 +68,7 @@ export function useNotifications() {
   // Fetch notifications from API
   const fetchNotifications = useCallback(
     async (limit = 20, offset = 0) => {
-      if (!userId) return;
+      if (!notificationsEnabled || !userId) return;
 
       setIsLoading(true);
       try {
@@ -86,12 +88,12 @@ export function useNotifications() {
         setIsLoading(false);
       }
     },
-    [userId]
+    [notificationsEnabled, userId]
   );
 
   // Fetch unread count
   const fetchUnreadCount = useCallback(async () => {
-    if (!userId) return;
+    if (!notificationsEnabled || !userId) return;
 
     try {
       const response = await apiClient.getUnreadNotificationCount();
@@ -102,7 +104,7 @@ export function useNotifications() {
     } catch (error) {
       console.error("Failed to fetch unread count:", error);
     }
-  }, [userId]);
+  }, [notificationsEnabled, userId]);
 
   // Mark single notification as read
   const markAsRead = useCallback(async (notificationId: string) => {
@@ -213,7 +215,7 @@ export function useNotifications() {
 
   // Setup realtime subscription
   useEffect(() => {
-    if (!isRealtimeChannelEnabled("notifications")) {
+    if (!notificationsEnabled || !isRealtimeChannelEnabled("notifications")) {
       return;
     }
 
@@ -298,12 +300,14 @@ export function useNotifications() {
         subscriptionRef.current = null;
       }
     };
-  }, [userId, session?.user?.id]); // Only depend on user/session, not on callback functions
+  }, [notificationsEnabled, userId, session?.user?.id]); // Only depend on user/session, not on callback functions
 
   return {
-    notifications,
-    unreadCount,
-    isLoading: isLoading || notificationsQuery.isLoading || unreadCountQuery.isLoading,
+    notifications: notificationsEnabled ? notifications : [],
+    unreadCount: notificationsEnabled ? unreadCount : 0,
+    isLoading:
+      notificationsEnabled &&
+      (isLoading || notificationsQuery.isLoading || unreadCountQuery.isLoading),
     fetchNotifications,
     fetchUnreadCount,
     markAsRead,
