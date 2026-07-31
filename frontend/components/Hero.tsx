@@ -63,10 +63,6 @@ const Hero: React.FC = () => {
       <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(5,5,5,0.94)_0%,rgba(5,5,5,0.82)_48%,rgba(5,5,5,0.56)_100%)]" />
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_72%_26%,rgba(255,215,0,0.18),transparent_32%),linear-gradient(180deg,rgba(5,5,5,0.22),#050505_96%)]" />
       <div className="landing-grid absolute inset-0 opacity-60" />
-      <div className="landing-hero-beam landing-hero-beam-one" aria-hidden="true" />
-      <div className="landing-hero-beam landing-hero-beam-two" aria-hidden="true" />
-      <div className="landing-circuit landing-circuit-hero" aria-hidden="true" />
-      <div className="landing-scan absolute inset-x-0 top-0 h-px bg-[#FFD700]/50" />
 
       <div className="page-shell relative z-10 flex min-h-[92svh] flex-col justify-center py-28 sm:py-32 lg:py-36">
         <motion.div {...reveal} className="max-w-4xl">

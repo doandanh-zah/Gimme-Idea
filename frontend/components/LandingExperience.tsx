@@ -331,12 +331,11 @@ export default function LandingExperience() {
           transition={SECTION_MOTION.spring}
           className="relative border-b border-white/10 bg-[#070707] py-8"
         >
-          <div className="landing-rail-glow" aria-hidden="true" />
           <div className="page-shell">
             <div className="grid overflow-hidden border border-white/10 bg-[#0a0a0a]/80 backdrop-blur md:grid-cols-3 md:divide-x md:divide-white/10">
               {insightStats.map((item, index) => (
                 <StaggerItem key={item.label} index={index} visible={stage >= 4}>
-                  <div className="landing-signal-cell min-h-[92px] p-4">
+                  <div className="min-h-[92px] p-4">
                     <div className="mb-3 font-mono text-[10px] uppercase text-gray-500">
                       {item.label}
                     </div>
@@ -349,7 +348,6 @@ export default function LandingExperience() {
         </motion.section>
 
         <section className="landing-band relative border-b border-white/10 py-16 sm:py-20">
-          <div className="landing-section-beam" aria-hidden="true" />
           <div className="page-shell">
             <Reveal className="grid gap-10 lg:grid-cols-[360px_1fr] lg:items-start">
               <SectionIntro
@@ -384,8 +382,6 @@ export default function LandingExperience() {
         </section>
 
         <section className="relative border-b border-white/10 py-16 sm:py-20">
-          <div className="landing-flow-line" aria-hidden="true" />
-          <div className="landing-circuit" aria-hidden="true" />
           <div className="page-shell">
             <Reveal className="mb-10">
               <SectionIntro
@@ -401,7 +397,6 @@ export default function LandingExperience() {
                 return (
                   <StaggerItem key={item.label} index={index}>
                     <div className="landing-card relative min-h-[232px] overflow-hidden border border-white/10 bg-[#0a0a0a] p-5">
-                      <div className="landing-card-sheen" aria-hidden="true" />
                       <div className="mb-6 flex items-center justify-between">
                         <span className="font-mono text-xl font-bold text-[#FFD700]">
                           0{index + 1}
@@ -421,7 +416,6 @@ export default function LandingExperience() {
         </section>
 
         <section className="relative border-b border-white/10 py-16 sm:py-20">
-          <div className="landing-section-beam landing-section-beam-right" aria-hidden="true" />
           <div className="page-shell">
             <Reveal className="grid gap-10 lg:grid-cols-[360px_1fr] lg:items-start">
               <SectionIntro
@@ -439,7 +433,7 @@ export default function LandingExperience() {
                 <div className="divide-y divide-white/10">
                   {signalModel.map((item, index) => (
                     <StaggerItem key={item.title} index={index}>
-                      <div className="landing-signal-row grid gap-4 p-4 md:grid-cols-[160px_1fr_1fr]">
+                      <div className="grid gap-4 p-4 md:grid-cols-[160px_1fr_1fr]">
                         <div>
                           <div className="font-mono text-[11px] font-semibold uppercase text-[#FFD700]">
                             {item.title}
@@ -492,7 +486,6 @@ export default function LandingExperience() {
         </section>
 
         <section className="relative border-b border-white/10 py-16 sm:py-20">
-          <div className="landing-circuit landing-circuit-soft" aria-hidden="true" />
           <div className="page-shell">
             <div className="grid gap-10 lg:grid-cols-[minmax(0,1fr)_360px] lg:items-start">
               <Reveal>
@@ -505,7 +498,7 @@ export default function LandingExperience() {
                   <div className="mt-8 overflow-hidden border border-white/10 bg-[#0a0a0a]">
                     {reviewRubric.map((question, index) => (
                       <StaggerItem key={question} index={index}>
-                        <div className="landing-signal-row grid min-h-[64px] grid-cols-[40px_1fr] items-center gap-3 border-b border-white/10 px-4 last:border-b-0">
+                        <div className="grid min-h-[64px] grid-cols-[40px_1fr] items-center gap-3 border-b border-white/10 px-4 last:border-b-0">
                           <span className="font-mono text-sm font-bold text-[#FFD700]">
                             {String(index + 1).padStart(2, '0')}
                           </span>
@@ -526,15 +519,15 @@ export default function LandingExperience() {
                     more context than an isolated post can provide.
                   </p>
                   <div className="mt-6 grid gap-2 font-mono text-[10px] uppercase text-gray-500">
-                    <div className="landing-meter flex min-h-[36px] items-center justify-between border border-white/10 px-3">
+                    <div className="flex min-h-[36px] items-center justify-between border border-white/10 px-3">
                       <span>Identity</span>
                       <span className="text-white">Profile / wallet</span>
                     </div>
-                    <div className="landing-meter flex min-h-[36px] items-center justify-between border border-white/10 px-3">
+                    <div className="flex min-h-[36px] items-center justify-between border border-white/10 px-3">
                       <span>Evidence</span>
                       <span className="text-white">Votes / comments</span>
                     </div>
-                    <div className="landing-meter flex min-h-[36px] items-center justify-between border border-white/10 px-3">
+                    <div className="flex min-h-[36px] items-center justify-between border border-white/10 px-3">
                       <span>Intent</span>
                       <span className="text-white">Tips / support</span>
                     </div>
@@ -603,7 +596,7 @@ export default function LandingExperience() {
               <div className="divide-y divide-white/10 overflow-hidden border border-white/10 bg-[#0a0a0a]">
                 {faqs.map((faq, index) => (
                   <StaggerItem key={faq.question} index={index}>
-                    <div className="landing-signal-row p-5">
+                    <div className="p-5">
                       <h3 className="font-display text-lg font-bold text-white">{faq.question}</h3>
                       <p className="mt-2 text-sm leading-6 text-gray-500">{faq.answer}</p>
                     </div>
@@ -616,7 +609,6 @@ export default function LandingExperience() {
 
         <section className="relative overflow-hidden py-20 sm:py-24">
           <div className="landing-grid absolute inset-0 opacity-35" aria-hidden="true" />
-          <div className="landing-cta-beam" aria-hidden="true" />
           <div className="page-shell relative z-10">
             <Reveal>
               <div className="landing-card border border-white/10 border-l-2 border-l-[#FFD700] bg-[#0a0a0a]/90 p-6 backdrop-blur sm:p-8 lg:p-10">
