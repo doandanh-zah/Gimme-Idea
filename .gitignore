@@ -1,95 +1,21 @@
-# Dependencies
-node_modules/
+# Local dependencies and build output left outside the rebuild branch
 **/node_modules/
-
-# Lockfiles: keep package locks committed (override broad patterns below)
-!package.json
-!package-lock.json
-!**/package.json
-!**/package-lock.json
-!frontend/package-lock.json
-!backend/package-lock.json
-
-# Environment (NEVER commit secrets)
-.env
-.env.*
-!.env.example
-!**/.env.example
-backend/.env
-frontend/.env.local
-
-# Build output
-.next/
-out/
-dist/
-build/
 **/dist/
 **/.next/
+**/target/
+**/.vercel/
 *.tsbuildinfo
 
-# Logs
-logs/
-*.log
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-backend/startup.err
-backend/startup.out
-
-# IDE / OS
-.vscode/
-.idea/
-*.swp
-*.swo
-*~
-.DS_Store
-Thumbs.db
-
-# Testing
-coverage/
-.nyc_output/
-
-# Rust / Anchor
-target/
-**/target/
-**/*.rs.bk
-.anchor/
-test-ledger/
-Cargo.lock
-
-# Finder / editor junk
-* 2.*
-* 2/
-*.bak
-*.orig
-*.tmp
-
-# Solana key material (never commit wallet keys)
-*.keypair.json
-id.json
-
-# Personal / private notes
-dev-docs/
-devdocs/
-AGENTS.md
-.vercel/
-hackathonLegacy
-
-# Misc
-.cache/
-tmp/
-temp/
-
-# Local secrets & DB dumps
+# Local secrets and database snapshots
+.env
+.env.*
+**/.env
+**/.env.*
 .local/
+dev-docs/
+backend/package-lock.json
+programs/Cargo.lock
 docs/schema/prod-inventory/*.sql
-
-# Clean data dump may contain PII
-
-# Data dumps may contain PII — never commit
+docs/schema/reset-handoff/02_data_clean.sql
 supabase/handoff/02_data_clean.sql
 supabase/handoff/02_data_clean_psql.sql
-docs/schema/reset-handoff/02_data_clean.sql
-docs/schema/prod-inventory/*.sql
-.local/
-*.tsbuildinfo
