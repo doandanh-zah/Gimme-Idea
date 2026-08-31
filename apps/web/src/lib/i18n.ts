@@ -1,0 +1,80 @@
+import type { Locale } from '@gimme-idea/contracts';
+
+export const locales = ['en', 'vi'] as const;
+export function isLocale(value: string): value is Locale {
+  return locales.includes(value as Locale);
+}
+export const copy = {
+  en: {
+    navProblems: 'Problems',
+    navIdeas: 'Ideas',
+    signal: 'Signal 01 / Foundation',
+    headlineA: 'Find the problem.',
+    headlineB: 'Shape the idea.',
+    headlineC: 'Build what matters.',
+    intro:
+      'Gimme Idea turns fragmented problem signals into evidence-backed opportunities people can inspect, challenge and build.',
+    exploreProblem: 'Explore a problem',
+    inspectIdea: 'Inspect an idea',
+    sequence: [
+      'Problem signals',
+      'The brain opens',
+      'Idea fragments',
+      'Connections form',
+      'Builders move',
+      'Opportunity gets funded',
+    ],
+    manifesto: 'A public thinking network for consequential work.',
+    manifestoBody:
+      'Problems remain distinct from ideas. Research remains traceable. A project proves the thesis through real outcomes—not applause.',
+    sourceLabel: 'Research provenance',
+    attempts: 'Previous attempts',
+    relatedIdeas: 'Ideas addressing this problem',
+    primaryProblem: 'Primary problem',
+    targetUsers: 'Designed for',
+    thesis: 'Thesis',
+    solution: 'Solution',
+    evidence: 'Observed signals',
+    affected: 'Affected groups',
+    project: 'Active build',
+    bounty: 'Opportunity state',
+    back: 'Back to the network',
+    notFound: 'This node is not in the network.',
+  },
+  vi: {
+    navProblems: 'Vấn đề',
+    navIdeas: 'Ý tưởng',
+    signal: 'Tín hiệu 01 / Foundation',
+    headlineA: 'Tìm đúng vấn đề.',
+    headlineB: 'Định hình ý tưởng.',
+    headlineC: 'Xây điều đáng giá.',
+    intro:
+      'Gimme Idea biến các tín hiệu vấn đề rời rạc thành cơ hội có bằng chứng để mọi người kiểm tra, phản biện và bắt tay xây dựng.',
+    exploreProblem: 'Khám phá vấn đề',
+    inspectIdea: 'Xem một ý tưởng',
+    sequence: [
+      'Tín hiệu vấn đề',
+      'Bộ não mở ra',
+      'Mảnh ý tưởng xuất hiện',
+      'Kết nối hình thành',
+      'Người xây bắt đầu',
+      'Cơ hội được tài trợ',
+    ],
+    manifesto: 'Mạng lưới tư duy công khai cho những việc có ý nghĩa.',
+    manifestoBody:
+      'Vấn đề luôn tách biệt với ý tưởng. Nghiên cứu luôn truy nguyên được. Dự án chứng minh luận điểm bằng kết quả thật—không phải tiếng vỗ tay.',
+    sourceLabel: 'Nguồn gốc nghiên cứu',
+    attempts: 'Những cách đã thử',
+    relatedIdeas: 'Ý tưởng giải quyết vấn đề này',
+    primaryProblem: 'Vấn đề chính',
+    targetUsers: 'Dành cho',
+    thesis: 'Luận điểm',
+    solution: 'Giải pháp',
+    evidence: 'Tín hiệu quan sát',
+    affected: 'Nhóm bị ảnh hưởng',
+    project: 'Dự án đang xây',
+    bounty: 'Trạng thái cơ hội',
+    back: 'Quay lại mạng lưới',
+    notFound: 'Nút này không tồn tại trong mạng lưới.',
+  },
+} as const;

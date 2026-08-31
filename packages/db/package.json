@@ -1,0 +1,31 @@
+{
+  "name": "@gimme-idea/db",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./schema": "./src/schema.ts",
+    "./repository": "./src/repository.ts"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "lint": "eslint src scripts drizzle.config.ts",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run --passWithNoTests",
+    "db:generate": "drizzle-kit generate --config drizzle.config.ts",
+    "seed": "tsx scripts/seed.ts",
+    "seed:verify": "tsx scripts/verify-seed.ts"
+  },
+  "dependencies": {
+    "@gimme-idea/contracts": "workspace:*",
+    "drizzle-orm": "0.45.2",
+    "pg": "8.23.0"
+  },
+  "devDependencies": {
+    "@types/pg": "8.23.1",
+    "drizzle-kit": "0.31.10",
+    "tsx": "4.23.13",
+    "vitest": "4.1.11"
+  }
+}

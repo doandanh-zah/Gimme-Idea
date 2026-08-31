@@ -1,0 +1,85 @@
+import { afterEach, describe, expect, it } from 'vitest';
+import type { IdeaDetailDTO, ProblemDetailDTO } from '@gimme-idea/contracts';
+import type { KnowledgeRepository } from '@gimme-idea/db/repository';
+import { buildApp } from './app.js';
+
+const provenance = {
+  origin: 'human' as const,
+  reviewedByHuman: true,
+  lastResearchedAt: null,
+  sources: [],
+};
+const problem: ProblemDetailDTO = {
+  id: '30000000-0000-4000-8000-000000000001',
+  slug: 'test-problem',
+  title: 'Test problem',
+  summary: 'A bounded test problem.',
+  description: 'Evidence-backed description.',
+  affectedGroups: ['Operators'],
+  evidence: ['Observed delay'],
+  severity: 'high',
+  status: 'published',
+  researchStatus: 'verified',
+  provenance,
+  relatedIdeas: [],
+  bounty: null,
+};
+const idea: IdeaDetailDTO = {
+  id: '40000000-0000-4000-8000-000000000001',
+  slug: 'test-idea',
+  title: 'Test idea',
+  summary: 'A bounded test idea.',
+  thesis: 'A falsifiable thesis.',
+  solution: 'A focused solution.',
+  targetUsers: ['Operators'],
+  status: 'published',
+  researchStatus: 'verified',
+  provenance,
+  primaryProblem: { slug: problem.slug, title: problem.title, summary: problem.summary },
+  previousAttempts: [],
+  project: null,
+};
+const repo: KnowledgeRepository = {
+  ping: () => Promise.resolve(true),
+  findProblem: (slug) => Promise.resolve(slug === problem.slug ? problem : null),
+  findIdea: (slug) => Promise.resolve(slug === idea.slug ? idea : null),
+  close: () => Promise.resolve(),
+};
+const apps: Awaited<ReturnType<typeof buildApp>>[] = [];
+afterEach(async () => {
+  await Promise.all(apps.splice(0).map((app) => app.close()));
+});
+
+describe('API boundaries', () => {
+  it('reports health and readiness', async () => {
+    const app = await buildApp({ repository: repo, logger: false });
+    apps.push(app);
+    expect((await app.inject('/health')).statusCode).toBe(200);
+    expect((await app.inject('/ready')).json()).toMatchObject({
+      status: 'ready',
+      checks: { database: 'ok', redis: 'not_configured' },
+    });
+  });
+  it('returns schema-valid problem and idea data', async () => {
+    const app = await buildApp({ repository: repo, logger: false });
+    apps.push(app);
+    expect((await app.inject('/v1/problems/test-problem')).json()).toMatchObject({
+      slug: 'test-problem',
+    });
+    expect((await app.inject('/v1/ideas/test-idea')).json()).toMatchObject({ slug: 'test-idea' });
+  });
+  it('uses the stable 404 envelope', async () => {
+    const app = await buildApp({ repository: repo, logger: false });
+    apps.push(app);
+    const response = await app.inject('/v1/problems/missing');
+    const payload = response.json<{ code: string; message: string; requestId: string }>();
+    expect(response.statusCode).toBe(404);
+    expect(payload).toMatchObject({ code: 'PROBLEM_NOT_FOUND', message: 'Problem not found' });
+    expect(payload.requestId).toBeTruthy();
+  });
+  it('keeps unknown routes outside feature boundaries', async () => {
+    const app = await buildApp({ repository: repo, logger: false });
+    apps.push(app);
+    expect((await app.inject('/v1/create')).json()).toMatchObject({ code: 'ROUTE_NOT_FOUND' });
+  });
+});

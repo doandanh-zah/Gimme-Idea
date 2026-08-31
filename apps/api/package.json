@@ -1,0 +1,25 @@
+{
+  "name": "@gimme-idea/api",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/server.ts",
+    "build": "tsc -p tsconfig.build.json",
+    "start": "node dist/server.js",
+    "lint": "eslint src",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@fastify/cors": "11.3.0",
+    "@gimme-idea/config": "workspace:*",
+    "@gimme-idea/contracts": "workspace:*",
+    "@gimme-idea/db": "workspace:*",
+    "fastify": "5.12.1"
+  },
+  "devDependencies": {
+    "tsx": "4.23.13",
+    "vitest": "4.1.11"
+  }
+}

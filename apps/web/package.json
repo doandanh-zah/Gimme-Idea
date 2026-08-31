@@ -1,0 +1,33 @@
+{
+  "name": "@gimme-idea/web",
+  "version": "0.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev --turbopack",
+    "build": "next build && node scripts/prepare-standalone.mjs",
+    "start": "node .next/standalone/apps/web/server.js",
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run --passWithNoTests"
+  },
+  "dependencies": {
+    "@fontsource-variable/inter": "5.2.8",
+    "@fontsource-variable/jetbrains-mono": "5.2.8",
+    "@gimme-idea/contracts": "workspace:*",
+    "@gimme-idea/ui": "workspace:*",
+    "@react-three/fiber": "9.7.0",
+    "animejs": "4.5.0",
+    "lucide-react": "1.38.0",
+    "next": "16.3.3",
+    "react": "19.2.8",
+    "react-dom": "19.2.8",
+    "three": "0.185.1"
+  },
+  "devDependencies": {
+    "@types/react": "19.2.14",
+    "@types/react-dom": "19.2.3",
+    "@types/three": "0.183.1",
+    "eslint-config-next": "16.3.3",
+    "vitest": "4.1.11"
+  }
+}

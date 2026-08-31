@@ -1,0 +1,9 @@
+packages:
+  - apps/*
+  - packages/*
+
+onlyBuiltDependencies:
+  - '@sentry/cli'
+  - esbuild
+  - sharp
+  - supabase

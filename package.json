@@ -1,0 +1,37 @@
+{
+  "name": "gimme-idea",
+  "version": "2.0.0-foundation",
+  "private": true,
+  "packageManager": "pnpm@10.18.3",
+  "engines": {
+    "node": ">=22.23.2 <23",
+    "pnpm": ">=10.18.3 <11"
+  },
+  "scripts": {
+    "build": "turbo run build",
+    "dev": "turbo run dev --parallel",
+    "lint": "turbo run lint",
+    "typecheck": "turbo run typecheck",
+    "test": "turbo run test",
+    "test:e2e": "playwright test",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "db:start": "supabase start",
+    "db:stop": "supabase stop",
+    "db:reset": "supabase db reset --local",
+    "db:generate": "pnpm --filter @gimme-idea/db db:generate",
+    "db:seed:verify": "pnpm --filter @gimme-idea/db seed:verify"
+  },
+  "devDependencies": {
+    "@axe-core/playwright": "4.13.0",
+    "@eslint/js": "9.39.5",
+    "@playwright/test": "1.62.1",
+    "@types/node": "22.18.7",
+    "eslint": "9.39.5",
+    "prettier": "3.9.6",
+    "supabase": "2.116.0",
+    "turbo": "2.10.12",
+    "typescript": "5.9.3",
+    "typescript-eslint": "8.68.0"
+  }
+}
