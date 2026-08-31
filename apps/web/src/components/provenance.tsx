@@ -2,9 +2,17 @@ import { ExternalLink } from 'lucide-react';
 import type { ProvenanceDTO } from '@gimme-idea/contracts';
 import { StatusPill } from '@gimme-idea/ui';
 
-export function Provenance({ value, label }: { value: ProvenanceDTO; label: string }) {
+export function Provenance({
+  value,
+  label,
+  id,
+}: {
+  value: ProvenanceDTO;
+  label: string;
+  id?: string;
+}) {
   return (
-    <aside className="provenance">
+    <aside className="provenance" id={id}>
       <div className="section-heading">
         <p>{label}</p>
         <StatusPill tone={value.reviewedByHuman ? 'success' : 'warning'}>

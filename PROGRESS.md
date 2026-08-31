@@ -1,6 +1,6 @@
 # Gimme Idea V2 — Progress Checklist
 
-> Cập nhật lần cuối: 2026-08-31  
+> Cập nhật lần cuối: 2026-09-01
 > Branch: `rebuild-gimme-idea-v2`  
 > Milestone hiện tại: Foundation hoàn thành
 
@@ -69,6 +69,19 @@
 - [x] Problem/Idea bundles không tải Three.js.
 - [x] Loading, error và not-found experiences.
 - [x] Canonical, hreflang và noindex cho not-found state.
+
+### UI clarity pass
+
+- [x] Thêm global navigation rõ ràng: Home / Problems / Ideas.
+- [x] Hiển thị active route bằng nhãn, số thứ tự và đường biên; không chỉ dựa vào màu.
+- [x] Thêm menu mobile có nút mở/đóng, Escape và touch target tối thiểu 44px.
+- [x] Language switch giữ nguyên route hiện tại khi đổi ngôn ngữ.
+- [x] Thêm breadcrumb cho Problem và Idea.
+- [x] Thêm mục lục sticky “On this page / Trong trang này”.
+- [x] Chia canonical content thành chapter có số, tiêu đề, nền và đường biên riêng.
+- [x] Giới hạn reading width và tăng line-height/contrast cho nội dung dài.
+- [x] Production build và HTML SSR mới đã được kiểm tra.
+- [ ] Visual browser review ở 360px và 1280px — browser controller chưa khả dụng trong phiên hiện tại.
 
 ### Quality gates
 

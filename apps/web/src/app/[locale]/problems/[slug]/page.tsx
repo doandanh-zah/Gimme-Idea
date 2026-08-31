@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { ArrowLeft, ArrowUpRight } from 'lucide-react';
 import { notFound } from 'next/navigation';
 import { Eyebrow, StatusPill } from '@gimme-idea/ui';
+import { PageIndex } from '@/components/page-index';
 import { Provenance } from '@/components/provenance';
 import { getProblem } from '@/lib/api';
 import { copy, isLocale } from '@/lib/i18n';
@@ -29,12 +30,17 @@ export default async function ProblemPage({ params }: PageProps) {
   const t = copy[locale];
   const problem = await getProblem(slug);
   if (!problem) notFound();
+  const relatedIndex = problem.bounty ? '04' : '03';
   return (
     <main id="main" className="detail-page problem-page">
-      <Link className="back-link" href={`/${locale}`}>
-        <ArrowLeft size={14} />
-        {t.back}
-      </Link>
+      <nav className="breadcrumb" aria-label="Breadcrumb">
+        <Link href={`/${locale}`}>
+          <ArrowLeft size={14} />
+          {t.navHome}
+        </Link>
+        <span>/</span>
+        <strong>{t.navProblems}</strong>
+      </nav>
       <header className="detail-header">
         <div>
           <Eyebrow>PROBLEM / {problem.severity.toUpperCase()}</Eyebrow>
@@ -46,51 +52,94 @@ export default async function ProblemPage({ params }: PageProps) {
           <StatusPill>{problem.provenance.origin.replace('_', ' ')}</StatusPill>
         </div>
       </header>
+      <PageIndex
+        label={t.onThisPage}
+        items={[
+          { index: '01', label: t.overview, href: '#overview' },
+          { index: '02', label: t.signals, href: '#signals' },
+          ...(problem.bounty
+            ? [{ index: '03', label: t.opportunity, href: '#opportunity' as const }]
+            : []),
+          { index: relatedIndex, label: t.relatedIdeas, href: '#related-ideas' },
+          { index: problem.bounty ? '05' : '04', label: t.sources, href: '#sources' },
+        ]}
+      />
       <div className="detail-grid">
         <article className="canonical-content">
-          <section>
-            <h2>Problem frame</h2>
+          <section id="overview" className="content-section">
+            <div className="chapter-heading">
+              <span>01</span>
+              <div>
+                <small>{t.overview}</small>
+                <h2>{t.problemFrame}</h2>
+              </div>
+            </div>
             <p className="long-copy">{problem.description}</p>
           </section>
-          <section className="split-section">
-            <div>
-              <h2>{t.affected}</h2>
-              <ul className="editorial-list">
-                {problem.affectedGroups.map((group) => (
-                  <li key={group}>{group}</li>
-                ))}
-              </ul>
+          <section id="signals" className="content-section content-section-raised">
+            <div className="chapter-heading">
+              <span>02</span>
+              <div>
+                <small>{t.signals}</small>
+                <h2>{t.evidence}</h2>
+              </div>
             </div>
-            <div>
-              <h2>{t.evidence}</h2>
-              <ul className="editorial-list evidence-list">
-                {problem.evidence.map((item) => (
-                  <li key={item}>{item}</li>
-                ))}
-              </ul>
+            <div className="split-section">
+              <div>
+                <h3>{t.affected}</h3>
+                <ul className="editorial-list">
+                  {problem.affectedGroups.map((group) => (
+                    <li key={group}>{group}</li>
+                  ))}
+                </ul>
+              </div>
+              <div>
+                <h3>{t.evidence}</h3>
+                <ul className="editorial-list evidence-list">
+                  {problem.evidence.map((item) => (
+                    <li key={item}>{item}</li>
+                  ))}
+                </ul>
+              </div>
             </div>
           </section>
           {problem.bounty && (
-            <section className="bounty-panel">
-              <div>
-                <Eyebrow>{t.bounty}</Eyebrow>
-                <h2>{problem.bounty.title}</h2>
+            <section id="opportunity" className="content-section">
+              <div className="chapter-heading">
+                <span>03</span>
+                <div>
+                  <small>{t.opportunity}</small>
+                  <h2>{t.bounty}</h2>
+                </div>
               </div>
-              <div>
-                <StatusPill tone={problem.bounty.status === 'mock_funded' ? 'success' : 'neutral'}>
-                  {problem.bounty.status.replace('_', ' ')}
-                </StatusPill>
-                <p>
-                  {(Number(problem.bounty.amountRaw) / 1_000_000).toLocaleString()}{' '}
-                  {problem.bounty.currency} <small>DEV FIXTURE</small>
-                </p>
+              <div className="bounty-panel">
+                <div>
+                  <Eyebrow>{t.bounty}</Eyebrow>
+                  <h3>{problem.bounty.title}</h3>
+                </div>
+                <div>
+                  <StatusPill
+                    tone={problem.bounty.status === 'mock_funded' ? 'success' : 'neutral'}
+                  >
+                    {problem.bounty.status.replace('_', ' ')}
+                  </StatusPill>
+                  <p>
+                    {(Number(problem.bounty.amountRaw) / 1_000_000).toLocaleString()}{' '}
+                    {problem.bounty.currency} <small>DEV FIXTURE</small>
+                  </p>
+                </div>
               </div>
             </section>
           )}
-          <section>
-            <div className="section-heading">
-              <h2>{t.relatedIdeas}</h2>
-              <span>{problem.relatedIdeas.length.toString().padStart(2, '0')}</span>
+          <section id="related-ideas" className="content-section content-section-raised">
+            <div className="chapter-heading">
+              <span>{relatedIndex}</span>
+              <div>
+                <small>
+                  {problem.relatedIdeas.length.toString().padStart(2, '0')} {t.ideasUnit}
+                </small>
+                <h2>{t.relatedIdeas}</h2>
+              </div>
             </div>
             <div className="idea-links">
               {problem.relatedIdeas.map((idea, index) => (
@@ -104,7 +153,7 @@ export default async function ProblemPage({ params }: PageProps) {
             </div>
           </section>
         </article>
-        <Provenance value={problem.provenance} label={t.sourceLabel} />
+        <Provenance id="sources" value={problem.provenance} label={t.sourceLabel} />
       </div>
     </main>
   );

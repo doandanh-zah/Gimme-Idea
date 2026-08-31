@@ -27,6 +27,33 @@ test('problem and idea pages render API data without Three.js', async ({ page })
   expect(threeRequests).toEqual([]);
 });
 
+test('global navigation stays discoverable and detail pages expose a chapter index', async ({
+  page,
+}) => {
+  await page.goto('/en');
+  const viewport = page.viewportSize();
+
+  if (viewport && viewport.width <= 900) {
+    await expect(page.locator('.menu-trigger')).toBeVisible();
+    await page.locator('.menu-trigger').click();
+    await expect(page.locator('#mobile-menu')).toBeVisible();
+    await expect(page.locator('#mobile-menu .mobile-nav-link')).toHaveCount(3);
+    await page.getByRole('link', { name: /Problems Understand what needs solving/ }).click();
+  } else {
+    await expect(page.locator('.desktop-nav')).toBeVisible();
+    await expect(page.locator('.desktop-nav .nav-link')).toHaveCount(3);
+    await page
+      .locator('.desktop-nav')
+      .getByRole('link', { name: /Problems/ })
+      .click();
+  }
+
+  await expect(page).toHaveURL(/\/en\/problems\/restaurant-food-waste/);
+  await expect(page.locator('.page-index')).toBeVisible();
+  await expect(page.locator('.content-section')).toHaveCount(4);
+  await expect(page.locator('#overview .chapter-heading')).toContainText('Overview');
+});
+
 test.describe('reduced motion', () => {
   test.use({ reducedMotion: 'reduce' });
   test('keeps the complete landing narrative visible', async ({ page }) => {
