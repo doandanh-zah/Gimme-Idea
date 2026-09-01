@@ -42,6 +42,18 @@ test('product shell adapts across desktop, tablet and mobile', async ({ page }) 
     await expect(page.locator('.product-sidebar')).toBeVisible();
     await expect(page.locator('.discovery-rail')).toBeVisible();
     await expect(page.locator('.product-shell')).toHaveCSS('max-width', '1440px');
+
+    const shellBox = await page.locator('.product-shell').boundingBox();
+    const sidebarBox = await page.locator('.product-sidebar').boundingBox();
+    const mainBox = await page.locator('.product-main').boundingBox();
+    const railBox = await page.locator('.discovery-rail').boundingBox();
+    expect(shellBox).not.toBeNull();
+    expect(sidebarBox).not.toBeNull();
+    expect(mainBox).not.toBeNull();
+    expect(railBox).not.toBeNull();
+    expect(sidebarBox!.width / shellBox!.width).toBeCloseTo(0.2, 2);
+    expect(mainBox!.width / shellBox!.width).toBeCloseTo(0.55, 2);
+    expect(railBox!.width / shellBox!.width).toBeCloseTo(0.25, 2);
   }
 
   await expect(page.locator('.product-main h1')).toContainText('Home');

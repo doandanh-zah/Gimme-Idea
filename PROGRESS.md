@@ -72,7 +72,7 @@
 
 ### Product frame
 
-- [x] Khung desktop tối đa `1440px`, chia cột trái/giữa/phải theo tỷ lệ `25/50/25`.
+- [x] Khung desktop tối đa `1440px`, chia cột trái/giữa/phải theo tỷ lệ `20/55/25`.
 - [x] Sidebar trái có logo, Home, Ideas, Problems, Notifications, Following, Saved, Profile và More.
 - [x] More mở Landing page, Community và Settings ngay trong khung.
 - [x] Nút luôn ghi Post; Ideas/Problems mở đúng composer, Home mở menu chọn loại bài.
