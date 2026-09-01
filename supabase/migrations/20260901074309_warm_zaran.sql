@@ -1,0 +1,1 @@
+ALTER TABLE "bounties" ADD COLUMN "open_to_hiring" boolean DEFAULT false NOT NULL;

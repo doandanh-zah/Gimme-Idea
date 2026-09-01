@@ -1683,168 +1683,450 @@ button {
 }
 
 .knowledge-post {
-  padding: 1.35rem clamp(1rem, 2.5vw, 1.5rem);
+  padding: 0.75rem 1rem 0.7rem;
   display: grid;
-  grid-template-columns: 46px minmax(0, 1fr);
-  gap: 0.85rem;
+  grid-template-columns: 40px minmax(0, 1fr);
+  column-gap: 0.75rem;
+  align-items: start;
 }
 
 .knowledge-post-avatar {
-  width: 42px;
-  height: 42px;
+  width: 40px;
+  height: 40px;
   display: grid;
+  overflow: hidden;
   place-items: center;
-  border: 1px solid rgba(255, 215, 0, 0.4);
-  border-radius: 3px;
-  background: rgba(255, 215, 0, 0.08);
+  border: 1px solid #3a3940;
+  border-radius: 50%;
+  background: var(--panel-2);
+  color: var(--text);
+  font:
+    700 0.72rem 'JetBrains Mono Variable',
+    monospace;
+}
+
+.knowledge-post-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.knowledge-post-main {
+  min-width: 0;
+}
+
+.knowledge-post-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-height: 20px;
+}
+
+.knowledge-post-identity {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: baseline;
+  gap: 0.3rem;
+  white-space: nowrap;
+}
+
+.knowledge-post-identity strong,
+.knowledge-post-identity span,
+.knowledge-post-identity time {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.knowledge-post-identity strong {
+  flex: 0 1 auto;
+  min-width: 0;
+  color: var(--text);
+  font-size: 0.95rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+.knowledge-post-identity span,
+.knowledge-post-identity time {
+  color: var(--muted);
+  font-size: 0.95rem;
+  font-weight: 400;
+}
+
+.knowledge-post-identity > span:not([aria-hidden]) {
+  flex: 0 1 auto;
+  min-width: 0;
+}
+
+.knowledge-post-identity time,
+.knowledge-post-identity > span[aria-hidden] {
+  flex: 0 0 auto;
+}
+
+.knowledge-post-kind {
+  position: relative;
+  width: 32px;
+  height: 32px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  color: var(--muted);
+}
+
+.knowledge-post-problem .knowledge-post-kind {
   color: var(--yellow);
 }
 
-.knowledge-post-idea .knowledge-post-avatar {
-  border-color: rgba(153, 69, 255, 0.55);
-  background: rgba(153, 69, 255, 0.1);
+.knowledge-post-idea .knowledge-post-kind {
   color: #b681ff;
 }
 
 .knowledge-post-body {
   min-width: 0;
-}
-
-.knowledge-post-identity > div {
-  min-width: 0;
-  display: flex;
-  align-items: center;
-  gap: 0.35rem;
-  color: #89878e;
-  font-size: 0.78rem;
-  line-height: 1.35;
-  white-space: nowrap;
-}
-
-.knowledge-post-identity strong {
-  overflow: hidden;
-  color: var(--text);
-  font-size: 0.92rem;
-  text-overflow: ellipsis;
-}
-
-.knowledge-post-identity svg {
-  flex: 0 0 auto;
-  color: var(--yellow);
-}
-
-.knowledge-post-identity small {
-  display: block;
-  overflow: hidden;
-  margin-top: 0.1rem;
-  color: #85838a;
-  font:
-    500 0.68rem 'JetBrains Mono Variable',
-    monospace;
-  line-height: 1.5;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  margin-top: 0.15rem;
 }
 
 .knowledge-post h2 {
-  max-width: 30ch;
-  margin: 1rem 0 0;
-  font-size: clamp(1.12rem, 2vw, 1.42rem);
+  margin: 0.15rem 0 0;
+  max-width: 34ch;
+  color: var(--text);
+  font-size: clamp(1.12rem, 2vw, 1.38rem);
+  font-weight: 700;
   line-height: 1.28;
-  letter-spacing: -0.025em;
-}
-
-.knowledge-post-link:hover h2 {
-  color: var(--yellow);
+  letter-spacing: -0.03em;
 }
 
 .knowledge-post-body > p {
   max-width: 65ch;
-  margin: 0.65rem 0 0;
-  color: #bbb9c0;
-  font-size: 0.92rem;
-  line-height: 1.6;
-}
-
-.knowledge-post-facts {
-  margin: 1rem 0 0;
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  border: 1px solid var(--line);
-  border-radius: 3px;
-}
-
-.knowledge-post-facts > div {
-  min-width: 0;
-  padding: 0.7rem 0.8rem;
-}
-
-.knowledge-post-facts > div:nth-child(even) {
-  border-left: 1px solid var(--line);
-}
-
-.knowledge-post-facts > div:nth-child(n + 3) {
-  border-top: 1px solid var(--line);
-}
-
-.knowledge-post-facts > div:first-child:last-child,
-.knowledge-post-facts > div:last-child:nth-child(odd) {
-  grid-column: 1 / -1;
-}
-
-.knowledge-post-facts > div:last-child:nth-child(odd) {
-  border-left: 0;
-}
-
-.knowledge-post-facts > .is-accented {
-  border-left: 2px solid var(--purple);
-  background: rgba(153, 69, 255, 0.055);
-}
-
-.knowledge-post-facts dt {
-  color: #85838a;
-  font:
-    600 0.61rem 'JetBrains Mono Variable',
-    monospace;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-}
-
-.knowledge-post-facts dd {
-  margin: 0.3rem 0 0;
-  color: #d0ced4;
-  font-size: 0.75rem;
+  margin: 0.4rem 0 0;
+  color: #9b9aa1;
+  font-size: 0.8rem;
+  font-weight: 400;
   line-height: 1.45;
 }
 
-.knowledge-post-footer {
-  margin-top: 1rem;
-  padding-top: 0.85rem;
+.knowledge-post-tools {
   display: flex;
   align-items: center;
-  gap: clamp(0.7rem, 2vw, 1.2rem);
-  border-top: 1px solid var(--line);
-  color: #85838a;
+  flex-shrink: 0;
+  gap: 0.15rem;
 }
 
-.knowledge-post-footer span,
-.knowledge-post-footer strong {
-  min-height: 40px;
+.knowledge-post-identity,
+.knowledge-post-body,
+.knowledge-post-avatar {
+  color: inherit;
+}
+
+.knowledge-post-body {
+  display: block;
+}
+
+.knowledge-post-action.is-save.is-on {
+  color: var(--yellow);
+}
+
+.knowledge-post-actions {
+  margin-top: 0.55rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  color: var(--muted);
+}
+
+.knowledge-post-action-group {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.knowledge-post-action-group.is-end {
+  margin-left: auto;
+  justify-content: flex-end;
+}
+
+.knowledge-post-action,
+.bounty-signal,
+.job-signal {
+  min-height: 32px;
+  min-width: 32px;
+  padding: 0;
   display: inline-flex;
   align-items: center;
-  gap: 0.4rem;
-  font-size: 0.68rem;
-  font-weight: 560;
+  justify-content: center;
+  gap: 0.3rem;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  font:
+    500 0.82rem/1 'JetBrains Mono Variable',
+    monospace;
+  font-variant-numeric: tabular-nums;
 }
 
-.knowledge-post-footer strong {
-  margin-left: auto;
+.knowledge-post-action small {
+  font: inherit;
+}
+
+.bounty-signal.is-funded {
+  color: var(--success);
+}
+
+.job-signal {
+  color: var(--danger);
+}
+
+@media (hover: hover) and (prefers-reduced-motion: no-preference) {
+  .knowledge-post-link {
+    transition: background-color 100ms ease-out;
+  }
+  .knowledge-post-kind,
+  .knowledge-post-action,
+  .bounty-signal,
+  .job-signal {
+    transition: color 100ms ease-out;
+  }
+}
+
+@media (hover: hover) {
+  .knowledge-post-kind:hover,
+  .knowledge-post-action:hover,
+  .bounty-signal:hover {
+    color: var(--text);
+  }
+  .job-signal:hover {
+    color: #ff7d76;
+  }
+}
+
+.quote-form {
+  display: grid;
+}
+
+.quote-form textarea {
+  width: 100%;
+  min-height: 120px;
+  padding: 1rem 1.25rem 0.5rem;
+  border: 0;
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  font-size: 1.05rem;
+  line-height: 1.45;
+  resize: vertical;
+}
+
+.quote-form textarea:focus {
+  outline: none;
+}
+
+.quote-form textarea:focus-visible {
+  outline: none;
+}
+
+.quote-form .quoted-embed {
+  margin: 0 1.25rem;
+}
+
+.quote-hint {
+  margin: 0.75rem 1.25rem 0;
+  color: var(--muted);
+  font-size: 0.78rem;
+}
+
+.quoted-embed {
+  display: grid;
+  gap: 0.28rem;
+  padding: 0.75rem 0.85rem;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  color: inherit;
+}
+
+.quoted-embed strong {
+  font-size: 0.8rem;
+  font-weight: 650;
+}
+
+.quoted-embed strong span {
+  color: var(--muted);
+  font-weight: 400;
+}
+
+.quoted-embed b {
+  font-size: 0.92rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.quoted-embed small {
+  color: #8f8d94;
+  font-size: 0.78rem;
+  line-height: 1.4;
+}
+
+.quote-body {
+  display: block;
+  margin: 0.15rem 0 0.65rem;
+  color: inherit;
+  font-size: 0.95rem;
+  line-height: 1.45;
+}
+
+.quoted-post-target {
+  display: grid;
+  gap: 0.2rem;
+  margin-top: 0.35rem;
+  padding-top: 0.55rem;
+  border-top: 1px solid var(--line);
+}
+
+.quoted-post-target b,
+.quoted-post-target small {
+  display: block;
+}
+
+.home-quote-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+  margin-top: 1.1rem;
+}
+
+.post-media {
+  display: block;
+  width: 100%;
+  max-height: 360px;
+  margin-top: 0.7rem;
+  object-fit: cover;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: #101014;
+}
+
+.quoted-embed .post-media {
+  max-height: 180px;
+  margin-top: 0.45rem;
+}
+
+.quote-form-media,
+.quote-form-embed {
+  margin: 0 1.25rem 0.75rem;
+}
+
+.media-error {
+  margin: 0.4rem 0 0;
+  color: var(--danger);
+  font-size: 0.75rem;
+}
+
+.knowledge-post-action.is-like.is-on {
+  color: var(--danger);
+}
+
+.quote-post {
+  cursor: pointer;
+}
+
+.quote-post.is-thread {
+  cursor: default;
+  border-bottom: 0;
+}
+
+.thread-back {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 0 1rem;
+  color: var(--muted);
+  font-size: 0.82rem;
+}
+
+.thread-back:hover {
+  color: var(--text);
+}
+
+.thread-heading {
+  margin: 0;
+  padding: 0.9rem 1rem 0.35rem;
+  font-size: 0.72rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
   color: var(--yellow);
-  white-space: nowrap;
+  font-family: 'JetBrains Mono Variable', monospace;
 }
 
-.knowledge-post-footer svg {
-  flex: 0 0 auto;
+.comment-composer {
+  display: grid;
+  gap: 0.55rem;
+  padding: 0.75rem 1rem 1rem;
+  border-bottom: 1px solid var(--line);
+}
+
+.comment-composer textarea {
+  width: 100%;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #101014;
+  color: var(--text);
+  font: inherit;
+  padding: 0.7rem 0.8rem;
+  resize: vertical;
+}
+
+.comment-composer .button {
+  justify-self: end;
+}
+
+.comment-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.comment-node {
+  display: grid;
+  grid-template-columns: 36px minmax(0, 1fr);
+  gap: 0.7rem;
+  padding: 0.85rem 1rem;
+  border-bottom: 1px solid var(--line);
+}
+
+.comment-main p {
+  margin: 0.35rem 0 0.45rem;
+  font-size: 0.92rem;
+  line-height: 1.45;
+}
+
+.comment-list.is-nested {
+  margin-top: 0.6rem;
+  border-left: 1px solid var(--line);
+}
+
+.comment-list.is-nested .comment-node {
+  padding-right: 0;
+  border-bottom: 0;
+}
+
+.quoted-comment {
+  margin: 0.55rem 0 0.7rem;
+}
+
+@media (hover: hover) {
+  .knowledge-post-action.is-comment:hover {
+    color: var(--yellow);
+  }
+  .knowledge-post-action.is-quote:hover {
+    color: var(--success);
+  }
+  .knowledge-post-action.is-like:hover,
+  .knowledge-post-action.is-like.is-on:hover {
+    color: var(--danger);
+  }
 }
 
 .app-text-link {
@@ -2293,7 +2575,7 @@ button {
     gap: 0.25rem;
     border: 0;
     background: transparent;
-    color: #77757d;
+    color: #8b8991;
     font:
       600 0.55rem 'JetBrains Mono Variable',
       monospace;
@@ -2398,9 +2680,9 @@ button {
   }
 
   .knowledge-post {
-    padding: 1rem;
-    grid-template-columns: 38px minmax(0, 1fr);
-    gap: 0.7rem;
+    padding: 0.75rem 1rem;
+    grid-template-columns: 36px minmax(0, 1fr);
+    column-gap: 0.65rem;
   }
 
   .knowledge-post-avatar {
@@ -2408,42 +2690,26 @@ button {
     height: 36px;
   }
 
-  .knowledge-post-identity > div {
-    font-size: 0.72rem;
+  .knowledge-post-identity strong,
+  .knowledge-post-identity span,
+  .knowledge-post-identity time {
+    font-size: 0.9rem;
   }
 
   .knowledge-post h2 {
-    margin-top: 0.8rem;
+    font-size: 1.12rem;
   }
 
-  .knowledge-post-facts {
-    grid-template-columns: minmax(0, 1fr);
+  .knowledge-post-kind {
+    width: 36px;
+    height: 36px;
   }
 
-  .knowledge-post-facts > div,
-  .knowledge-post-facts > div:nth-child(even),
-  .knowledge-post-facts > div:last-child:nth-child(odd) {
-    grid-column: auto;
-    border-left: 0;
-  }
-
-  .knowledge-post-facts > div + div {
-    border-top: 1px solid var(--line);
-  }
-
-  .knowledge-post-facts > .is-accented {
-    border-left: 2px solid var(--purple);
-  }
-
-  .knowledge-post-footer {
-    flex-wrap: wrap;
-    gap: 0 1rem;
-  }
-
-  .knowledge-post-footer strong {
-    width: 100%;
-    margin-left: 0;
-    border-top: 1px solid var(--line);
+  .knowledge-post-action,
+  .bounty-signal,
+  .job-signal {
+    min-height: 40px;
+    min-width: 40px;
   }
 
   .guest-profile-state {

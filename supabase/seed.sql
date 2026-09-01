@@ -40,6 +40,25 @@ insert into public.idea_problem_links (idea_id,problem_id,relationship_type) val
 ('40000000-0000-4000-8000-000000000009','30000000-0000-4000-8000-000000000005','primary'),('40000000-0000-4000-8000-000000000010','30000000-0000-4000-8000-000000000005','primary');
 update public.problems set status='published';
 update public.ideas set status='published';
+update public.problems set created_at = case slug
+  when 'restaurant-food-waste' then '2026-08-20T08:00:00Z'
+  when 'last-mile-clinic-delays' then '2026-08-18T09:00:00Z'
+  when 'small-farm-cold-chain' then '2026-08-17T10:00:00Z'
+  when 'tenant-repair-visibility' then '2026-08-25T08:00:00Z'
+  when 'freelancer-payment-proof' then '2026-08-16T11:00:00Z'
+end::timestamptz;
+update public.ideas set created_at = case slug
+  when 'demand-pulse-for-kitchens' then '2026-08-21T08:00:00Z'
+  when 'surplus-window-exchange' then '2026-08-22T08:00:00Z'
+  when 'clinic-delivery-ledger' then '2026-08-19T08:00:00Z'
+  when 'medicine-route-pooling' then '2026-08-19T12:00:00Z'
+  when 'cold-slot-market' then '2026-08-18T08:00:00Z'
+  when 'harvest-handoff' then '2026-08-18T14:00:00Z'
+  when 'repair-evidence-thread' then '2026-08-26T08:00:00Z'
+  when 'building-maintenance-map' then '2026-08-26T12:00:00Z'
+  when 'payment-timing-attestations' then '2026-08-16T15:00:00Z'
+  when 'milestone-expectation-card' then '2026-08-16T16:00:00Z'
+end::timestamptz;
 
 insert into public.previous_attempts (id,idea_id,name,description,outcome,lesson,source_url) values
 ('41000000-0000-4000-8000-000000000001','40000000-0000-4000-8000-000000000001','Generic weekly forecasting dashboard','A broad forecasting tool required extensive POS cleanup before showing any value.','sunset','Start with explainable daily decisions and accept incomplete source data.','https://example.com/research/weekly-forecasting-retrospective'),
@@ -52,9 +71,9 @@ insert into public.projects (id,idea_id,slug,name,description,stage,repository_u
 ('50000000-0000-4000-8000-000000000002','40000000-0000-4000-8000-000000000005','cold-slot-prototype','Cold Slot Prototype','A reservation prototype for one farming cooperative.','prototype','https://github.com/example/cold-slot','10000000-0000-4000-8000-000000000002'),
 ('50000000-0000-4000-8000-000000000003','40000000-0000-4000-8000-000000000007','repair-thread-demo','Repair Thread Demo','An evidence-based repair timeline tested with one building.','prototype','https://github.com/example/repair-thread','10000000-0000-4000-8000-000000000003');
 
-insert into public.bounties (id,problem_id,organization_id,title,description,status,currency,total_amount_raw,deadline_at) values
-('60000000-0000-4000-8000-000000000001','30000000-0000-4000-8000-000000000001','20000000-0000-4000-8000-000000000001','Reduce avoidable prep waste','Design a measurable two-week kitchen pilot.','unfunded','USDC',250000000,'2026-11-30T00:00:00Z'),
-('60000000-0000-4000-8000-000000000002','30000000-0000-4000-8000-000000000004','20000000-0000-4000-8000-000000000002','Close the repair evidence loop','Build and test an accountable repair thread.','mock_funded','USDC',1000000000,'2026-12-15T00:00:00Z');
+insert into public.bounties (id,problem_id,organization_id,title,description,status,currency,total_amount_raw,open_to_hiring,deadline_at) values
+('60000000-0000-4000-8000-000000000001','30000000-0000-4000-8000-000000000001','20000000-0000-4000-8000-000000000001','Reduce avoidable prep waste','Design a measurable two-week kitchen pilot.','unfunded','USDC',250000000,false,'2026-11-30T00:00:00Z'),
+('60000000-0000-4000-8000-000000000002','30000000-0000-4000-8000-000000000004','20000000-0000-4000-8000-000000000002','Close the repair evidence loop','Build and test an accountable repair thread.','mock_funded','USDC',1000000000,true,'2026-12-15T00:00:00Z');
 insert into public.bounty_escrows (id,bounty_id,status,funded_amount_raw,confirmed_at) values
 ('61000000-0000-4000-8000-000000000001','60000000-0000-4000-8000-000000000001','not_created',0,null),
 ('61000000-0000-4000-8000-000000000002','60000000-0000-4000-8000-000000000002','mock_confirmed',1000000000,'2026-08-25T10:00:00Z');

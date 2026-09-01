@@ -21,6 +21,10 @@ type ProblemRow = {
   origin: ProvenanceDTO['origin'];
   reviewed_by_human: boolean;
   last_researched_at: Date | null;
+  created_at: Date;
+  creator_username: string | null;
+  creator_display_name: string | null;
+  creator_avatar_url: string | null;
 };
 type IdeaRow = {
   id: string;
@@ -35,6 +39,10 @@ type IdeaRow = {
   origin: ProvenanceDTO['origin'];
   reviewed_by_human: boolean;
   last_researched_at: Date | null;
+  created_at: Date;
+  creator_username: string | null;
+  creator_display_name: string | null;
+  creator_avatar_url: string | null;
 };
 
 export interface KnowledgeRepository {
@@ -61,7 +69,7 @@ export function createKnowledgeRepository(connectionString: string): KnowledgeRe
     },
     async findProblem(slug) {
       const result = await pool.query<ProblemRow>(
-        `select id,slug,title,summary,description,affected_groups,evidence,severity,status,research_status,origin,reviewed_by_human,last_researched_at from public.problems where slug=$1 and status='published' and deleted_at is null limit 1`,
+        `select p.id,p.slug,p.title,p.summary,p.description,p.affected_groups,p.evidence,p.severity,p.status,p.research_status,p.origin,p.reviewed_by_human,p.last_researched_at,p.created_at,u.username creator_username,u.display_name creator_display_name,u.avatar_url creator_avatar_url from public.problems p left join public.users u on u.id=p.created_by and u.deleted_at is null where p.slug=$1 and p.status='published' and p.deleted_at is null limit 1`,
         [slug],
       );
       const row = result.rows[0];
@@ -86,8 +94,9 @@ export function createKnowledgeRepository(connectionString: string): KnowledgeRe
           status: 'unfunded' | 'mock_funded';
           amount_raw: string;
           currency: string;
+          open_to_hiring: boolean;
         }>(
-          `select title,status,total_amount_raw::text amount_raw,currency from public.bounties where problem_id=$1 and status in ('unfunded','mock_funded') order by created_at limit 1`,
+          `select title,status,total_amount_raw::text amount_raw,currency,open_to_hiring from public.bounties where problem_id=$1 and status in ('unfunded','mock_funded') order by created_at limit 1`,
           [row.id],
         ),
       ]);
@@ -109,6 +118,15 @@ export function createKnowledgeRepository(connectionString: string): KnowledgeRe
         severity: row.severity,
         status: row.status,
         researchStatus: row.research_status,
+        createdAt: row.created_at.toISOString(),
+        creator:
+          row.creator_username && row.creator_display_name
+            ? {
+                username: row.creator_username,
+                displayName: row.creator_display_name,
+                avatarUrl: row.creator_avatar_url,
+              }
+            : null,
         provenance: {
           origin: row.origin,
           reviewedByHuman: row.reviewed_by_human,
@@ -122,13 +140,14 @@ export function createKnowledgeRepository(connectionString: string): KnowledgeRe
               status: bountyResult.rows[0].status,
               amountRaw: bountyResult.rows[0].amount_raw,
               currency: bountyResult.rows[0].currency,
+              openToHiring: bountyResult.rows[0].open_to_hiring,
             }
           : null,
       };
     },
     async findIdea(slug) {
       const result = await pool.query<IdeaRow>(
-        `select id,slug,title,summary,thesis,solution,target_users,status,research_status,origin,reviewed_by_human,last_researched_at from public.ideas where slug=$1 and status='published' and deleted_at is null limit 1`,
+        `select i.id,i.slug,i.title,i.summary,i.thesis,i.solution,i.target_users,i.status,i.research_status,i.origin,i.reviewed_by_human,i.last_researched_at,i.created_at,u.username creator_username,u.display_name creator_display_name,u.avatar_url creator_avatar_url from public.ideas i left join public.users u on u.id=i.created_by and u.deleted_at is null where i.slug=$1 and i.status='published' and i.deleted_at is null limit 1`,
         [slug],
       );
       const row = result.rows[0];
@@ -177,6 +196,15 @@ export function createKnowledgeRepository(connectionString: string): KnowledgeRe
         targetUsers: row.target_users,
         status: row.status,
         researchStatus: row.research_status,
+        createdAt: row.created_at.toISOString(),
+        creator:
+          row.creator_username && row.creator_display_name
+            ? {
+                username: row.creator_username,
+                displayName: row.creator_display_name,
+                avatarUrl: row.creator_avatar_url,
+              }
+            : null,
         provenance: {
           origin: row.origin,
           reviewedByHuman: row.reviewed_by_human,

@@ -4,6 +4,7 @@ dist
 coverage
 playwright-report
 test-results
+grok-work.md
 **/next-env.d.ts
 pnpm-lock.yaml
 supabase/migrations

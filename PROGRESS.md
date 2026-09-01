@@ -36,6 +36,7 @@
 - [x] Enforce Bounty thuộc Problem và Project thuộc Idea.
 - [x] Lưu money dưới dạng raw numeric units.
 - [x] Tách escrow, payout intent và blockchain confirmation khỏi browser state.
+- [x] Bounty có `open_to_hiring` typed field và migration tái tạo được.
 - [x] Seed 5 Problems và 10 Ideas.
 - [x] Seed Previous Attempts, 3 Projects và 10 Discussions.
 - [x] Seed 2 Organizations, bounty unfunded, bounty mock-funded và Submissions.
@@ -50,6 +51,7 @@
 - [x] `GET /v1/problems/:slug`.
 - [x] `GET /v1/ideas/:slug`.
 - [x] Stable `ApiError` envelope có `requestId`.
+- [x] Problem/Idea detail DTO trả creator identity thật cho feed card.
 - [x] Worker có typed job registry và health lifecycle.
 - [x] Ghi rõ AI provider, Redis và Solana chưa được cấu hình.
 - [x] Không tạo endpoint create/auth/wallet/funding giả.
@@ -76,11 +78,15 @@
 - [x] Sidebar trái có logo, Home, Ideas, Problems, Notifications, Following, Saved, Profile và More.
 - [x] More mở Landing page, Community và Settings ngay trong khung.
 - [x] Nút luôn ghi Post; Ideas/Problems mở đúng composer, Home mở menu chọn loại bài.
-- [x] Saved là trang riêng với hai tab URL-driven Bookmarks và Likes.
+- [x] Saved là trang riêng với hai tab URL-driven Bookmarks và Likes; cả hai tab phản ánh tương tác local thật.
 - [x] Account manager nằm cuối sidebar với trạng thái guest, account và wallet trung thực.
 - [x] Right rail có tìm kiếm và gợi ý từ seeded Problem/Idea thật.
 - [x] Home, Ideas và Problems render dữ liệu thật từ API ở cột giữa.
-- [x] Post card không dùng media, hiển thị identity, research state, basic facts và mở toàn bộ card sang detail.
+- [x] Post card dùng layout kiểu feed: avatar, tên/@/ngày và Idea/Problem mark ở góc trên bên phải.
+- [x] Card giữ title/description, cho gắn ảnh/video local, có hàng action và bounty/job signals có điều kiện ở góc dưới bên phải.
+- [x] Home quote post dùng cấu trúc card lồng card: click post ngoài mở thread, click Idea/Problem bên trong mở canonical detail.
+- [x] Home thread hỗ trợ comment, reply nhiều tầng, like, bookmark, share, quote post và quote comment ở mức local foundation.
+- [x] Quote, comment, media và interaction state được lưu rõ ràng trên thiết bị; chưa giả lập backend/auth persistence.
 - [x] Notifications, Following, Community, Profile và Settings có trạng thái foundation rõ ràng.
 - [x] Landing page nằm ngoài product frame và dẫn vào app qua Open app.
 - [x] Tablet chuyển thành icon rail và ẩn right rail.
@@ -97,7 +103,7 @@
 - [x] `pnpm typecheck`.
 - [x] Unit và integration tests.
 - [x] Production build.
-- [x] Playwright: 36/36 tests tại 360px, 768px và 1280px.
+- [x] Playwright: 48/48 tests tại 360px, 768px và 1280px.
 - [x] Keyboard, focus, WCAG checks và reduced motion.
 - [x] Lighthouse Performance 100 và Accessibility 100.
 - [x] LCP 1.16s, CLS 0.033, TBT 54ms trên production build.
@@ -107,7 +113,7 @@
 - [ ] Authentication và user onboarding.
 - [ ] Organization management.
 - [ ] Problem/Idea CRUD và draft workflow.
-- [ ] Discussion và reply flows.
+- [ ] Discussion và reply flows có persistence/API/auth (UI local foundation đã có).
 - [ ] Funded Bounty prototype.
 - [ ] Redis-backed worker queue.
 - [ ] AI Researcher provider integration.

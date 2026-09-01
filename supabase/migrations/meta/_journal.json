@@ -8,6 +8,13 @@
       "when": 1788193515909,
       "tag": "20260831095900_drizzle_schema_snapshot",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1788248589500,
+      "tag": "20260901074309_warm_zaran",
+      "breakpoints": true
     }
   ]
 }

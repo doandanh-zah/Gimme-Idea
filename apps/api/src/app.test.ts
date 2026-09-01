@@ -20,9 +20,17 @@ const problem: ProblemDetailDTO = {
   severity: 'high',
   status: 'published',
   researchStatus: 'verified',
+  createdAt: '2026-08-20T08:00:00.000Z',
+  creator: { username: 'test-user', displayName: 'Test User', avatarUrl: null },
   provenance,
   relatedIdeas: [],
-  bounty: null,
+  bounty: {
+    title: 'Test bounty',
+    status: 'mock_funded',
+    amountRaw: '1000000',
+    currency: 'USDC',
+    openToHiring: true,
+  },
 };
 const idea: IdeaDetailDTO = {
   id: '40000000-0000-4000-8000-000000000001',
@@ -34,6 +42,8 @@ const idea: IdeaDetailDTO = {
   targetUsers: ['Operators'],
   status: 'published',
   researchStatus: 'verified',
+  createdAt: '2026-08-21T08:00:00.000Z',
+  creator: { username: 'test-user', displayName: 'Test User', avatarUrl: null },
   provenance,
   primaryProblem: { slug: problem.slug, title: problem.title, summary: problem.summary },
   previousAttempts: [],
@@ -65,6 +75,8 @@ describe('API boundaries', () => {
     apps.push(app);
     expect((await app.inject('/v1/problems/test-problem')).json()).toMatchObject({
       slug: 'test-problem',
+      creator: { username: 'test-user' },
+      bounty: { openToHiring: true },
     });
     expect((await app.inject('/v1/ideas/test-idea')).json()).toMatchObject({ slug: 'test-idea' });
   });

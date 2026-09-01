@@ -253,6 +253,7 @@ export const bounties = pgTable(
     status: text().default('unfunded').notNull(),
     currency: text().default('USDC').notNull(),
     totalAmountRaw: numeric('total_amount_raw', { precision: 40, scale: 0 }).default('0').notNull(),
+    openToHiring: boolean('open_to_hiring').default(false).notNull(),
     deadlineAt: timestamp('deadline_at', { withTimezone: true }),
     ...timestamps,
   },

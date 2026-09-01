@@ -29,6 +29,13 @@ export const provenanceSchema = z.object({
 });
 export type ProvenanceDTO = z.infer<typeof provenanceSchema>;
 
+export const creatorSummarySchema = z.object({
+  username: z.string(),
+  displayName: z.string(),
+  avatarUrl: z.string().url().nullable(),
+});
+export type CreatorSummaryDTO = z.infer<typeof creatorSummarySchema>;
+
 export const previousAttemptSchema = z.object({
   id: z.string().uuid(),
   name: z.string(),
@@ -50,6 +57,8 @@ export const problemDetailSchema = z.object({
   severity: z.enum(['low', 'medium', 'high', 'critical']),
   status: z.enum(['draft', 'published', 'archived']),
   researchStatus: researchStatusSchema,
+  createdAt: z.string().datetime(),
+  creator: creatorSummarySchema.nullable(),
   provenance: provenanceSchema,
   relatedIdeas: z.array(z.object({ slug: z.string(), title: z.string(), summary: z.string() })),
   bounty: z
@@ -58,6 +67,7 @@ export const problemDetailSchema = z.object({
       status: z.enum(['unfunded', 'mock_funded']),
       amountRaw: z.string(),
       currency: z.string(),
+      openToHiring: z.boolean(),
     })
     .nullable(),
 });
@@ -73,6 +83,8 @@ export const ideaDetailSchema = z.object({
   targetUsers: z.array(z.string()),
   status: z.enum(['draft', 'published', 'archived']),
   researchStatus: researchStatusSchema,
+  createdAt: z.string().datetime(),
+  creator: creatorSummarySchema.nullable(),
   provenance: provenanceSchema,
   primaryProblem: z.object({ slug: z.string(), title: z.string(), summary: z.string() }),
   previousAttempts: z.array(previousAttemptSchema),

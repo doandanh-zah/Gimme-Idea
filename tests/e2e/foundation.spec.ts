@@ -59,21 +59,44 @@ test('product shell adapts across desktop, tablet and mobile', async ({ page }) 
   await expect(page.locator('.product-main h1')).toContainText('Home');
 });
 
-test('knowledge post cards expose basic facts and open the detail route', async ({ page }) => {
+test('knowledge post cards show creator identity and open the detail route', async ({ page }) => {
   await page.goto('/en/ideas');
   const card = page.locator('.knowledge-post-link').first();
 
-  await expect(card).toContainText('@demand-pulse-for-kitchens');
-  await expect(card).toContainText('Primary problem');
-  await expect(card).toContainText('Designed for');
-  await expect(card).toContainText('Active build');
-  await expect(card).toContainText('1 source');
-  await expect(card).toContainText('2 previous attempts');
+  await expect(card).toContainText('Minh Nguyen');
+  await expect(card).toContainText('@minh-nguyen');
+  await expect(card.locator('.knowledge-post-kind')).toHaveAttribute('aria-label', 'Idea');
+  await expect(card.locator('time')).toHaveAttribute('datetime', /2026-08-21/);
+  await expect(card).toContainText('Demand Pulse for independent kitchens');
+  await expect(card).toContainText('A calm planning signal');
+  await expect(card).not.toContainText('Verified');
+  await expect(card).not.toContainText('Open details');
   await expect(card.locator('img')).toHaveCount(0);
+  await expect(card.locator('.knowledge-post-actions')).toBeVisible();
+  await expect(card.locator('.knowledge-post-more')).toHaveCount(0);
+  await expect(card.getByRole('button', { name: 'Quote' })).toBeVisible();
 
-  await card.click();
+  await card.locator('h2').click();
   await expect(page).toHaveURL(/\/en\/ideas\/demand-pulse-for-kitchens$/);
   await expect(page.locator('h1')).toContainText('Demand Pulse');
+});
+
+test('problem cards show real bounty and hiring signals only when attached', async ({ page }) => {
+  await page.goto('/en/problems');
+  const unfundedCard = page
+    .locator('.knowledge-post-link')
+    .filter({ hasText: 'Restaurants cannot match daily supply' });
+  const hiringCard = page
+    .locator('.knowledge-post-link')
+    .filter({ hasText: 'Tenants cannot track shared-building repair' });
+
+  await expect(unfundedCard).not.toContainText('$250');
+  await expect(unfundedCard.locator('.bounty-signal')).toHaveCount(0);
+  await expect(unfundedCard.locator('.job-signal')).toHaveCount(0);
+  await expect(hiringCard).toContainText('Alex Chen');
+  await expect(hiringCard).toContainText('@alex-chen');
+  await expect(hiringCard.locator('.bounty-signal.is-funded')).toContainText('$1,000');
+  await expect(hiringCard.locator('.job-signal')).toHaveAttribute('aria-label', 'Hiring');
 });
 
 test('Post chooses a type on Home and opens directly on Ideas', async ({ page }) => {
@@ -96,12 +119,100 @@ test('Post chooses a type on Home and opens directly on Ideas', async ({ page })
   await expect(page.locator('#composer-title')).toHaveText('Post idea');
 });
 
+test('quote composer publishes a Home-only post', async ({ page }) => {
+  await page.goto('/en/ideas');
+  await page.getByRole('button', { name: 'Quote' }).click();
+  await expect(page.locator('.quote-dialog')).toBeVisible();
+  await page.getByLabel("What's your take?").fill('This is the smallest useful test.');
+  await page.locator('.quote-dialog').getByRole('button', { name: 'Post' }).click();
+  await expect(page).toHaveURL(/\/en\/home\/[0-9a-f-]+$/i);
+  await expect(page.locator('.quote-body')).toContainText('This is the smallest useful test.');
+  await expect(page.locator('.quoted-embed')).toContainText('Demand Pulse');
+
+  await page.locator('.quoted-embed').click();
+  await expect(page).toHaveURL(/\/en\/ideas\/demand-pulse-for-kitchens$/);
+
+  await page.goto('/en/home');
+  await page.locator('.quote-body').click();
+  await expect(page).toHaveURL(/\/en\/home\/[0-9a-f-]+$/i);
+  await page.getByPlaceholder('Post your reply').fill('A nested reply.');
+  await page.locator('.comment-composer').getByRole('button', { name: 'Reply' }).click();
+  await expect(page.locator('.comment-node')).toContainText('A nested reply.');
+
+  const rootComment = page.locator('.comment-node').filter({ hasText: 'A nested reply.' }).first();
+  await rootComment.getByRole('button', { name: 'Reply' }).first().click();
+  await rootComment.getByPlaceholder('Post your reply').fill('A reply to the reply.');
+  await rootComment.locator('.comment-composer').getByRole('button', { name: 'Reply' }).click();
+  await expect(rootComment.locator('.comment-list.is-nested')).toContainText(
+    'A reply to the reply.',
+  );
+
+  await rootComment.getByRole('button', { name: 'Quote comment' }).first().click();
+  await page.getByLabel("What's your take?").fill('Turning this comment into a new post.');
+  await page.locator('.quote-dialog').getByRole('button', { name: 'Post' }).click();
+  await expect(page).toHaveURL(/\/en\/home\/[0-9a-f-]+$/i);
+  await expect(page.locator('.quoted-comment')).toContainText('A nested reply.');
+});
+
+test('Idea and Problem posts retain local image or video attachments', async ({ page }) => {
+  const pixel = Buffer.from(
+    'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=',
+    'base64',
+  );
+
+  await page.goto('/en/ideas');
+  await expect(page.getByRole('heading', { name: 'Ideas', exact: true })).toBeVisible();
+  const ideaCard = page.locator('.knowledge-post-link').first();
+  await ideaCard.getByLabel('Add photo or video').setInputFiles({
+    name: 'concept.png',
+    mimeType: 'image/png',
+    buffer: pixel,
+  });
+  await expect(ideaCard.locator('img.post-media')).toBeVisible();
+  await page.reload();
+  await expect(
+    page.locator('.knowledge-post-link').first().locator('img.post-media'),
+  ).toBeVisible();
+
+  await page.goto('/en/problems');
+  await expect(page.getByRole('heading', { name: 'Problems', exact: true })).toBeVisible();
+  const problemCard = page.locator('.knowledge-post-link').first();
+  await problemCard.getByLabel('Add photo or video').setInputFiles({
+    name: 'evidence.mp4',
+    mimeType: 'video/mp4',
+    buffer: Buffer.from([0, 0, 0, 16, 102, 116, 121, 112]),
+  });
+  await expect(problemCard.locator('video.post-media')).toBeVisible();
+});
+
+test('sidebar lists Bounties and Talent under Problems', async ({ page }) => {
+  await page.goto('/en/home');
+  const viewport = page.viewportSize();
+  if (viewport && viewport.width <= 760) {
+    await page.getByRole('button', { name: 'Menu' }).click();
+    await expect(page.locator('.mobile-product-menu a[href$="/bounties"]')).toBeVisible();
+    await expect(page.locator('.mobile-product-menu a[href$="/talent"]')).toBeVisible();
+  } else {
+    await expect(page.locator('.product-sidebar a[href$="/bounties"]')).toBeVisible();
+    await expect(page.locator('.product-sidebar a[href$="/talent"]')).toBeVisible();
+    await page.locator('.product-sidebar a[href$="/bounties"]').click();
+    await expect(page.getByRole('heading', { name: 'Bounties', exact: true })).toBeVisible();
+  }
+});
+
 test('Saved keeps Bookmarks and Likes in URL-addressable tabs', async ({ page }) => {
+  await page.goto('/en/ideas');
+  const card = page.locator('.knowledge-post-link').first();
+  await card.getByRole('button', { name: 'Save' }).click();
+  await card.getByRole('button', { name: 'Like' }).click();
+
   await page.goto('/en/saved');
   await expect(page.locator('.saved-tabs a.is-active')).toHaveText('Bookmarks');
+  await expect(page.locator('.knowledge-post-link')).toContainText('Demand Pulse');
   await page.getByRole('link', { name: 'Likes', exact: true }).click();
   await expect(page).toHaveURL(/\/en\/saved\?tab=likes/);
   await expect(page.locator('.saved-tabs a.is-active')).toHaveText('Likes');
+  await expect(page.locator('.knowledge-post-link')).toContainText('Demand Pulse');
 });
 
 test('canonical detail pages retain their chapter index inside the shell', async ({ page }) => {

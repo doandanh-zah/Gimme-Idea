@@ -5,7 +5,9 @@ import Link from 'next/link';
 import {
   Bell,
   Bookmark,
+  BriefcaseBusiness,
   ChevronRight,
+  CircleDollarSign,
   Globe2,
   Home,
   Lightbulb,
@@ -32,6 +34,8 @@ export type ShellLabels = {
   home: string;
   ideas: string;
   problems: string;
+  bounties: string;
+  talent: string;
   notifications: string;
   following: string;
   saved: string;
@@ -104,6 +108,18 @@ export function ProductFrame({
       href: `/${locale}/problems`,
       icon: Target,
       match: `/${locale}/problems`,
+    },
+    {
+      label: labels.bounties,
+      href: `/${locale}/bounties`,
+      icon: CircleDollarSign,
+      match: `/${locale}/bounties`,
+    },
+    {
+      label: labels.talent,
+      href: `/${locale}/talent`,
+      icon: BriefcaseBusiness,
+      match: `/${locale}/talent`,
     },
     {
       label: labels.notifications,
@@ -339,6 +355,7 @@ export function ProductFrame({
                 <button
                   type="button"
                   className={openPanel === 'more' ? 'sidebar-link is-active' : 'sidebar-link'}
+                  aria-label={labels.more}
                   aria-expanded={openPanel === 'more'}
                   aria-controls="more-navigation"
                   onClick={() => setOpenPanel((value) => (value === 'more' ? null : 'more'))}
@@ -383,6 +400,7 @@ export function ProductFrame({
                 ref={postTriggerRef}
                 type="button"
                 className="sidebar-post-button"
+                aria-label={labels.post}
                 aria-expanded={openPanel === 'post'}
                 onClick={handlePost}
               >
@@ -402,6 +420,7 @@ export function ProductFrame({
               <button
                 type="button"
                 className="account-trigger"
+                aria-label={labels.account}
                 aria-expanded={openPanel === 'account'}
                 aria-controls="account-popover"
                 onClick={() => setOpenPanel((value) => (value === 'account' ? null : 'account'))}
@@ -500,6 +519,7 @@ function ShellNavLink({
     <Link
       href={item.href}
       className={active ? 'sidebar-link is-active' : 'sidebar-link'}
+      aria-label={item.label}
       aria-current={active ? 'page' : undefined}
       onClick={onNavigate}
     >

@@ -9,7 +9,10 @@ export default async function ProblemsFeed({ params }: { params: Promise<{ local
   const { locale } = await params;
   if (!isLocale(locale)) notFound();
   const t = copy[locale];
-  const problem = await getProblem('restaurant-food-waste');
+  const problems = await Promise.all([
+    getProblem('restaurant-food-waste'),
+    getProblem('tenant-repair-visibility'),
+  ]);
 
   return (
     <main id="main" className="app-page">
@@ -23,12 +26,16 @@ export default async function ProblemsFeed({ params }: { params: Promise<{ local
         }
       />
       <section className="feed-stream" aria-label={t.shell.problems}>
-        {problem && (
-          <KnowledgePost
-            locale={locale}
-            href={`/${locale}/problems/${problem.slug}`}
-            item={{ kind: 'problem', data: problem }}
-          />
+        {problems.map(
+          (problem) =>
+            problem && (
+              <KnowledgePost
+                key={problem.id}
+                locale={locale}
+                href={`/${locale}/problems/${problem.slug}`}
+                item={{ kind: 'problem', data: problem }}
+              />
+            ),
         )}
       </section>
     </main>
