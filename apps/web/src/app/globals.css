@@ -2008,6 +2008,91 @@ button {
   background: #101014;
 }
 
+.post-attachment-stack {
+  display: grid;
+  gap: 0.65rem;
+  margin-top: 0.75rem;
+}
+
+.post-image-gallery {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(74%, 1fr);
+  gap: 0.55rem;
+  overflow-x: auto;
+  overscroll-behavior-inline: contain;
+  scroll-snap-type: inline mandatory;
+  scrollbar-width: thin;
+  scrollbar-color: #4a4850 transparent;
+}
+
+.post-image-gallery.is-single {
+  grid-auto-columns: 100%;
+  overflow: hidden;
+}
+
+.post-image-frame,
+.post-video-frame {
+  min-width: 0;
+  margin: 0;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--panel-2);
+}
+
+.post-image-frame {
+  aspect-ratio: 16 / 10;
+  scroll-snap-align: start;
+}
+
+.post-video-frame {
+  aspect-ratio: 16 / 9;
+}
+
+.stored-post-media,
+.stored-media-loading,
+.stored-media-error {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.stored-post-media {
+  object-fit: cover;
+}
+
+video.stored-post-media {
+  object-fit: contain;
+  background: #050505;
+}
+
+.stored-media-loading {
+  background: linear-gradient(90deg, #111116 25%, #1b1b21 50%, #111116 75%);
+  background-size: 200% 100%;
+}
+
+.stored-media-error {
+  padding: 1rem;
+  display: grid;
+  place-items: center;
+  color: var(--muted);
+  font-size: 0.75rem;
+  text-align: center;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .stored-media-loading {
+    animation: skeleton-shift 1.2s linear infinite;
+  }
+}
+
+@keyframes skeleton-shift {
+  to {
+    background-position: -200% 0;
+  }
+}
+
 .quoted-embed .post-media {
   max-height: 180px;
   margin-top: 0.45rem;
@@ -2348,6 +2433,248 @@ button {
   gap: 0.65rem;
   border-top: 1px solid var(--line);
   background: #09090b;
+}
+
+.post-composer-dialog {
+  width: min(640px, calc(100vw - 2rem));
+}
+
+.post-composer-form {
+  max-height: calc(100svh - 2rem);
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+}
+
+.post-composer-body {
+  min-height: 0;
+  padding: 1.15rem 1.25rem 1.4rem;
+  display: grid;
+  gap: 1.1rem;
+  overflow-y: auto;
+}
+
+.composer-field {
+  position: relative;
+  display: grid;
+  gap: 0.42rem;
+}
+
+.composer-field > label,
+.composer-problem-options > legend,
+.composer-media-fieldset > legend {
+  color: var(--text);
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.composer-field input,
+.composer-field textarea,
+.composer-field select {
+  width: 100%;
+  min-height: 46px;
+  padding: 0.72rem 0.8rem;
+  border: 1px solid #3a3940;
+  border-radius: 4px;
+  background: #09090b;
+  color: var(--text);
+  font: inherit;
+}
+
+.composer-field textarea {
+  min-height: 116px;
+  line-height: 1.5;
+  resize: vertical;
+}
+
+.composer-field select {
+  color-scheme: dark;
+}
+
+.composer-field input:focus-visible,
+.composer-field textarea:focus-visible,
+.composer-field select:focus-visible {
+  outline: 2px solid var(--yellow);
+  outline-offset: 1px;
+  border-color: transparent;
+}
+
+.composer-field > small {
+  color: var(--muted);
+  font-size: 0.7rem;
+  line-height: 1.4;
+}
+
+.composer-field:not(.composer-problem-options .composer-field) > small {
+  position: absolute;
+  inset: 0 0 auto auto;
+}
+
+.composer-field-error,
+.composer-form-error {
+  color: #ff7d76;
+  font-size: 0.72rem;
+  line-height: 1.45;
+}
+
+.composer-problem-options,
+.composer-media-fieldset {
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.65rem;
+  border: 0;
+}
+
+.composer-checkbox {
+  min-height: 46px;
+  padding: 0.65rem 0.75rem;
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  border: 1px solid #3a3940;
+  border-radius: 4px;
+  color: var(--text);
+  cursor: pointer;
+}
+
+.composer-checkbox input {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--yellow);
+}
+
+.composer-media-fieldset > p,
+.composer-local-note {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.72rem;
+  line-height: 1.5;
+}
+
+.composer-media-trigger {
+  min-height: 48px;
+  padding: 0.7rem 0.85rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  border: 1px dashed #57545e;
+  border-radius: 4px;
+  color: var(--text);
+  font-size: 0.78rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.composer-media-trigger:hover {
+  border-color: var(--yellow);
+  color: var(--yellow);
+}
+
+.composer-media-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.55rem;
+}
+
+.composer-media-list li {
+  min-width: 0;
+  padding: 0.45rem;
+  display: grid;
+  grid-template-columns: 58px minmax(0, 1fr) 40px;
+  align-items: center;
+  gap: 0.5rem;
+  border: 1px solid var(--line);
+  background: #09090b;
+}
+
+.composer-media-preview {
+  width: 58px;
+  height: 48px;
+  position: relative;
+  overflow: hidden;
+  background: var(--panel-2);
+}
+
+.composer-media-preview img,
+.composer-media-preview video,
+.composer-media-skeleton {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: cover;
+}
+
+.composer-media-kind {
+  position: absolute;
+  inset: auto 0 0;
+  padding: 0.2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.2rem;
+  background: rgba(0, 0, 0, 0.78);
+  color: var(--text);
+  font:
+    600 0.52rem 'JetBrains Mono Variable',
+    monospace;
+}
+
+.composer-media-list li > span {
+  min-width: 0;
+  display: grid;
+  gap: 0.2rem;
+}
+
+.composer-media-list strong,
+.composer-media-list small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.composer-media-list strong {
+  font-size: 0.72rem;
+}
+
+.composer-media-list small {
+  color: var(--muted);
+  font-size: 0.65rem;
+}
+
+.composer-media-list button {
+  width: 40px;
+  height: 40px;
+  display: grid;
+  place-items: center;
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.composer-media-list button:hover {
+  color: #ff7d76;
+}
+
+.composer-spinner {
+  animation: composer-spin 800ms linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .composer-spinner {
+    animation: none;
+  }
+}
+
+@keyframes composer-spin {
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .mobile-product-header,
@@ -2710,6 +3037,29 @@ button {
   .job-signal {
     min-height: 40px;
     min-width: 40px;
+  }
+
+  .post-composer-dialog {
+    width: calc(100vw - 1rem);
+    max-height: calc(100svh - 1rem);
+  }
+
+  .post-composer-form {
+    max-height: calc(100svh - 1rem);
+  }
+
+  .post-composer-body,
+  .composer-header,
+  .composer-footer {
+    padding-inline: 1rem;
+  }
+
+  .composer-media-list {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .post-image-gallery {
+    grid-auto-columns: minmax(86%, 1fr);
   }
 
   .guest-profile-state {

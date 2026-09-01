@@ -1,5 +1,6 @@
 import { notFound } from 'next/navigation';
-import { AppPageHeader, KnowledgePost } from '@/components/app-surfaces';
+import { AppPageHeader } from '@/components/app-surfaces';
+import { KnowledgeFeed } from '@/components/knowledge-feed';
 import { getProblem } from '@/lib/api';
 import { copy, isLocale } from '@/lib/i18n';
 
@@ -25,19 +26,11 @@ export default async function ProblemsFeed({ params }: { params: Promise<{ local
             : 'Real problems to understand before proposing a solution.'
         }
       />
-      <section className="feed-stream" aria-label={t.shell.problems}>
-        {problems.map(
-          (problem) =>
-            problem && (
-              <KnowledgePost
-                key={problem.id}
-                locale={locale}
-                href={`/${locale}/problems/${problem.slug}`}
-                item={{ kind: 'problem', data: problem }}
-              />
-            ),
-        )}
-      </section>
+      <KnowledgeFeed
+        locale={locale}
+        kind="problem"
+        initialItems={problems.filter((problem) => problem !== null)}
+      />
     </main>
   );
 }

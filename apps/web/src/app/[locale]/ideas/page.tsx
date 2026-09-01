@@ -1,5 +1,6 @@
 import { notFound } from 'next/navigation';
-import { AppPageHeader, KnowledgePost } from '@/components/app-surfaces';
+import { AppPageHeader } from '@/components/app-surfaces';
+import { KnowledgeFeed } from '@/components/knowledge-feed';
 import { getIdea } from '@/lib/api';
 import { copy, isLocale } from '@/lib/i18n';
 
@@ -22,15 +23,7 @@ export default async function IdeasFeed({ params }: { params: Promise<{ locale: 
             : 'Buildable approaches with a clear Primary Problem and research trail.'
         }
       />
-      <section className="feed-stream" aria-label={t.shell.ideas}>
-        {idea && (
-          <KnowledgePost
-            locale={locale}
-            href={`/${locale}/ideas/${idea.slug}`}
-            item={{ kind: 'idea', data: idea }}
-          />
-        )}
-      </section>
+      <KnowledgeFeed locale={locale} kind="idea" initialItems={idea ? [idea] : []} />
     </main>
   );
 }

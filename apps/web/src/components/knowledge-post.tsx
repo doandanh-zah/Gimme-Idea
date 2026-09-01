@@ -14,25 +14,25 @@ import {
 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import type { IdeaDetailDTO, Locale, ProblemDetailDTO } from '@gimme-idea/contracts';
-import { MediaPicker, SocialComposer } from '@/components/quote-post';
-import { MediaBlock } from '@/components/quoted-embed';
+import { PostMediaGallery } from '@/components/post-media-gallery';
+import { SocialComposer } from '@/components/quote-post';
 import {
-  getItemMedia,
   getViewCount,
   incrementViews,
   isBookmarked,
   isLiked,
   itemKey,
-  setItemMedia,
   subscribeSocial,
   toggleBookmark,
   toggleLike,
-  type MediaAttachment,
+  type LocalKnowledgePost,
   type QuotedTarget,
 } from '@/lib/social';
 
 export type KnowledgePostItem =
-  { kind: 'idea'; data: IdeaDetailDTO } | { kind: 'problem'; data: ProblemDetailDTO };
+  | { kind: 'idea'; data: IdeaDetailDTO }
+  | { kind: 'problem'; data: ProblemDetailDTO }
+  | { kind: 'idea' | 'problem'; data: LocalKnowledgePost; local: true };
 
 const postCopy = {
   en: {
@@ -54,8 +54,6 @@ const postCopy = {
     quotePost: 'Post',
     close: 'Close',
     quoteHint: 'This quote will appear on Home, like a quoted post.',
-    addMedia: 'Add photo or video',
-    mediaError: 'Use an image or video under 1.8MB.',
   },
   vi: {
     idea: 'Ý tưởng',
@@ -76,8 +74,6 @@ const postCopy = {
     quotePost: 'Đăng',
     close: 'Đóng',
     quoteHint: 'Quote sẽ xuất hiện trên Home, giống bài quote trên X.',
-    addMedia: 'Thêm ảnh hoặc video',
-    mediaError: 'Dùng ảnh hoặc video dưới 1.8MB.',
   },
 } as const;
 
@@ -106,7 +102,6 @@ function toQuotedTarget(
   href: string,
   item: KnowledgePostItem,
   unknownCreator: string,
-  media: MediaAttachment | null,
 ): QuotedTarget {
   const creator = item.data.creator;
   return {
@@ -118,7 +113,7 @@ function toQuotedTarget(
     creatorName: creator?.displayName ?? unknownCreator,
     creatorUsername: creator?.username ?? null,
     createdAt: item.data.createdAt,
-    media,
+    media: null,
   };
 }
 
@@ -133,6 +128,8 @@ export function KnowledgePost({
 }) {
   const t = postCopy[locale];
   const data = item.data;
+  const isLocal = 'local' in item;
+  const localData = 'local' in item ? item.data : null;
   const isIdea = item.kind === 'idea';
   const kindLabel = isIdea ? t.idea : t.problem;
   const KindIcon = isIdea ? Lightbulb : Target;
@@ -144,27 +141,25 @@ export function KnowledgePost({
     .slice(0, 2)
     .map((part) => part[0]?.toUpperCase())
     .join('');
-  const bounty = item.kind === 'problem' ? item.data.bounty : null;
+  const bounty =
+    item.kind === 'problem' ? ('local' in item ? item.data.bounty : item.data.bounty) : null;
   const fundedAmount =
     bounty?.status === 'mock_funded'
       ? formatBountyAmount(locale, bounty.amountRaw, bounty.currency)
       : null;
   const key = itemKey(item.kind, data.slug);
-  const fallbackViews = data.provenance.sources.length;
+  const fallbackViews = 'local' in item ? 0 : item.data.provenance.sources.length;
   const [saved, setSaved] = useState(false);
   const [liked, setLiked] = useState(false);
   const [views, setViews] = useState(fallbackViews);
   const [shareLabel, setShareLabel] = useState<string>(t.share);
   const [quoteOpen, setQuoteOpen] = useState(false);
-  const [media, setMedia] = useState<MediaAttachment | null>(null);
-  const [mediaError, setMediaError] = useState('');
 
   useEffect(() => {
     const sync = () => {
       setSaved(isBookmarked(key));
       setLiked(isLiked(key));
       setViews(getViewCount(key, fallbackViews));
-      setMedia(getItemMedia(key));
     };
     sync();
     return subscribeSocial(sync);
@@ -192,7 +187,10 @@ export function KnowledgePost({
   };
 
   return (
-    <article className={`knowledge-post-link knowledge-post knowledge-post-${item.kind}`}>
+    <article
+      id={isLocal ? `post-${data.id}` : undefined}
+      className={`knowledge-post-link knowledge-post knowledge-post-${item.kind}`}
+    >
       <Link
         className="knowledge-post-avatar"
         href={href}
@@ -252,8 +250,9 @@ export function KnowledgePost({
           <h2>{data.title}</h2>
           <p>{data.summary}</p>
         </Link>
-        {media && <MediaBlock media={media} />}
-        {mediaError && <p className="media-error">{mediaError}</p>}
+        {localData && localData.attachments.length > 0 && (
+          <PostMediaGallery attachments={localData.attachments} />
+        )}
         <footer className="knowledge-post-actions">
           <div className="knowledge-post-action-group">
             <Link
@@ -287,15 +286,6 @@ export function KnowledgePost({
             >
               <Heart size={18} strokeWidth={1.75} fill={liked ? 'currentColor' : 'none'} />
             </button>
-            <MediaPicker
-              label={t.addMedia}
-              onPick={(value) => {
-                setMediaError('');
-                setMedia(value);
-                setItemMedia(key, value);
-              }}
-              onError={() => setMediaError(t.mediaError)}
-            />
           </div>
           {(fundedAmount || bounty?.openToHiring) && (
             <div className="knowledge-post-action-group is-end">
@@ -329,7 +319,7 @@ export function KnowledgePost({
         <SocialComposer
           locale={locale}
           title={t.quoteTitle}
-          target={toQuotedTarget(href, item, t.unknownCreator, media)}
+          target={toQuotedTarget(href, item, t.unknownCreator)}
           onClose={() => setQuoteOpen(false)}
         />
       )}

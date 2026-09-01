@@ -4,6 +4,56 @@ export type MediaAttachment = {
   name: string;
 };
 
+export const POST_MEDIA_LIMITS = {
+  maxImages: 10,
+  maxImageBytes: 5 * 1024 * 1024,
+  maxVideos: 1,
+  maxVideoBytes: 25 * 1024 * 1024,
+} as const;
+
+export type StoredMediaAttachment = {
+  id: string;
+  kind: 'image' | 'video';
+  name: string;
+  size: number;
+  mimeType: string;
+};
+
+export type LocalKnowledgePost = {
+  id: string;
+  slug: string;
+  kind: 'idea' | 'problem';
+  title: string;
+  summary: string;
+  createdAt: string;
+  creator: {
+    username: string;
+    displayName: string;
+    avatarUrl: null;
+  };
+  primaryProblemSlug: string | null;
+  bounty: {
+    title: string;
+    status: 'unfunded' | 'mock_funded';
+    amountRaw: string;
+    currency: 'USDC';
+    openToHiring: boolean;
+  } | null;
+  attachments: StoredMediaAttachment[];
+};
+
+export type PostMediaValidationCode =
+  'unsupported' | 'too_many_images' | 'too_many_videos' | 'image_too_large' | 'video_too_large';
+
+export class PostMediaValidationError extends Error {
+  constructor(
+    public readonly code: PostMediaValidationCode,
+    public readonly fileName?: string,
+  ) {
+    super(code);
+  }
+}
+
 export type QuotedTarget = {
   kind: 'idea' | 'problem';
   slug: string;
@@ -47,14 +97,25 @@ type SocialState = {
   comments: SocialComment[];
   views: Record<string, number>;
   itemMedia: Record<string, MediaAttachment>;
+  knowledgePosts: LocalKnowledgePost[];
 };
 
 const STORAGE_KEY = 'gimme-idea-social-v2';
 const CHANGE_EVENT = 'gimme-social-change';
 const MAX_MEDIA_BYTES = 1_800_000;
+const MEDIA_DB_NAME = 'gimme-idea-media-v2';
+const MEDIA_STORE_NAME = 'post-media';
 
 function emptyState(): SocialState {
-  return { bookmarks: [], likes: [], quotes: [], comments: [], views: {}, itemMedia: {} };
+  return {
+    bookmarks: [],
+    likes: [],
+    quotes: [],
+    comments: [],
+    views: {},
+    itemMedia: {},
+    knowledgePosts: [],
+  };
 }
 
 function readState(): SocialState {
@@ -70,6 +131,7 @@ function readState(): SocialState {
       comments: Array.isArray(parsed.comments) ? parsed.comments : [],
       views: parsed.views && typeof parsed.views === 'object' ? parsed.views : {},
       itemMedia: parsed.itemMedia && typeof parsed.itemMedia === 'object' ? parsed.itemMedia : {},
+      knowledgePosts: Array.isArray(parsed.knowledgePosts) ? parsed.knowledgePosts : [],
     };
   } catch {
     return emptyState();
@@ -99,6 +161,11 @@ export function getSocialState() {
 
 export function getQuote(id: string) {
   return readState().quotes.find((post) => post.id === id) ?? null;
+}
+
+export function getLocalKnowledgePosts(kind?: 'idea' | 'problem') {
+  const posts = readState().knowledgePosts;
+  return kind ? posts.filter((post) => post.kind === kind) : posts;
 }
 
 export function subscribeSocial(onChange: () => void) {
@@ -194,6 +261,138 @@ export function commentCount(postId: string) {
 
 export function quoteCount(postId: string) {
   return readState().quotes.filter((post) => post.quotedPostId === postId).length;
+}
+
+function openMediaDatabase() {
+  return new Promise<IDBDatabase>((resolve, reject) => {
+    const request = window.indexedDB.open(MEDIA_DB_NAME, 1);
+    request.onupgradeneeded = () => {
+      const database = request.result;
+      if (!database.objectStoreNames.contains(MEDIA_STORE_NAME)) {
+        database.createObjectStore(MEDIA_STORE_NAME);
+      }
+    };
+    request.onsuccess = () => resolve(request.result);
+    request.onerror = () => reject(request.error ?? new Error('Could not open media storage.'));
+  });
+}
+
+function completeTransaction(transaction: IDBTransaction) {
+  return new Promise<void>((resolve, reject) => {
+    transaction.oncomplete = () => resolve();
+    transaction.onerror = () => reject(transaction.error ?? new Error('Media storage failed.'));
+    transaction.onabort = () => reject(transaction.error ?? new Error('Media storage stopped.'));
+  });
+}
+
+export function validatePostMedia(files: File[]) {
+  let imageCount = 0;
+  let videoCount = 0;
+  for (const file of files) {
+    if (file.type.startsWith('image/')) {
+      imageCount += 1;
+      if (file.size > POST_MEDIA_LIMITS.maxImageBytes) {
+        throw new PostMediaValidationError('image_too_large', file.name);
+      }
+      continue;
+    }
+    if (file.type.startsWith('video/')) {
+      videoCount += 1;
+      if (file.size > POST_MEDIA_LIMITS.maxVideoBytes) {
+        throw new PostMediaValidationError('video_too_large', file.name);
+      }
+      continue;
+    }
+    throw new PostMediaValidationError('unsupported', file.name);
+  }
+  if (imageCount > POST_MEDIA_LIMITS.maxImages) {
+    throw new PostMediaValidationError('too_many_images');
+  }
+  if (videoCount > POST_MEDIA_LIMITS.maxVideos) {
+    throw new PostMediaValidationError('too_many_videos');
+  }
+}
+
+async function storePostMedia(files: File[]) {
+  if (files.length === 0) return [];
+  const database = await openMediaDatabase();
+  const transaction = database.transaction(MEDIA_STORE_NAME, 'readwrite');
+  const store = transaction.objectStore(MEDIA_STORE_NAME);
+  const attachments = files.map<StoredMediaAttachment>((file) => {
+    const id = crypto.randomUUID();
+    store.put(file, id);
+    return {
+      id,
+      kind: file.type.startsWith('video/') ? 'video' : 'image',
+      name: file.name,
+      size: file.size,
+      mimeType: file.type,
+    };
+  });
+  await completeTransaction(transaction);
+  database.close();
+  return attachments;
+}
+
+export async function getStoredMediaBlob(id: string) {
+  const database = await openMediaDatabase();
+  const transaction = database.transaction(MEDIA_STORE_NAME, 'readonly');
+  const request = transaction.objectStore(MEDIA_STORE_NAME).get(id);
+  const result = await new Promise<Blob | null>((resolve, reject) => {
+    request.onsuccess = () => resolve(request.result instanceof Blob ? request.result : null);
+    request.onerror = () => reject(request.error ?? new Error('Could not read media.'));
+  });
+  database.close();
+  return result;
+}
+
+function usdcToRaw(value: string) {
+  const normalized = value.trim();
+  if (!normalized) return null;
+  const [whole = '0', fraction = ''] = normalized.split('.');
+  if (!/^\d+$/.test(whole) || !/^\d*$/.test(fraction) || fraction.length > 6) return null;
+  return `${whole}${fraction.padEnd(6, '0')}`.replace(/^0+(?=\d)/, '');
+}
+
+export async function createLocalKnowledgePost(input: {
+  kind: 'idea' | 'problem';
+  title: string;
+  summary: string;
+  primaryProblemSlug?: string | null;
+  bountyAmount?: string;
+  openToHiring?: boolean;
+  files: File[];
+}) {
+  validatePostMedia(input.files);
+  const attachments = await storePostMedia(input.files);
+  const id = crypto.randomUUID();
+  const bountyRaw = input.kind === 'problem' ? usdcToRaw(input.bountyAmount ?? '') : null;
+  const hasFundedBounty = bountyRaw ? BigInt(bountyRaw) > 0n : false;
+  const post: LocalKnowledgePost = {
+    id,
+    slug: `local-${id}`,
+    kind: input.kind,
+    title: input.title.trim(),
+    summary: input.summary.trim(),
+    createdAt: new Date().toISOString(),
+    creator: { username: 'guest', displayName: 'Guest', avatarUrl: null },
+    primaryProblemSlug: input.kind === 'idea' ? (input.primaryProblemSlug ?? null) : null,
+    bounty:
+      input.kind === 'problem' && (bountyRaw || input.openToHiring)
+        ? {
+            title: input.title.trim(),
+            status: hasFundedBounty ? 'mock_funded' : 'unfunded',
+            amountRaw: bountyRaw ?? '0',
+            currency: 'USDC',
+            openToHiring: Boolean(input.openToHiring),
+          }
+        : null,
+    attachments,
+  };
+  const state = readState();
+  state.knowledgePosts = [post, ...state.knowledgePosts];
+  writeState(state);
+  return post;
 }
 
 export function getItemMedia(key: string) {

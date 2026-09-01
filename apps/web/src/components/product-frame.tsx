@@ -29,6 +29,7 @@ import { usePathname } from 'next/navigation';
 import type { ReactNode } from 'react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { Locale } from '@gimme-idea/contracts';
+import { PostComposer } from '@/components/post-composer';
 
 export type ShellLabels = {
   home: string;
@@ -488,9 +489,9 @@ export function ProductFrame({
         />
       </nav>
 
-      <ComposerDialog
+      <PostComposer
         type={composer}
-        labels={labels}
+        locale={locale}
         onClose={() => {
           setComposer(null);
           postTriggerRef.current?.focus();
@@ -655,59 +656,5 @@ function AccountPopover({
         {labels.logout}
       </button>
     </div>
-  );
-}
-
-function ComposerDialog({
-  type,
-  labels,
-  onClose,
-}: {
-  type: ComposerType;
-  labels: ShellLabels;
-  onClose: () => void;
-}) {
-  const dialogRef = useRef<HTMLDialogElement>(null);
-
-  useEffect(() => {
-    const dialog = dialogRef.current;
-    if (!dialog) return;
-    if (type && !dialog.open) dialog.showModal();
-    if (!type && dialog.open) dialog.close();
-  }, [type]);
-
-  return (
-    <dialog
-      ref={dialogRef}
-      className="composer-dialog"
-      aria-labelledby="composer-title"
-      onClose={onClose}
-      onCancel={(event) => {
-        event.preventDefault();
-        onClose();
-      }}
-    >
-      <div className="composer-header">
-        <div>
-          <p>{type === 'problem' ? labels.problems : labels.ideas}</p>
-          <h2 id="composer-title">{type === 'problem' ? labels.postProblem : labels.postIdea}</h2>
-        </div>
-        <button type="button" aria-label={labels.close} onClick={onClose}>
-          <X size={20} aria-hidden="true" />
-        </button>
-      </div>
-      <div className="composer-body">
-        <strong>{labels.composerUnavailable}</strong>
-        <p>{labels.composerNote}</p>
-      </div>
-      <div className="composer-footer">
-        <button type="button" className="button button-quiet" onClick={onClose}>
-          {labels.close}
-        </button>
-        <button type="button" className="button button-primary" disabled>
-          {type === 'problem' ? labels.postProblem : labels.postIdea}
-        </button>
-      </div>
-    </dialog>
   );
 }

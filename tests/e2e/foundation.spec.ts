@@ -154,7 +154,9 @@ test('quote composer publishes a Home-only post', async ({ page }) => {
   await expect(page.locator('.quoted-comment')).toContainText('A nested reply.');
 });
 
-test('Idea and Problem posts retain local image or video attachments', async ({ page }) => {
+test('Post composer publishes Idea and Problem cards with media and opportunity signals', async ({
+  page,
+}) => {
   const pixel = Buffer.from(
     'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=',
     'base64',
@@ -162,27 +164,60 @@ test('Idea and Problem posts retain local image or video attachments', async ({ 
 
   await page.goto('/en/ideas');
   await expect(page.getByRole('heading', { name: 'Ideas', exact: true })).toBeVisible();
-  const ideaCard = page.locator('.knowledge-post-link').first();
-  await ideaCard.getByLabel('Add photo or video').setInputFiles({
-    name: 'concept.png',
-    mimeType: 'image/png',
-    buffer: pixel,
-  });
-  await expect(ideaCard.locator('img.post-media')).toBeVisible();
+  const viewport = page.viewportSize();
+  const postButton =
+    viewport && viewport.width <= 760
+      ? page.locator('.dock-post-button')
+      : page.locator('.sidebar-post-button');
+  await postButton.click();
+  const composer = page.locator('.post-composer-dialog');
+  await composer.getByLabel('Title').fill('A media-aware kitchen idea');
+  await composer
+    .getByLabel('Description')
+    .fill('A post should carry the visual evidence selected at publishing time.');
+  await composer.getByLabel('Primary Problem').selectOption('restaurant-food-waste');
+  await composer.locator('input[type="file"]').setInputFiles([
+    { name: 'concept-a.png', mimeType: 'image/png', buffer: pixel },
+    { name: 'concept-b.png', mimeType: 'image/png', buffer: pixel },
+    {
+      name: 'walkthrough.mp4',
+      mimeType: 'video/mp4',
+      buffer: Buffer.from([0, 0, 0, 16, 102, 116, 121, 112]),
+    },
+  ]);
+  await expect(composer.locator('.composer-media-list li')).toHaveCount(3);
+  await composer.getByRole('button', { name: 'Post', exact: true }).click();
+  await expect(page).toHaveURL(/\/en\/ideas#post-/);
+  const ideaCard = page
+    .locator('.knowledge-post-link')
+    .filter({ hasText: 'A media-aware kitchen idea' });
+  await expect(ideaCard.locator('img.stored-post-media')).toHaveCount(2);
+  await expect(ideaCard.locator('video.stored-post-media')).toHaveCount(1);
+  await expect(ideaCard.getByLabel('Add photo or video')).toHaveCount(0);
+
   await page.reload();
-  await expect(
-    page.locator('.knowledge-post-link').first().locator('img.post-media'),
-  ).toBeVisible();
+  const persistedIdea = page
+    .locator('.knowledge-post-link')
+    .filter({ hasText: 'A media-aware kitchen idea' });
+  await expect(persistedIdea.locator('img.stored-post-media')).toHaveCount(2);
+  await expect(persistedIdea.locator('video.stored-post-media')).toHaveCount(1);
 
   await page.goto('/en/problems');
   await expect(page.getByRole('heading', { name: 'Problems', exact: true })).toBeVisible();
-  const problemCard = page.locator('.knowledge-post-link').first();
-  await problemCard.getByLabel('Add photo or video').setInputFiles({
-    name: 'evidence.mp4',
-    mimeType: 'video/mp4',
-    buffer: Buffer.from([0, 0, 0, 16, 102, 116, 121, 112]),
-  });
-  await expect(problemCard.locator('video.post-media')).toBeVisible();
+  await postButton.click();
+  await composer.getByLabel('Title').fill('Operators need visible repair ownership');
+  await composer
+    .getByLabel('Description')
+    .fill('A posted Problem can include a funded opportunity and a hiring signal.');
+  await composer.getByLabel('Bounty (USDC)').fill('1250');
+  await composer.getByLabel('This Problem is also hiring').check();
+  await composer.getByRole('button', { name: 'Post', exact: true }).click();
+  await expect(page).toHaveURL(/\/en\/problems#post-/);
+  const problemCard = page
+    .locator('.knowledge-post-link')
+    .filter({ hasText: 'Operators need visible repair ownership' });
+  await expect(problemCard.locator('.bounty-signal')).toContainText('$1,250');
+  await expect(problemCard.locator('.job-signal')).toHaveAttribute('aria-label', 'Hiring');
 });
 
 test('sidebar lists Bounties and Talent under Problems', async ({ page }) => {

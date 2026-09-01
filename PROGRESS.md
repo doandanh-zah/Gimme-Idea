@@ -77,13 +77,16 @@
 - [x] Khung desktop tối đa `1440px`, chia cột trái/giữa/phải theo tỷ lệ `20/55/25`.
 - [x] Sidebar trái có logo, Home, Ideas, Problems, Notifications, Following, Saved, Profile và More.
 - [x] More mở Landing page, Community và Settings ngay trong khung.
-- [x] Nút luôn ghi Post; Ideas/Problems mở đúng composer, Home mở menu chọn loại bài.
+- [x] Nút luôn ghi Post; Ideas/Problems mở composer đầy đủ, Home mở menu chọn loại bài.
 - [x] Saved là trang riêng với hai tab URL-driven Bookmarks và Likes; cả hai tab phản ánh tương tác local thật.
 - [x] Account manager nằm cuối sidebar với trạng thái guest, account và wallet trung thực.
 - [x] Right rail có tìm kiếm và gợi ý từ seeded Problem/Idea thật.
 - [x] Home, Ideas và Problems render dữ liệu thật từ API ở cột giữa.
 - [x] Post card dùng layout kiểu feed: avatar, tên/@/ngày và Idea/Problem mark ở góc trên bên phải.
-- [x] Card giữ title/description, cho gắn ảnh/video local, có hàng action và bounty/job signals có điều kiện ở góc dưới bên phải.
+- [x] Composer Idea/Problem có title, description, Primary Problem hoặc bounty/hiring theo đúng loại bài.
+- [x] Media được chọn lúc đăng bài, không phải action trên card: tối đa 10 ảnh × 5MB và 1 video × 25MB.
+- [x] Card hiển thị image gallery/video đã đăng; binary media lưu bằng IndexedDB thay vì localStorage.
+- [x] Card có hàng action và bounty/job signals có điều kiện ở góc dưới bên phải.
 - [x] Home quote post dùng cấu trúc card lồng card: click post ngoài mở thread, click Idea/Problem bên trong mở canonical detail.
 - [x] Home thread hỗ trợ comment, reply nhiều tầng, like, bookmark, share, quote post và quote comment ở mức local foundation.
 - [x] Quote, comment, media và interaction state được lưu rõ ràng trên thiết bị; chưa giả lập backend/auth persistence.
@@ -101,7 +104,7 @@
 - [x] `pnpm format:check`.
 - [x] `pnpm lint`.
 - [x] `pnpm typecheck`.
-- [x] Unit và integration tests.
+- [x] Unit và integration tests, gồm boundary tests cho toàn bộ media limits.
 - [x] Production build.
 - [x] Playwright: 48/48 tests tại 360px, 768px và 1280px.
 - [x] Keyboard, focus, WCAG checks và reduced motion.
