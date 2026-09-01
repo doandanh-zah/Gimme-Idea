@@ -75,6 +75,21 @@ test('knowledge post cards show creator identity and open the detail route', asy
   await expect(card.locator('.knowledge-post-actions')).toBeVisible();
   await expect(card.locator('.knowledge-post-more')).toHaveCount(0);
   await expect(card.getByRole('button', { name: 'Quote' })).toBeVisible();
+  await expect(card.locator('h2')).toHaveCSS('color', 'rgb(255, 215, 0)');
+  await expect(card.locator('.knowledge-post-kind')).toHaveCSS('color', 'rgb(255, 215, 0)');
+  await expect(card.locator('.knowledge-post-action.is-like .lucide-lightbulb')).toHaveCount(1);
+  await expect(card.locator('.knowledge-post-action.is-like .lucide-heart')).toHaveCount(0);
+  expect(
+    await card
+      .locator('.knowledge-post-action-group')
+      .first()
+      .locator(':scope > *')
+      .evaluateAll((actions) => actions.map((action) => action.className)),
+  ).toEqual([
+    expect.stringContaining('is-like'),
+    expect.stringContaining('is-quote'),
+    expect.stringContaining('is-views'),
+  ]);
 
   await card.locator('h2').click();
   await expect(page).toHaveURL(/\/en\/ideas\/demand-pulse-for-kitchens$/);
@@ -97,6 +112,11 @@ test('problem cards show real bounty and hiring signals only when attached', asy
   await expect(hiringCard).toContainText('@alex-chen');
   await expect(hiringCard.locator('.bounty-signal.is-funded')).toContainText('$1,000');
   await expect(hiringCard.locator('.job-signal')).toHaveAttribute('aria-label', 'Hiring');
+  await expect(unfundedCard.locator('h2')).toHaveCSS('color', 'rgb(153, 69, 255)');
+  await expect(unfundedCard.locator('.knowledge-post-kind')).toHaveCSS(
+    'color',
+    'rgb(153, 69, 255)',
+  );
 });
 
 test('Post chooses a type on Home and opens directly on Ideas', async ({ page }) => {
@@ -128,6 +148,19 @@ test('quote composer publishes a Home-only post', async ({ page }) => {
   await expect(page).toHaveURL(/\/en\/home\/[0-9a-f-]+$/i);
   await expect(page.locator('.quote-body')).toContainText('This is the smallest useful test.');
   await expect(page.locator('.quoted-embed')).toContainText('Demand Pulse');
+  await expect(page.locator('.quoted-embed.is-embed .knowledge-post-avatar')).toBeVisible();
+  expect(
+    await page
+      .locator('.quote-post .knowledge-post-action-group')
+      .first()
+      .locator(':scope > *')
+      .evaluateAll((actions) => actions.map((action) => action.className)),
+  ).toEqual([
+    expect.stringContaining('is-comment'),
+    expect.stringContaining('is-quote'),
+    expect.stringContaining('is-views'),
+    expect.stringContaining('is-like'),
+  ]);
 
   await page.locator('.quoted-embed').click();
   await expect(page).toHaveURL(/\/en\/ideas\/demand-pulse-for-kitchens$/);
@@ -143,9 +176,34 @@ test('quote composer publishes a Home-only post', async ({ page }) => {
   await rootComment.getByRole('button', { name: 'Reply' }).first().click();
   await rootComment.getByPlaceholder('Post your reply').fill('A reply to the reply.');
   await rootComment.locator('.comment-composer').getByRole('button', { name: 'Reply' }).click();
-  await expect(rootComment.locator('.comment-list.is-nested')).toContainText(
-    'A reply to the reply.',
+  const firstReply = page
+    .locator('.comment-node.is-reply')
+    .filter({ hasText: 'A reply to the reply.' });
+  await expect(firstReply).toBeVisible();
+
+  await firstReply.getByRole('button', { name: 'Reply' }).click();
+  await firstReply.getByPlaceholder('Post your reply').fill('A third-level reply.');
+  await firstReply.locator('.comment-composer').getByRole('button', { name: 'Reply' }).click();
+  const replyBoxes = await page.locator('.comment-node.is-reply').evaluateAll((nodes) =>
+    nodes.map((node) => {
+      const rect = node.getBoundingClientRect();
+      return { left: rect.left, right: rect.right };
+    }),
   );
+  expect(replyBoxes).toHaveLength(2);
+  expect(
+    Math.max(...replyBoxes.map((box) => box.left)) - Math.min(...replyBoxes.map((box) => box.left)),
+  ).toBeLessThan(2);
+  const mainBox = await page.locator('.product-main').boundingBox();
+  expect(mainBox).not.toBeNull();
+  expect(Math.max(...replyBoxes.map((box) => box.right))).toBeLessThanOrEqual(
+    mainBox!.x + mainBox!.width + 1,
+  );
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= document.documentElement.clientWidth,
+    ),
+  ).toBe(true);
 
   await rootComment.getByRole('button', { name: 'Quote comment' }).first().click();
   await page.getByLabel("What's your take?").fill('Turning this comment into a new post.');
@@ -202,6 +260,16 @@ test('Post composer publishes Idea and Problem cards with media and opportunity 
   await expect(persistedIdea.locator('img.stored-post-media')).toHaveCount(2);
   await expect(persistedIdea.locator('video.stored-post-media')).toHaveCount(1);
 
+  await persistedIdea.getByRole('button', { name: 'Quote' }).click();
+  await page.getByLabel("What's your take?").fill('The complete card belongs in this discussion.');
+  await page.locator('.quote-dialog').getByRole('button', { name: 'Post' }).click();
+  const quotedIdea = page.locator('.quoted-embed.is-embed').filter({
+    hasText: 'A media-aware kitchen idea',
+  });
+  await expect(quotedIdea.locator('.knowledge-post-avatar')).toBeVisible();
+  await expect(quotedIdea.locator('img.stored-post-media')).toHaveCount(2);
+  await expect(quotedIdea.locator('video.stored-post-media')).toHaveCount(1);
+
   await page.goto('/en/problems');
   await expect(page.getByRole('heading', { name: 'Problems', exact: true })).toBeVisible();
   await postButton.click();
@@ -227,12 +295,40 @@ test('sidebar lists Bounties and Talent under Problems', async ({ page }) => {
     await page.getByRole('button', { name: 'Menu' }).click();
     await expect(page.locator('.mobile-product-menu a[href$="/bounties"]')).toBeVisible();
     await expect(page.locator('.mobile-product-menu a[href$="/talent"]')).toBeVisible();
+    await expect(page.locator('.mobile-product-menu a[href$="/saved"]')).toBeVisible();
+  } else if (viewport && viewport.width <= 1180) {
+    await page.getByRole('button', { name: 'More' }).click();
+    await expect(page.locator('#more-navigation a[href$="/bounties"]')).toBeVisible();
+    await expect(page.locator('#more-navigation a[href$="/talent"]')).toBeVisible();
+    await expect(page.locator('#more-navigation a[href$="/saved"]')).toBeVisible();
   } else {
-    await expect(page.locator('.product-sidebar a[href$="/bounties"]')).toBeVisible();
-    await expect(page.locator('.product-sidebar a[href$="/talent"]')).toBeVisible();
+    await expect(page.locator('.sidebar-nav > a[href$="/bounties"]')).toBeVisible();
+    await expect(page.locator('.sidebar-nav > a[href$="/talent"]')).toBeVisible();
     await page.locator('.product-sidebar a[href$="/bounties"]').click();
     await expect(page.getByRole('heading', { name: 'Bounties', exact: true })).toBeVisible();
   }
+});
+
+test('compact sidebar keeps overflow links in More and account pinned', async ({ page }) => {
+  await page.setViewportSize({ width: 1024, height: 600 });
+  await page.goto('/en/home');
+  await expect(page.locator('.product-sidebar')).toBeVisible();
+  await expect(page.locator('.sidebar-nav > a[href$="/bounties"]')).toHaveCount(0);
+  await expect(page.locator('.sidebar-nav > a[href$="/talent"]')).toHaveCount(0);
+  await expect(page.locator('.sidebar-nav > a[href$="/saved"]')).toHaveCount(0);
+
+  await page.getByRole('button', { name: 'More' }).click();
+  await expect(page.locator('#more-navigation a[href$="/bounties"]')).toBeVisible();
+  await expect(page.locator('#more-navigation a[href$="/talent"]')).toBeVisible();
+  await expect(page.locator('#more-navigation a[href$="/saved"]')).toBeVisible();
+
+  const sidebarBox = await page.locator('.product-sidebar').boundingBox();
+  const accountBox = await page.locator('.account-control').boundingBox();
+  expect(sidebarBox).not.toBeNull();
+  expect(accountBox).not.toBeNull();
+  expect(sidebarBox!.y + sidebarBox!.height - (accountBox!.y + accountBox!.height)).toBeLessThan(
+    24,
+  );
 });
 
 test('Saved keeps Bookmarks and Likes in URL-addressable tabs', async ({ page }) => {

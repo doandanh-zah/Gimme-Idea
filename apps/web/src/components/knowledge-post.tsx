@@ -6,7 +6,6 @@ import {
   Bookmark,
   BriefcaseBusiness,
   Eye,
-  Heart,
   Lightbulb,
   MessageSquareQuote,
   Target,
@@ -112,7 +111,9 @@ function toQuotedTarget(
     summary: item.data.summary,
     creatorName: creator?.displayName ?? unknownCreator,
     creatorUsername: creator?.username ?? null,
+    avatarUrl: creator?.avatarUrl ?? null,
     createdAt: item.data.createdAt,
+    attachments: 'local' in item ? item.data.attachments : [],
     media: null,
   };
 }
@@ -255,25 +256,6 @@ export function KnowledgePost({
         )}
         <footer className="knowledge-post-actions">
           <div className="knowledge-post-action-group">
-            <Link
-              className="knowledge-post-action is-views"
-              href={href}
-              title={t.views}
-              aria-label={`${t.views}: ${views}`}
-              onClick={openDetails}
-            >
-              <Eye size={18} strokeWidth={1.75} />
-              {views > 0 && <small>{formatCount(views)}</small>}
-            </Link>
-            <button
-              type="button"
-              className="knowledge-post-action is-quote"
-              aria-label={t.quote}
-              title={t.quote}
-              onClick={() => setQuoteOpen(true)}
-            >
-              <MessageSquareQuote size={18} strokeWidth={1.75} />
-            </button>
             <button
               type="button"
               className={
@@ -284,8 +266,27 @@ export function KnowledgePost({
               title={liked ? t.unlike : t.like}
               onClick={() => setLiked(toggleLike(key))}
             >
-              <Heart size={18} strokeWidth={1.75} fill={liked ? 'currentColor' : 'none'} />
+              <Lightbulb size={18} strokeWidth={1.75} fill={liked ? 'currentColor' : 'none'} />
             </button>
+            <button
+              type="button"
+              className="knowledge-post-action is-quote"
+              aria-label={t.quote}
+              title={t.quote}
+              onClick={() => setQuoteOpen(true)}
+            >
+              <MessageSquareQuote size={18} strokeWidth={1.75} />
+            </button>
+            <Link
+              className="knowledge-post-action is-views"
+              href={href}
+              title={t.views}
+              aria-label={`${t.views}: ${views}`}
+              onClick={openDetails}
+            >
+              <Eye size={18} strokeWidth={1.75} />
+              {views > 0 && <small>{formatCount(views)}</small>}
+            </Link>
           </div>
           {(fundedAmount || bounty?.openToHiring) && (
             <div className="knowledge-post-action-group is-end">

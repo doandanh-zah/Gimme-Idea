@@ -91,6 +91,7 @@ export function ProductFrame({
   const [openPanel, setOpenPanel] = useState<OpenPanel>(null);
   const [composer, setComposer] = useState<ComposerType>(null);
   const [query, setQuery] = useState('');
+  const [compactNav, setCompactNav] = useState(false);
   const moreRef = useRef<HTMLDivElement>(null);
   const postRef = useRef<HTMLDivElement>(null);
   const accountRef = useRef<HTMLDivElement>(null);
@@ -148,6 +149,18 @@ export function ProductFrame({
       match: `/${locale}/profile`,
     },
   ];
+  const overflowHrefs = new Set([`/${locale}/bounties`, `/${locale}/talent`, `/${locale}/saved`]);
+  const primaryNav = compactNav
+    ? navItems.filter((item) => !overflowHrefs.has(item.href))
+    : navItems;
+  const moreNav = compactNav ? navItems.filter((item) => overflowHrefs.has(item.href)) : [];
+  const dockHrefs = new Set([
+    `/${locale}/home`,
+    `/${locale}/ideas`,
+    `/${locale}/problems`,
+    `/${locale}/profile`,
+  ]);
+  const mobileMenuItems = navItems.filter((item) => !dockHrefs.has(item.href));
 
   const suggestions = useMemo(
     () => [
@@ -167,6 +180,14 @@ export function ProductFrame({
   const filteredSuggestions = query.trim()
     ? suggestions.filter((item) => item.title.toLowerCase().includes(query.trim().toLowerCase()))
     : suggestions;
+
+  useEffect(() => {
+    const media = window.matchMedia('(max-width: 1180px), (max-height: 780px)');
+    const apply = () => setCompactNav(media.matches);
+    apply();
+    media.addEventListener('change', apply);
+    return () => media.removeEventListener('change', apply);
+  }, []);
 
   useEffect(() => {
     const onPointerDown = (event: MouseEvent) => {
@@ -288,7 +309,7 @@ export function ProductFrame({
       {openPanel === 'mobile' && (
         <div id="mobile-product-menu" className="mobile-product-menu">
           <nav aria-label="Mobile product navigation">
-            {navItems.slice(3).map((item) => (
+            {mobileMenuItems.map((item) => (
               <ShellNavLink
                 key={item.href}
                 item={item}
@@ -343,7 +364,7 @@ export function ProductFrame({
             </Link>
 
             <nav className="sidebar-nav" aria-label="Primary navigation">
-              {navItems.map((item) => (
+              {primaryNav.map((item) => (
                 <ShellNavLink
                   key={item.href}
                   item={item}
@@ -351,37 +372,46 @@ export function ProductFrame({
                   onNavigate={closePanels}
                 />
               ))}
-
-              <div className="sidebar-popover-anchor" ref={moreRef}>
-                <button
-                  type="button"
-                  className={openPanel === 'more' ? 'sidebar-link is-active' : 'sidebar-link'}
-                  aria-label={labels.more}
-                  aria-expanded={openPanel === 'more'}
-                  aria-controls="more-navigation"
-                  onClick={() => setOpenPanel((value) => (value === 'more' ? null : 'more'))}
-                >
-                  <MoreHorizontal size={iconSize} aria-hidden="true" />
-                  <span>{labels.more}</span>
-                </button>
-                {openPanel === 'more' && (
-                  <div id="more-navigation" className="sidebar-popover sidebar-more-popover">
-                    <Link href={`/${locale}`} onClick={closePanels}>
-                      <Globe2 size={18} aria-hidden="true" />
-                      {labels.landing}
-                    </Link>
-                    <Link href={`/${locale}/community`} onClick={closePanels}>
-                      <Users size={18} aria-hidden="true" />
-                      {labels.community}
-                    </Link>
-                    <Link href={`/${locale}/settings`} onClick={closePanels}>
-                      <Settings size={18} aria-hidden="true" />
-                      {labels.settings}
-                    </Link>
-                  </div>
-                )}
-              </div>
             </nav>
+
+            <div className="sidebar-popover-anchor sidebar-more-control" ref={moreRef}>
+              <button
+                type="button"
+                className={openPanel === 'more' ? 'sidebar-link is-active' : 'sidebar-link'}
+                aria-label={labels.more}
+                aria-expanded={openPanel === 'more'}
+                aria-controls="more-navigation"
+                onClick={() => setOpenPanel((value) => (value === 'more' ? null : 'more'))}
+              >
+                <MoreHorizontal size={iconSize} aria-hidden="true" />
+                <span>{labels.more}</span>
+              </button>
+              {openPanel === 'more' && (
+                <div id="more-navigation" className="sidebar-popover sidebar-more-popover">
+                  {moreNav.map((item) => {
+                    const Icon = item.icon;
+                    return (
+                      <Link key={item.href} href={item.href} onClick={closePanels}>
+                        <Icon size={18} aria-hidden="true" />
+                        {item.label}
+                      </Link>
+                    );
+                  })}
+                  <Link href={`/${locale}`} onClick={closePanels}>
+                    <Globe2 size={18} aria-hidden="true" />
+                    {labels.landing}
+                  </Link>
+                  <Link href={`/${locale}/community`} onClick={closePanels}>
+                    <Users size={18} aria-hidden="true" />
+                    {labels.community}
+                  </Link>
+                  <Link href={`/${locale}/settings`} onClick={closePanels}>
+                    <Settings size={18} aria-hidden="true" />
+                    {labels.settings}
+                  </Link>
+                </div>
+              )}
+            </div>
 
             <div className="post-control" ref={postRef}>
               {openPanel === 'post' && (

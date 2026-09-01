@@ -2,7 +2,16 @@
 
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Bookmark, Eye, Heart, ImagePlus, MessageCircle, Repeat2, Upload, X } from 'lucide-react';
+import {
+  Bookmark,
+  Eye,
+  ImagePlus,
+  Lightbulb,
+  MessageCircle,
+  Repeat2,
+  Upload,
+  X,
+} from 'lucide-react';
 import { useEffect, useId, useMemo, useRef, useState, type MouseEvent } from 'react';
 import type { Locale } from '@gimme-idea/contracts';
 import { MediaBlock, QuotedEmbed } from '@/components/quoted-embed';
@@ -256,10 +265,9 @@ export function QuotePostCard({
             <small>{post.quotedComment.body}</small>
           </Link>
         )}
-        {quotedPost && !post.quotedComment ? (
-          <QuotedPostEmbed locale={locale} post={quotedPost} />
-        ) : (
-          post.target && <QuotedEmbed locale={locale} target={post.target} />
+        {quotedPost && !post.quotedComment && <QuotedPostEmbed locale={locale} post={quotedPost} />}
+        {post.target && (!quotedPost || post.quotedComment) && (
+          <QuotedEmbed locale={locale} target={post.target} />
         )}
         <footer className="knowledge-post-actions">
           <div className="knowledge-post-action-group">
@@ -292,6 +300,15 @@ export function QuotePostCard({
             </button>
             <button
               type="button"
+              className="knowledge-post-action is-views"
+              aria-label={t.views}
+              onClick={openThread}
+            >
+              <Eye size={18} strokeWidth={1.75} />
+              {views > 0 && <small>{formatCount(views)}</small>}
+            </button>
+            <button
+              type="button"
               className={
                 liked ? 'knowledge-post-action is-like is-on' : 'knowledge-post-action is-like'
               }
@@ -299,16 +316,7 @@ export function QuotePostCard({
               aria-label={liked ? t.unlike : t.like}
               onClick={() => setLiked(toggleLike(key))}
             >
-              <Heart size={18} strokeWidth={1.75} fill={liked ? 'currentColor' : 'none'} />
-            </button>
-            <button
-              type="button"
-              className="knowledge-post-action is-views"
-              aria-label={t.views}
-              onClick={openThread}
-            >
-              <Eye size={18} strokeWidth={1.75} />
-              {views > 0 && <small>{formatCount(views)}</small>}
+              <Lightbulb size={18} strokeWidth={1.75} fill={liked ? 'currentColor' : 'none'} />
             </button>
           </div>
         </footer>
@@ -330,25 +338,49 @@ export function QuotePostCard({
 function QuotedPostEmbed({ locale, post }: { locale: Locale; post: QuotePost }) {
   const t = copy[locale];
   return (
-    <Link
-      className="quoted-embed quoted-post-embed"
-      href={`/${locale}/home/${post.id}`}
-      onClick={(event) => event.stopPropagation()}
-    >
-      <strong>
-        {t.guest}
-        <span> @guest · {formatPostDate(locale, post.createdAt)}</span>
-      </strong>
-      {post.body && <small>{post.body}</small>}
+    <div className="quoted-embed quoted-post-embed" onClick={(event) => event.stopPropagation()}>
+      <Link className="quoted-embed-copy" href={`/${locale}/home/${post.id}`}>
+        <strong>
+          {t.guest}
+          <span> @guest · {formatPostDate(locale, post.createdAt)}</span>
+        </strong>
+        {post.body && <small>{post.body}</small>}
+      </Link>
       {post.media && <MediaBlock media={post.media} />}
-      {post.target && (
-        <span className="quoted-post-target">
-          <b>{post.target.title}</b>
-          <small>{post.target.summary}</small>
-        </span>
-      )}
-    </Link>
+      {post.target && <QuotedEmbed locale={locale} target={post.target} />}
+    </div>
   );
+}
+
+function flattenCommentThread(comments: SocialComment[]) {
+  const commentIds = new Set(comments.map((comment) => comment.id));
+  const childrenByParent = new Map<string, SocialComment[]>();
+  const roots: SocialComment[] = [];
+
+  for (const comment of comments) {
+    if (!comment.parentId || !commentIds.has(comment.parentId)) {
+      roots.push(comment);
+      continue;
+    }
+    const children = childrenByParent.get(comment.parentId) ?? [];
+    children.push(comment);
+    childrenByParent.set(comment.parentId, children);
+  }
+
+  const flattened: Array<{ comment: SocialComment; depth: 0 | 1 }> = [];
+  const seen = new Set<string>();
+  const visit = (comment: SocialComment, depth: 0 | 1) => {
+    if (seen.has(comment.id)) return;
+    seen.add(comment.id);
+    flattened.push({ comment, depth });
+    for (const reply of childrenByParent.get(comment.id) ?? []) visit(reply, 1);
+  };
+
+  for (const root of roots) visit(root, 0);
+  for (const comment of comments) {
+    if (!seen.has(comment.id)) visit(comment, 0);
+  }
+  return flattened;
 }
 
 export function QuoteThread({ locale, postId }: { locale: Locale; postId: string }) {
@@ -366,17 +398,7 @@ export function QuoteThread({ locale, postId }: { locale: Locale; postId: string
     return subscribeSocial(sync);
   }, [postId]);
 
-  const roots = comments.filter((comment) => !comment.parentId);
-  const byParent = useMemo(() => {
-    const map = new Map<string, SocialComment[]>();
-    for (const comment of comments) {
-      if (!comment.parentId) continue;
-      const list = map.get(comment.parentId) ?? [];
-      list.push(comment);
-      map.set(comment.parentId, list);
-    }
-    return map;
-  }, [comments]);
+  const threadedComments = useMemo(() => flattenCommentThread(comments), [comments]);
 
   if (!post) {
     return (
@@ -400,13 +422,13 @@ export function QuoteThread({ locale, postId }: { locale: Locale; postId: string
         <CommentComposer locale={locale} postId={post.id} />
       </div>
       <ol className="comment-list">
-        {roots.map((comment) => (
+        {threadedComments.map(({ comment, depth }) => (
           <CommentNode
             key={comment.id}
             locale={locale}
             post={post}
             comment={comment}
-            repliesByParent={byParent}
+            depth={depth}
           />
         ))}
       </ol>
@@ -418,19 +440,18 @@ function CommentNode({
   locale,
   post,
   comment,
-  repliesByParent,
+  depth,
 }: {
   locale: Locale;
   post: QuotePost;
   comment: SocialComment;
-  repliesByParent: Map<string, SocialComment[]>;
+  depth: 0 | 1;
 }) {
   const t = copy[locale];
   const key = commentKey(comment.id);
   const [liked, setLiked] = useState(false);
   const [replyOpen, setReplyOpen] = useState(false);
   const [quoteOpen, setQuoteOpen] = useState(false);
-  const replies = repliesByParent.get(comment.id) ?? [];
 
   useEffect(() => {
     const sync = () => setLiked(isLiked(key));
@@ -439,7 +460,7 @@ function CommentNode({
   }, [key]);
 
   return (
-    <li className="comment-node">
+    <li className={depth === 0 ? 'comment-node' : 'comment-node is-reply'}>
       <div className="knowledge-post-avatar" aria-hidden="true">
         <span>G</span>
       </div>
@@ -476,7 +497,7 @@ function CommentNode({
             aria-pressed={liked}
             onClick={() => setLiked(toggleLike(key))}
           >
-            <Heart size={16} strokeWidth={1.75} fill={liked ? 'currentColor' : 'none'} />
+            <Lightbulb size={16} strokeWidth={1.75} fill={liked ? 'currentColor' : 'none'} />
           </button>
         </div>
         {replyOpen && (
@@ -486,19 +507,6 @@ function CommentNode({
             parentId={comment.id}
             onDone={() => setReplyOpen(false)}
           />
-        )}
-        {replies.length > 0 && (
-          <ol className="comment-list is-nested">
-            {replies.map((reply) => (
-              <CommentNode
-                key={reply.id}
-                locale={locale}
-                post={post}
-                comment={reply}
-                repliesByParent={repliesByParent}
-              />
-            ))}
-          </ol>
         )}
       </div>
       {quoteOpen && (

@@ -62,7 +62,9 @@ export type QuotedTarget = {
   summary: string;
   creatorName: string;
   creatorUsername: string | null;
+  avatarUrl?: string | null;
   createdAt: string;
+  attachments?: StoredMediaAttachment[];
   media?: MediaAttachment | null;
 };
 
