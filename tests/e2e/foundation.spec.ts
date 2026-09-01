@@ -59,6 +59,23 @@ test('product shell adapts across desktop, tablet and mobile', async ({ page }) 
   await expect(page.locator('.product-main h1')).toContainText('Home');
 });
 
+test('knowledge post cards expose basic facts and open the detail route', async ({ page }) => {
+  await page.goto('/en/ideas');
+  const card = page.locator('.knowledge-post-link').first();
+
+  await expect(card).toContainText('@demand-pulse-for-kitchens');
+  await expect(card).toContainText('Primary problem');
+  await expect(card).toContainText('Designed for');
+  await expect(card).toContainText('Active build');
+  await expect(card).toContainText('1 source');
+  await expect(card).toContainText('2 previous attempts');
+  await expect(card.locator('img')).toHaveCount(0);
+
+  await card.click();
+  await expect(page).toHaveURL(/\/en\/ideas\/demand-pulse-for-kitchens$/);
+  await expect(page.locator('h1')).toContainText('Demand Pulse');
+});
+
 test('Post chooses a type on Home and opens directly on Ideas', async ({ page }) => {
   await page.goto('/en/home');
   const viewport = page.viewportSize();

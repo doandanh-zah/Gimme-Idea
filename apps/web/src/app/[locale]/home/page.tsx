@@ -28,23 +28,16 @@ export default async function HomeFeed({ params }: { params: Promise<{ locale: s
       <section className="feed-stream" aria-label="Home feed">
         {problem && (
           <KnowledgePost
-            kind={t.shell.problems}
-            title={problem.title}
-            summary={problem.summary}
+            locale={locale}
             href={`/${locale}/problems/${problem.slug}`}
-            status={problem.researchStatus.replaceAll('_', ' ')}
-            meta={`${problem.relatedIdeas.length} ${t.ideasUnit.toLowerCase()}`}
+            item={{ kind: 'problem', data: problem }}
           />
         )}
         {idea && (
           <KnowledgePost
-            kind={t.shell.ideas}
-            title={idea.title}
-            summary={idea.summary}
+            locale={locale}
             href={`/${locale}/ideas/${idea.slug}`}
-            status={idea.researchStatus.replaceAll('_', ' ')}
-            meta={`${idea.previousAttempts.length} ${t.attempts.toLowerCase()}`}
-            relationship={`${t.primaryProblem}: ${idea.primaryProblem.title}`}
+            item={{ kind: 'idea', data: idea }}
           />
         )}
       </section>

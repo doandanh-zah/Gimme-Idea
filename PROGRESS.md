@@ -80,6 +80,7 @@
 - [x] Account manager nằm cuối sidebar với trạng thái guest, account và wallet trung thực.
 - [x] Right rail có tìm kiếm và gợi ý từ seeded Problem/Idea thật.
 - [x] Home, Ideas và Problems render dữ liệu thật từ API ở cột giữa.
+- [x] Post card không dùng media, hiển thị identity, research state, basic facts và mở toàn bộ card sang detail.
 - [x] Notifications, Following, Community, Profile và Settings có trạng thái foundation rõ ràng.
 - [x] Landing page nằm ngoài product frame và dẫn vào app qua Open app.
 - [x] Tablet chuyển thành icon rail và ẩn right rail.
@@ -96,7 +97,7 @@
 - [x] `pnpm typecheck`.
 - [x] Unit và integration tests.
 - [x] Production build.
-- [x] Playwright: 33/33 tests tại 360px, 768px và 1280px.
+- [x] Playwright: 36/36 tests tại 360px, 768px và 1280px.
 - [x] Keyboard, focus, WCAG checks và reduced motion.
 - [x] Lighthouse Performance 100 và Accessibility 100.
 - [x] LCP 1.16s, CLS 0.033, TBT 54ms trên production build.

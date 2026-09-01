@@ -25,13 +25,9 @@ export default async function IdeasFeed({ params }: { params: Promise<{ locale: 
       <section className="feed-stream" aria-label={t.shell.ideas}>
         {idea && (
           <KnowledgePost
-            kind={t.shell.ideas}
-            title={idea.title}
-            summary={idea.summary}
+            locale={locale}
             href={`/${locale}/ideas/${idea.slug}`}
-            status={idea.researchStatus.replaceAll('_', ' ')}
-            meta={`${idea.previousAttempts.length} ${t.attempts.toLowerCase()}`}
-            relationship={`${t.primaryProblem}: ${idea.primaryProblem.title}`}
+            item={{ kind: 'idea', data: idea }}
           />
         )}
       </section>
