@@ -27,31 +27,67 @@ test('problem and idea pages render API data without Three.js', async ({ page })
   expect(threeRequests).toEqual([]);
 });
 
-test('global navigation stays discoverable and detail pages expose a chapter index', async ({
-  page,
-}) => {
-  await page.goto('/en');
+test('product shell adapts across desktop, tablet and mobile', async ({ page }) => {
+  await page.goto('/en/home');
   const viewport = page.viewportSize();
 
-  if (viewport && viewport.width <= 900) {
-    await expect(page.locator('.menu-trigger')).toBeVisible();
-    await page.locator('.menu-trigger').click();
-    await expect(page.locator('#mobile-menu')).toBeVisible();
-    await expect(page.locator('#mobile-menu .mobile-nav-link')).toHaveCount(3);
-    await page.getByRole('link', { name: /Problems Understand what needs solving/ }).click();
+  if (viewport && viewport.width <= 760) {
+    await expect(page.locator('.mobile-product-header')).toBeVisible();
+    await expect(page.locator('.mobile-bottom-dock')).toBeVisible();
+    await expect(page.locator('.product-sidebar')).toBeHidden();
+  } else if (viewport && viewport.width <= 1180) {
+    await expect(page.locator('.product-sidebar')).toBeVisible();
+    await expect(page.locator('.discovery-rail')).toBeHidden();
   } else {
-    await expect(page.locator('.desktop-nav')).toBeVisible();
-    await expect(page.locator('.desktop-nav .nav-link')).toHaveCount(3);
-    await page
-      .locator('.desktop-nav')
-      .getByRole('link', { name: /Problems/ })
-      .click();
+    await expect(page.locator('.product-sidebar')).toBeVisible();
+    await expect(page.locator('.discovery-rail')).toBeVisible();
+    await expect(page.locator('.product-shell')).toHaveCSS('max-width', '1440px');
   }
 
-  await expect(page).toHaveURL(/\/en\/problems\/restaurant-food-waste/);
+  await expect(page.locator('.product-main h1')).toContainText('Home');
+});
+
+test('Post chooses a type on Home and opens directly on Ideas', async ({ page }) => {
+  await page.goto('/en/home');
+  const viewport = page.viewportSize();
+  const postButton =
+    viewport && viewport.width <= 760
+      ? page.locator('.dock-post-button')
+      : page.locator('.sidebar-post-button');
+
+  await postButton.click();
+  await page.getByRole('button', { name: 'Post idea' }).filter({ visible: true }).click();
+  await expect(page.locator('.composer-dialog')).toBeVisible();
+  await expect(page.locator('#composer-title')).toHaveText('Post idea');
+  await page.locator('.composer-header button').click();
+
+  await page.goto('/en/ideas');
+  await postButton.click();
+  await expect(page.locator('.composer-dialog')).toBeVisible();
+  await expect(page.locator('#composer-title')).toHaveText('Post idea');
+});
+
+test('Saved keeps Bookmarks and Likes in URL-addressable tabs', async ({ page }) => {
+  await page.goto('/en/saved');
+  await expect(page.locator('.saved-tabs a.is-active')).toHaveText('Bookmarks');
+  await page.getByRole('link', { name: 'Likes', exact: true }).click();
+  await expect(page).toHaveURL(/\/en\/saved\?tab=likes/);
+  await expect(page.locator('.saved-tabs a.is-active')).toHaveText('Likes');
+});
+
+test('canonical detail pages retain their chapter index inside the shell', async ({ page }) => {
+  await page.goto('/en/problems/restaurant-food-waste');
+
+  await expect(page.locator('.product-shell')).toBeVisible();
   await expect(page.locator('.page-index')).toBeVisible();
   await expect(page.locator('.content-section')).toHaveCount(4);
   await expect(page.locator('#overview .chapter-heading')).toContainText('Overview');
+});
+
+test('landing remains outside the product shell', async ({ page }) => {
+  await page.goto('/en');
+  await expect(page.locator('.landing-header')).toBeVisible();
+  await expect(page.locator('.product-shell')).toHaveCount(0);
 });
 
 test.describe('reduced motion', () => {

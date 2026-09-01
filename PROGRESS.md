@@ -70,18 +70,24 @@
 - [x] Loading, error và not-found experiences.
 - [x] Canonical, hreflang và noindex cho not-found state.
 
-### UI clarity pass
+### Product frame
 
-- [x] Thêm global navigation rõ ràng: Home / Problems / Ideas.
-- [x] Hiển thị active route bằng nhãn, số thứ tự và đường biên; không chỉ dựa vào màu.
-- [x] Thêm menu mobile có nút mở/đóng, Escape và touch target tối thiểu 44px.
+- [x] Khung desktop tối đa `1440px`, chia cột trái/giữa/phải theo tỷ lệ `25/50/25`.
+- [x] Sidebar trái có logo, Home, Ideas, Problems, Notifications, Following, Saved, Profile và More.
+- [x] More mở Landing page, Community và Settings ngay trong khung.
+- [x] Nút luôn ghi Post; Ideas/Problems mở đúng composer, Home mở menu chọn loại bài.
+- [x] Saved là trang riêng với hai tab URL-driven Bookmarks và Likes.
+- [x] Account manager nằm cuối sidebar với trạng thái guest, account và wallet trung thực.
+- [x] Right rail có tìm kiếm và gợi ý từ seeded Problem/Idea thật.
+- [x] Home, Ideas và Problems render dữ liệu thật từ API ở cột giữa.
+- [x] Notifications, Following, Community, Profile và Settings có trạng thái foundation rõ ràng.
+- [x] Landing page nằm ngoài product frame và dẫn vào app qua Open app.
+- [x] Tablet chuyển thành icon rail và ẩn right rail.
+- [x] Mobile có top bar, search/menu sheet và bottom dock gồm Home, Ideas, Post, Problems, Profile.
+- [x] Menu, popover và dialog hỗ trợ Escape, focus visible và touch target tối thiểu 44px.
 - [x] Language switch giữ nguyên route hiện tại khi đổi ngôn ngữ.
-- [x] Thêm breadcrumb cho Problem và Idea.
-- [x] Thêm mục lục sticky “On this page / Trong trang này”.
-- [x] Chia canonical content thành chapter có số, tiêu đề, nền và đường biên riêng.
-- [x] Giới hạn reading width và tăng line-height/contrast cho nội dung dài.
-- [x] Production build và HTML SSR mới đã được kiểm tra.
-- [ ] Visual browser review ở 360px và 1280px — browser controller chưa khả dụng trong phiên hiện tại.
+- [x] Problem/Idea canonical pages tiếp tục giữ breadcrumb, mục lục và reading width rõ ràng.
+- [x] Production build, SSR/no-JavaScript và responsive rendering đã được kiểm tra.
 
 ### Quality gates
 
@@ -90,7 +96,7 @@
 - [x] `pnpm typecheck`.
 - [x] Unit và integration tests.
 - [x] Production build.
-- [x] Playwright: 18/18 tests tại 360px, 768px và 1280px.
+- [x] Playwright: 33/33 tests tại 360px, 768px và 1280px.
 - [x] Keyboard, focus, WCAG checks và reduced motion.
 - [x] Lighthouse Performance 100 và Accessibility 100.
 - [x] LCP 1.16s, CLS 0.033, TBT 54ms trên production build.
