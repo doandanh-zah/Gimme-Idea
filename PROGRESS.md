@@ -15,7 +15,7 @@
 - [x] Thêm ADR lựa chọn Drizzle.
 - [x] Giữ logo gốc và xác nhận checksum bản web giống tuyệt đối.
 - [x] Khóa màu vàng `#FFD700`, tím `#9945FF`, success `#14F195`.
-- [x] Dùng Inter và JetBrains Mono.
+- [x] Dùng Alumni Sans cho toàn bộ display, body, interface và metadata qua Adobe Fonts.
 
 ### Monorepo và toolchain
 

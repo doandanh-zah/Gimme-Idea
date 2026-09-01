@@ -11,8 +11,6 @@
     "test": "vitest run --passWithNoTests"
   },
   "dependencies": {
-    "@fontsource-variable/inter": "5.2.8",
-    "@fontsource-variable/jetbrains-mono": "5.2.8",
     "@gimme-idea/contracts": "workspace:*",
     "@gimme-idea/ui": "workspace:*",
     "@react-three/fiber": "9.7.0",

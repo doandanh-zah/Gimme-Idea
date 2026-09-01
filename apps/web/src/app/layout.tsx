@@ -1,5 +1,3 @@
-import '@fontsource-variable/inter';
-import '@fontsource-variable/jetbrains-mono';
 import './globals.css';
 import type { Metadata } from 'next';
 import type { ReactNode } from 'react';
@@ -13,6 +11,9 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="en">
+      <head>
+        <link rel="stylesheet" href="https://use.typekit.net/qqv3drj.css" />
+      </head>
       <body>{children}</body>
     </html>
   );

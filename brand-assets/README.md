@@ -9,10 +9,11 @@ This branch is intentionally empty except for the current brand references kept 
 
 ## Fonts
 
-- Primary / display / sans: **Inter**
-- Monospace: **JetBrains Mono**
+- Primary / display / interface: **Alumni Sans** via Adobe Fonts kit `qqv3drj`
+- Available styles: Regular, Italic, Bold and Bold Italic
+- CSS family: `"alumni-sans", sans-serif`
 
-The previous app loaded both families through `next/font/google` and exposed them as `--font-inter` and `--font-mono`.
+The web app loads the Adobe Fonts stylesheet once in the root layout and exposes the family through the `--font-ui` design token.
 
 ## Logo
 
