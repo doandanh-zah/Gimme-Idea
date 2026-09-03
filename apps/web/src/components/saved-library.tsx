@@ -57,7 +57,7 @@ export function SavedLibrary({
         body={
           isLikes
             ? locale === 'vi'
-              ? 'Bấm biểu tượng tim trên một bài viết để lưu vào tab này.'
+              ? 'Bấm biểu tượng bóng đèn trên một bài viết để lưu vào tab này.'
               : 'Like a post to keep it in this tab.'
             : locale === 'vi'
               ? 'Bấm bookmark trên một bài viết để lưu vào đây.'
@@ -76,7 +76,7 @@ export function SavedLibrary({
         <KnowledgePost
           key={post.id}
           locale={locale}
-          href={`/${locale}/${post.kind === 'idea' ? 'ideas' : 'problems'}#post-${post.id}`}
+          href={`/${locale}/${post.kind === 'idea' ? 'ideas' : 'problems'}/${post.slug}`}
           item={{ kind: post.kind, data: post, local: true }}
         />
       ))}

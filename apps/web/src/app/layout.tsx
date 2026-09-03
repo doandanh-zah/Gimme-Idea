@@ -1,6 +1,7 @@
 import './globals.css';
 import type { Metadata } from 'next';
 import type { ReactNode } from 'react';
+import { AuthProvider } from '@/lib/auth';
 
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000'),
@@ -14,7 +15,9 @@ export default function RootLayout({ children }: { children: ReactNode }) {
       <head>
         <link rel="stylesheet" href="https://use.typekit.net/qqv3drj.css" />
       </head>
-      <body>{children}</body>
+      <body>
+        <AuthProvider>{children}</AuthProvider>
+      </body>
     </html>
   );
 }

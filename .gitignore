@@ -23,3 +23,4 @@ target/
 .anchor/
 test-ledger/
 *.keypair.json
+apps/api/.local/

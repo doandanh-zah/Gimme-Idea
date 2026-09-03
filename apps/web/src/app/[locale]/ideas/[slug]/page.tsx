@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { ArrowLeft, ArrowUpRight } from 'lucide-react';
 import { notFound } from 'next/navigation';
 import { Eyebrow, StatusPill } from '@gimme-idea/ui';
+import { LocalKnowledgeDetail } from '@/components/local-knowledge-detail';
 import { PageIndex } from '@/components/page-index';
 import { Provenance } from '@/components/provenance';
 import { getIdea } from '@/lib/api';
@@ -12,6 +13,15 @@ type PageProps = { params: Promise<{ locale: string; slug: string }> };
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { locale, slug } = await params;
   if (!isLocale(locale)) return {};
+  if (slug.startsWith('local-')) {
+    return {
+      title: 'Local idea',
+      alternates: {
+        canonical: `/${locale}/ideas/${slug}`,
+        languages: { en: `/en/ideas/${slug}`, vi: `/vi/ideas/${slug}` },
+      },
+    };
+  }
   const idea = await getIdea(slug);
   return idea
     ? {
@@ -28,8 +38,13 @@ export default async function IdeaPage({ params }: PageProps) {
   const { locale, slug } = await params;
   if (!isLocale(locale)) notFound();
   const t = copy[locale];
+  if (slug.startsWith('local-')) {
+    return <LocalKnowledgeDetail locale={locale} kind="idea" slug={slug} />;
+  }
   const idea = await getIdea(slug);
-  if (!idea) notFound();
+  if (!idea) {
+    notFound();
+  }
   const attemptIndex = idea.project ? '05' : '04';
   return (
     <main id="main" className="detail-page idea-page">
@@ -63,7 +78,7 @@ export default async function IdeaPage({ params }: PageProps) {
       <PageIndex
         label={t.onThisPage}
         items={[
-          { index: '01', label: t.thesis, href: '#thesis' },
+          { index: '01', label: t.opportunity, href: '#opportunity' },
           { index: '02', label: t.solution, href: '#solution' },
           { index: '03', label: t.targetUsers, href: '#audience' },
           ...(idea.project ? [{ index: '04', label: t.build, href: '#build' as const }] : []),
@@ -73,12 +88,12 @@ export default async function IdeaPage({ params }: PageProps) {
       />
       <div className="detail-grid">
         <article className="canonical-content">
-          <section id="thesis" className="content-section content-section-accent">
+          <section id="opportunity" className="content-section content-section-accent">
             <div className="chapter-heading">
               <span>01</span>
               <div>
                 <small>{t.buildableThesis}</small>
-                <h2>{t.thesis}</h2>
+                <h2>{t.opportunity}</h2>
               </div>
             </div>
             <p className="thesis-statement">{idea.thesis}</p>

@@ -13,7 +13,9 @@
   "dependencies": {
     "@gimme-idea/contracts": "workspace:*",
     "@gimme-idea/ui": "workspace:*",
+    "@privy-io/react-auth": "3.39.0",
     "@react-three/fiber": "9.7.0",
+    "@solana/web3.js": "^1.98.4",
     "animejs": "4.5.0",
     "lucide-react": "1.38.0",
     "next": "16.3.3",

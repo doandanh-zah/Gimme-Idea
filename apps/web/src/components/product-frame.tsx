@@ -15,7 +15,6 @@ import {
   Menu,
   MoreHorizontal,
   Plus,
-  RefreshCw,
   Search,
   Settings,
   Target,
@@ -29,7 +28,11 @@ import { usePathname } from 'next/navigation';
 import type { ReactNode } from 'react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { Locale } from '@gimme-idea/contracts';
+import { AuthDialog } from '@/components/auth-dialog';
 import { PostComposer } from '@/components/post-composer';
+import { WalletDialog } from '@/components/wallet-dialog';
+import { useAuth } from '@/lib/auth';
+import { formatUsdcAmount } from '@/lib/format-number';
 
 export type ShellLabels = {
   home: string;
@@ -57,12 +60,10 @@ export type ShellLabels = {
   account: string;
   guest: string;
   signedOut: string;
+  signIn: string;
   switchAccounts: string;
   addAccount: string;
   wallet: string;
-  notConnected: string;
-  connectWallet: string;
-  reconnectWallet: string;
   logout: string;
   menu: string;
   close: string;
@@ -88,10 +89,13 @@ export function ProductFrame({
   children: ReactNode;
 }) {
   const pathname = usePathname();
+  const auth = useAuth();
   const [openPanel, setOpenPanel] = useState<OpenPanel>(null);
   const [composer, setComposer] = useState<ComposerType>(null);
   const [query, setQuery] = useState('');
   const [compactNav, setCompactNav] = useState(false);
+  const [authDialogOpen, setAuthDialogOpen] = useState(false);
+  const [walletDialogOpen, setWalletDialogOpen] = useState(false);
   const moreRef = useRef<HTMLDivElement>(null);
   const postRef = useRef<HTMLDivElement>(null);
   const accountRef = useRef<HTMLDivElement>(null);
@@ -100,7 +104,6 @@ export function ProductFrame({
 
   const isLanding = pathname === `/${locale}`;
   const otherLocale = locale === 'en' ? 'vi' : 'en';
-  const languageHref = pathname.replace(/^\/(en|vi)(?=\/|$)/, `/${otherLocale}`);
 
   const navItems = [
     { label: labels.home, href: `/${locale}/home`, icon: Home, match: `/${locale}/home` },
@@ -162,8 +165,26 @@ export function ProductFrame({
   ]);
   const mobileMenuItems = navItems.filter((item) => !dockHrefs.has(item.href));
 
-  const suggestions = useMemo(
-    () => [
+  const suggestions = useMemo(() => {
+    if (pathname.includes('/problems/restaurant-food-waste')) {
+      return [
+        {
+          type: labels.ideas,
+          title: 'Demand Pulse for Kitchens',
+          href: `/${locale}/ideas/demand-pulse-for-kitchens`,
+        },
+      ];
+    }
+    if (pathname.includes('/ideas/demand-pulse-for-kitchens')) {
+      return [
+        {
+          type: labels.problems,
+          title: 'Restaurant food waste',
+          href: `/${locale}/problems/restaurant-food-waste`,
+        },
+      ];
+    }
+    return [
       {
         type: labels.problems,
         title: 'Restaurant food waste',
@@ -174,12 +195,16 @@ export function ProductFrame({
         title: 'Demand Pulse for Kitchens',
         href: `/${locale}/ideas/demand-pulse-for-kitchens`,
       },
-    ],
-    [labels.ideas, labels.problems, locale],
-  );
+    ];
+  }, [labels.ideas, labels.problems, locale, pathname]);
   const filteredSuggestions = query.trim()
     ? suggestions.filter((item) => item.title.toLowerCase().includes(query.trim().toLowerCase()))
     : suggestions;
+  const accountName = auth.session?.displayName ?? labels.guest;
+  const accountUsername = auth.session?.username ?? 'guest';
+  const accountInitials = auth.session?.avatarInitials ?? 'G';
+  const accountStatus = auth.session ? `@${accountUsername}` : labels.signedOut;
+  const walletBalance = formatUsdcAmount(auth.wallet?.balanceUsdc ?? '0', 'compact');
 
   useEffect(() => {
     const media = window.matchMedia('(max-width: 1180px), (max-height: 780px)');
@@ -187,6 +212,15 @@ export function ProductFrame({
     apply();
     media.addEventListener('change', apply);
     return () => media.removeEventListener('change', apply);
+  }, []);
+
+  useEffect(() => {
+    const openSignIn = () => {
+      setOpenPanel(null);
+      setAuthDialogOpen(true);
+    };
+    window.addEventListener('gimme-auth-required', openSignIn);
+    return () => window.removeEventListener('gimme-auth-required', openSignIn);
   }, []);
 
   useEffect(() => {
@@ -213,11 +247,17 @@ export function ProductFrame({
   }, [openPanel]);
 
   const closePanels = () => setOpenPanel(null);
+  const openAuthDialog = () => {
+    setOpenPanel(null);
+    setAuthDialogOpen(true);
+  };
   const openComposer = (type: Exclude<ComposerType, null>) => {
+    if (!auth.requireAuth('post')) return;
     setOpenPanel(null);
     setComposer(type);
   };
   const handlePost = () => {
+    if (!auth.requireAuth('post')) return;
     if (pathname.startsWith(`/${locale}/ideas`)) return openComposer('idea');
     if (pathname.startsWith(`/${locale}/problems`)) return openComposer('problem');
     setOpenPanel((value) => (value === 'post' ? null : 'post'));
@@ -330,20 +370,37 @@ export function ProductFrame({
               <span>{labels.landing}</span>
             </Link>
           </nav>
-          <div className="mobile-account-summary">
-            <span className="guest-avatar">G</span>
-            <span>
-              <strong>{labels.guest}</strong>
-              <small>{labels.signedOut}</small>
-            </span>
-            <small>{labels.notConnected}</small>
-          </div>
+          {auth.isSignedIn ? (
+            <div className="mobile-account-area">
+              <button
+                type="button"
+                className="mobile-wallet-balance-button"
+                aria-label={`${labels.wallet}: ${walletBalance.ariaLabel}`}
+                onClick={() => setWalletDialogOpen(true)}
+              >
+                <Wallet size={19} aria-hidden="true" />
+                <strong className="wallet-number">{walletBalance.display}</strong>
+                <span>USDC</span>
+              </button>
+              <div className="mobile-account-summary">
+                <span className="guest-avatar">{accountInitials}</span>
+                <span>
+                  <strong>{accountName}</strong>
+                  <small>{accountStatus}</small>
+                </span>
+              </div>
+            </div>
+          ) : (
+            <button type="button" className="mobile-sign-in-button" onClick={openAuthDialog}>
+              <User size={19} aria-hidden="true" />
+              {labels.signIn}
+            </button>
+          )}
         </div>
       )}
 
       {openPanel === 'post' && (
         <div ref={mobilePostRef} className="mobile-post-sheet" aria-label={labels.choosePostType}>
-          <p>{labels.choosePostType}</p>
           <button type="button" onClick={() => openComposer('idea')}>
             <Lightbulb size={19} aria-hidden="true" />
             {labels.postIdea}
@@ -416,7 +473,6 @@ export function ProductFrame({
             <div className="post-control" ref={postRef}>
               {openPanel === 'post' && (
                 <div className="sidebar-popover post-type-popover">
-                  <p>{labels.choosePostType}</p>
                   <button type="button" onClick={() => openComposer('idea')}>
                     <Lightbulb size={18} aria-hidden="true" />
                     <span>{labels.postIdea}</span>
@@ -441,28 +497,50 @@ export function ProductFrame({
             </div>
 
             <div className="account-control" ref={accountRef}>
-              {openPanel === 'account' && (
+              {auth.isSignedIn && (
+                <button
+                  type="button"
+                  className="sidebar-wallet-button"
+                  aria-label={`${labels.wallet}: ${walletBalance.ariaLabel}`}
+                  onClick={() => setWalletDialogOpen(true)}
+                >
+                  <Wallet size={19} aria-hidden="true" />
+                  <strong className="wallet-number">{walletBalance.display}</strong>
+                  <small>USDC</small>
+                </button>
+              )}
+              {auth.isSignedIn && openPanel === 'account' && (
                 <AccountPopover
                   labels={labels}
-                  languageHref={languageHref}
-                  otherLocale={otherLocale}
+                  accountName={accountName}
+                  accountUsername={accountUsername}
+                  accountInitials={accountInitials}
+                  onSignIn={openAuthDialog}
+                  onLogout={auth.logout}
                 />
               )}
-              <button
-                type="button"
-                className="account-trigger"
-                aria-label={labels.account}
-                aria-expanded={openPanel === 'account'}
-                aria-controls="account-popover"
-                onClick={() => setOpenPanel((value) => (value === 'account' ? null : 'account'))}
-              >
-                <span className="guest-avatar">G</span>
-                <span>
-                  <strong>{labels.guest}</strong>
-                  <small>{labels.signedOut}</small>
-                </span>
-                <MoreHorizontal size={18} aria-hidden="true" />
-              </button>
+              {auth.isSignedIn ? (
+                <button
+                  type="button"
+                  className="account-trigger"
+                  aria-label={labels.account}
+                  aria-expanded={openPanel === 'account'}
+                  aria-controls="account-popover"
+                  onClick={() => setOpenPanel((value) => (value === 'account' ? null : 'account'))}
+                >
+                  <span className="guest-avatar">{accountInitials}</span>
+                  <span>
+                    <strong>{accountName}</strong>
+                    <small>{accountStatus}</small>
+                  </span>
+                  <MoreHorizontal size={18} aria-hidden="true" />
+                </button>
+              ) : (
+                <button type="button" className="sidebar-sign-in-button" onClick={openAuthDialog}>
+                  <User size={19} aria-hidden="true" />
+                  <span>{labels.signIn}</span>
+                </button>
+              )}
             </div>
           </div>
         </aside>
@@ -526,6 +604,12 @@ export function ProductFrame({
           setComposer(null);
           postTriggerRef.current?.focus();
         }}
+      />
+      <AuthDialog locale={locale} open={authDialogOpen} onClose={() => setAuthDialogOpen(false)} />
+      <WalletDialog
+        locale={locale}
+        open={walletDialogOpen}
+        onClose={() => setWalletDialogOpen(false)}
       />
     </div>
   );
@@ -640,48 +724,52 @@ function SearchBox({
 
 function AccountPopover({
   labels,
-  languageHref,
-  otherLocale,
+  accountName,
+  accountUsername,
+  accountInitials,
+  onSignIn,
+  onLogout,
 }: {
   labels: ShellLabels;
-  languageHref: string;
-  otherLocale: string;
+  accountName: string;
+  accountUsername: string;
+  accountInitials: string;
+  onSignIn: () => void;
+  onLogout: () => Promise<void>;
 }) {
+  const [loggingOut, setLoggingOut] = useState(false);
+  const logout = async () => {
+    setLoggingOut(true);
+    try {
+      await onLogout();
+    } catch {
+      // Auth errors are normalized and shown by the shared auth state.
+    } finally {
+      setLoggingOut(false);
+    }
+  };
+
   return (
     <div id="account-popover" className="account-popover">
       <p>{labels.account}</p>
       <div className="account-row is-current">
-        <span className="guest-avatar">G</span>
+        <span className="guest-avatar">{accountInitials}</span>
         <span>
-          <strong>{labels.guest}</strong>
-          <small>{labels.signedOut}</small>
+          <strong>{accountName}</strong>
+          <small>@{accountUsername}</small>
         </span>
       </div>
-      <button type="button" disabled>
+      <button type="button" onClick={onSignIn}>
         <UserPlus size={17} aria-hidden="true" />
-        {labels.addAccount}
+        {labels.switchAccounts}
       </button>
       <div className="account-divider" />
-      <div className="wallet-state">
-        <span>
-          <Wallet size={17} aria-hidden="true" />
-          {labels.wallet}
-        </span>
-        <small>{labels.notConnected}</small>
-      </div>
-      <button type="button" disabled>
-        <Wallet size={17} aria-hidden="true" />
-        {labels.connectWallet}
-      </button>
-      <button type="button" disabled>
-        <RefreshCw size={17} aria-hidden="true" />
-        {labels.reconnectWallet}
-      </button>
-      <Link href={languageHref} hrefLang={otherLocale}>
-        <Globe2 size={17} aria-hidden="true" />
-        {otherLocale.toUpperCase()}
-      </Link>
-      <button type="button" disabled>
+      <button
+        type="button"
+        disabled={loggingOut}
+        aria-busy={loggingOut}
+        onClick={() => void logout()}
+      >
         <LogOut size={17} aria-hidden="true" />
         {labels.logout}
       </button>

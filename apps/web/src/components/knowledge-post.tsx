@@ -15,6 +15,7 @@ import { useEffect, useState } from 'react';
 import type { IdeaDetailDTO, Locale, ProblemDetailDTO } from '@gimme-idea/contracts';
 import { PostMediaGallery } from '@/components/post-media-gallery';
 import { SocialComposer } from '@/components/quote-post';
+import { useAuth } from '@/lib/auth';
 import {
   getViewCount,
   incrementViews,
@@ -27,6 +28,7 @@ import {
   type LocalKnowledgePost,
   type QuotedTarget,
 } from '@/lib/social';
+import { formatPostTime } from '@/lib/time';
 
 export type KnowledgePostItem =
   | { kind: 'idea'; data: IdeaDetailDTO }
@@ -87,10 +89,6 @@ function formatBountyAmount(locale: Locale, amountRaw: string, currency: string)
   }).format(amount);
 }
 
-function formatPostDate(locale: Locale, iso: string) {
-  return new Intl.DateTimeFormat(locale, { month: 'short', day: 'numeric' }).format(new Date(iso));
-}
-
 function formatCount(value: number) {
   return new Intl.NumberFormat('en', { notation: 'compact', maximumFractionDigits: 1 }).format(
     value,
@@ -128,6 +126,7 @@ export function KnowledgePost({
   item: KnowledgePostItem;
 }) {
   const t = postCopy[locale];
+  const auth = useAuth();
   const data = item.data;
   const isLocal = 'local' in item;
   const localData = 'local' in item ? item.data : null;
@@ -167,6 +166,7 @@ export function KnowledgePost({
   }, [fallbackViews, key]);
 
   const share = async () => {
+    if (!auth.requireAuth('share')) return;
     const url = new URL(href, window.location.origin).toString();
     try {
       if (navigator.share) {
@@ -211,7 +211,7 @@ export function KnowledgePost({
             <strong>{creatorName}</strong>
             {creator && <span>@{creator.username}</span>}
             <span aria-hidden="true">·</span>
-            <time dateTime={data.createdAt}>{formatPostDate(locale, data.createdAt)}</time>
+            <time dateTime={data.createdAt}>{formatPostTime(locale, data.createdAt)}</time>
           </Link>
           <div className="knowledge-post-tools">
             <button
@@ -222,13 +222,20 @@ export function KnowledgePost({
               aria-pressed={saved}
               aria-label={saved ? t.unsave : t.save}
               title={saved ? t.unsave : t.save}
-              onClick={() => setSaved(toggleBookmark(key))}
+              onClick={() => {
+                if (!auth.requireAuth('save')) return;
+                setSaved(toggleBookmark(key));
+              }}
             >
               <Bookmark size={18} strokeWidth={1.75} fill={saved ? 'currentColor' : 'none'} />
             </button>
             <button
               type="button"
-              className="knowledge-post-action is-share"
+              className={
+                shareLabel === t.copied
+                  ? 'knowledge-post-action is-share is-copied'
+                  : 'knowledge-post-action is-share'
+              }
               aria-label={shareLabel}
               title={shareLabel}
               onClick={() => void share()}
@@ -264,7 +271,10 @@ export function KnowledgePost({
               aria-pressed={liked}
               aria-label={liked ? t.unlike : t.like}
               title={liked ? t.unlike : t.like}
-              onClick={() => setLiked(toggleLike(key))}
+              onClick={() => {
+                if (!auth.requireAuth('like')) return;
+                setLiked(toggleLike(key));
+              }}
             >
               <Lightbulb size={18} strokeWidth={1.75} fill={liked ? 'currentColor' : 'none'} />
             </button>
@@ -273,7 +283,10 @@ export function KnowledgePost({
               className="knowledge-post-action is-quote"
               aria-label={t.quote}
               title={t.quote}
-              onClick={() => setQuoteOpen(true)}
+              onClick={() => {
+                if (!auth.requireAuth('quote')) return;
+                setQuoteOpen(true);
+              }}
             >
               <MessageSquareQuote size={18} strokeWidth={1.75} />
             </button>

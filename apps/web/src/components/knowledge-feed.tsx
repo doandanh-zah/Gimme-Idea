@@ -30,7 +30,7 @@ export function KnowledgeFeed({
           <KnowledgePost
             key={post.id}
             locale={locale}
-            href={`/${locale}/${kind === 'idea' ? 'ideas' : 'problems'}#post-${post.id}`}
+            href={`/${locale}/${kind === 'idea' ? 'ideas' : 'problems'}/${post.slug}`}
             item={item}
           />
         );

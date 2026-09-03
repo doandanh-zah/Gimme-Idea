@@ -2,8 +2,13 @@ import Fastify, { type FastifyInstance } from 'fastify';
 import cors from '@fastify/cors';
 import { ideaDetailSchema, problemDetailSchema } from '@gimme-idea/contracts';
 import type { KnowledgeRepository } from '@gimme-idea/db/repository';
+import type { DevMockSession } from './mock-auth.js';
 
-export type AppOptions = { repository: KnowledgeRepository; logger?: boolean };
+export type AppOptions = {
+  repository: KnowledgeRepository;
+  logger?: boolean;
+  devMockAuth?: (() => Promise<DevMockSession>) | null;
+};
 export const moduleBoundaries = [
   'identity',
   'organizations',
@@ -22,6 +27,7 @@ export const moduleBoundaries = [
 export async function buildApp({
   repository,
   logger = true,
+  devMockAuth = null,
 }: AppOptions): Promise<FastifyInstance> {
   const app = Fastify({
     logger,
@@ -30,6 +36,9 @@ export async function buildApp({
   });
   await app.register(cors, { origin: true });
   app.get('/health', () => ({ service: 'api', status: 'ok', version: '2.0.0-foundation' }));
+  if (devMockAuth) {
+    app.post('/v1/auth/mock', async () => devMockAuth());
+  }
   app.get('/ready', async (_request, reply) => {
     const database = await repository.ping().catch(() => false);
     if (!database) reply.code(503);

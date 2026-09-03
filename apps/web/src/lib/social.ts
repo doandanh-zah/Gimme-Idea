@@ -19,18 +19,29 @@ export type StoredMediaAttachment = {
   mimeType: string;
 };
 
+export type SocialActor = {
+  username: string;
+  displayName: string;
+  avatarUrl: string | null;
+};
+
 export type LocalKnowledgePost = {
   id: string;
   slug: string;
   kind: 'idea' | 'problem';
   title: string;
   summary: string;
-  createdAt: string;
-  creator: {
-    username: string;
-    displayName: string;
-    avatarUrl: null;
+  details?: {
+    problem?: string;
+    whoHasThisProblem?: string;
+    whyItMatters?: string;
+    opportunity?: string;
+    solution?: string;
+    primaryProblemTitle?: string;
+    extra?: Record<string, string>;
   };
+  createdAt: string;
+  creator: SocialActor;
   primaryProblemSlug: string | null;
   bounty: {
     title: string;
@@ -72,12 +83,14 @@ export type QuotedComment = {
   id: string;
   body: string;
   createdAt: string;
+  actor?: SocialActor;
 };
 
 export type QuotePost = {
   id: string;
   body: string;
   createdAt: string;
+  actor?: SocialActor;
   target: QuotedTarget | null;
   quotedPostId?: string;
   quotedComment?: QuotedComment;
@@ -90,6 +103,9 @@ export type SocialComment = {
   parentId: string | null;
   body: string;
   createdAt: string;
+  actor?: SocialActor;
+  mentionUsername?: string | null;
+  media?: MediaAttachment | null;
 };
 
 type SocialState = {
@@ -107,6 +123,7 @@ const CHANGE_EVENT = 'gimme-social-change';
 const MAX_MEDIA_BYTES = 1_800_000;
 const MEDIA_DB_NAME = 'gimme-idea-media-v2';
 const MEDIA_STORE_NAME = 'post-media';
+const guestActor: SocialActor = { username: 'guest', displayName: 'Guest', avatarUrl: null };
 
 function emptyState(): SocialState {
   return {
@@ -170,6 +187,12 @@ export function getLocalKnowledgePosts(kind?: 'idea' | 'problem') {
   return kind ? posts.filter((post) => post.kind === kind) : posts;
 }
 
+export function getLocalKnowledgePost(kind: 'idea' | 'problem', slug: string) {
+  return (
+    readState().knowledgePosts.find((post) => post.kind === kind && post.slug === slug) ?? null
+  );
+}
+
 export function subscribeSocial(onChange: () => void) {
   const handler = () => onChange();
   window.addEventListener(CHANGE_EVENT, handler);
@@ -220,6 +243,7 @@ export function incrementViews(key: string, fallback = 0) {
 export function addQuote(input: {
   body: string;
   target: QuotedTarget | null;
+  actor?: SocialActor;
   quotedPostId?: string;
   quotedComment?: QuotedComment;
   media?: MediaAttachment | null;
@@ -229,6 +253,7 @@ export function addQuote(input: {
     id: crypto.randomUUID(),
     body: input.body.trim(),
     createdAt: new Date().toISOString(),
+    actor: input.actor ?? guestActor,
     target: input.target,
     quotedPostId: input.quotedPostId,
     quotedComment: input.quotedComment,
@@ -239,14 +264,24 @@ export function addQuote(input: {
   return post;
 }
 
-export function addComment(postId: string, body: string, parentId: string | null = null) {
+export function addComment(input: {
+  postId: string;
+  body: string;
+  actor?: SocialActor;
+  parentId?: string | null;
+  mentionUsername?: string | null;
+  media?: MediaAttachment | null;
+}) {
   const state = readState();
   const comment: SocialComment = {
     id: crypto.randomUUID(),
-    postId,
-    parentId,
-    body: body.trim(),
+    postId: input.postId,
+    parentId: input.parentId ?? null,
+    body: input.body.trim(),
     createdAt: new Date().toISOString(),
+    actor: input.actor ?? guestActor,
+    mentionUsername: input.mentionUsername ?? null,
+    media: input.media ?? null,
   };
   state.comments = [...state.comments, comment];
   writeState(state);
@@ -360,6 +395,8 @@ export async function createLocalKnowledgePost(input: {
   kind: 'idea' | 'problem';
   title: string;
   summary: string;
+  creator?: SocialActor;
+  details?: LocalKnowledgePost['details'];
   primaryProblemSlug?: string | null;
   bountyAmount?: string;
   openToHiring?: boolean;
@@ -376,8 +413,9 @@ export async function createLocalKnowledgePost(input: {
     kind: input.kind,
     title: input.title.trim(),
     summary: input.summary.trim(),
+    details: input.details,
     createdAt: new Date().toISOString(),
-    creator: { username: 'guest', displayName: 'Guest', avatarUrl: null },
+    creator: input.creator ?? guestActor,
     primaryProblemSlug: input.kind === 'idea' ? (input.primaryProblemSlug ?? null) : null,
     bounty:
       input.kind === 'problem' && (bountyRaw || input.openToHiring)

@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { ArrowLeft, ArrowUpRight } from 'lucide-react';
 import { notFound } from 'next/navigation';
 import { Eyebrow, StatusPill } from '@gimme-idea/ui';
+import { LocalKnowledgeDetail } from '@/components/local-knowledge-detail';
 import { PageIndex } from '@/components/page-index';
 import { Provenance } from '@/components/provenance';
 import { getProblem } from '@/lib/api';
@@ -12,6 +13,15 @@ type PageProps = { params: Promise<{ locale: string; slug: string }> };
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { locale, slug } = await params;
   if (!isLocale(locale)) return {};
+  if (slug.startsWith('local-')) {
+    return {
+      title: 'Local problem',
+      alternates: {
+        canonical: `/${locale}/problems/${slug}`,
+        languages: { en: `/en/problems/${slug}`, vi: `/vi/problems/${slug}` },
+      },
+    };
+  }
   const problem = await getProblem(slug);
   return problem
     ? {
@@ -28,9 +38,14 @@ export default async function ProblemPage({ params }: PageProps) {
   const { locale, slug } = await params;
   if (!isLocale(locale)) notFound();
   const t = copy[locale];
+  if (slug.startsWith('local-')) {
+    return <LocalKnowledgeDetail locale={locale} kind="problem" slug={slug} />;
+  }
   const problem = await getProblem(slug);
-  if (!problem) notFound();
-  const relatedIndex = problem.bounty ? '04' : '03';
+  if (!problem) {
+    notFound();
+  }
+  const relatedIndex = problem.bounty ? '05' : '04';
   return (
     <main id="main" className="detail-page problem-page">
       <nav className="breadcrumb" aria-label="Breadcrumb">
@@ -55,58 +70,60 @@ export default async function ProblemPage({ params }: PageProps) {
       <PageIndex
         label={t.onThisPage}
         items={[
-          { index: '01', label: t.overview, href: '#overview' },
-          { index: '02', label: t.signals, href: '#signals' },
+          { index: '01', label: t.problem, href: '#problem' },
+          { index: '02', label: t.whoHasThisProblem, href: '#who' },
+          { index: '03', label: t.whyItMatters, href: '#why' },
           ...(problem.bounty
-            ? [{ index: '03', label: t.opportunity, href: '#opportunity' as const }]
+            ? [{ index: '04', label: t.opportunity, href: '#opportunity' as const }]
             : []),
           { index: relatedIndex, label: t.relatedIdeas, href: '#related-ideas' },
-          { index: problem.bounty ? '05' : '04', label: t.sources, href: '#sources' },
+          { index: problem.bounty ? '06' : '05', label: t.sources, href: '#sources' },
         ]}
       />
       <div className="detail-grid">
         <article className="canonical-content">
-          <section id="overview" className="content-section">
+          <section id="problem" className="content-section">
             <div className="chapter-heading">
               <span>01</span>
               <div>
-                <small>{t.overview}</small>
-                <h2>{t.problemFrame}</h2>
+                <small>{t.oneLineDescription}</small>
+                <h2>{t.problem}</h2>
               </div>
             </div>
             <p className="long-copy">{problem.description}</p>
           </section>
-          <section id="signals" className="content-section content-section-raised">
+          <section id="who" className="content-section content-section-raised">
             <div className="chapter-heading">
               <span>02</span>
               <div>
                 <small>{t.signals}</small>
-                <h2>{t.evidence}</h2>
+                <h2>{t.whoHasThisProblem}</h2>
               </div>
             </div>
-            <div className="split-section">
+            <ul className="editorial-list">
+              {problem.affectedGroups.map((group) => (
+                <li key={group}>{group}</li>
+              ))}
+            </ul>
+          </section>
+          <section id="why" className="content-section content-section-raised">
+            <div className="chapter-heading">
+              <span>03</span>
               <div>
-                <h3>{t.affected}</h3>
-                <ul className="editorial-list">
-                  {problem.affectedGroups.map((group) => (
-                    <li key={group}>{group}</li>
-                  ))}
-                </ul>
-              </div>
-              <div>
-                <h3>{t.evidence}</h3>
-                <ul className="editorial-list evidence-list">
-                  {problem.evidence.map((item) => (
-                    <li key={item}>{item}</li>
-                  ))}
-                </ul>
+                <small>{t.evidence}</small>
+                <h2>{t.whyItMatters}</h2>
               </div>
             </div>
+            <ul className="editorial-list evidence-list">
+              {problem.evidence.map((item) => (
+                <li key={item}>{item}</li>
+              ))}
+            </ul>
           </section>
           {problem.bounty && (
             <section id="opportunity" className="content-section">
               <div className="chapter-heading">
-                <span>03</span>
+                <span>04</span>
                 <div>
                   <small>{t.opportunity}</small>
                   <h2>{t.bounty}</h2>

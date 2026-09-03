@@ -1,0 +1,19 @@
+[features]
+resolution = true
+skip-lint = false
+
+[programs.localnet]
+bounty_escrow = "BB2bMK8gwrDk3YG3GFECqnwnFigDoxvKDwJZiTXtzCK6"
+
+[programs.devnet]
+bounty_escrow = "BB2bMK8gwrDk3YG3GFECqnwnFigDoxvKDwJZiTXtzCK6"
+
+[registry]
+url = "https://api.apr.dev"
+
+[provider]
+cluster = "localnet"
+wallet = "~/.config/solana/id.json"
+
+[scripts]
+test = "pnpm tsx tests/anchor/bounty-escrow.ts"

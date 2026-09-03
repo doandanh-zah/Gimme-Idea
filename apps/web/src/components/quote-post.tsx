@@ -12,9 +12,18 @@ import {
   Upload,
   X,
 } from 'lucide-react';
-import { useEffect, useId, useMemo, useRef, useState, type MouseEvent } from 'react';
+import {
+  useEffect,
+  useId,
+  useMemo,
+  useRef,
+  useState,
+  type MouseEvent,
+  type ReactNode,
+} from 'react';
 import type { Locale } from '@gimme-idea/contracts';
 import { MediaBlock, QuotedEmbed } from '@/components/quoted-embed';
+import { useAuth } from '@/lib/auth';
 import {
   addComment,
   addQuote,
@@ -37,8 +46,10 @@ import {
   type QuotePost,
   type QuotedComment,
   type QuotedTarget,
+  type SocialActor,
   type SocialComment,
 } from '@/lib/social';
+import { formatPostTime } from '@/lib/time';
 
 const copy = {
   en: {
@@ -93,13 +104,94 @@ const copy = {
   },
 } as const;
 
-function formatPostDate(locale: Locale, iso: string) {
-  return new Intl.DateTimeFormat(locale, { month: 'short', day: 'numeric' }).format(new Date(iso));
-}
-
 function formatCount(value: number) {
   return new Intl.NumberFormat('en', { notation: 'compact', maximumFractionDigits: 1 }).format(
     value,
+  );
+}
+
+function fallbackActor(locale: Locale): SocialActor {
+  return { username: 'guest', displayName: copy[locale].guest, avatarUrl: null };
+}
+
+function initialsForActor(actor: SocialActor) {
+  return (
+    actor.displayName
+      .split(/\s+/)
+      .filter(Boolean)
+      .slice(0, 2)
+      .map((part) => part[0]?.toUpperCase())
+      .join('') || '?'
+  );
+}
+
+function renderInlineMarkdown(text: string) {
+  const parts: ReactNode[] = [];
+  const pattern = /(`[^`]+`|\*\*[^*]+\*\*|@[a-zA-Z0-9_-]+)/g;
+  let lastIndex = 0;
+  for (const match of text.matchAll(pattern)) {
+    if (match.index > lastIndex) parts.push(text.slice(lastIndex, match.index));
+    const token = match[0];
+    const key = `${match.index}-${token}`;
+    if (token.startsWith('`')) {
+      parts.push(<code key={key}>{token.slice(1, -1)}</code>);
+    } else if (token.startsWith('**')) {
+      parts.push(<strong key={key}>{token.slice(2, -2)}</strong>);
+    } else {
+      parts.push(
+        <span key={key} className="mention-token">
+          {token}
+        </span>,
+      );
+    }
+    lastIndex = match.index + token.length;
+  }
+  if (lastIndex < text.length) parts.push(text.slice(lastIndex));
+  return parts;
+}
+
+function MarkdownText({ body }: { body: string }) {
+  const blocks = body.split(/\n{2,}/).filter((block) => block.length > 0);
+  if (blocks.length === 0) return null;
+  return (
+    <div className="markdown-text">
+      {blocks.map((block, blockIndex) => {
+        const lines = block.split('\n');
+        if (lines.every((line) => line.trim().startsWith('>'))) {
+          return (
+            <blockquote key={`quote-${blockIndex}`}>
+              {lines.map((line, index) => (
+                <span key={`${index}-${line}`}>
+                  {renderInlineMarkdown(line.replace(/^>\s?/, ''))}
+                  {index < lines.length - 1 && <br />}
+                </span>
+              ))}
+            </blockquote>
+          );
+        }
+        if (lines.every((line) => /^\s*[-*]\s+/.test(line))) {
+          return (
+            <ul key={`list-${blockIndex}`}>
+              {lines.map((line, index) => (
+                <li key={`${index}-${line}`}>
+                  {renderInlineMarkdown(line.replace(/^\s*[-*]\s+/, ''))}
+                </li>
+              ))}
+            </ul>
+          );
+        }
+        return (
+          <p key={`p-${blockIndex}`}>
+            {lines.map((line, index) => (
+              <span key={`${index}-${line}`}>
+                {renderInlineMarkdown(line)}
+                {index < lines.length - 1 && <br />}
+              </span>
+            ))}
+          </p>
+        );
+      })}
+    </div>
   );
 }
 
@@ -107,10 +199,14 @@ export function MediaPicker({
   label,
   onPick,
   onError,
+  disabled = false,
+  onRequestAuth,
 }: {
   label: string;
   onPick: (media: MediaAttachment) => void;
   onError: (message: string) => void;
+  disabled?: boolean;
+  onRequestAuth?: () => void;
 }) {
   const id = useId();
   return (
@@ -129,7 +225,16 @@ export function MediaPicker({
             .catch(() => onError(label));
         }}
       />
-      <label htmlFor={id} className="knowledge-post-action is-media">
+      <label
+        htmlFor={id}
+        className="knowledge-post-action is-media"
+        aria-disabled={disabled}
+        onClick={(event) => {
+          if (!disabled) return;
+          event.preventDefault();
+          onRequestAuth?.();
+        }}
+      >
         <ImagePlus size={18} strokeWidth={1.75} />
         <span className="sr-only">{label}</span>
       </label>
@@ -148,6 +253,7 @@ export function QuotePostCard({
 }) {
   const t = copy[locale];
   const router = useRouter();
+  const auth = useAuth();
   const key = quoteKey(post.id);
   const [saved, setSaved] = useState(false);
   const [liked, setLiked] = useState(false);
@@ -157,6 +263,7 @@ export function QuotePostCard({
   const [quotedPost, setQuotedPost] = useState<QuotePost | null>(null);
   const [shareLabel, setShareLabel] = useState<string>(t.share);
   const [composer, setComposer] = useState<'quote' | null>(null);
+  const actor = post.actor ?? fallbackActor(locale);
 
   useEffect(() => {
     const sync = () => {
@@ -183,6 +290,7 @@ export function QuotePostCard({
   };
 
   const share = async () => {
+    if (!auth.requireAuth('share')) return;
     const url = new URL(threadHref, window.location.origin).toString();
     try {
       if (navigator.share) {
@@ -210,15 +318,15 @@ export function QuotePostCard({
       onClick={onCardClick}
     >
       <div className="knowledge-post-avatar" aria-hidden="true">
-        <span>G</span>
+        <span>{initialsForActor(actor)}</span>
       </div>
       <div className="knowledge-post-main">
         <header className="knowledge-post-header">
           <Link className="knowledge-post-identity" href={threadHref} onClick={recordView}>
-            <strong>{t.guest}</strong>
-            <span>@guest</span>
+            <strong>{actor.displayName}</strong>
+            <span>@{actor.username}</span>
             <span aria-hidden="true">·</span>
-            <time dateTime={post.createdAt}>{formatPostDate(locale, post.createdAt)}</time>
+            <time dateTime={post.createdAt}>{formatPostTime(locale, post.createdAt)}</time>
           </Link>
           <div className="knowledge-post-tools">
             <button
@@ -228,13 +336,20 @@ export function QuotePostCard({
               }
               aria-pressed={saved}
               aria-label={saved ? t.unsave : t.save}
-              onClick={() => setSaved(toggleBookmark(key))}
+              onClick={() => {
+                if (!auth.requireAuth('save')) return;
+                setSaved(toggleBookmark(key));
+              }}
             >
               <Bookmark size={18} strokeWidth={1.75} fill={saved ? 'currentColor' : 'none'} />
             </button>
             <button
               type="button"
-              className="knowledge-post-action is-share"
+              className={
+                shareLabel === t.copied
+                  ? 'knowledge-post-action is-share is-copied'
+                  : 'knowledge-post-action is-share'
+              }
               aria-label={shareLabel}
               onClick={() => void share()}
             >
@@ -259,8 +374,12 @@ export function QuotePostCard({
             onClick={(event) => event.stopPropagation()}
           >
             <strong>
-              {t.guest}
-              <span> @guest · {formatPostDate(locale, post.quotedComment.createdAt)}</span>
+              {post.quotedComment.actor?.displayName ?? t.guest}
+              <span>
+                {' '}
+                @{post.quotedComment.actor?.username ?? 'guest'} ·{' '}
+                {formatPostTime(locale, post.quotedComment.createdAt)}
+              </span>
             </strong>
             <small>{post.quotedComment.body}</small>
           </Link>
@@ -277,6 +396,7 @@ export function QuotePostCard({
               aria-label={t.comment}
               title={t.comment}
               onClick={() => {
+                if (!auth.requireAuth('comment')) return;
                 if (variant === 'feed') {
                   incrementViews(key);
                   router.push(`${threadHref}#reply`);
@@ -293,7 +413,10 @@ export function QuotePostCard({
               className="knowledge-post-action is-quote"
               aria-label={t.quote}
               title={t.quote}
-              onClick={() => setComposer('quote')}
+              onClick={() => {
+                if (!auth.requireAuth('quote')) return;
+                setComposer('quote');
+              }}
             >
               <Repeat2 size={18} strokeWidth={1.75} />
               {quotes > 0 && <small>{formatCount(quotes)}</small>}
@@ -314,7 +437,10 @@ export function QuotePostCard({
               }
               aria-pressed={liked}
               aria-label={liked ? t.unlike : t.like}
-              onClick={() => setLiked(toggleLike(key))}
+              onClick={() => {
+                if (!auth.requireAuth('like')) return;
+                setLiked(toggleLike(key));
+              }}
             >
               <Lightbulb size={18} strokeWidth={1.75} fill={liked ? 'currentColor' : 'none'} />
             </button>
@@ -336,13 +462,16 @@ export function QuotePostCard({
 }
 
 function QuotedPostEmbed({ locale, post }: { locale: Locale; post: QuotePost }) {
-  const t = copy[locale];
+  const actor = post.actor ?? fallbackActor(locale);
   return (
     <div className="quoted-embed quoted-post-embed" onClick={(event) => event.stopPropagation()}>
       <Link className="quoted-embed-copy" href={`/${locale}/home/${post.id}`}>
         <strong>
-          {t.guest}
-          <span> @guest · {formatPostDate(locale, post.createdAt)}</span>
+          {actor.displayName}
+          <span>
+            {' '}
+            @{actor.username} · {formatPostTime(locale, post.createdAt)}
+          </span>
         </strong>
         {post.body && <small>{post.body}</small>}
       </Link>
@@ -448,10 +577,12 @@ function CommentNode({
   depth: 0 | 1;
 }) {
   const t = copy[locale];
+  const auth = useAuth();
   const key = commentKey(comment.id);
   const [liked, setLiked] = useState(false);
   const [replyOpen, setReplyOpen] = useState(false);
   const [quoteOpen, setQuoteOpen] = useState(false);
+  const actor = comment.actor ?? fallbackActor(locale);
 
   useEffect(() => {
     const sync = () => setLiked(isLiked(key));
@@ -462,21 +593,25 @@ function CommentNode({
   return (
     <li className={depth === 0 ? 'comment-node' : 'comment-node is-reply'}>
       <div className="knowledge-post-avatar" aria-hidden="true">
-        <span>G</span>
+        <span>{initialsForActor(actor)}</span>
       </div>
       <div className="comment-main">
         <div className="knowledge-post-identity">
-          <strong>{t.guest}</strong>
-          <span>@guest</span>
+          <strong>{actor.displayName}</strong>
+          <span>@{actor.username}</span>
           <span aria-hidden="true">·</span>
-          <time dateTime={comment.createdAt}>{formatPostDate(locale, comment.createdAt)}</time>
+          <time dateTime={comment.createdAt}>{formatPostTime(locale, comment.createdAt)}</time>
         </div>
-        <p>{comment.body}</p>
+        <MarkdownText body={comment.body} />
+        {comment.media && <MediaBlock media={comment.media} />}
         <div className="knowledge-post-action-group">
           <button
             type="button"
             className="knowledge-post-action"
-            onClick={() => setReplyOpen((value) => !value)}
+            onClick={() => {
+              if (!auth.requireAuth('comment')) return;
+              setReplyOpen((value) => !value);
+            }}
           >
             <MessageCircle size={16} strokeWidth={1.75} />
             <span className="sr-only">{t.reply}</span>
@@ -484,7 +619,10 @@ function CommentNode({
           <button
             type="button"
             className="knowledge-post-action"
-            onClick={() => setQuoteOpen(true)}
+            onClick={() => {
+              if (!auth.requireAuth('quote')) return;
+              setQuoteOpen(true);
+            }}
           >
             <Repeat2 size={16} strokeWidth={1.75} />
             <span className="sr-only">{t.quoteComment}</span>
@@ -495,7 +633,10 @@ function CommentNode({
               liked ? 'knowledge-post-action is-like is-on' : 'knowledge-post-action is-like'
             }
             aria-pressed={liked}
-            onClick={() => setLiked(toggleLike(key))}
+            onClick={() => {
+              if (!auth.requireAuth('like')) return;
+              setLiked(toggleLike(key));
+            }}
           >
             <Lightbulb size={16} strokeWidth={1.75} fill={liked ? 'currentColor' : 'none'} />
           </button>
@@ -505,6 +646,7 @@ function CommentNode({
             locale={locale}
             postId={post.id}
             parentId={comment.id}
+            mentionUsername={actor.username}
             onDone={() => setReplyOpen(false)}
           />
         )}
@@ -515,7 +657,12 @@ function CommentNode({
           title={t.quoteComment}
           target={post.target}
           quotedPostId={post.id}
-          quotedComment={{ id: comment.id, body: comment.body, createdAt: comment.createdAt }}
+          quotedComment={{
+            id: comment.id,
+            body: comment.body,
+            createdAt: comment.createdAt,
+            actor,
+          }}
           onClose={() => setQuoteOpen(false)}
         />
       )}
@@ -527,25 +674,43 @@ function CommentComposer({
   locale,
   postId,
   parentId = null,
+  mentionUsername = null,
   onDone,
 }: {
   locale: Locale;
   postId: string;
   parentId?: string | null;
+  mentionUsername?: string | null;
   onDone?: () => void;
 }) {
   const t = copy[locale];
+  const auth = useAuth();
   const fieldId = useId();
-  const [body, setBody] = useState('');
+  const formRef = useRef<HTMLFormElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const initialBody = mentionUsername ? `@${mentionUsername} ` : '';
+  const [body, setBody] = useState(initialBody);
+  const [media, setMedia] = useState<MediaAttachment | null>(null);
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    if (!parentId) return;
+    formRef.current?.scrollIntoView({ block: 'nearest' });
+    textareaRef.current?.focus();
+  }, [parentId]);
 
   return (
     <form
+      ref={formRef}
       className="comment-composer"
       onSubmit={(event) => {
         event.preventDefault();
-        if (!body.trim()) return;
-        addComment(postId, body, parentId);
-        setBody('');
+        if (!auth.requireAuth('comment')) return;
+        if (!body.trim() && !media) return;
+        addComment({ postId, body, actor: auth.actor, parentId, mentionUsername, media });
+        setBody(initialBody);
+        setMedia(null);
+        setError('');
         onDone?.();
       }}
     >
@@ -553,15 +718,46 @@ function CommentComposer({
         {t.commentPrompt}
       </label>
       <textarea
+        ref={textareaRef}
         id={fieldId}
         value={body}
         rows={3}
         placeholder={t.commentPrompt}
+        onFocus={(event) => {
+          if (auth.isSignedIn) return;
+          event.currentTarget.blur();
+          auth.requireAuth('comment');
+        }}
         onChange={(event) => setBody(event.target.value)}
       />
-      <button type="submit" className="button button-primary" disabled={!body.trim()}>
-        {t.reply}
-      </button>
+      {media && (
+        <div className="comment-composer-media">
+          <MediaBlock media={media} />
+          <button type="button" className="button button-quiet" onClick={() => setMedia(null)}>
+            {t.close}
+          </button>
+        </div>
+      )}
+      {error && (
+        <p className="media-error" role="alert">
+          {error}
+        </p>
+      )}
+      <div className="comment-composer-actions">
+        <MediaPicker
+          label={t.addMedia}
+          disabled={!auth.isSignedIn}
+          onRequestAuth={() => auth.requireAuth('comment')}
+          onPick={(value) => {
+            setError('');
+            setMedia(value);
+          }}
+          onError={() => setError(t.mediaError)}
+        />
+        <button type="submit" className="button button-primary" disabled={!body.trim() && !media}>
+          {t.reply}
+        </button>
+      </div>
     </form>
   );
 }
@@ -583,6 +779,7 @@ export function SocialComposer({
 }) {
   const t = copy[locale];
   const router = useRouter();
+  const auth = useAuth();
   const dialogRef = useRef<HTMLDialogElement>(null);
   const fieldId = useId();
   const [body, setBody] = useState('');
@@ -600,9 +797,11 @@ export function SocialComposer({
   }, []);
 
   const publish = () => {
+    if (!auth.requireAuth('quote')) return;
     const post = addQuote({
       body,
       target,
+      actor: auth.actor,
       quotedPostId,
       quotedComment,
       media,
@@ -657,8 +856,8 @@ export function SocialComposer({
         {quotedComment && (
           <div className="quoted-embed quoted-comment quote-form-embed">
             <strong>
-              {t.guest}
-              <span> @guest</span>
+              {quotedComment.actor?.displayName ?? t.guest}
+              <span> @{quotedComment.actor?.username ?? 'guest'}</span>
             </strong>
             <small>{quotedComment.body}</small>
           </div>

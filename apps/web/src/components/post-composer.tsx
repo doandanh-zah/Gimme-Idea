@@ -9,6 +9,7 @@ import {
   PostMediaValidationError,
   validatePostMedia,
 } from '@/lib/social';
+import { useAuth } from '@/lib/auth';
 
 const composerCopy = {
   en: {
@@ -19,12 +20,47 @@ const composerCopy = {
     title: 'Title',
     ideaTitleExample: 'Name the idea clearly',
     problemTitleExample: 'State the problem clearly',
-    description: 'Description',
-    descriptionExample: 'Explain the core signal, context and intended outcome.',
+    description: '1-line description',
+    descriptionExample: 'Keep the post card readable in one sentence.',
+    problemBody: 'Problem',
+    problemBodyExample: 'What is happening, and what pain point should people understand?',
+    whoHasThisProblem: 'Who has this problem?',
+    whoHasThisProblemExample: 'Name the user, buyer, operator, community or market segment.',
+    whyItMatters: 'Why does it matter?',
+    whyItMattersExample:
+      'What breaks, gets wasted, slows down or becomes costly if this remains unsolved?',
     primaryProblem: 'Primary Problem',
     chooseProblem: 'Choose the problem this idea addresses',
+    createNewProblem: 'Create new problem',
+    newProblemTitle: 'New problem title',
     restaurantProblem: 'Restaurant food waste',
     repairProblem: 'Tenant repair visibility',
+    opportunity: 'Opportunity',
+    opportunityExample: 'What opens up if this problem is solved?',
+    solution: 'Solution',
+    solutionExample: 'Describe the product, workflow or mechanism.',
+    addMoreDetails: 'Add more details',
+    hideMoreDetails: 'Hide details',
+    regionMarket: 'Region / Market',
+    industry: 'Industry',
+    currentWorkaround: 'Current workaround',
+    existingSolutions: 'Existing solutions',
+    desiredOutcome: 'Desired outcome',
+    evidenceSource: 'Evidence / source',
+    constraints: 'Constraints',
+    knownData: 'Data you know',
+    howItWorks: 'How it works',
+    targetSegment: 'Target segment',
+    whyNow: 'Why now',
+    businessModel: 'Business model',
+    goToMarket: 'Go-to-market',
+    technicalApproach: 'Technical approach',
+    competitors: 'Competitors',
+    risks: 'Risks',
+    previousAttempts: 'Previous attempts you know',
+    dependencies: 'Dependencies',
+    successMetrics: 'Success metrics',
+    links: 'GitHub / demo / deck',
     bounty: 'Bounty (USDC)',
     bountyHint: 'Optional. Enter a whole or decimal USDC amount.',
     hiring: 'This Problem is also hiring',
@@ -38,7 +74,12 @@ const composerCopy = {
     localNote: 'This foundation post and its media stay on this device.',
     titleRequired: 'Add a title.',
     descriptionRequired: 'Add a description.',
+    problemBodyRequired: 'Describe the problem.',
+    whoRequired: 'Add who has this problem.',
+    whyRequired: 'Add why it matters.',
     problemRequired: 'Choose a Primary Problem.',
+    opportunityRequired: 'Add the opportunity.',
+    solutionRequired: 'Add the solution.',
     invalidBounty: 'Use a valid USDC amount with up to 6 decimal places.',
     storageError: 'Could not save this post on the device. Keep the files and try again.',
     unsupported: 'Only image and video files are supported.',
@@ -55,12 +96,46 @@ const composerCopy = {
     title: 'Tiêu đề',
     ideaTitleExample: 'Đặt tên ý tưởng thật rõ ràng',
     problemTitleExample: 'Nêu vấn đề thật rõ ràng',
-    description: 'Mô tả',
-    descriptionExample: 'Giải thích tín hiệu chính, bối cảnh và kết quả mong muốn.',
+    description: 'Mô tả 1 câu',
+    descriptionExample: 'Giữ đủ ngắn để card post đọc được ngay.',
+    problemBody: 'Problem',
+    problemBodyExample: 'Chuyện gì đang xảy ra, pain point cụ thể là gì?',
+    whoHasThisProblem: 'Who has this problem?',
+    whoHasThisProblemExample: 'Nêu user, buyer, operator, cộng đồng hoặc phân khúc thị trường.',
+    whyItMatters: 'Why does it matter?',
+    whyItMattersExample: 'Nếu không giải quyết thì điều gì hỏng, lãng phí, chậm lại hoặc tốn kém?',
     primaryProblem: 'Vấn đề chính',
     chooseProblem: 'Chọn vấn đề mà ý tưởng này giải quyết',
+    createNewProblem: 'Tạo Problem mới',
+    newProblemTitle: 'Tiêu đề Problem mới',
     restaurantProblem: 'Lãng phí thực phẩm tại nhà hàng',
     repairProblem: 'Minh bạch sửa chữa cho người thuê nhà',
+    opportunity: 'Opportunity',
+    opportunityExample: 'Cơ hội gì mở ra nếu vấn đề này được giải quyết?',
+    solution: 'Solution',
+    solutionExample: 'Mô tả sản phẩm, workflow hoặc cơ chế giải quyết.',
+    addMoreDetails: 'Add more details',
+    hideMoreDetails: 'Ẩn chi tiết',
+    regionMarket: 'Region / Market',
+    industry: 'Industry',
+    currentWorkaround: 'Current workaround',
+    existingSolutions: 'Existing solutions',
+    desiredOutcome: 'Desired outcome',
+    evidenceSource: 'Evidence / source',
+    constraints: 'Constraints',
+    knownData: 'Data họ biết',
+    howItWorks: 'How it works',
+    targetSegment: 'Target segment',
+    whyNow: 'Why now',
+    businessModel: 'Business model',
+    goToMarket: 'Go-to-market',
+    technicalApproach: 'Technical approach',
+    competitors: 'Competitors',
+    risks: 'Risks',
+    previousAttempts: 'Previous attempts creator biết',
+    dependencies: 'Dependencies',
+    successMetrics: 'Success metrics',
+    links: 'GitHub / demo / deck',
     bounty: 'Bounty (USDC)',
     bountyHint: 'Không bắt buộc. Nhập số USDC nguyên hoặc thập phân.',
     hiring: 'Problem này cũng đang tuyển người',
@@ -74,7 +149,12 @@ const composerCopy = {
     localNote: 'Bài foundation và media hiện được lưu trên thiết bị này.',
     titleRequired: 'Hãy nhập tiêu đề.',
     descriptionRequired: 'Hãy nhập mô tả.',
+    problemBodyRequired: 'Hãy mô tả Problem.',
+    whoRequired: 'Hãy nhập ai đang gặp vấn đề.',
+    whyRequired: 'Hãy nhập vì sao đáng quan tâm.',
     problemRequired: 'Hãy chọn Vấn đề chính.',
+    opportunityRequired: 'Hãy nhập Opportunity.',
+    solutionRequired: 'Hãy nhập Solution.',
     invalidBounty: 'Nhập số USDC hợp lệ với tối đa 6 chữ số thập phân.',
     storageError: 'Không thể lưu bài trên thiết bị. File vẫn được giữ để bạn thử lại.',
     unsupported: 'Chỉ hỗ trợ file ảnh và video.',
@@ -113,6 +193,15 @@ function SelectedMediaPreview({ file }: { file: File }) {
   return <img src={source} alt="" />;
 }
 
+function slugify(value: string) {
+  return value
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 80);
+}
+
 export function PostComposer({
   type,
   locale,
@@ -124,13 +213,22 @@ export function PostComposer({
 }) {
   const t = composerCopy[locale];
   const router = useRouter();
+  const auth = useAuth();
   const dialogRef = useRef<HTMLDialogElement>(null);
   const mediaInputId = useId();
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
+  const [problemBody, setProblemBody] = useState('');
+  const [whoHasThisProblem, setWhoHasThisProblem] = useState('');
+  const [whyItMatters, setWhyItMatters] = useState('');
+  const [opportunity, setOpportunity] = useState('');
+  const [solution, setSolution] = useState('');
   const [primaryProblem, setPrimaryProblem] = useState('');
+  const [newPrimaryProblemTitle, setNewPrimaryProblemTitle] = useState('');
   const [bountyAmount, setBountyAmount] = useState('');
   const [openToHiring, setOpenToHiring] = useState(false);
+  const [detailsOpen, setDetailsOpen] = useState(false);
+  const [extraDetails, setExtraDetails] = useState<Record<string, string>>({});
   const [files, setFiles] = useState<File[]>([]);
   const [submitted, setSubmitted] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -140,9 +238,17 @@ export function PostComposer({
   const reset = () => {
     setTitle('');
     setDescription('');
+    setProblemBody('');
+    setWhoHasThisProblem('');
+    setWhyItMatters('');
+    setOpportunity('');
+    setSolution('');
     setPrimaryProblem('');
+    setNewPrimaryProblemTitle('');
     setBountyAmount('');
     setOpenToHiring(false);
+    setDetailsOpen(false);
+    setExtraDetails({});
     setFiles([]);
     setSubmitted(false);
     setSubmitting(false);
@@ -164,8 +270,18 @@ export function PostComposer({
 
   const titleError = submitted && !title.trim() ? t.titleRequired : '';
   const descriptionError = submitted && !description.trim() ? t.descriptionRequired : '';
+  const problemBodyError =
+    submitted && type === 'problem' && !problemBody.trim() ? t.problemBodyRequired : '';
+  const whoError =
+    submitted && type === 'problem' && !whoHasThisProblem.trim() ? t.whoRequired : '';
+  const whyError = submitted && type === 'problem' && !whyItMatters.trim() ? t.whyRequired : '';
   const primaryProblemError =
-    submitted && type === 'idea' && !primaryProblem ? t.problemRequired : '';
+    submitted && type === 'idea' && !primaryProblem && !newPrimaryProblemTitle.trim()
+      ? t.problemRequired
+      : '';
+  const opportunityError =
+    submitted && type === 'idea' && !opportunity.trim() ? t.opportunityRequired : '';
+  const solutionError = submitted && type === 'idea' && !solution.trim() ? t.solutionRequired : '';
   const bountyIsValid = !bountyAmount || /^\d+(?:\.\d{1,6})?$/.test(bountyAmount.trim());
   const bountyError = submitted && type === 'problem' && !bountyIsValid ? t.invalidBounty : '';
 
@@ -181,29 +297,55 @@ export function PostComposer({
   };
 
   const publish = async () => {
+    if (!auth.requireAuth('post')) return;
     setSubmitted(true);
     setFormError('');
     if (
       !type ||
       !title.trim() ||
       !description.trim() ||
-      (type === 'idea' && !primaryProblem) ||
+      (type === 'problem' &&
+        (!problemBody.trim() || !whoHasThisProblem.trim() || !whyItMatters.trim())) ||
+      (type === 'idea' &&
+        (!opportunity.trim() ||
+          !solution.trim() ||
+          (!primaryProblem && !newPrimaryProblemTitle.trim()))) ||
       !bountyIsValid
     ) {
       return;
     }
+    const primaryProblemSlug =
+      primaryProblem || (newPrimaryProblemTitle.trim() ? slugify(newPrimaryProblemTitle) : null);
+    const filteredExtra = Object.fromEntries(
+      Object.entries(extraDetails).filter(([, value]) => value.trim()),
+    );
     setSubmitting(true);
     try {
       const post = await createLocalKnowledgePost({
         kind: type,
         title,
         summary: description,
-        primaryProblemSlug: primaryProblem || null,
+        creator: auth.actor,
+        details:
+          type === 'problem'
+            ? {
+                problem: problemBody.trim(),
+                whoHasThisProblem: whoHasThisProblem.trim(),
+                whyItMatters: whyItMatters.trim(),
+                extra: filteredExtra,
+              }
+            : {
+                opportunity: opportunity.trim(),
+                solution: solution.trim(),
+                primaryProblemTitle: newPrimaryProblemTitle.trim() || undefined,
+                extra: filteredExtra,
+              },
+        primaryProblemSlug,
         bountyAmount,
         openToHiring,
         files,
       });
-      const destination = `/${locale}/${type === 'idea' ? 'ideas' : 'problems'}#post-${post.id}`;
+      const destination = `/${locale}/${type === 'idea' ? 'ideas' : 'problems'}/${post.slug}`;
       dismiss();
       router.push(destination);
     } catch (error) {
@@ -211,6 +353,35 @@ export function PostComposer({
       setSubmitting(false);
     }
   };
+
+  const setExtra = (key: string, value: string) => {
+    setExtraDetails((current) => ({ ...current, [key]: value }));
+  };
+  const problemExtraFields = [
+    ['regionMarket', t.regionMarket],
+    ['industry', t.industry],
+    ['currentWorkaround', t.currentWorkaround],
+    ['existingSolutions', t.existingSolutions],
+    ['desiredOutcome', t.desiredOutcome],
+    ['evidenceSource', t.evidenceSource],
+    ['constraints', t.constraints],
+    ['knownData', t.knownData],
+  ] as const;
+  const ideaExtraFields = [
+    ['howItWorks', t.howItWorks],
+    ['targetSegment', t.targetSegment],
+    ['whyNow', t.whyNow],
+    ['businessModel', t.businessModel],
+    ['goToMarket', t.goToMarket],
+    ['technicalApproach', t.technicalApproach],
+    ['competitors', t.competitors],
+    ['risks', t.risks],
+    ['previousAttempts', t.previousAttempts],
+    ['dependencies', t.dependencies],
+    ['successMetrics', t.successMetrics],
+    ['links', t.links],
+  ] as const;
+  const optionalFields = type === 'problem' ? problemExtraFields : ideaExtraFields;
 
   return (
     <dialog
@@ -267,14 +438,14 @@ export function PostComposer({
             <textarea
               id="post-description"
               value={description}
-              rows={5}
-              maxLength={600}
+              rows={2}
+              maxLength={180}
               placeholder={t.descriptionExample}
               aria-invalid={Boolean(descriptionError)}
               aria-describedby={descriptionError ? 'post-description-error' : undefined}
               onChange={(event) => setDescription(event.target.value)}
             />
-            <small>{description.length}/600</small>
+            <small>{description.length}/180</small>
             {descriptionError && (
               <span id="post-description-error" className="composer-field-error">
                 {descriptionError}
@@ -282,27 +453,173 @@ export function PostComposer({
             )}
           </div>
 
-          {type === 'idea' && (
-            <div className="composer-field">
-              <label htmlFor="post-primary-problem">{t.primaryProblem}</label>
-              <select
-                id="post-primary-problem"
-                value={primaryProblem}
-                aria-invalid={Boolean(primaryProblemError)}
-                aria-describedby={primaryProblemError ? 'post-primary-problem-error' : undefined}
-                onChange={(event) => setPrimaryProblem(event.target.value)}
-              >
-                <option value="">{t.chooseProblem}</option>
-                <option value="restaurant-food-waste">{t.restaurantProblem}</option>
-                <option value="tenant-repair-visibility">{t.repairProblem}</option>
-              </select>
-              {primaryProblemError && (
-                <span id="post-primary-problem-error" className="composer-field-error">
-                  {primaryProblemError}
-                </span>
-              )}
-            </div>
+          {type === 'problem' && (
+            <>
+              <div className="composer-field">
+                <label htmlFor="post-problem-body">{t.problemBody}</label>
+                <textarea
+                  id="post-problem-body"
+                  value={problemBody}
+                  rows={5}
+                  maxLength={1400}
+                  placeholder={t.problemBodyExample}
+                  aria-invalid={Boolean(problemBodyError)}
+                  aria-describedby={problemBodyError ? 'post-problem-body-error' : undefined}
+                  onChange={(event) => setProblemBody(event.target.value)}
+                />
+                <small>{problemBody.length}/1400</small>
+                {problemBodyError && (
+                  <span id="post-problem-body-error" className="composer-field-error">
+                    {problemBodyError}
+                  </span>
+                )}
+              </div>
+              <div className="composer-field">
+                <label htmlFor="post-who">{t.whoHasThisProblem}</label>
+                <textarea
+                  id="post-who"
+                  value={whoHasThisProblem}
+                  rows={3}
+                  maxLength={700}
+                  placeholder={t.whoHasThisProblemExample}
+                  aria-invalid={Boolean(whoError)}
+                  aria-describedby={whoError ? 'post-who-error' : undefined}
+                  onChange={(event) => setWhoHasThisProblem(event.target.value)}
+                />
+                <small>{whoHasThisProblem.length}/700</small>
+                {whoError && (
+                  <span id="post-who-error" className="composer-field-error">
+                    {whoError}
+                  </span>
+                )}
+              </div>
+              <div className="composer-field">
+                <label htmlFor="post-why">{t.whyItMatters}</label>
+                <textarea
+                  id="post-why"
+                  value={whyItMatters}
+                  rows={3}
+                  maxLength={700}
+                  placeholder={t.whyItMattersExample}
+                  aria-invalid={Boolean(whyError)}
+                  aria-describedby={whyError ? 'post-why-error' : undefined}
+                  onChange={(event) => setWhyItMatters(event.target.value)}
+                />
+                <small>{whyItMatters.length}/700</small>
+                {whyError && (
+                  <span id="post-why-error" className="composer-field-error">
+                    {whyError}
+                  </span>
+                )}
+              </div>
+            </>
           )}
+
+          {type === 'idea' && (
+            <>
+              <div className="composer-field">
+                <label htmlFor="post-primary-problem">{t.primaryProblem}</label>
+                <select
+                  id="post-primary-problem"
+                  value={primaryProblem}
+                  aria-invalid={Boolean(primaryProblemError)}
+                  aria-describedby={primaryProblemError ? 'post-primary-problem-error' : undefined}
+                  onChange={(event) => {
+                    setPrimaryProblem(event.target.value);
+                    if (event.target.value) setNewPrimaryProblemTitle('');
+                  }}
+                >
+                  <option value="">{t.chooseProblem}</option>
+                  <option value="restaurant-food-waste">{t.restaurantProblem}</option>
+                  <option value="tenant-repair-visibility">{t.repairProblem}</option>
+                </select>
+                <input
+                  id="post-new-primary-problem"
+                  value={newPrimaryProblemTitle}
+                  autoComplete="off"
+                  placeholder={t.createNewProblem}
+                  aria-label={t.newProblemTitle}
+                  onChange={(event) => {
+                    setNewPrimaryProblemTitle(event.target.value);
+                    if (event.target.value.trim()) setPrimaryProblem('');
+                  }}
+                />
+                {primaryProblemError && (
+                  <span id="post-primary-problem-error" className="composer-field-error">
+                    {primaryProblemError}
+                  </span>
+                )}
+              </div>
+              <div className="composer-field">
+                <label htmlFor="post-opportunity">{t.opportunity}</label>
+                <textarea
+                  id="post-opportunity"
+                  value={opportunity}
+                  rows={4}
+                  maxLength={1000}
+                  placeholder={t.opportunityExample}
+                  aria-invalid={Boolean(opportunityError)}
+                  aria-describedby={opportunityError ? 'post-opportunity-error' : undefined}
+                  onChange={(event) => setOpportunity(event.target.value)}
+                />
+                <small>{opportunity.length}/1000</small>
+                {opportunityError && (
+                  <span id="post-opportunity-error" className="composer-field-error">
+                    {opportunityError}
+                  </span>
+                )}
+              </div>
+              <div className="composer-field">
+                <label htmlFor="post-solution">{t.solution}</label>
+                <textarea
+                  id="post-solution"
+                  value={solution}
+                  rows={4}
+                  maxLength={1000}
+                  placeholder={t.solutionExample}
+                  aria-invalid={Boolean(solutionError)}
+                  aria-describedby={solutionError ? 'post-solution-error' : undefined}
+                  onChange={(event) => setSolution(event.target.value)}
+                />
+                <small>{solution.length}/1000</small>
+                {solutionError && (
+                  <span id="post-solution-error" className="composer-field-error">
+                    {solutionError}
+                  </span>
+                )}
+              </div>
+            </>
+          )}
+
+          <fieldset className="composer-more-details">
+            <legend className="sr-only">
+              {detailsOpen ? t.hideMoreDetails : t.addMoreDetails}
+            </legend>
+            <button
+              type="button"
+              className="composer-more-toggle"
+              aria-expanded={detailsOpen}
+              onClick={() => setDetailsOpen((value) => !value)}
+            >
+              {detailsOpen ? t.hideMoreDetails : t.addMoreDetails}
+            </button>
+            {detailsOpen && (
+              <div className="composer-optional-grid">
+                {optionalFields.map(([key, label]) => (
+                  <div className="composer-field" key={key}>
+                    <label htmlFor={`post-extra-${key}`}>{label}</label>
+                    <textarea
+                      id={`post-extra-${key}`}
+                      value={extraDetails[key] ?? ''}
+                      rows={2}
+                      maxLength={700}
+                      onChange={(event) => setExtra(key, event.target.value)}
+                    />
+                  </div>
+                ))}
+              </div>
+            )}
+          </fieldset>
 
           {type === 'problem' && (
             <fieldset className="composer-problem-options">

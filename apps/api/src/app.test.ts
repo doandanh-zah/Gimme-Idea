@@ -94,4 +94,31 @@ describe('API boundaries', () => {
     apps.push(app);
     expect((await app.inject('/v1/create')).json()).toMatchObject({ code: 'ROUTE_NOT_FOUND' });
   });
+  it('only exposes the injected development account and returns its real Devnet address', async () => {
+    const app = await buildApp({
+      repository: repo,
+      logger: false,
+      devMockAuth: () =>
+        Promise.resolve({
+          user: {
+            id: 'dev-mock-builder',
+            displayName: 'Devnet Builder',
+            username: 'devnet-builder',
+            avatarUrl: null,
+          },
+          wallet: {
+            address: '8zD7fA1dP4xiM8ce7uePtwLnDCvDUDNzuysp9WTuxEwF',
+            network: 'devnet',
+            custody: 'development-server',
+          },
+        }),
+    });
+    apps.push(app);
+    const response = await app.inject({ method: 'POST', url: '/v1/auth/mock' });
+    expect(response.statusCode).toBe(200);
+    expect(response.json()).toMatchObject({
+      user: { username: 'devnet-builder' },
+      wallet: { network: 'devnet', custody: 'development-server' },
+    });
+  });
 });

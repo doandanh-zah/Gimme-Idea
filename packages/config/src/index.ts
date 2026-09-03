@@ -11,6 +11,11 @@ export function apiEnv(input: NodeJS.ProcessEnv = process.env) {
       API_HOST: z.string().default('0.0.0.0'),
       API_PORT: z.coerce.number().int().positive().default(3001),
       DATABASE_URL: z.string().min(1),
+      ENABLE_DEV_MOCK_AUTH: z
+        .enum(['true', 'false'])
+        .default('true')
+        .transform((value) => value === 'true'),
+      DEV_MOCK_WALLET_KEYPAIR_PATH: z.string().default('.local/gimme-devnet-wallet.keypair.json'),
     })
     .parse(input);
 }
