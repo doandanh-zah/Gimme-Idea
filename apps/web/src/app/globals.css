@@ -1,17 +1,17 @@
 :root {
-  --font-title: 'alumni-sans', 'Arial Narrow', sans-serif;
-  --font-ui: 'sono-variable', ui-monospace, sans-serif;
-  --font-mono: 'sono-variable', ui-monospace, sans-serif;
-  --type-caption: 1rem;
-  --type-meta: 1.125rem;
-  --type-body: 1.35rem;
-  --type-title: 1.95rem;
-  --track-tight: 0.006em;
-  --track-body: 0.024em;
-  --track-meta: 0.04em;
-  --track-label: 0.14em;
-  --leading-body: 1.65;
-  --leading-title: 1.28;
+  --font-title: var(--font-geist-sans), Inter, system-ui, sans-serif;
+  --font-ui: var(--font-geist-sans), Inter, system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), 'SFMono-Regular', Consolas, monospace;
+  --type-caption: 0.8125rem;
+  --type-meta: 0.875rem;
+  --type-body: 1rem;
+  --type-title: 1.5rem;
+  --track-tight: -0.018em;
+  --track-body: -0.006em;
+  --track-meta: 0;
+  --track-label: 0.075em;
+  --leading-body: 1.5;
+  --leading-title: 1.18;
   --bg: #09090b;
   --panel: #101014;
   --panel-2: #15151a;
@@ -41,9 +41,6 @@ body {
   background: var(--bg);
   color: var(--text);
   font-family: var(--font-ui);
-  font-variation-settings:
-    'MONO' 1,
-    'wght' 200;
   font-size: var(--type-body);
   font-synthesis: none;
   font-weight: 400;
@@ -59,16 +56,12 @@ h4,
 h5,
 h6 {
   font-family: var(--font-title);
-  font-variation-settings: normal;
-  font-weight: 700;
+  font-weight: 650;
   letter-spacing: var(--track-tight);
   line-height: var(--leading-title);
 }
 strong,
 b {
-  font-variation-settings:
-    'MONO' 1,
-    'wght' 700;
   font-weight: 700;
 }
 a {
@@ -1841,6 +1834,373 @@ button {
   line-height: var(--leading-body);
 }
 
+.bounty-program-strip {
+  min-height: 68px;
+  padding: 0.85rem clamp(1.1rem, 3vw, 2rem);
+  display: grid;
+  grid-template-columns: 10px minmax(0, 1fr) auto 42px;
+  align-items: center;
+  gap: 0.75rem;
+  border-bottom: 1px solid var(--line);
+  background: var(--panel);
+}
+
+.bounty-page-skeleton {
+  background: linear-gradient(90deg, var(--panel) 25%, var(--panel-2) 50%, var(--panel) 75%);
+  background-size: 200% 100%;
+}
+
+.bounty-page-skeleton-header {
+  height: 150px;
+  border-bottom: 1px solid var(--line);
+}
+
+.bounty-page-skeleton-strip {
+  height: 68px;
+  border-bottom: 1px solid var(--line);
+}
+
+.bounty-page-skeleton-card {
+  height: 420px;
+  margin: clamp(1rem, 3vw, 2rem);
+  border: 1px solid var(--line);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .bounty-page-skeleton {
+    animation: bounty-skeleton-shift 1.5s ease-in-out infinite;
+  }
+}
+
+@keyframes bounty-skeleton-shift {
+  to {
+    background-position: -200% 0;
+  }
+}
+
+.bounty-page-error {
+  min-height: 60svh;
+  padding: 2rem;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.bounty-page-error svg {
+  color: var(--danger);
+}
+
+.bounty-page-error h1,
+.bounty-page-error p {
+  margin: 0;
+}
+
+.bounty-page-error p {
+  max-width: 52ch;
+  color: var(--muted);
+}
+
+.bounty-page-error button {
+  min-height: 42px;
+  margin-top: 0.4rem;
+  padding: 0 1rem;
+  border: 1px solid var(--purple);
+  background: transparent;
+  color: var(--text);
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.bounty-page-error button:hover,
+.bounty-page-error button:focus-visible {
+  background: rgba(153, 69, 255, 0.12);
+  outline: 2px solid var(--purple);
+  outline-offset: 2px;
+}
+
+.bounty-program-strip > span {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--muted);
+}
+
+.bounty-program-strip > span.is-live {
+  background: var(--success);
+  box-shadow: 0 0 0 4px rgba(20, 241, 149, 0.1);
+}
+
+.bounty-program-strip > div {
+  min-width: 0;
+  display: grid;
+  gap: 0.1rem;
+}
+
+.bounty-program-strip small,
+.onchain-bounty-card small,
+.onchain-bounty-card dt {
+  color: var(--muted);
+  font-size: var(--type-caption);
+  font-weight: 500;
+}
+
+.bounty-program-strip strong,
+.onchain-bounty-card code,
+.onchain-bounty-parties dd {
+  overflow: hidden;
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.bounty-program-strip > b {
+  color: var(--muted);
+  font-size: var(--type-caption);
+  letter-spacing: var(--track-label);
+  text-transform: uppercase;
+}
+
+.bounty-program-strip > span.is-live ~ b {
+  color: var(--success);
+}
+
+.bounty-program-strip > a {
+  width: 42px;
+  height: 42px;
+  display: inline-grid;
+  place-items: center;
+  border: 1px solid var(--line);
+  color: var(--muted);
+}
+
+.bounty-program-strip > a:hover,
+.bounty-program-strip > a:focus-visible,
+.onchain-bounty-card footer > a:hover,
+.onchain-bounty-card footer > a:focus-visible {
+  border-color: var(--purple);
+  color: var(--text);
+  outline: none;
+}
+
+.onchain-bounty-card {
+  margin: clamp(1rem, 3vw, 2rem);
+  border: 1px solid var(--line);
+  background: var(--panel);
+}
+
+.onchain-bounty-card > header {
+  min-height: 96px;
+  padding: 1.25rem;
+  display: grid;
+  grid-template-columns: 48px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.9rem;
+  border-bottom: 1px solid var(--line);
+}
+
+.onchain-bounty-icon {
+  width: 48px;
+  height: 48px;
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(255, 215, 0, 0.34);
+  background: rgba(255, 215, 0, 0.08);
+  color: var(--yellow);
+}
+
+.onchain-bounty-card > header p,
+.onchain-bounty-card > header h2 {
+  margin: 0;
+}
+
+.onchain-bounty-card > header p {
+  color: var(--yellow);
+  font-size: var(--type-caption);
+  font-weight: 650;
+  letter-spacing: var(--track-label);
+}
+
+.onchain-bounty-card > header h2 {
+  margin-top: 0.15rem;
+  font-size: 1.65rem;
+}
+
+.onchain-bounty-card > header > span {
+  padding: 0.35rem 0.55rem;
+  border: 1px solid var(--purple);
+  color: #cda7ff;
+  font-size: var(--type-caption);
+  font-weight: 650;
+  letter-spacing: 0.055em;
+}
+
+.onchain-bounty-card > header > span[data-state='settled'] {
+  border-color: rgba(20, 241, 149, 0.45);
+  color: var(--success);
+}
+
+.onchain-bounty-money {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  border-bottom: 1px solid var(--line);
+}
+
+.onchain-bounty-money > div {
+  min-width: 0;
+  padding: 1.35rem 1.25rem;
+  display: grid;
+  gap: 0.25rem;
+}
+
+.onchain-bounty-money > div + div {
+  border-left: 1px solid var(--line);
+}
+
+.onchain-bounty-money strong {
+  overflow: hidden;
+  font-family: var(--font-mono);
+  font-size: 1.15rem;
+  font-variant-numeric: tabular-nums;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.onchain-bounty-parties {
+  margin: 0;
+  padding: 1.25rem;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem 1.5rem;
+  border-bottom: 1px solid var(--line);
+}
+
+.onchain-bounty-parties > div {
+  min-width: 0;
+  display: grid;
+  gap: 0.2rem;
+}
+
+.onchain-bounty-parties dd {
+  margin: 0;
+  color: var(--text);
+  font-size: var(--type-meta);
+}
+
+.onchain-bounty-timeline {
+  margin: 0;
+  padding: 1.25rem;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1rem;
+  border-bottom: 1px solid var(--line);
+  list-style: none;
+}
+
+.onchain-bounty-timeline li {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  color: var(--muted);
+}
+
+.onchain-bounty-timeline li.is-complete svg {
+  color: var(--success);
+}
+
+.onchain-bounty-timeline li > span {
+  min-width: 0;
+  display: grid;
+  gap: 0.15rem;
+}
+
+.onchain-bounty-timeline strong {
+  overflow: hidden;
+  font-size: var(--type-caption);
+  font-weight: 550;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.onchain-bounty-card > footer {
+  min-height: 68px;
+  padding: 0.8rem 1.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.onchain-bounty-card > footer > div {
+  min-width: 0;
+  display: grid;
+  gap: 0.1rem;
+}
+
+.onchain-bounty-card > footer code {
+  font-size: var(--type-caption);
+}
+
+.onchain-bounty-card > footer > a {
+  min-height: 42px;
+  padding: 0 0.8rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  flex-shrink: 0;
+  border: 1px solid var(--line);
+  color: var(--text);
+  font-size: var(--type-meta);
+  font-weight: 600;
+}
+
+@media (max-width: 620px) {
+  .bounty-program-strip {
+    grid-template-columns: 10px minmax(0, 1fr) 42px;
+  }
+
+  .bounty-program-strip > b {
+    display: none;
+  }
+
+  .onchain-bounty-card > header {
+    grid-template-columns: 42px minmax(0, 1fr);
+  }
+
+  .onchain-bounty-icon {
+    width: 42px;
+    height: 42px;
+  }
+
+  .onchain-bounty-card > header > span {
+    grid-column: 2;
+    width: max-content;
+  }
+
+  .onchain-bounty-money,
+  .onchain-bounty-parties,
+  .onchain-bounty-timeline {
+    grid-template-columns: 1fr;
+  }
+
+  .onchain-bounty-money > div + div {
+    border-top: 1px solid var(--line);
+    border-left: 0;
+  }
+
+  .onchain-bounty-card > footer {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .onchain-bounty-card > footer > a {
+    justify-content: center;
+  }
+}
+
 .feed-stream {
   border-top: 0;
 }
@@ -3212,9 +3572,7 @@ video.stored-post-media {
   cursor: pointer;
   font-family: var(--font-mono);
   font-size: var(--type-caption);
-  font-variation-settings:
-    'MONO' 1,
-    'wght' 400;
+  font-weight: 400;
 }
 
 .wallet-address-button small {
@@ -3265,9 +3623,6 @@ video.stored-post-media {
   color: #6f22bf;
   font-size: 0.78rem;
   font-weight: 700;
-  font-variation-settings:
-    'MONO' 1,
-    'wght' 700;
   letter-spacing: 0.06em;
   text-transform: uppercase;
 }
@@ -3306,9 +3661,7 @@ video.stored-post-media {
   margin-top: 0.35rem;
   color: var(--wallet-soft);
   font-size: 1.05rem;
-  font-variation-settings:
-    'MONO' 1,
-    'wght' 400;
+  font-weight: 500;
   letter-spacing: 0.04em;
   text-transform: uppercase;
 }
@@ -3316,9 +3669,7 @@ video.stored-post-media {
 .wallet-balance-block > strong {
   color: var(--wallet-ink);
   font-size: clamp(3.1rem, 9vw, 4.7rem);
-  font-variation-settings:
-    'MONO' 1,
-    'wght' 700;
+  font-weight: 700;
   line-height: 1;
 }
 
@@ -3329,9 +3680,7 @@ video.stored-post-media {
 .wallet-balance-block > small {
   color: var(--wallet-muted);
   font-size: 1.75rem;
-  font-variation-settings:
-    'MONO' 1,
-    'wght' 700;
+  font-weight: 650;
 }
 
 .wallet-withdraw-button {
@@ -3347,9 +3696,7 @@ video.stored-post-media {
   background: #46464e;
   color: #fff;
   font-size: 1.15rem;
-  font-variation-settings:
-    'MONO' 1,
-    'wght' 500;
+  font-weight: 550;
   box-shadow: 0 3px 7px rgba(13, 22, 43, 0.2);
 }
 
@@ -3365,9 +3712,7 @@ video.stored-post-media {
   gap: 0.45rem;
   color: var(--wallet-soft);
   font-size: 0.86rem;
-  font-variation-settings:
-    'MONO' 1,
-    'wght' 400;
+  font-weight: 450;
 }
 
 .wallet-withdraw-note {
@@ -3418,9 +3763,7 @@ video.stored-post-media {
   color: var(--wallet-muted);
   font-family: var(--font-ui);
   font-size: 1.05rem;
-  font-variation-settings:
-    'MONO' 1,
-    'wght' 400;
+  font-weight: 500;
   letter-spacing: 0;
 }
 
@@ -3444,9 +3787,7 @@ video.stored-post-media {
   color: #fff;
   font-family: var(--font-mono);
   font-size: 1.55rem;
-  font-variation-settings:
-    'MONO' 1,
-    'wght' 700;
+  font-weight: 700;
 }
 
 .sol-mark {
@@ -3459,9 +3800,7 @@ video.stored-post-media {
   color: #b77cff;
   font-family: var(--font-mono);
   font-size: 1.65rem;
-  font-variation-settings:
-    'MONO' 1,
-    'wght' 700;
+  font-weight: 700;
 }
 
 .wallet-asset-row + .wallet-asset-row {

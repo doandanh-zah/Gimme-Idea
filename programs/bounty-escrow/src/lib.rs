@@ -4,7 +4,21 @@ use anchor_lang::prelude::*;
 use anchor_spl::associated_token::AssociatedToken;
 use anchor_spl::token_interface::{self, Mint, TokenAccount, TokenInterface, TransferChecked};
 
+#[cfg(not(feature = "no-entrypoint"))]
+use solana_security_txt::security_txt;
+
 declare_id!("BB2bMK8gwrDk3YG3GFECqnwnFigDoxvKDwJZiTXtzCK6");
+
+#[cfg(not(feature = "no-entrypoint"))]
+security_txt! {
+    name: "Gimme Idea Bounty Escrow",
+    project_url: "https://github.com/doandanh-zah/Gimme-Idea",
+    contacts: "link:https://github.com/doandanh-zah/Gimme-Idea/security/advisories/new",
+    policy: "Report vulnerabilities privately through GitHub Security Advisories. This Devnet program has no paid bug bounty and test assets have no real value.",
+    preferred_languages: "en,vi",
+    source_code: "https://github.com/doandanh-zah/Gimme-Idea",
+    auditors: "None"
+}
 
 const PLATFORM_SEED: &[u8] = b"platform";
 const BOUNTY_SEED: &[u8] = b"bounty";

@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "@gimme-idea/contracts": "workspace:*",
+    "@gimme-idea/solana": "workspace:*",
     "@gimme-idea/ui": "workspace:*",
     "@privy-io/react-auth": "3.39.0",
     "@react-three/fiber": "9.7.0",

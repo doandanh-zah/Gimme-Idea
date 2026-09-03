@@ -538,6 +538,7 @@ dependencies = [
  "anchor-lang",
  "anchor-spl",
  "blake3",
+ "solana-security-txt",
  "zeroize",
  "zeroize_derive",
 ]

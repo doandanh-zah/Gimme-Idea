@@ -12,6 +12,9 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run --passWithNoTests"
   },
+  "dependencies": {
+    "@solana/web3.js": "1.98.4"
+  },
   "devDependencies": {
     "vitest": "4.1.11"
   }
