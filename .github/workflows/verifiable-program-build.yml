@@ -1,0 +1,48 @@
+name: Verifiable program build
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [rebuild-gimme-idea-v2]
+    paths:
+      - Cargo.lock
+      - Cargo.toml
+      - programs/bounty-escrow/**
+      - .github/workflows/verifiable-program-build.yml
+
+permissions:
+  contents: read
+
+jobs:
+  bounty-escrow:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - name: Check out source
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+
+      - name: Install verification tools
+        run: |
+          cargo install solana-verify --version 0.5.1 --locked
+          cargo install query-security-txt --version 1.1.3 --locked
+
+      - name: Build deterministic binary
+        run: solana-verify build --library-name bounty_escrow
+
+      - name: Validate security metadata
+        run: query-security-txt target/deploy/bounty_escrow.so
+
+      - name: Record executable hash
+        run: |
+          HASH=$(solana-verify get-executable-hash target/deploy/bounty_escrow.so)
+          echo "### Bounty escrow executable" >> "$GITHUB_STEP_SUMMARY"
+          echo "Commit: \`${GITHUB_SHA}\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "Hash: \`${HASH}\`" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload program binary
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: bounty-escrow-${{ github.sha }}
+          path: target/deploy/bounty_escrow.so
+          if-no-files-found: error
+          retention-days: 14
