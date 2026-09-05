@@ -1,6 +1,8 @@
 import { cp, mkdir } from 'node:fs/promises';
 import { resolve } from 'node:path';
 
+if (process.env.VERCEL === '1') process.exit(0);
+
 const appRoot = resolve(import.meta.dirname, '..');
 const standaloneRoot = resolve(appRoot, '.next/standalone/apps/web');
 
