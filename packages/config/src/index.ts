@@ -40,8 +40,6 @@ export function apiEnv(input: NodeJS.ProcessEnv = process.env) {
   if (parsed.NODE_ENV === 'production') {
     if (parsed.ENABLE_DEV_MOCK_AUTH)
       throw new Error('ENABLE_DEV_MOCK_AUTH must be false in production.');
-    if (!parsed.PRIVY_APP_ID || !parsed.PRIVY_APP_SECRET)
-      throw new Error('Privy server credentials are required in production.');
     if (!parsed.REDIS_URL) throw new Error('REDIS_URL is required in production.');
     if (!parsed.STORAGE_ENDPOINT || !parsed.STORAGE_SERVICE_ROLE_KEY)
       throw new Error('Object storage credentials are required in production.');

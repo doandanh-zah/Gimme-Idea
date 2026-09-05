@@ -72,6 +72,7 @@ const app = await buildApp({
     ]);
     return {
       database: 'ok',
+      auth: env.PRIVY_APP_ID && env.PRIVY_APP_SECRET ? 'ok' : 'not_configured',
       redis: redisOk === null ? 'not_configured' : redisOk ? 'ok' : 'failed',
       solana: solanaOk ? 'ok' : 'failed',
       storage: env.STORAGE_ENDPOINT && env.STORAGE_SERVICE_ROLE_KEY ? 'ok' : 'not_configured',
