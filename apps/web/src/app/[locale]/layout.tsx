@@ -3,6 +3,8 @@ import type { ReactNode } from 'react';
 import { ProductFrame } from '@/components/product-frame';
 import { copy, isLocale, locales } from '@/lib/i18n';
 
+export const dynamic = 'force-dynamic';
+
 export function generateStaticParams() {
   return locales.map((locale) => ({ locale }));
 }

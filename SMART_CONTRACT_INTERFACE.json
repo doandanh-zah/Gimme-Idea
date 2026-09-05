@@ -1,0 +1,121 @@
+{
+  "schemaVersion": 1,
+  "programId": "BB2bMK8gwrDk3YG3GFECqnwnFigDoxvKDwJZiTXtzCK6",
+  "network": "devnet",
+  "platformConfig": "9G27EduttDTDeQN4eQV5Z4PULXz2g55WwZ1n7prnGN5v",
+  "platformPdaSeeds": ["platform"],
+  "bountyPdaSeedPrefix": "bounty",
+  "bountyIdVersion": 1,
+  "bountyIdDomain": "GIMME_IDEA_BOUNTY_V1",
+  "bountyIdAlgorithm": "SHA-256(UTF8('GIMME_IDEA_BOUNTY_V1') || canonical_uuid_16_bytes)",
+  "termsHash": {
+    "algorithm": "SHA-256",
+    "bytes": 32,
+    "immutable": true,
+    "zeroRejected": true,
+    "canonicalizationOwner": "phase_3_backend",
+    "recommendedDomain": "GIMME_IDEA_TERMS_V1"
+  },
+  "vaultDerivation": "legacy SPL Associated Token Account(owner=bounty PDA,mint=approved mint)",
+  "approvedMint": "CK2tWF2k3PEAZti7bxZj5jcfCabYGus6TbdFwinNGFyQ",
+  "tokenProgram": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+  "amountEncoding": "u64 base units; TypeScript bigint",
+  "states": [
+    "initialized",
+    "funded",
+    "active",
+    "winner_selected",
+    "resolution",
+    "settled",
+    "refunded"
+  ],
+  "instructions": [
+    "initialize_platform",
+    "set_paused",
+    "initialize_bounty",
+    "fund_bounty",
+    "activate_bounty",
+    "finalize_winner",
+    "settle_bounty",
+    "cancel_before_activation",
+    "request_resolution",
+    "resolve_winner",
+    "resolve_refund"
+  ],
+  "events": [
+    "PlatformInitialized",
+    "PauseChanged",
+    "BountyInitialized",
+    "BountyFunded",
+    "BountyActivated",
+    "WinnerFinalized",
+    "BountySettled",
+    "BountyRefunded",
+    "ResolutionRequested"
+  ],
+  "accountLayouts": {
+    "platformConfigBytes": 180,
+    "bountyEscrowBytes": 266,
+    "bountyEscrowDiscriminatorHex": "3b120d50e1bb0610",
+    "bountyStateByteOffset": 240
+  },
+  "deadlineSemantics": {
+    "initialize": "submission_deadline > chain_time && judging_deadline > submission_deadline",
+    "activate": "chain_time < submission_deadline",
+    "finalizeWinner": "submission_deadline <= chain_time <= judging_deadline",
+    "requestResolution": "chain_time > judging_deadline"
+  },
+  "pauseBlocks": ["initialize_bounty", "fund_bounty", "activate_bounty", "finalize_winner"],
+  "pauseAllows": [
+    "settle_bounty",
+    "cancel_before_activation",
+    "request_resolution",
+    "resolve_winner",
+    "resolve_refund"
+  ],
+  "financialTruth": {
+    "funded": "confirmed account state Funded or later plus validated commitment",
+    "paid": "confirmed Settled state plus expected transaction/token deltas",
+    "eventsAloneAreSufficient": false
+  },
+  "idlPath": "target/idl/bounty_escrow.json",
+  "typescriptIdlPath": "target/types/bounty_escrow.ts",
+  "stateMachinePath": "docs/BOUNTY_ESCROW_STATE_MACHINE.md",
+  "clientPackage": "packages/solana/src/index.ts",
+  "clientHelpers": [
+    "derivePlatformConfigPda",
+    "deriveBountyEscrowPda",
+    "deriveBountyIdFromUuid",
+    "deriveVaultAddress",
+    "decodeBountyEscrow",
+    "mapBountyState",
+    "validateProgramId"
+  ],
+  "upgradeAuthority": "FzcnaZMYcoAYpLgr7Wym2b8hrKYk3VXsRxWSLuvZKLJm",
+  "localDeterministicBuild": {
+    "solanaVersion": "2.1.16",
+    "rustVersion": "1.81.0",
+    "anchorVersion": "0.31.1",
+    "buildHash": "4a5901ecfb0e855531fd9ed7c1fc0a6b4708d2ae359a590cc5bdcd2516dfc612",
+    "securityTxtPresent": true
+  },
+  "ciBuildHash": null,
+  "deployedHash": "e70ea81a2693facabfe3a51801d26c05ede271b4906dce9c417eb1f34e50b894",
+  "deploymentMatchesBuild": false,
+  "deployedSecurityTxtQueryable": false,
+  "deploymentStatus": "upgrade_required",
+  "devnetSmokeStatus": "not_run_hardened_binary_not_deployed",
+  "sourceCommit": "18654703edd8b8728eb9926ba5c6464bb316029e",
+  "sourceHasUncommittedPhase2Changes": true,
+  "mainnetReady": false,
+  "externalAudit": "not_performed",
+  "dependencyAudit": {
+    "command": "pnpm audit --prod --audit-level high",
+    "status": "findings",
+    "total": 22,
+    "high": 6,
+    "moderate": 16,
+    "phase2ClientFinding": "GHSA-3gc7-fjrx-p6mg via @solana/spl-token > @solana/buffer-layout-utils > bigint-buffer; no patched version reported"
+  },
+  "generatedAt": "2026-09-04T21:10:36+07:00"
+}

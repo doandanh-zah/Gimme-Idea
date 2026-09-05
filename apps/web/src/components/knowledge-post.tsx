@@ -143,8 +143,8 @@ export function KnowledgePost({
     .join('');
   const bounty =
     item.kind === 'problem' ? ('local' in item ? item.data.bounty : item.data.bounty) : null;
-  const fundedAmount =
-    bounty?.status === 'mock_funded'
+  const draftAmount =
+    bounty?.status === 'draft' && BigInt(bounty.amountRaw || '0') > 0n
       ? formatBountyAmount(locale, bounty.amountRaw, bounty.currency)
       : null;
   const key = itemKey(item.kind, data.slug);
@@ -301,16 +301,20 @@ export function KnowledgePost({
               {views > 0 && <small>{formatCount(views)}</small>}
             </Link>
           </div>
-          {(fundedAmount || bounty?.openToHiring) && (
+          {(draftAmount || bounty?.openToHiring) && (
             <div className="knowledge-post-action-group is-end">
-              {fundedAmount && (
+              {draftAmount && (
                 <Link
-                  className="bounty-signal is-funded"
+                  className="bounty-signal"
                   href={href}
-                  title={bounty?.title ?? fundedAmount}
+                  title={
+                    locale === 'vi'
+                      ? 'Bounty nháp · chưa được cấp vốn'
+                      : 'Draft bounty · not funded'
+                  }
                   onClick={openDetails}
                 >
-                  {fundedAmount}
+                  {locale === 'vi' ? 'Dự kiến' : 'Draft'} · {draftAmount}
                 </Link>
               )}
               {bounty?.openToHiring && (

@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { ArrowDownRight, ArrowUpRight } from 'lucide-react';
+import { ArrowDownRight, ArrowUpRight, Building2 } from 'lucide-react';
 import { notFound } from 'next/navigation';
 import { Eyebrow } from '@gimme-idea/ui';
 import { copy, isLocale } from '@/lib/i18n';
@@ -22,19 +22,17 @@ export default async function Landing({ params }: { params: Promise<{ locale: st
           </h1>
           <p className="hero-intro">{t.intro}</p>
           <div className="hero-actions">
-            <Link
-              className="button button-primary"
-              href={`/${locale}/problems/restaurant-food-waste`}
-            >
-              {t.exploreProblem}
+            <Link className="button button-primary" href={`/${locale}/problems`}>
+              {locale === 'vi' ? 'Khám phá Problems' : 'Explore Problems'}
               <ArrowUpRight size={17} />
             </Link>
-            <Link
-              className="button button-quiet"
-              href={`/${locale}/ideas/demand-pulse-for-kitchens`}
-            >
-              {t.inspectIdea}
+            <Link className="button button-quiet" href={`/${locale}/bounties`}>
+              {locale === 'vi' ? 'Xem Bounties' : 'Browse Bounties'}
               <ArrowDownRight size={17} />
+            </Link>
+            <Link className="button button-quiet" href={`/${locale}/create/problem`}>
+              <Building2 size={17} aria-hidden="true" />
+              {locale === 'vi' ? 'Đăng một Problem' : 'Post a Problem'}
             </Link>
           </div>
         </div>
@@ -55,7 +53,8 @@ export default async function Landing({ params }: { params: Promise<{ locale: st
           <BrainLoader />
         </div>
         <a className="scroll-cue" href="#sequence">
-          SCROLL TO TRACE THE SIGNAL <ArrowDownRight size={15} />
+          {locale === 'vi' ? 'CUỘN ĐỂ XEM VÒNG LẶP' : 'SCROLL TO TRACE THE LOOP'}{' '}
+          <ArrowDownRight size={15} />
         </a>
       </section>
       <Narrative items={t.sequence} />
@@ -64,9 +63,9 @@ export default async function Landing({ params }: { params: Promise<{ locale: st
         <h2>{t.manifesto}</h2>
         <p>{t.manifestoBody}</p>
         <div className="manifesto-rule">
-          <span>01 / TRACEABLE</span>
-          <span>02 / FALSIFIABLE</span>
-          <span>03 / BUILDABLE</span>
+          <span>01 / PROBLEM FIRST</span>
+          <span>02 / PRIVATE COMPETITION</span>
+          <span>03 / PROOF BEFORE HIRING</span>
         </div>
       </section>
     </main>

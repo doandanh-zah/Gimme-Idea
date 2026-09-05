@@ -1,6 +1,7 @@
 import { notFound } from 'next/navigation';
 import { AppPageHeader } from '@/components/app-surfaces';
-import { HomeQuoteFeed } from '@/components/home-feed';
+import { V1HomeFeed } from '@/components/v1-home-feed';
+import { homeClient } from '@/lib/domain/client';
 import { copy, isLocale } from '@/lib/i18n';
 
 export default async function HomeFeed({ params }: { params: Promise<{ locale: string }> }) {
@@ -15,11 +16,11 @@ export default async function HomeFeed({ params }: { params: Promise<{ locale: s
         title={t.shell.home}
         summary={
           locale === 'vi'
-            ? 'Home chỉ hiện những bài quote từ Problem và Idea.'
-            : 'Home only shows quotes of Problems and Ideas.'
+            ? 'Tìm một vấn đề đáng giải, một cơ hội để cạnh tranh hoặc điều đã được thử trước đây.'
+            : 'Find a problem worth solving, an opportunity to compete for, or something already tried.'
         }
       />
-      <HomeQuoteFeed locale={locale} />
+      <V1HomeFeed locale={locale} items={await homeClient.list()} />
     </main>
   );
 }

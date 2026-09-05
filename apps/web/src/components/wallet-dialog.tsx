@@ -8,6 +8,7 @@ import {
   History,
   RefreshCw,
   ShieldCheck,
+  WalletCards,
   X,
 } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
@@ -19,16 +20,17 @@ import {
   type DevnetBalances,
 } from '@/lib/devnet-wallet';
 import { formatSolAmount, formatStableValue, formatUsdcAmount } from '@/lib/format-number';
+import { trackFrontendEvent } from '@/lib/domain/analytics';
 
 const copy = {
   en: {
-    wallet: 'Wallet',
-    description: 'You will receive payments in this wallet each time you win.',
+    wallet: 'Rewards',
+    description: 'Verified rewards arrive in your automatically provisioned Gimme Wallet.',
     learnMore: 'View this wallet',
     learnMoreSuffix: 'on Solana Explorer.',
     pending: 'Your embedded receiving wallet is still being provisioned.',
     devnet: 'Devnet',
-    realWallet: 'On-chain vault',
+    realWallet: 'Gimme Wallet · on-chain Devnet balance',
     copyAddress: 'Copy wallet address',
     copied: 'Copied',
     viewExplorer: 'View on Solana Explorer',
@@ -38,8 +40,7 @@ const copy = {
     loadError: 'Could not read balances from Solana Devnet.',
     balance: 'Balance',
     withdraw: 'Withdraw',
-    withdrawUnavailable:
-      'Withdraw is disabled until signing, destination checks and fee sponsorship are implemented.',
+    withdrawUnavailable: 'Withdrawal signing is not connected in this frontend phase.',
     assets: 'Assets',
     feeReserve: 'Network fee reserve',
     activity: 'Activity',
@@ -54,13 +55,13 @@ const copy = {
     usdcValue: 'USDC balance',
   },
   vi: {
-    wallet: 'Ví',
-    description: 'Tiền thưởng sẽ được chuyển vào ví này mỗi khi bạn thắng.',
+    wallet: 'Phần thưởng',
+    description: 'Reward đã xác minh sẽ vào Gimme Wallet được tạo tự động cho bạn.',
     learnMore: 'Xem ví này',
     learnMoreSuffix: 'trên Solana Explorer.',
     pending: 'Ví nhận tiền embedded của bạn đang được tạo.',
     devnet: 'Devnet',
-    realWallet: 'Vault on-chain',
+    realWallet: 'Gimme Wallet · số dư on-chain Devnet',
     copyAddress: 'Sao chép địa chỉ ví',
     copied: 'Đã sao chép',
     viewExplorer: 'Xem trên Solana Explorer',
@@ -70,8 +71,7 @@ const copy = {
     loadError: 'Không thể đọc số dư từ Solana Devnet.',
     balance: 'Số dư',
     withdraw: 'Rút tiền',
-    withdrawUnavailable:
-      'Rút tiền đang khóa cho tới khi hoàn thiện ký giao dịch, kiểm tra địa chỉ và tài trợ phí.',
+    withdrawUnavailable: 'Luồng ký rút tiền chưa được kết nối trong frontend phase này.',
     assets: 'Tài sản',
     feeReserve: 'Dự trữ phí mạng',
     activity: 'Lịch sử',
@@ -102,6 +102,10 @@ export function WalletDialog({
   const [copied, setCopied] = useState(false);
   const [balances, setBalances] = useState<DevnetBalances | null>(null);
   const [balanceState, setBalanceState] = useState<'idle' | 'loading' | 'ready' | 'error'>('idle');
+  const [withdrawOpen, setWithdrawOpen] = useState(false);
+  const [withdrawReview, setWithdrawReview] = useState(false);
+  const [withdrawAmount, setWithdrawAmount] = useState('');
+  const [withdrawDestination, setWithdrawDestination] = useState('');
   const wallet = auth.wallet;
   const syncWalletUsdcBalance = auth.syncWalletUsdcBalance;
   const usdcValue = balances?.usdc ?? wallet?.balanceUsdc ?? null;
@@ -157,6 +161,8 @@ export function WalletDialog({
 
   const closeDialog = () => {
     setCopied(false);
+    setWithdrawOpen(false);
+    setWithdrawReview(false);
     onClose();
   };
 
@@ -181,11 +187,7 @@ export function WalletDialog({
       <div className="wallet-dialog-shell">
         <header className="wallet-dialog-header">
           <div className="wallet-title-row">
-            <h2 id="wallet-dialog-title">
-              {locale === 'vi'
-                ? `Ví của ${auth.session?.displayName ?? 'Gimme'}`
-                : `${auth.session?.displayName ?? 'Gimme'}'s Wallet`}
-            </h2>
+            <h2 id="wallet-dialog-title">{t.wallet}</h2>
             {wallet?.status === 'ready' && wallet.address && (
               <button
                 className="wallet-address-button"
@@ -239,9 +241,13 @@ export function WalletDialog({
           <button
             type="button"
             className="wallet-withdraw-button"
-            disabled
             aria-describedby="wallet-withdraw-note"
             title={t.withdrawUnavailable}
+            onClick={() => {
+              setWithdrawOpen((value) => !value);
+              setWithdrawReview(false);
+              trackFrontendEvent({ name: 'withdraw_start', origin: 'local_dev' });
+            }}
           >
             {t.withdraw}
             <ArrowUpRight size={18} aria-hidden="true" />
@@ -276,6 +282,93 @@ export function WalletDialog({
             </div>
           )}
         </section>
+
+        {withdrawOpen && (
+          <section className="v1-withdraw-panel" aria-labelledby="withdraw-heading">
+            <header>
+              <WalletCards size={20} aria-hidden="true" />
+              <div>
+                <p className="v1-kicker">GIMME WALLET / DEVNET</p>
+                <h3 id="withdraw-heading">{t.withdraw}</h3>
+              </div>
+            </header>
+            {!withdrawReview ? (
+              <form
+                onSubmit={(event) => {
+                  event.preventDefault();
+                  if (withdrawAmount.trim() && withdrawDestination.trim()) setWithdrawReview(true);
+                }}
+              >
+                <label htmlFor="withdraw-amount">{locale === 'vi' ? 'Số lượng' : 'Amount'} *</label>
+                <div className="v1-amount-field">
+                  <input
+                    id="withdraw-amount"
+                    type="text"
+                    inputMode="decimal"
+                    value={withdrawAmount}
+                    onChange={(event) => setWithdrawAmount(event.target.value)}
+                    placeholder="0.00"
+                    autoComplete="off"
+                  />
+                  <span>USDC</span>
+                </div>
+                <label htmlFor="withdraw-destination">
+                  {locale === 'vi' ? 'Địa chỉ Solana nhận' : 'Destination Solana address'} *
+                </label>
+                <input
+                  id="withdraw-destination"
+                  type="text"
+                  value={withdrawDestination}
+                  onChange={(event) => setWithdrawDestination(event.target.value)}
+                  autoComplete="off"
+                  spellCheck={false}
+                  placeholder="7xKX…p2aB"
+                />
+                <button className="button button-primary" type="submit">
+                  {locale === 'vi' ? 'Kiểm tra lệnh rút' : 'Review Withdrawal'}
+                </button>
+              </form>
+            ) : (
+              <div className="v1-withdraw-review">
+                <dl>
+                  <div>
+                    <dt>{locale === 'vi' ? 'Số lượng' : 'Amount'}</dt>
+                    <dd>{withdrawAmount} USDC</dd>
+                  </div>
+                  <div>
+                    <dt>{locale === 'vi' ? 'Đích đến' : 'Destination'}</dt>
+                    <dd>{withdrawDestination}</dd>
+                  </div>
+                  <div>
+                    <dt>Network</dt>
+                    <dd>Solana Devnet</dd>
+                  </div>
+                  <div>
+                    <dt>{locale === 'vi' ? 'Phí ước tính' : 'Estimated fee'}</dt>
+                    <dd>{locale === 'vi' ? 'Chưa có' : 'Unavailable'}</dd>
+                  </div>
+                </dl>
+                <p role="status">
+                  {locale === 'vi'
+                    ? 'Withdrawal chưa được kết nối. Không có giao dịch nào được ký hoặc gửi.'
+                    : 'Withdrawal is not connected. No transaction can be signed or submitted.'}
+                </p>
+                <div>
+                  <button
+                    type="button"
+                    className="button button-quiet"
+                    onClick={() => setWithdrawReview(false)}
+                  >
+                    {locale === 'vi' ? 'Sửa' : 'Edit'}
+                  </button>
+                  <button type="button" className="button button-primary" disabled>
+                    {locale === 'vi' ? 'Xác nhận chưa khả dụng' : 'Confirmation unavailable'}
+                  </button>
+                </div>
+              </div>
+            )}
+          </section>
+        )}
 
         <section className="wallet-section" aria-labelledby="wallet-assets-heading">
           <h3 id="wallet-assets-heading">{t.assets}</h3>

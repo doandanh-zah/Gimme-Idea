@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { POST_MEDIA_LIMITS, PostMediaValidationError, validatePostMedia } from './social';
+import { POST_MEDIA_LIMITS, PostMediaValidationError, validatePostMedia } from './social-media';
 
 function media(name: string, type: string, size: number) {
   return { name, type, size } as File;

@@ -1,8 +1,10 @@
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { dirname, resolve } from 'node:path';
 import { Keypair } from '@solana/web3.js';
+import { issueDevAccessToken } from '@gimme-idea/auth';
 
 export type DevMockSession = {
+  accessToken: string;
   user: {
     id: 'dev-mock-builder';
     displayName: 'Devnet Builder';
@@ -58,11 +60,12 @@ async function getOrCreateKeypair(filePath: string) {
   }
 }
 
-export function createDevMockAuthProvider(keypairPath: string) {
+export function createDevMockAuthProvider(keypairPath: string, authSecret: string) {
   const absolutePath = resolve(keypairPath);
   return async (): Promise<DevMockSession> => {
     const keypair = await getOrCreateKeypair(absolutePath);
     return {
+      accessToken: issueDevAccessToken('dev-mock-builder', authSecret),
       user: {
         id: 'dev-mock-builder',
         displayName: 'Devnet Builder',

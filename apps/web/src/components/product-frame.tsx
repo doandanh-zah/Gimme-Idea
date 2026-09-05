@@ -4,8 +4,8 @@ import Image from 'next/image';
 import Link from 'next/link';
 import {
   Bell,
+  Blocks,
   Bookmark,
-  BriefcaseBusiness,
   ChevronRight,
   CircleDollarSign,
   Globe2,
@@ -20,11 +20,10 @@ import {
   Target,
   User,
   UserPlus,
-  Users,
   Wallet,
   X,
 } from 'lucide-react';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import type { ReactNode } from 'react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { Locale } from '@gimme-idea/contracts';
@@ -36,6 +35,7 @@ import { formatUsdcAmount } from '@/lib/format-number';
 
 export type ShellLabels = {
   home: string;
+  projects: string;
   ideas: string;
   problems: string;
   bounties: string;
@@ -89,6 +89,7 @@ export function ProductFrame({
   children: ReactNode;
 }) {
   const pathname = usePathname();
+  const router = useRouter();
   const auth = useAuth();
   const [openPanel, setOpenPanel] = useState<OpenPanel>(null);
   const [composer, setComposer] = useState<ComposerType>(null);
@@ -107,12 +108,18 @@ export function ProductFrame({
 
   const navItems = [
     { label: labels.home, href: `/${locale}/home`, icon: Home, match: `/${locale}/home` },
-    { label: labels.ideas, href: `/${locale}/ideas`, icon: Lightbulb, match: `/${locale}/ideas` },
     {
       label: labels.problems,
       href: `/${locale}/problems`,
       icon: Target,
       match: `/${locale}/problems`,
+    },
+    { label: labels.ideas, href: `/${locale}/ideas`, icon: Lightbulb, match: `/${locale}/ideas` },
+    {
+      label: labels.projects,
+      href: `/${locale}/projects`,
+      icon: Blocks,
+      match: `/${locale}/projects`,
     },
     {
       label: labels.bounties,
@@ -121,10 +128,11 @@ export function ProductFrame({
       match: `/${locale}/bounties`,
     },
     {
-      label: labels.talent,
-      href: `/${locale}/talent`,
-      icon: BriefcaseBusiness,
-      match: `/${locale}/talent`,
+      label: labels.saved,
+      href: `/${locale}/saved`,
+      icon: Bookmark,
+      match: `/${locale}/saved`,
+      groupStart: true,
     },
     {
       label: labels.notifications,
@@ -134,69 +142,60 @@ export function ProductFrame({
       badge: '0',
     },
     {
-      label: labels.following,
-      href: `/${locale}/following`,
-      icon: UserPlus,
-      match: `/${locale}/following`,
-    },
-    {
-      label: labels.saved,
-      href: `/${locale}/saved`,
-      icon: Bookmark,
-      match: `/${locale}/saved`,
-    },
-    {
       label: labels.profile,
       href: `/${locale}/profile`,
       icon: User,
       match: `/${locale}/profile`,
     },
   ];
-  const overflowHrefs = new Set([`/${locale}/bounties`, `/${locale}/talent`, `/${locale}/saved`]);
+  const overflowHrefs = new Set([`/${locale}/projects`, `/${locale}/bounties`, `/${locale}/saved`]);
   const primaryNav = compactNav
     ? navItems.filter((item) => !overflowHrefs.has(item.href))
     : navItems;
   const moreNav = compactNav ? navItems.filter((item) => overflowHrefs.has(item.href)) : [];
   const dockHrefs = new Set([
     `/${locale}/home`,
-    `/${locale}/ideas`,
     `/${locale}/problems`,
+    `/${locale}/bounties`,
     `/${locale}/profile`,
   ]);
   const mobileMenuItems = navItems.filter((item) => !dockHrefs.has(item.href));
 
-  const suggestions = useMemo(() => {
-    if (pathname.includes('/problems/restaurant-food-waste')) {
-      return [
-        {
-          type: labels.ideas,
-          title: 'Demand Pulse for Kitchens',
-          href: `/${locale}/ideas/demand-pulse-for-kitchens`,
-        },
-      ];
-    }
-    if (pathname.includes('/ideas/demand-pulse-for-kitchens')) {
-      return [
-        {
-          type: labels.problems,
-          title: 'Restaurant food waste',
-          href: `/${locale}/problems/restaurant-food-waste`,
-        },
-      ];
-    }
-    return [
+  const suggestions = useMemo(
+    () => [
       {
         type: labels.problems,
         title: 'Restaurant food waste',
         href: `/${locale}/problems/restaurant-food-waste`,
       },
       {
+        type: labels.problems,
+        title: 'Tenant repair visibility',
+        href: `/${locale}/problems/tenant-repair-visibility`,
+      },
+      {
         type: labels.ideas,
         title: 'Demand Pulse for Kitchens',
         href: `/${locale}/ideas/demand-pulse-for-kitchens`,
       },
-    ];
-  }, [labels.ideas, labels.problems, locale, pathname]);
+      {
+        type: labels.projects,
+        title: 'Pantry Pulse',
+        href: `/${locale}/projects/pantry-pulse-archive`,
+      },
+      {
+        type: labels.bounties,
+        title: 'Restaurant demand Idea Bounty',
+        href: `/${locale}/bounties/restaurant-demand-idea`,
+      },
+      {
+        type: labels.bounties,
+        title: 'FoodLoop Build Bounty',
+        href: `/${locale}/bounties/foodloop-build`,
+      },
+    ],
+    [labels.bounties, labels.ideas, labels.problems, labels.projects, locale],
+  );
   const filteredSuggestions = query.trim()
     ? suggestions.filter((item) => item.title.toLowerCase().includes(query.trim().toLowerCase()))
     : suggestions;
@@ -222,6 +221,18 @@ export function ProductFrame({
     window.addEventListener('gimme-auth-required', openSignIn);
     return () => window.removeEventListener('gimme-auth-required', openSignIn);
   }, []);
+
+  useEffect(() => {
+    const openCreate = (event: Event) => {
+      const detail = (event as CustomEvent<{ type?: ComposerType }>).detail;
+      if (detail?.type === 'idea' || detail?.type === 'problem') {
+        if (!auth.requireAuth('create')) return;
+        setComposer(detail.type);
+      }
+    };
+    window.addEventListener('gimme-open-create', openCreate);
+    return () => window.removeEventListener('gimme-open-create', openCreate);
+  }, [auth]);
 
   useEffect(() => {
     const onPointerDown = (event: MouseEvent) => {
@@ -341,6 +352,9 @@ export function ProductFrame({
             query={query}
             setQuery={setQuery}
             suggestions={filteredSuggestions}
+            pathname={pathname}
+            locale={locale}
+            onSubmit={(value) => router.push(`/${locale}/search?q=${encodeURIComponent(value)}`)}
             onNavigate={closePanels}
           />
         </div>
@@ -357,9 +371,9 @@ export function ProductFrame({
                 onNavigate={closePanels}
               />
             ))}
-            <Link href={`/${locale}/community`} onClick={closePanels}>
-              <Users size={iconSize} aria-hidden="true" />
-              <span>{labels.community}</span>
+            <Link href={`/${locale}/dashboard`} onClick={closePanels}>
+              <Blocks size={iconSize} aria-hidden="true" />
+              <span>{locale === 'vi' ? 'Company dashboard' : 'Company dashboard'}</span>
             </Link>
             <Link href={`/${locale}/settings`} onClick={closePanels}>
               <Settings size={iconSize} aria-hidden="true" />
@@ -458,9 +472,9 @@ export function ProductFrame({
                     <Globe2 size={18} aria-hidden="true" />
                     {labels.landing}
                   </Link>
-                  <Link href={`/${locale}/community`} onClick={closePanels}>
-                    <Users size={18} aria-hidden="true" />
-                    {labels.community}
+                  <Link href={`/${locale}/dashboard`} onClick={closePanels}>
+                    <Blocks size={18} aria-hidden="true" />
+                    {locale === 'vi' ? 'Company dashboard' : 'Company dashboard'}
                   </Link>
                   <Link href={`/${locale}/settings`} onClick={closePanels}>
                     <Settings size={18} aria-hidden="true" />
@@ -555,6 +569,9 @@ export function ProductFrame({
               query={query}
               setQuery={setQuery}
               suggestions={filteredSuggestions}
+              pathname={pathname}
+              locale={locale}
+              onSubmit={(value) => router.push(`/${locale}/search?q=${encodeURIComponent(value)}`)}
               onNavigate={closePanels}
             />
           </div>
@@ -569,10 +586,10 @@ export function ProductFrame({
           active={pathname.startsWith(`/${locale}/home`)}
         />
         <ShellDockLink
-          href={`/${locale}/ideas`}
-          label={labels.ideas}
-          icon={Lightbulb}
-          active={pathname.startsWith(`/${locale}/ideas`)}
+          href={`/${locale}/problems`}
+          label={labels.problems}
+          icon={Target}
+          active={pathname.startsWith(`/${locale}/problems`)}
         />
         <button
           type="button"
@@ -584,10 +601,10 @@ export function ProductFrame({
           <span>{labels.post}</span>
         </button>
         <ShellDockLink
-          href={`/${locale}/problems`}
-          label={labels.problems}
-          icon={Target}
-          active={pathname.startsWith(`/${locale}/problems`)}
+          href={`/${locale}/bounties`}
+          label={labels.bounties}
+          icon={CircleDollarSign}
+          active={pathname.startsWith(`/${locale}/bounties`)}
         />
         <ShellDockLink
           href={`/${locale}/profile`}
@@ -625,6 +642,7 @@ function ShellNavLink({
     href: string;
     icon: typeof Home;
     badge?: string;
+    groupStart?: boolean;
   };
   active: boolean;
   onNavigate: () => void;
@@ -633,7 +651,7 @@ function ShellNavLink({
   return (
     <Link
       href={item.href}
-      className={active ? 'sidebar-link is-active' : 'sidebar-link'}
+      className={`${active ? 'sidebar-link is-active' : 'sidebar-link'}${item.groupStart ? ' is-group-start' : ''}`}
       aria-label={item.label}
       aria-current={active ? 'page' : undefined}
       onClick={onNavigate}
@@ -674,6 +692,9 @@ function SearchBox({
   query,
   setQuery,
   suggestions,
+  pathname,
+  locale,
+  onSubmit,
   onNavigate,
 }: {
   id: string;
@@ -681,11 +702,22 @@ function SearchBox({
   query: string;
   setQuery: (value: string) => void;
   suggestions: { type: string; title: string; href: string }[];
+  pathname: string;
+  locale: Locale;
+  onSubmit: (value: string) => void;
   onNavigate: () => void;
 }) {
   return (
     <div className="search-module">
-      <form className="discovery-search" role="search" onSubmit={(event) => event.preventDefault()}>
+      <form
+        className="discovery-search"
+        role="search"
+        onSubmit={(event) => {
+          event.preventDefault();
+          onSubmit(query.trim());
+          onNavigate();
+        }}
+      >
         <label className="sr-only" htmlFor={id}>
           {labels.search}
         </label>
@@ -699,26 +731,99 @@ function SearchBox({
           onChange={(event) => setQuery(event.target.value)}
         />
       </form>
-      <section className="suggestion-panel" aria-labelledby={`${id}-suggestions`}>
-        <div className="rail-heading">
-          <h2 id={`${id}-suggestions`}>{labels.suggestions}</h2>
-          <span>{String(suggestions.length).padStart(2, '0')}</span>
-        </div>
-        {suggestions.length === 0 ? (
-          <p className="rail-empty">No matching nodes.</p>
-        ) : (
-          <div className="suggestion-list">
-            {suggestions.map((item) => (
-              <Link key={item.href} href={item.href} onClick={onNavigate}>
-                <small>{item.type}</small>
-                <strong>{item.title}</strong>
-                <ChevronRight size={16} aria-hidden="true" />
-              </Link>
-            ))}
+      {query.trim() ? (
+        <section className="suggestion-panel" aria-labelledby={`${id}-suggestions`}>
+          <div className="rail-heading">
+            <h2 id={`${id}-suggestions`}>{labels.suggestions}</h2>
+            <span>{String(suggestions.length).padStart(2, '0')}</span>
           </div>
-        )}
-      </section>
+          {suggestions.length === 0 ? (
+            <p className="rail-empty">No matching nodes.</p>
+          ) : (
+            <div className="suggestion-list">
+              {suggestions.map((item) => (
+                <Link key={item.href} href={item.href} onClick={onNavigate}>
+                  <small>{item.type}</small>
+                  <strong>{item.title}</strong>
+                  <ChevronRight size={16} aria-hidden="true" />
+                </Link>
+              ))}
+            </div>
+          )}
+        </section>
+      ) : (
+        <ContextualIntelligence pathname={pathname} locale={locale} />
+      )}
     </div>
+  );
+}
+
+function ContextualIntelligence({ pathname, locale }: { pathname: string; locale: Locale }) {
+  const vi = locale === 'vi';
+  const context = pathname.includes('/bounties/')
+    ? {
+        label: 'STAGE',
+        rows: [
+          ['Idea competition', 'Direction first'],
+          ['Build competition', 'Execution second'],
+          ['Funding trust', 'Always explicit'],
+        ],
+      }
+    : pathname.includes('/projects/')
+      ? {
+          label: 'CONTEXT',
+          rows: [
+            ['Original Problem', 'Always linked'],
+            ['Source facts', 'Separated'],
+            ['GI Research', 'Provenance shown'],
+          ],
+        }
+      : pathname.includes('/ideas/')
+        ? {
+            label: 'LANDSCAPE',
+            rows: [
+              ['Related historical builds', '8'],
+              ['Public Projects', '3'],
+              ['Build opportunities', '1'],
+            ],
+          }
+        : pathname.includes('/problems/')
+          ? {
+              label: 'RELATED INTELLIGENCE',
+              rows: [
+                ['Historical builds', '17'],
+                ['Similar Problems', '8'],
+                ['Active Bounties', '2'],
+              ],
+            }
+          : {
+              label: 'OPPORTUNITIES',
+              rows: [
+                ['Idea Bounties', '12'],
+                ['Build Bounties', '7'],
+                ['Historical builds', '5,000+'],
+              ],
+            };
+  return (
+    <section
+      className="v1-context-rail"
+      aria-label={vi ? 'Thông tin theo ngữ cảnh' : 'Contextual intelligence'}
+    >
+      <div className="rail-heading">
+        <h2>{context.label}</h2>
+      </div>
+      <dl>
+        {context.rows.map(([label, value]) => (
+          <div key={label}>
+            <dt>{label}</dt>
+            <dd>{value}</dd>
+          </div>
+        ))}
+      </dl>
+      <Link href={`/${locale}/search`}>
+        {vi ? 'Khám phá tất cả' : 'Explore all'} <ChevronRight size={15} aria-hidden="true" />
+      </Link>
+    </section>
   );
 }
 

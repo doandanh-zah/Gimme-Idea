@@ -1,0 +1,15 @@
+{
+  "environment": "local origin, PostgreSQL/Supabase containers, API logging disabled, benchmark rate limit raised",
+  "baseUrl": "http://127.0.0.1:3011",
+  "totalRequests": 5000,
+  "concurrency": 50,
+  "failures": 0,
+  "errorRate": 0,
+  "durationMs": 1584,
+  "requestsPerSecond": 3155.9,
+  "p50Ms": 13,
+  "p95Ms": 30.4,
+  "p99Ms": 149.7,
+  "mix": ["/health", "/v1/search?q=kitchen", "/v1/problems", "/v1/projects", "/v1/bounties"],
+  "notes": "This is 5,000 HTTP requests at concurrency 50, not 5,000 simultaneous browser processes. RATE_LIMIT_MAX was raised only for origin benchmarking; the default remains 120 requests/minute."
+}

@@ -2,7 +2,7 @@
 
 use anchor_lang::prelude::*;
 use anchor_spl::associated_token::AssociatedToken;
-use anchor_spl::token_interface::{self, Mint, TokenAccount, TokenInterface, TransferChecked};
+use anchor_spl::token::{self, CloseAccount, Mint, Token, TokenAccount, TransferChecked};
 
 #[cfg(not(feature = "no-entrypoint"))]
 use solana_security_txt::security_txt;
@@ -23,7 +23,6 @@ security_txt! {
 const PLATFORM_SEED: &[u8] = b"platform";
 const BOUNTY_SEED: &[u8] = b"bounty";
 const BPS_DENOMINATOR: u128 = 10_000;
-const DEVNET_INITIALIZER: Pubkey = pubkey!("HrsRZ43rXfXJjLtzdyNYAVvNEZc6faQkMJwFhiHnVSUu");
 
 #[program]
 pub mod bounty_escrow {
@@ -37,6 +36,14 @@ pub mod bounty_escrow {
         max_platform_fee_bps: u16,
         max_bounty_amount: u64,
     ) -> Result<()> {
+        require!(
+            is_valid_platform_initializer(
+                &ctx.accounts.program_data,
+                ctx.accounts.program.key(),
+                ctx.accounts.admin.key(),
+            ),
+            EscrowError::Unauthorized
+        );
         require!(max_platform_fee_bps <= 10_000, EscrowError::FeeTooHigh);
         require!(max_bounty_amount > 0, EscrowError::InvalidAmount);
         require_keys_neq!(
@@ -63,9 +70,14 @@ pub mod bounty_escrow {
         config.bump = ctx.bumps.platform_config;
 
         emit!(PlatformInitialized {
+            platform_config: config.key(),
             admin: config.admin,
+            pause_authority: config.pause_authority,
+            arbitration_authority: config.arbitration_authority,
             approved_mint: config.approved_mint,
             treasury: config.treasury,
+            max_platform_fee_bps: config.max_platform_fee_bps,
+            max_bounty_amount: config.max_bounty_amount,
         });
         Ok(())
     }
@@ -73,6 +85,7 @@ pub mod bounty_escrow {
     pub fn set_paused(ctx: Context<SetPaused>, paused: bool) -> Result<()> {
         ctx.accounts.platform_config.paused = paused;
         emit!(PauseChanged {
+            platform_config: ctx.accounts.platform_config.key(),
             authority: ctx.accounts.pause_authority.key(),
             paused,
         });
@@ -108,12 +121,11 @@ pub mod bounty_escrow {
             required_total <= ctx.accounts.platform_config.max_bounty_amount,
             EscrowError::BountyLimitExceeded
         );
-        let maximum_fee = (prize_pool as u128)
-            .checked_mul(ctx.accounts.platform_config.max_platform_fee_bps as u128)
-            .ok_or(EscrowError::MathOverflow)?
-            .checked_div(BPS_DENOMINATOR)
-            .ok_or(EscrowError::MathOverflow)?;
-        require!(platform_fee as u128 <= maximum_fee, EscrowError::FeeTooHigh);
+        let maximum_fee = checked_maximum_fee(
+            prize_pool,
+            ctx.accounts.platform_config.max_platform_fee_bps,
+        )?;
+        require!(platform_fee <= maximum_fee, EscrowError::FeeTooHigh);
 
         let bounty = &mut ctx.accounts.bounty;
         bounty.bounty_id = bounty_id;
@@ -152,13 +164,7 @@ pub mod bounty_escrow {
 
         let required_total = ctx.accounts.bounty.required_total()?;
         let current_balance = ctx.accounts.vault.amount;
-        require!(
-            current_balance <= required_total,
-            EscrowError::VaultOverfunded
-        );
-        let remaining = required_total
-            .checked_sub(current_balance)
-            .ok_or(EscrowError::MathOverflow)?;
+        let remaining = required_total.saturating_sub(current_balance);
 
         if remaining > 0 {
             let cpi_accounts = TransferChecked {
@@ -167,7 +173,7 @@ pub mod bounty_escrow {
                 to: ctx.accounts.vault.to_account_info(),
                 authority: ctx.accounts.sponsor.to_account_info(),
             };
-            token_interface::transfer_checked(
+            token::transfer_checked(
                 CpiContext::new(ctx.accounts.token_program.to_account_info(), cpi_accounts),
                 remaining,
                 ctx.accounts.mint.decimals,
@@ -176,7 +182,7 @@ pub mod bounty_escrow {
 
         ctx.accounts.vault.reload()?;
         require!(
-            ctx.accounts.vault.amount == required_total,
+            ctx.accounts.vault.amount >= required_total,
             EscrowError::FundingMismatch
         );
         ctx.accounts.bounty.total_deposited = required_total;
@@ -184,8 +190,12 @@ pub mod bounty_escrow {
 
         emit!(BountyFunded {
             bounty: ctx.accounts.bounty.key(),
+            bounty_id: ctx.accounts.bounty.bounty_id,
             sponsor: ctx.accounts.sponsor.key(),
-            amount: required_total,
+            mint: ctx.accounts.bounty.mint,
+            committed_total: required_total,
+            sponsor_contribution: remaining,
+            vault_balance: ctx.accounts.vault.amount,
         });
         Ok(())
     }
@@ -210,6 +220,7 @@ pub mod bounty_escrow {
         ctx.accounts.bounty.activated_at = now;
         emit!(BountyActivated {
             bounty: ctx.accounts.bounty.key(),
+            bounty_id: ctx.accounts.bounty.bounty_id,
             activated_at: now,
         });
         Ok(())
@@ -237,6 +248,7 @@ pub mod bounty_escrow {
         ctx.accounts.bounty.state = BountyState::WinnerSelected;
         emit!(WinnerFinalized {
             bounty: ctx.accounts.bounty.key(),
+            bounty_id: ctx.accounts.bounty.bounty_id,
             winner,
             amount: ctx.accounts.bounty.prize_pool,
         });
@@ -301,12 +313,22 @@ pub mod bounty_escrow {
                 excess,
             )?;
         }
+        close_vault(
+            &ctx.accounts.vault,
+            ctx.accounts.sponsor.to_account_info(),
+            &ctx.accounts.bounty,
+            &ctx.accounts.token_program,
+            signer,
+        )?;
 
         emit!(BountySettled {
             bounty: ctx.accounts.bounty.key(),
+            bounty_id,
             winner: ctx.accounts.winner.key(),
+            mint: ctx.accounts.mint.key(),
             winner_amount: prize_pool,
             treasury_amount: platform_fee,
+            excess_returned: excess,
         });
         Ok(())
     }
@@ -341,10 +363,19 @@ pub mod bounty_escrow {
                 refund_amount,
             )?;
         }
+        close_vault(
+            &ctx.accounts.vault,
+            ctx.accounts.sponsor.to_account_info(),
+            &ctx.accounts.bounty,
+            &ctx.accounts.token_program,
+            signer,
+        )?;
 
         emit!(BountyRefunded {
             bounty: ctx.accounts.bounty.key(),
+            bounty_id,
             sponsor: ctx.accounts.sponsor.key(),
+            mint: ctx.accounts.mint.key(),
             amount: refund_amount,
             via_arbitration: false,
         });
@@ -363,6 +394,7 @@ pub mod bounty_escrow {
         ctx.accounts.bounty.state = BountyState::Resolution;
         emit!(ResolutionRequested {
             bounty: ctx.accounts.bounty.key(),
+            bounty_id: ctx.accounts.bounty.bounty_id,
             requester: ctx.accounts.requester.key(),
         });
         Ok(())
@@ -378,6 +410,7 @@ pub mod bounty_escrow {
         ctx.accounts.bounty.state = BountyState::WinnerSelected;
         emit!(WinnerFinalized {
             bounty: ctx.accounts.bounty.key(),
+            bounty_id: ctx.accounts.bounty.bounty_id,
             winner,
             amount: ctx.accounts.bounty.prize_pool,
         });
@@ -398,19 +431,30 @@ pub mod bounty_escrow {
         ctx.accounts.bounty.state = BountyState::Refunded;
         ctx.accounts.bounty.total_deposited = 0;
         ctx.accounts.bounty.settled_at = Clock::get()?.unix_timestamp;
-        transfer_from_vault(
+        if refund_amount > 0 {
+            transfer_from_vault(
+                &ctx.accounts.vault,
+                &ctx.accounts.mint,
+                &ctx.accounts.sponsor_token_account,
+                &ctx.accounts.bounty,
+                &ctx.accounts.token_program,
+                signer,
+                refund_amount,
+            )?;
+        }
+        close_vault(
             &ctx.accounts.vault,
-            &ctx.accounts.mint,
-            &ctx.accounts.sponsor_token_account,
+            ctx.accounts.sponsor.to_account_info(),
             &ctx.accounts.bounty,
             &ctx.accounts.token_program,
             signer,
-            refund_amount,
         )?;
 
         emit!(BountyRefunded {
             bounty: ctx.accounts.bounty.key(),
+            bounty_id,
             sponsor: ctx.accounts.sponsor.key(),
+            mint: ctx.accounts.mint.key(),
             amount: refund_amount,
             via_arbitration: true,
         });
@@ -422,15 +466,21 @@ pub mod bounty_escrow {
 pub struct InitializePlatform<'info> {
     #[account(
         init,
-        payer = admin,
+        payer = payer,
         space = 8 + PlatformConfig::INIT_SPACE,
         seeds = [PLATFORM_SEED],
         bump
     )]
     pub platform_config: Box<Account<'info, PlatformConfig>>,
-    pub approved_mint: InterfaceAccount<'info, Mint>,
-    #[account(mut, address = DEVNET_INITIALIZER @ EscrowError::Unauthorized)]
+    pub approved_mint: Account<'info, Mint>,
+    #[account(
+        constraint = program.programdata_address()? == Some(program_data.key()) @ EscrowError::InvalidProgramData
+    )]
+    pub program: Program<'info, crate::program::BountyEscrow>,
+    pub program_data: Account<'info, ProgramData>,
     pub admin: Signer<'info>,
+    #[account(mut)]
+    pub payer: Signer<'info>,
     pub system_program: Program<'info, System>,
 }
 
@@ -464,17 +514,17 @@ pub struct InitializeBounty<'info> {
     )]
     pub bounty: Box<Account<'info, BountyEscrow>>,
     #[account(
-        init,
+        init_if_needed,
         payer = sponsor,
         associated_token::mint = mint,
         associated_token::authority = bounty,
         associated_token::token_program = token_program
     )]
-    pub vault: Box<InterfaceAccount<'info, TokenAccount>>,
-    pub mint: InterfaceAccount<'info, Mint>,
+    pub vault: Box<Account<'info, TokenAccount>>,
+    pub mint: Account<'info, Mint>,
     #[account(mut)]
     pub sponsor: Signer<'info>,
-    pub token_program: Interface<'info, TokenInterface>,
+    pub token_program: Program<'info, Token>,
     pub associated_token_program: Program<'info, AssociatedToken>,
     pub system_program: Program<'info, System>,
 }
@@ -501,17 +551,17 @@ pub struct FundBounty<'info> {
         associated_token::authority = bounty,
         associated_token::token_program = token_program
     )]
-    pub vault: InterfaceAccount<'info, TokenAccount>,
+    pub vault: Account<'info, TokenAccount>,
     #[account(
         mut,
         associated_token::mint = mint,
         associated_token::authority = sponsor,
         associated_token::token_program = token_program
     )]
-    pub sponsor_token_account: InterfaceAccount<'info, TokenAccount>,
-    pub mint: InterfaceAccount<'info, Mint>,
+    pub sponsor_token_account: Account<'info, TokenAccount>,
+    pub mint: Account<'info, Mint>,
     pub sponsor: Signer<'info>,
-    pub token_program: Interface<'info, TokenInterface>,
+    pub token_program: Program<'info, Token>,
 }
 
 #[derive(Accounts)]
@@ -531,10 +581,10 @@ pub struct ActivateBounty<'info> {
         associated_token::authority = bounty,
         associated_token::token_program = token_program
     )]
-    pub vault: InterfaceAccount<'info, TokenAccount>,
-    pub mint: InterfaceAccount<'info, Mint>,
+    pub vault: Account<'info, TokenAccount>,
+    pub mint: Account<'info, Mint>,
     pub sponsor: Signer<'info>,
-    pub token_program: Interface<'info, TokenInterface>,
+    pub token_program: Program<'info, Token>,
 }
 
 #[derive(Accounts)]
@@ -575,36 +625,44 @@ pub struct SettleBounty<'info> {
         associated_token::authority = bounty,
         associated_token::token_program = token_program
     )]
-    pub vault: Box<InterfaceAccount<'info, TokenAccount>>,
+    pub vault: Box<Account<'info, TokenAccount>>,
     #[account(
-        mut,
-        token::mint = mint,
-        token::authority = winner,
-        token::token_program = token_program
+        init_if_needed,
+        payer = settler,
+        associated_token::mint = mint,
+        associated_token::authority = winner,
+        associated_token::token_program = token_program
     )]
-    pub winner_token_account: Box<InterfaceAccount<'info, TokenAccount>>,
+    pub winner_token_account: Box<Account<'info, TokenAccount>>,
     #[account(
-        mut,
-        token::mint = mint,
-        token::authority = treasury,
-        token::token_program = token_program
+        init_if_needed,
+        payer = settler,
+        associated_token::mint = mint,
+        associated_token::authority = treasury,
+        associated_token::token_program = token_program
     )]
-    pub treasury_token_account: Box<InterfaceAccount<'info, TokenAccount>>,
+    pub treasury_token_account: Box<Account<'info, TokenAccount>>,
     #[account(
-        mut,
-        token::mint = mint,
-        token::authority = sponsor,
-        token::token_program = token_program
+        init_if_needed,
+        payer = settler,
+        associated_token::mint = mint,
+        associated_token::authority = sponsor,
+        associated_token::token_program = token_program
     )]
-    pub sponsor_token_account: Box<InterfaceAccount<'info, TokenAccount>>,
+    pub sponsor_token_account: Box<Account<'info, TokenAccount>>,
     /// CHECK: constrained to the winner committed in the bounty account.
     pub winner: UncheckedAccount<'info>,
     /// CHECK: constrained to the treasury committed in platform config.
     pub treasury: UncheckedAccount<'info>,
     /// CHECK: constrained to the sponsor committed in the bounty account.
+    #[account(mut)]
     pub sponsor: UncheckedAccount<'info>,
-    pub mint: Box<InterfaceAccount<'info, Mint>>,
-    pub token_program: Interface<'info, TokenInterface>,
+    pub mint: Box<Account<'info, Mint>>,
+    #[account(mut)]
+    pub settler: Signer<'info>,
+    pub token_program: Program<'info, Token>,
+    pub associated_token_program: Program<'info, AssociatedToken>,
+    pub system_program: Program<'info, System>,
 }
 
 #[derive(Accounts)]
@@ -623,7 +681,7 @@ pub struct CancelBeforeActivation<'info> {
         associated_token::authority = bounty,
         associated_token::token_program = token_program
     )]
-    pub vault: InterfaceAccount<'info, TokenAccount>,
+    pub vault: Account<'info, TokenAccount>,
     #[account(
         init_if_needed,
         payer = sponsor,
@@ -631,11 +689,11 @@ pub struct CancelBeforeActivation<'info> {
         associated_token::authority = sponsor,
         associated_token::token_program = token_program
     )]
-    pub sponsor_token_account: InterfaceAccount<'info, TokenAccount>,
-    pub mint: InterfaceAccount<'info, Mint>,
+    pub sponsor_token_account: Account<'info, TokenAccount>,
+    pub mint: Account<'info, Mint>,
     #[account(mut)]
     pub sponsor: Signer<'info>,
-    pub token_program: Interface<'info, TokenInterface>,
+    pub token_program: Program<'info, Token>,
     pub associated_token_program: Program<'info, AssociatedToken>,
     pub system_program: Program<'info, System>,
 }
@@ -690,21 +748,23 @@ pub struct ResolveRefund<'info> {
         associated_token::authority = bounty,
         associated_token::token_program = token_program
     )]
-    pub vault: InterfaceAccount<'info, TokenAccount>,
+    pub vault: Account<'info, TokenAccount>,
     #[account(
         init_if_needed,
-        payer = arbitration_authority,
+        payer = settler,
         associated_token::mint = mint,
         associated_token::authority = sponsor,
         associated_token::token_program = token_program
     )]
-    pub sponsor_token_account: InterfaceAccount<'info, TokenAccount>,
+    pub sponsor_token_account: Account<'info, TokenAccount>,
     /// CHECK: constrained to the sponsor committed in the bounty account.
-    pub sponsor: UncheckedAccount<'info>,
-    pub mint: InterfaceAccount<'info, Mint>,
     #[account(mut)]
+    pub sponsor: UncheckedAccount<'info>,
+    pub mint: Account<'info, Mint>,
     pub arbitration_authority: Signer<'info>,
-    pub token_program: Interface<'info, TokenInterface>,
+    #[account(mut)]
+    pub settler: Signer<'info>,
+    pub token_program: Program<'info, Token>,
     pub associated_token_program: Program<'info, AssociatedToken>,
     pub system_program: Program<'info, System>,
 }
@@ -763,13 +823,19 @@ pub enum BountyState {
 
 #[event]
 pub struct PlatformInitialized {
+    pub platform_config: Pubkey,
     pub admin: Pubkey,
+    pub pause_authority: Pubkey,
+    pub arbitration_authority: Pubkey,
     pub approved_mint: Pubkey,
     pub treasury: Pubkey,
+    pub max_platform_fee_bps: u16,
+    pub max_bounty_amount: u64,
 }
 
 #[event]
 pub struct PauseChanged {
+    pub platform_config: Pubkey,
     pub authority: Pubkey,
     pub paused: bool,
 }
@@ -786,19 +852,25 @@ pub struct BountyInitialized {
 #[event]
 pub struct BountyFunded {
     pub bounty: Pubkey,
+    pub bounty_id: [u8; 32],
     pub sponsor: Pubkey,
-    pub amount: u64,
+    pub mint: Pubkey,
+    pub committed_total: u64,
+    pub sponsor_contribution: u64,
+    pub vault_balance: u64,
 }
 
 #[event]
 pub struct BountyActivated {
     pub bounty: Pubkey,
+    pub bounty_id: [u8; 32],
     pub activated_at: i64,
 }
 
 #[event]
 pub struct WinnerFinalized {
     pub bounty: Pubkey,
+    pub bounty_id: [u8; 32],
     pub winner: Pubkey,
     pub amount: u64,
 }
@@ -806,15 +878,20 @@ pub struct WinnerFinalized {
 #[event]
 pub struct BountySettled {
     pub bounty: Pubkey,
+    pub bounty_id: [u8; 32],
     pub winner: Pubkey,
+    pub mint: Pubkey,
     pub winner_amount: u64,
     pub treasury_amount: u64,
+    pub excess_returned: u64,
 }
 
 #[event]
 pub struct BountyRefunded {
     pub bounty: Pubkey,
+    pub bounty_id: [u8; 32],
     pub sponsor: Pubkey,
+    pub mint: Pubkey,
     pub amount: u64,
     pub via_arbitration: bool,
 }
@@ -822,6 +899,7 @@ pub struct BountyRefunded {
 #[event]
 pub struct ResolutionRequested {
     pub bounty: Pubkey,
+    pub bounty_id: [u8; 32],
     pub requester: Pubkey,
 }
 
@@ -841,7 +919,7 @@ pub enum EscrowError {
     InvalidAmount,
     #[msg("The configured fee exceeds the platform maximum")]
     FeeTooHigh,
-    #[msg("The bounty exceeds the configured Devnet limit")]
+    #[msg("The bounty exceeds the configured platform limit")]
     BountyLimitExceeded,
     #[msg("The deadline configuration is invalid")]
     InvalidDeadline,
@@ -873,6 +951,8 @@ pub enum EscrowError {
     CannotCancelActiveBounty,
     #[msg("Checked arithmetic failed")]
     MathOverflow,
+    #[msg("The program data account does not belong to this upgradeable program")]
+    InvalidProgramData,
 }
 
 fn assert_not_paused(config: &PlatformConfig) -> Result<()> {
@@ -885,13 +965,37 @@ fn checked_add(left: u64, right: u64) -> Result<u64> {
         .ok_or(EscrowError::MathOverflow.into())
 }
 
+fn checked_maximum_fee(prize_pool: u64, max_fee_bps: u16) -> Result<u64> {
+    let fee = (prize_pool as u128)
+        .checked_mul(max_fee_bps as u128)
+        .ok_or(EscrowError::MathOverflow)?
+        .checked_div(BPS_DENOMINATOR)
+        .ok_or(EscrowError::MathOverflow)?;
+    u64::try_from(fee).map_err(|_| EscrowError::MathOverflow.into())
+}
+
+fn is_valid_platform_initializer(
+    program_data: &ProgramData,
+    program: Pubkey,
+    signer: Pubkey,
+) -> bool {
+    program_data.upgrade_authority_address == Some(signer)
+        // Anchor's local genesis loader uses slot zero and the system-program
+        // sentinel instead of a usable upgrade authority. Requiring the program
+        // ID keypair signature keeps local front-run tests meaningful without
+        // creating a reachable bypass for a normally deployed cluster program.
+        || (program_data.slot == 0
+            && program_data.upgrade_authority_address == Some(Pubkey::default())
+            && signer == program)
+}
+
 #[allow(clippy::too_many_arguments)]
 fn transfer_from_vault<'info>(
-    vault: &InterfaceAccount<'info, TokenAccount>,
-    mint: &InterfaceAccount<'info, Mint>,
-    destination: &InterfaceAccount<'info, TokenAccount>,
+    vault: &Account<'info, TokenAccount>,
+    mint: &Account<'info, Mint>,
+    destination: &Account<'info, TokenAccount>,
     bounty: &Account<'info, BountyEscrow>,
-    token_program: &Interface<'info, TokenInterface>,
+    token_program: &Program<'info, Token>,
     signer: &[&[&[u8]]],
     amount: u64,
 ) -> Result<()> {
@@ -901,11 +1005,30 @@ fn transfer_from_vault<'info>(
         to: destination.to_account_info(),
         authority: bounty.to_account_info(),
     };
-    token_interface::transfer_checked(
+    token::transfer_checked(
         CpiContext::new_with_signer(token_program.to_account_info(), cpi_accounts, signer),
         amount,
         mint.decimals,
     )
+}
+
+fn close_vault<'info>(
+    vault: &Account<'info, TokenAccount>,
+    destination: AccountInfo<'info>,
+    bounty: &Account<'info, BountyEscrow>,
+    token_program: &Program<'info, Token>,
+    signer: &[&[&[u8]]],
+) -> Result<()> {
+    let cpi_accounts = CloseAccount {
+        account: vault.to_account_info(),
+        destination,
+        authority: bounty.to_account_info(),
+    };
+    token::close_account(CpiContext::new_with_signer(
+        token_program.to_account_info(),
+        cpi_accounts,
+        signer,
+    ))
 }
 
 #[cfg(test)]
@@ -921,5 +1044,57 @@ mod tests {
     fn state_values_are_distinct() {
         assert_ne!(BountyState::Active, BountyState::Settled);
         assert_ne!(BountyState::Settled, BountyState::Refunded);
+    }
+
+    #[test]
+    fn fee_ceiling_uses_integer_base_units() {
+        assert_eq!(checked_maximum_fee(10_000_000, 500).unwrap(), 500_000);
+        assert_eq!(checked_maximum_fee(1, 9_999).unwrap(), 0);
+        assert_eq!(checked_maximum_fee(u64::MAX, 10_000).unwrap(), u64::MAX);
+    }
+
+    #[test]
+    fn committed_outflow_never_exceeds_checked_total() {
+        let prizes = [1, 10, 1_000_000, u64::MAX / 2, u64::MAX - 10_000];
+        let fee_rates = [0, 1, 500, 2_500, 10_000];
+        for prize in prizes {
+            for fee_rate in fee_rates {
+                let fee = checked_maximum_fee(prize, fee_rate).unwrap();
+                if let Ok(total) = checked_add(prize, fee) {
+                    assert_eq!(total - fee, prize);
+                    assert!(prize <= total);
+                    assert!(fee <= total);
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn platform_initializer_matches_loader_authority() {
+        let program = Pubkey::new_unique();
+        let authority = Pubkey::new_unique();
+        let attacker = Pubkey::new_unique();
+        let deployed = ProgramData {
+            slot: 42,
+            upgrade_authority_address: Some(authority),
+        };
+        assert!(is_valid_platform_initializer(&deployed, program, authority));
+        assert!(!is_valid_platform_initializer(&deployed, program, attacker));
+        assert!(!is_valid_platform_initializer(&deployed, program, program));
+
+        let local_genesis = ProgramData {
+            slot: 0,
+            upgrade_authority_address: Some(Pubkey::default()),
+        };
+        assert!(is_valid_platform_initializer(
+            &local_genesis,
+            program,
+            program
+        ));
+        assert!(!is_valid_platform_initializer(
+            &local_genesis,
+            program,
+            attacker
+        ));
     }
 }

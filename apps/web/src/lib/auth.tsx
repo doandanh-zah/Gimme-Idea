@@ -2,6 +2,7 @@
 
 import {
   PrivyProvider,
+  getAccessToken as getPrivyAccessToken,
   useLogin,
   useLogout,
   usePrivy,
@@ -14,6 +15,7 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
   type ReactNode,
 } from 'react';
@@ -70,9 +72,11 @@ type AuthContextValue = {
   syncWalletUsdcBalance: (balanceUsdc: string) => void;
   logout: () => Promise<void>;
   clearError: () => void;
+  getAccessToken: () => Promise<string | null>;
 };
 
 type DevMockResponse = {
+  accessToken: string;
   user: {
     id: string;
     displayName: string;
@@ -87,6 +91,7 @@ type DevMockResponse = {
 };
 
 const AUTH_STORAGE_KEY = 'gimme-idea-auth-v3';
+const DEV_TOKEN_STORAGE_KEY = 'gimme-idea-dev-access-token';
 const PUBLIC_API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://127.0.0.1:3001';
 const PRIVY_APP_ID = process.env.NEXT_PUBLIC_PRIVY_APP_ID?.trim() ?? '';
 const PRIVY_CLIENT_ID = process.env.NEXT_PUBLIC_PRIVY_CLIENT_ID?.trim() ?? '';
@@ -94,13 +99,29 @@ const FACEBOOK_LOGIN_METHOD =
   (process.env.NEXT_PUBLIC_PRIVY_FACEBOOK_LOGIN_METHOD?.trim() as `privy:${string}` | undefined) ??
   'privy:facebook';
 const DEV_AUTH_ENABLED =
-  process.env.NEXT_PUBLIC_ENABLE_DEV_AUTH === 'true' || PRIVY_APP_ID.length === 0;
+  process.env.NODE_ENV !== 'production' && process.env.NEXT_PUBLIC_ENABLE_DEV_AUTH === 'true';
 
 const fallbackActor: AuthActor = {
   username: 'guest',
   displayName: 'Guest',
   avatarUrl: null,
 };
+
+async function fetchWithTransientRetry(input: RequestInfo | URL, init?: RequestInit) {
+  let lastError: unknown;
+  for (let attempt = 0; attempt < 4; attempt++) {
+    try {
+      const response = await fetch(input, init);
+      if (response.status < 500 || attempt === 3) return response;
+      lastError = new Error(`Server returned ${response.status}.`);
+    } catch (caught) {
+      lastError = caught;
+      if (attempt === 3) throw caught;
+    }
+    await new Promise((resolve) => window.setTimeout(resolve, 100 * 2 ** attempt));
+  }
+  throw lastError instanceof Error ? lastError : new Error('Network request failed.');
+}
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
@@ -211,6 +232,40 @@ function persistSession(session: AuthSession | null) {
   window.localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(session));
 }
 
+function readDevToken() {
+  return typeof window === 'undefined'
+    ? null
+    : window.sessionStorage.getItem(DEV_TOKEN_STORAGE_KEY);
+}
+
+export async function getCurrentAccessToken() {
+  return readDevToken() ?? getPrivyAccessToken();
+}
+
+function persistDevToken(token: string | null) {
+  if (typeof window === 'undefined') return;
+  if (token) window.sessionStorage.setItem(DEV_TOKEN_STORAGE_KEY, token);
+  else window.sessionStorage.removeItem(DEV_TOKEN_STORAGE_KEY);
+}
+
+async function syncServerActor(session: AuthSession, token: string) {
+  const response = await fetchWithTransientRetry(`${PUBLIC_API_URL}/v1/me/sync`, {
+    method: 'POST',
+    headers: {
+      accept: 'application/json',
+      'content-type': 'application/json',
+      authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({
+      username: session.username,
+      displayName: session.displayName,
+      avatarUrl: session.avatarUrl,
+      ...(session.wallet.address ? { rewardWalletAddress: session.wallet.address } : {}),
+    }),
+  });
+  if (!response.ok) throw new Error(`Profile sync returned ${response.status}.`);
+}
+
 function devSessionFromResponse(response: DevMockResponse): AuthSession {
   return {
     id: `dev:${response.user.id}`,
@@ -288,16 +343,18 @@ function useSharedSessionState() {
   const signInMock = useCallback(async () => {
     setError(null);
     try {
-      const response = await fetch(`${PUBLIC_API_URL}/v1/auth/mock`, {
+      const response = await fetchWithTransientRetry(`${PUBLIC_API_URL}/v1/auth/mock`, {
         method: 'POST',
         headers: { accept: 'application/json' },
       });
       if (!response.ok) throw new Error(`Development account returned ${response.status}.`);
       const payload = (await response.json()) as DevMockResponse;
-      if (!payload.wallet?.address || payload.wallet.network !== 'devnet') {
+      if (!payload.accessToken || !payload.wallet?.address || payload.wallet.network !== 'devnet') {
         throw new Error('The development account did not return a valid Devnet wallet.');
       }
       const next = devSessionFromResponse(payload);
+      persistDevToken(payload.accessToken);
+      await syncServerActor(next, payload.accessToken);
       setSession(next);
       return next;
     } catch (caught) {
@@ -369,6 +426,8 @@ function createContextValue(
     signInMock: state.signInMock,
     requireAuth: state.requireAuth,
     syncWalletUsdcBalance: state.syncWalletUsdcBalance,
+    getAccessToken: async () =>
+      state.session?.authProvider === 'dev' ? readDevToken() : getPrivyAccessToken(),
     logout: options.logout,
     clearError: () => state.setError(null),
   };
@@ -392,7 +451,10 @@ function MockOnlyAuthProvider({ children }: { children: ReactNode }) {
     [setError],
   );
 
-  const logout = useCallback(async () => setSession(null), [setSession]);
+  const logout = useCallback(async () => {
+    persistDevToken(null);
+    setSession(null);
+  }, [setSession]);
   const value = useMemo(
     () =>
       createContextValue(state, {
@@ -413,6 +475,7 @@ function PrivyAuthBridge({ children }: { children: ReactNode }) {
   const state = useSharedSessionState();
   const { setError, setHydrated, setSession, setSessionState } = state;
   const embeddedWallet = wallets.find((wallet) => wallet.standardWallet.name === 'Privy');
+  const lastServerSync = useRef<string | null>(null);
 
   const { login } = useLogin({
     onError: (caught) => {
@@ -423,8 +486,24 @@ function PrivyAuthBridge({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (!privy.ready) return;
     if (privy.authenticated && privy.user) {
-      setSession(sessionFromPrivyUser(privy.user, embeddedWallet?.address ?? null));
+      const next = sessionFromPrivyUser(privy.user, embeddedWallet?.address ?? null);
+      setSession(next);
+      const syncKey = `${privy.user.id}:${embeddedWallet?.address ?? ''}`;
+      if (lastServerSync.current !== syncKey) {
+        lastServerSync.current = syncKey;
+        void getPrivyAccessToken()
+          .then((token) => (token ? syncServerActor(next, token) : undefined))
+          .catch((caught) => {
+            lastServerSync.current = null;
+            setError(
+              caught instanceof Error
+                ? caught.message
+                : 'Could not sync the authenticated profile.',
+            );
+          });
+      }
     } else {
+      lastServerSync.current = null;
       const stored = readStoredSession();
       setSessionState(stored?.authProvider === 'dev' ? stored : null);
       if (stored?.authProvider !== 'dev') persistSession(null);
@@ -435,6 +514,7 @@ function PrivyAuthBridge({ children }: { children: ReactNode }) {
     privy.authenticated,
     privy.ready,
     privy.user,
+    setError,
     setHydrated,
     setSession,
     setSessionState,
@@ -459,6 +539,7 @@ function PrivyAuthBridge({ children }: { children: ReactNode }) {
     setError(null);
     if (privy.authenticated) await logoutPrivy();
     setSession(null);
+    persistDevToken(null);
   }, [logoutPrivy, privy.authenticated, setError, setSession]);
 
   const value = useMemo(

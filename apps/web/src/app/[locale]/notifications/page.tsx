@@ -1,5 +1,6 @@
 import { notFound } from 'next/navigation';
-import { StaticShellPage } from '@/components/static-shell-page';
+import { AppPageHeader } from '@/components/app-surfaces';
+import { NotificationList } from '@/components/notification-list';
 import { copy, isLocale } from '@/lib/i18n';
 
 export default async function NotificationsPage({
@@ -11,20 +12,17 @@ export default async function NotificationsPage({
   if (!isLocale(locale)) notFound();
   const t = copy[locale];
   return (
-    <StaticShellPage
-      eyebrow="ACTIVITY / NOTIFICATIONS"
-      title={t.shell.notifications}
-      summary={
-        locale === 'vi'
-          ? 'Cập nhật liên quan đến các đối tượng và tài khoản bạn quan tâm.'
-          : 'Updates from the objects and accounts you care about.'
-      }
-      emptyTitle={locale === 'vi' ? 'Bạn đã xem hết' : 'You are all caught up'}
-      emptyBody={
-        locale === 'vi'
-          ? 'Chưa có thông báo mới. Những cập nhật quan trọng sẽ xuất hiện tại đây.'
-          : 'No new notifications. Important network updates will appear here.'
-      }
-    />
+    <main id="main" className="app-page v1-notifications">
+      <AppPageHeader
+        eyebrow="ACTIVITY / USEFUL SIGNALS"
+        title={t.shell.notifications}
+        summary={
+          locale === 'vi'
+            ? 'Bounty, submission, research và payout — không tối ưu cho Like.'
+            : 'Bounties, submissions, research and payouts—not Like-driven noise.'
+        }
+      />
+      <NotificationList locale={locale} />
+    </main>
   );
 }

@@ -22,11 +22,26 @@ export function Narrative({ items }: { items: readonly string[] }) {
       { threshold: 0.2 },
     );
     observer.observe(root.current);
-    return () => observer.disconnect();
+    const steps = Array.from(root.current.querySelectorAll('.signal-step'));
+    const stepObserver = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          if (!entry.isIntersecting) continue;
+          const index = steps.indexOf(entry.target as HTMLElement);
+          window.dispatchEvent(new CustomEvent('gimme-narrative-step', { detail: { index } }));
+        }
+      },
+      { threshold: 0.58 },
+    );
+    steps.forEach((step) => stepObserver.observe(step));
+    return () => {
+      observer.disconnect();
+      stepObserver.disconnect();
+    };
   }, []);
   return (
     <section id="sequence" className="signal-sequence" ref={root}>
-      <p className="sequence-index">PROCESS / 01—06</p>
+      <p className="sequence-index">LOOP / 01—07</p>
       <ol>
         {items.map((item, index) => (
           <li className="signal-step" key={item}>

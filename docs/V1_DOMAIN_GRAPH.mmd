@@ -1,0 +1,34 @@
+flowchart TD
+  O[Organization] --> P[Problem]
+  HP[Historical Projects] --> P
+  P --> IB[Idea Bounty / Escrow #1]
+  IB --> IS[Private Idea Submissions]
+  IS --> IW[Idea Winner]
+  IW --> RI[Restricted Idea]
+  IW --> R1[Reward]
+  RI --> BB[Build Bounty / Escrow #2]
+  BB --> BP[Exact-terms Build Participant]
+  BP --> PP[Private Projects]
+  PP --> PS[Immutable Project Submissions]
+  PS --> PW[Project Winner]
+  PW --> RP[Restricted Project]
+  PW --> R2[Reward]
+  RP --> IN[Optional Interview]
+  RP --> CT[Optional Contract]
+
+  PUB[Public Problem / Idea / Project] --> Q[Contextual Quote Posts]
+  Q --> H[Home]
+
+  IH[Imported Hackathons] --> HP
+  HP --> SG[Problem Signals]
+  SG --> HR{Human review}
+  HR -->|promote| P
+  HR -->|reject / unknown| MEM[Historical memory]
+
+  DB[(PostgreSQL workflow truth)] --> P
+  DB --> IS
+  DB --> PP
+  SOL[(Solana financial truth)] --> IB
+  SOL --> BB
+  OBJ[(Object storage)] --> IS
+  OBJ --> PS

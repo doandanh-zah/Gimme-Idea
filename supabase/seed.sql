@@ -1,13 +1,17 @@
 begin;
 
-insert into public.users (id, auth_user_id, username, display_name, bio) values
-('10000000-0000-4000-8000-000000000001','11000000-0000-4000-8000-000000000001','minh-nguyen','Minh Nguyen','Systems builder focused on practical climate infrastructure.'),
-('10000000-0000-4000-8000-000000000002','11000000-0000-4000-8000-000000000002','linh-tran','Linh Tran','Researcher turning operational constraints into buildable opportunities.'),
-('10000000-0000-4000-8000-000000000003','11000000-0000-4000-8000-000000000003','alex-chen','Alex Chen','Independent product engineer.');
+insert into public.users (id, auth_user_id, auth_provider, auth_subject, username, display_name, bio) values
+('10000000-0000-4000-8000-000000000001','11000000-0000-4000-8000-000000000001','legacy','11000000-0000-4000-8000-000000000001','minh-nguyen','Minh Nguyen','Systems builder focused on practical climate infrastructure.'),
+('10000000-0000-4000-8000-000000000002','11000000-0000-4000-8000-000000000002','legacy','11000000-0000-4000-8000-000000000002','linh-tran','Linh Tran','Researcher turning operational constraints into buildable opportunities.'),
+('10000000-0000-4000-8000-000000000003','11000000-0000-4000-8000-000000000003','legacy','11000000-0000-4000-8000-000000000003','alex-chen','Alex Chen','Independent product engineer.');
 
 insert into public.organizations (id,slug,name,organization_type,one_line_description,description,verification_status,created_by) values
 ('20000000-0000-4000-8000-000000000001','circular-saigon','Circular Saigon','nonprofit','Local operators reducing avoidable urban waste.','A field network connecting restaurants, collectors and community kitchens.','dev_verified','10000000-0000-4000-8000-000000000001'),
 ('20000000-0000-4000-8000-000000000002','open-civic-lab','Open Civic Lab','community','Public-interest technology made with communities.','A small research and prototyping collective.','dev_verified','10000000-0000-4000-8000-000000000002');
+insert into public.organization_members(organization_id,user_id,role,permission_level) values
+('20000000-0000-4000-8000-000000000001','10000000-0000-4000-8000-000000000001','Founder','owner'),
+('20000000-0000-4000-8000-000000000002','10000000-0000-4000-8000-000000000002','Lead','owner'),
+('20000000-0000-4000-8000-000000000002','10000000-0000-4000-8000-000000000003','Reviewer','judge');
 
 insert into public.problems (id,slug,title,summary,description,affected_groups,evidence,severity,status,research_status,origin,reviewed_by_human,last_researched_at,created_by) values
 ('30000000-0000-4000-8000-000000000001','restaurant-food-waste','Restaurants cannot match daily supply to volatile demand','Independent restaurants discard usable food because demand signals arrive after purchasing and prep decisions.','Small food businesses operate on thin margins and fragmented data. Weather, events and delivery-platform demand can shift the day, but planning is still based on memory and static averages.',array['Independent restaurant owners','Kitchen teams','Community food organizations'],array['Perishable stock is ordered before demand is visible','Donation coordination begins too late in the day'], 'high','draft','verified','human',true,'2026-08-20T08:00:00Z','10000000-0000-4000-8000-000000000001'),
@@ -61,28 +65,31 @@ update public.ideas set created_at = case slug
 end::timestamptz;
 
 insert into public.previous_attempts (id,idea_id,name,description,outcome,lesson,source_url) values
-('41000000-0000-4000-8000-000000000001','40000000-0000-4000-8000-000000000001','Generic weekly forecasting dashboard','A broad forecasting tool required extensive POS cleanup before showing any value.','sunset','Start with explainable daily decisions and accept incomplete source data.','https://example.com/research/weekly-forecasting-retrospective'),
-('41000000-0000-4000-8000-000000000002','40000000-0000-4000-8000-000000000001','Manager spreadsheet template','A shared spreadsheet captured estimates but was rarely updated during service.','active','The input loop must fit the opening routine and offer a useful default.','https://example.com/research/kitchen-planning-sheet'),
-('41000000-0000-4000-8000-000000000003','40000000-0000-4000-8000-000000000005','Regional cold-room directory','A static directory listed facilities without live capacity or handling rules.','failed','Discovery without reservable units does not reduce coordination cost.','https://example.com/research/cold-room-directory'),
-('41000000-0000-4000-8000-000000000004','40000000-0000-4000-8000-000000000007','Resident issue chat group','Residents posted repair issues in chat with no durable ownership or closure state.','active','Conversation is not a system of record.','https://example.com/research/resident-chat');
+('41000000-0000-4000-8000-000000000001','40000000-0000-4000-8000-000000000001','Generic weekly forecasting dashboard','A broad forecasting tool required extensive POS cleanup before showing any value.','sunset','Start with explainable daily decisions and accept incomplete source data.','https://demo.gimme-idea.local/research/weekly-forecasting-retrospective'),
+('41000000-0000-4000-8000-000000000002','40000000-0000-4000-8000-000000000001','Manager spreadsheet template','A shared spreadsheet captured estimates but was rarely updated during service.','active','The input loop must fit the opening routine and offer a useful default.','https://demo.gimme-idea.local/research/kitchen-planning-sheet'),
+('41000000-0000-4000-8000-000000000003','40000000-0000-4000-8000-000000000005','Regional cold-room directory','A static directory listed facilities without live capacity or handling rules.','failed','Discovery without reservable units does not reduce coordination cost.','https://demo.gimme-idea.local/research/cold-room-directory'),
+('41000000-0000-4000-8000-000000000004','40000000-0000-4000-8000-000000000007','Resident issue chat group','Residents posted repair issues in chat with no durable ownership or closure state.','active','Conversation is not a system of record.','https://demo.gimme-idea.local/research/resident-chat');
 
-insert into public.projects (id,idea_id,slug,name,description,stage,repository_url,created_by) values
-('50000000-0000-4000-8000-000000000001','40000000-0000-4000-8000-000000000001','prep-signal-pilot','Prep Signal Pilot','A manual-first demand band trial with eight independent kitchens.','pilot','https://github.com/example/prep-signal','10000000-0000-4000-8000-000000000001'),
-('50000000-0000-4000-8000-000000000002','40000000-0000-4000-8000-000000000005','cold-slot-prototype','Cold Slot Prototype','A reservation prototype for one farming cooperative.','prototype','https://github.com/example/cold-slot','10000000-0000-4000-8000-000000000002'),
-('50000000-0000-4000-8000-000000000003','40000000-0000-4000-8000-000000000007','repair-thread-demo','Repair Thread Demo','An evidence-based repair timeline tested with one building.','prototype','https://github.com/example/repair-thread','10000000-0000-4000-8000-000000000003');
+insert into public.projects (id,idea_id,slug,name,description,summary,stage,created_by) values
+('50000000-0000-4000-8000-000000000001','40000000-0000-4000-8000-000000000001','prep-signal-pilot','Prep Signal Pilot','A manual-first demand band trial with eight independent kitchens.','A manual-first demand band trial with eight independent kitchens.','testing','10000000-0000-4000-8000-000000000001'),
+('50000000-0000-4000-8000-000000000002','40000000-0000-4000-8000-000000000005','cold-slot-prototype','Cold Slot Prototype','A reservation prototype for one farming cooperative.','A reservation prototype for one farming cooperative.','testing','10000000-0000-4000-8000-000000000002'),
+('50000000-0000-4000-8000-000000000003','40000000-0000-4000-8000-000000000007','repair-thread-demo','Repair Thread Demo','An evidence-based repair timeline tested with one building.','An evidence-based repair timeline tested with one building.','testing','10000000-0000-4000-8000-000000000003');
 
-insert into public.bounties (id,problem_id,organization_id,title,description,status,currency,total_amount_raw,open_to_hiring,deadline_at) values
-('60000000-0000-4000-8000-000000000001','30000000-0000-4000-8000-000000000001','20000000-0000-4000-8000-000000000001','Reduce avoidable prep waste','Design a measurable two-week kitchen pilot.','unfunded','USDC',250000000,false,'2026-11-30T00:00:00Z'),
-('60000000-0000-4000-8000-000000000002','30000000-0000-4000-8000-000000000004','20000000-0000-4000-8000-000000000002','Close the repair evidence loop','Build and test an accountable repair thread.','mock_funded','USDC',1000000000,true,'2026-12-15T00:00:00Z');
+insert into public.bounties (id,slug,bounty_type,problem_id,organization_id,title,description,objective,status,currency,total_amount_raw,prize_amount_raw,open_to_hiring,deadline_at,judging_deadline_at,created_by) values
+('60000000-0000-4000-8000-000000000001','reduce-avoidable-prep-waste','idea','30000000-0000-4000-8000-000000000001','20000000-0000-4000-8000-000000000001','Reduce avoidable prep waste','Design a measurable two-week kitchen pilot.','Choose an evidence-backed direction for a measurable kitchen pilot.','draft','USDC',250000000,250000000,false,'2026-11-30T00:00:00Z','2026-12-07T00:00:00Z','10000000-0000-4000-8000-000000000001'),
+('60000000-0000-4000-8000-000000000002','close-repair-evidence-loop','idea','30000000-0000-4000-8000-000000000004','20000000-0000-4000-8000-000000000002','Close the repair evidence loop','Build and test an accountable repair thread.','Choose a repair accountability direction before commissioning a build.','draft','USDC',1000000000,1000000000,true,'2026-12-15T00:00:00Z','2026-12-22T00:00:00Z','10000000-0000-4000-8000-000000000002');
+update public.bounties set terms_payload=jsonb_build_object('version',1,'bountyId',id::text,'type',bounty_type,'currency',currency,'prizeAmountRaw',prize_amount_raw::text,'feeAmountRaw',fee_amount_raw::text,'deadlineAt',deadline_at,'judgingDeadlineAt',judging_deadline_at,'submissionVisibility','private','eligibility',eligibility,'ipTerms',ip_terms,'parentBountyId',parent_bounty_id,'selectedIdeaId',selected_idea_id);
+update public.bounties set terms_hash=public.bounty_terms_hash(terms_payload);
+update public.bounties set status='awaiting_funding';
 insert into public.bounty_escrows (id,bounty_id,status,funded_amount_raw,confirmed_at) values
 ('61000000-0000-4000-8000-000000000001','60000000-0000-4000-8000-000000000001','not_created',0,null),
-('61000000-0000-4000-8000-000000000002','60000000-0000-4000-8000-000000000002','mock_confirmed',1000000000,'2026-08-25T10:00:00Z');
-insert into public.submissions (id,bounty_id,idea_id,project_id,submitted_by,title,description,status) values
-('62000000-0000-4000-8000-000000000001','60000000-0000-4000-8000-000000000001','40000000-0000-4000-8000-000000000001','50000000-0000-4000-8000-000000000001','10000000-0000-4000-8000-000000000001','Prep Signal pilot submission','A two-week learning plan with explicit waste baselines.','submitted'),
-('62000000-0000-4000-8000-000000000002','60000000-0000-4000-8000-000000000002','40000000-0000-4000-8000-000000000007','50000000-0000-4000-8000-000000000003','10000000-0000-4000-8000-000000000003','Repair Thread demo','A working demo and resident test protocol.','submitted'),
-('62000000-0000-4000-8000-000000000003','60000000-0000-4000-8000-000000000002','40000000-0000-4000-8000-000000000008',null,'10000000-0000-4000-8000-000000000002','Maintenance Map concept','An asset-centered maintenance analysis proposal.','submitted');
+('61000000-0000-4000-8000-000000000002','60000000-0000-4000-8000-000000000002','chain_unverified',0,null);
+insert into public.submissions (id,bounty_id,idea_id,project_id,submitted_by,title,description,status,submission_kind,idea_payload,submitted_at) values
+('62000000-0000-4000-8000-000000000001','60000000-0000-4000-8000-000000000001','40000000-0000-4000-8000-000000000001','50000000-0000-4000-8000-000000000001','10000000-0000-4000-8000-000000000001','Prep Signal pilot submission','A two-week learning plan with explicit waste baselines.','submitted','idea',null,now()),
+('62000000-0000-4000-8000-000000000002','60000000-0000-4000-8000-000000000002','40000000-0000-4000-8000-000000000007','50000000-0000-4000-8000-000000000003','10000000-0000-4000-8000-000000000003','Repair Thread demo','A working demo and resident test protocol.','submitted','idea',null,now()),
+('62000000-0000-4000-8000-000000000003','60000000-0000-4000-8000-000000000002','40000000-0000-4000-8000-000000000008',null,'10000000-0000-4000-8000-000000000002','Maintenance Map concept','An asset-centered maintenance analysis proposal.','submitted','idea',jsonb_build_object('title','Maintenance Map concept','summary','An asset-centered maintenance analysis proposal.'),now());
 
-insert into public.discussions (id,entity_type,entity_id,title,body,created_by)
+insert into public.posts (id,entity_type,entity_id,title,body,created_by)
 select ('70000000-0000-4000-8000-' || lpad(n::text,12,'0'))::uuid, case when n <= 5 then 'problem' else 'idea' end,
 case when n <= 5 then ('30000000-0000-4000-8000-' || lpad(n::text,12,'0'))::uuid else ('40000000-0000-4000-8000-' || lpad((n-5)::text,12,'0'))::uuid end,
 case when n <= 5 then 'What evidence would change this problem framing?' else 'What is the smallest falsifiable pilot?' end,

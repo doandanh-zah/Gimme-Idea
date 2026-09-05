@@ -9,7 +9,7 @@ const expected: Record<string, number> = {
   problems: 5,
   ideas: 10,
   projects: 3,
-  discussions: 10,
+  posts: 10,
   organizations: 2,
   bounties: 2,
   submissions: 3,
@@ -26,13 +26,14 @@ const invariant = await client.query<{ invalid: string }>(
 );
 if (Number(invariant.rows[0]?.invalid) !== 0)
   throw new Error('Published idea primary-problem invariant failed');
-const bounties = await client.query<{ status: string }>(
-  `select status from public.bounties order by status`,
+const bounties = await client.query<{ status: string; terms_hash: string | null }>(
+  `select status,terms_hash from public.bounties order by status`,
 );
-if (
-  !bounties.rows.some((row) => row.status === 'unfunded') ||
-  !bounties.rows.some((row) => row.status === 'mock_funded')
-)
-  throw new Error('Expected unfunded and mock-funded dev bounties');
+if (bounties.rows.some((row) => row.status !== 'awaiting_funding' || !row.terms_hash))
+  throw new Error('Seed bounties must be awaiting verified funding with canonical terms hashes');
+const privacy = await client.query<{ invalid: string }>(
+  `select count(*)::text invalid from public.submissions where visibility<>'private_owner_judges'`,
+);
+if (Number(privacy.rows[0]?.invalid) !== 0) throw new Error('Private submission invariant failed');
 await client.end();
-console.log('Seed verified: counts and foundation invariants are valid.');
+console.log('Seed verified: V1 counts, privacy, terms, and relationship invariants are valid.');

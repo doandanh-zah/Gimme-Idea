@@ -1,0 +1,317 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Gimme Idea — Bounty Escrow V1 Security Review</title>
+    <style>
+      :root {
+        color-scheme: light;
+        --ink: #172018;
+        --muted: #59645b;
+        --paper: #f6f4ea;
+        --panel: #fffdf5;
+        --line: #c9c7ba;
+        --critical: #a52a2a;
+        --high: #b85f13;
+        --medium: #8a6a00;
+        --low: #376847;
+        --info: #48657a;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        background: var(--paper);
+        color: var(--ink);
+        font:
+          16px/1.55 ui-monospace,
+          SFMono-Regular,
+          Menlo,
+          monospace;
+      }
+      main {
+        width: min(1120px, calc(100% - 32px));
+        margin: 48px auto 80px;
+      }
+      header {
+        border-top: 8px solid var(--ink);
+        padding: 24px 0 30px;
+        display: grid;
+        grid-template-columns: 1fr auto;
+        gap: 24px;
+        align-items: end;
+      }
+      h1,
+      h2,
+      p {
+        margin-top: 0;
+      }
+      h1 {
+        font:
+          700 clamp(2rem, 5vw, 4.5rem)/0.95 system-ui,
+          sans-serif;
+        letter-spacing: -0.055em;
+        max-width: 780px;
+      }
+      h2 {
+        font:
+          700 1.35rem/1.2 system-ui,
+          sans-serif;
+        letter-spacing: -0.02em;
+      }
+      .stamp {
+        border: 2px solid var(--critical);
+        color: var(--critical);
+        padding: 10px 14px;
+        transform: rotate(-2deg);
+        font-weight: 800;
+        text-transform: uppercase;
+      }
+      .scores {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        border: 1px solid var(--line);
+        background: var(--panel);
+      }
+      .score {
+        padding: 22px;
+        border-right: 1px solid var(--line);
+      }
+      .score:last-child {
+        border-right: 0;
+      }
+      .score strong {
+        display: block;
+        font:
+          800 2.4rem/1 system-ui,
+          sans-serif;
+        margin-top: 8px;
+      }
+      section {
+        margin-top: 42px;
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        background: var(--panel);
+      }
+      th,
+      td {
+        padding: 14px;
+        border: 1px solid var(--line);
+        vertical-align: top;
+        text-align: left;
+      }
+      th {
+        background: #ebe9dc;
+        font-size: 0.8rem;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+      }
+      .critical {
+        color: var(--critical);
+      }
+      .high {
+        color: var(--high);
+      }
+      .medium {
+        color: var(--medium);
+      }
+      .low {
+        color: var(--low);
+      }
+      .info {
+        color: var(--info);
+      }
+      code {
+        overflow-wrap: anywhere;
+      }
+      .verdict {
+        border-left: 8px solid var(--critical);
+        padding: 22px 24px;
+        background: var(--panel);
+      }
+      footer {
+        margin-top: 48px;
+        padding-top: 18px;
+        border-top: 1px solid var(--line);
+        color: var(--muted);
+      }
+      @media (max-width: 760px) {
+        header {
+          grid-template-columns: 1fr;
+        }
+        .stamp {
+          justify-self: start;
+        }
+        .scores {
+          grid-template-columns: 1fr;
+        }
+        .score {
+          border-right: 0;
+          border-bottom: 1px solid var(--line);
+        }
+        table,
+        tbody,
+        tr,
+        td {
+          display: block;
+        }
+        thead {
+          display: none;
+        }
+        td::before {
+          content: attr(data-label);
+          display: block;
+          font-weight: 800;
+          text-transform: uppercase;
+          font-size: 0.72rem;
+          color: var(--muted);
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <header>
+        <div>
+          <p>INTERNAL REVIEW / 2026-09-04</p>
+          <h1>Bounty Escrow V1 hardening</h1>
+          <p>Solana Devnet · Program <code>BB2b…zCK6</code></p>
+        </div>
+        <div class="stamp">Mainnet ready: no</div>
+      </header>
+      <div class="scores" aria-label="Review scores">
+        <div class="score">
+          Security<strong>B</strong><span>Source hardened; deployment blocker open</span>
+        </div>
+        <div class="score">
+          Code quality<strong>A−</strong
+          ><span>Typed constraints, deterministic clients, broad tests</span>
+        </div>
+        <div class="score">
+          External audit<strong>None</strong><span>Required before real-money launch</span>
+        </div>
+      </div>
+      <section>
+        <h2>Actionable findings</h2>
+        <table>
+          <thead>
+            <tr>
+              <th>Severity</th>
+              <th>Finding</th>
+              <th>Status</th>
+              <th>Required action</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td data-label="Severity" class="critical"><strong>Critical</strong></td>
+              <td data-label="Finding">
+                Devnet executable hash differs from the reviewed deterministic build.
+              </td>
+              <td data-label="Status">Open</td>
+              <td data-label="Required action">
+                Upgrade with authority <code>Fzcna…ZKLJm</code>, then require deployed hash
+                <code>4a5901…c612</code> before smoke tests.
+              </td>
+            </tr>
+            <tr>
+              <td data-label="Severity" class="critical"><strong>Critical</strong></td>
+              <td data-label="Finding">Deployed binary has no queryable security.txt.</td>
+              <td data-label="Status">Open</td>
+              <td data-label="Required action">
+                Deploy the reviewed binary and rerun <code>query-security-txt</code> against the
+                program ID.
+              </td>
+            </tr>
+            <tr>
+              <td data-label="Severity" class="high"><strong>High</strong></td>
+              <td data-label="Finding">Pre-created/overfunded vault could deny progress.</td>
+              <td data-label="Status">Fixed locally</td>
+              <td data-label="Required action">
+                Keep <code>init_if_needed</code>, fund only the missing commitment, and return
+                excess at terminal transition.
+              </td>
+            </tr>
+            <tr>
+              <td data-label="Severity" class="high"><strong>High</strong></td>
+              <td data-label="Finding">
+                Missing destination ATAs or absent sponsor could block settlement.
+              </td>
+              <td data-label="Status">Fixed locally</td>
+              <td data-label="Required action">
+                Retain arbitrary settler payer plus canonical ATA creation; never let payer choose
+                destinations.
+              </td>
+            </tr>
+            <tr>
+              <td data-label="Severity" class="high"><strong>High</strong></td>
+              <td data-label="Finding">Hard-coded initializer was not loader-derived.</td>
+              <td data-label="Status">Fixed locally</td>
+              <td data-label="Required action">
+                Retain executable ProgramData relationship and current upgrade-authority signer
+                checks.
+              </td>
+            </tr>
+            <tr>
+              <td data-label="Severity" class="high"><strong>High</strong></td>
+              <td data-label="Finding">
+                The SPL client dependency path contains the unpatched
+                <code>bigint-buffer</code> advisory.
+              </td>
+              <td data-label="Status">Open / off-chain</td>
+              <td data-label="Required action">
+                Avoid attacker-controlled conversion inputs and reassess upstream remediation or
+                replacement before production release.
+              </td>
+            </tr>
+            <tr>
+              <td data-label="Severity" class="medium"><strong>Medium</strong></td>
+              <td data-label="Finding">
+                Pause/arbitration are centralized and cannot rotate in V1.
+              </td>
+              <td data-label="Status">Accepted for Devnet</td>
+              <td data-label="Required action">
+                Use multisig custody and documented incident procedures before production;
+                separately review any rotation upgrade.
+              </td>
+            </tr>
+            <tr>
+              <td data-label="Severity" class="low"><strong>Low</strong></td>
+              <td data-label="Finding">Only legacy SPL Token and one mint are supported.</td>
+              <td data-label="Status">Intentional</td>
+              <td data-label="Required action">
+                Reject Token-2022 in Phase 3 and validate mint owner/decimals from machine metadata.
+              </td>
+            </tr>
+            <tr>
+              <td data-label="Severity" class="info"><strong>Info</strong></td>
+              <td data-label="Finding">Canonical terms encoding is a backend responsibility.</td>
+              <td data-label="Status">Phase 3</td>
+              <td data-label="Required action">
+                Version/domain-separate canonical bytes, store them durably, and pass their SHA-256
+                hash at initialization.
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+      <section class="verdict">
+        <h2>Release verdict</h2>
+        <p>
+          The source is suitable for an authorized Devnet upgrade and smoke/reconciliation pass. It
+          is not suitable for mainnet or real-value custody yet. Deployment parity, final-commit CI
+          hash, Phase 3 reconciliation, secure authority operations, production configuration
+          review, and independent external review remain mandatory.
+        </p>
+      </section>
+      <footer>
+        Internal implementation review produced with the review-and-iterate checklist. This artifact
+        is not an external audit.
+      </footer>
+    </main>
+  </body>
+</html>

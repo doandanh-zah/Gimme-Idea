@@ -1,7 +1,7 @@
 'use client';
 
 import { Canvas, useFrame } from '@react-three/fiber';
-import { useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import type { Group } from 'three';
 
 const nodes: [number, number, number][] = [
@@ -41,7 +41,7 @@ const particlePositions = new Float32Array(
   ]).flat(),
 );
 
-function Network() {
+function Network({ stage }: { stage: number }) {
   const group = useRef<Group>(null);
   useFrame(({ clock }) => {
     if (group.current) {
@@ -55,12 +55,34 @@ function Network() {
         <bufferGeometry>
           <bufferAttribute attach="attributes-position" args={[linePositions, 3]} />
         </bufferGeometry>
-        <lineBasicMaterial color="#FFD700" transparent opacity={0.38} />
+        <lineBasicMaterial
+          color={stage === 1 ? '#9945FF' : stage >= 2 && stage <= 4 ? '#FFD700' : '#F4F0E8'}
+          transparent
+          opacity={stage === 0 || stage === 6 ? 0.2 : 0.44}
+        />
       </lineSegments>
       {nodes.map((position, index) => (
         <mesh key={index} position={position}>
-          <sphereGeometry args={[index % 4 === 0 ? 0.09 : 0.055, 12, 12]} />
-          <meshBasicMaterial color={index % 3 === 0 ? '#FFD700' : '#F4F0E8'} />
+          {stage === 4 && index > 5 ? (
+            <boxGeometry args={[0.12, 0.12, 0.12]} />
+          ) : (
+            <sphereGeometry
+              args={[index === 0 && stage === 1 ? 0.14 : index % 4 === 0 ? 0.09 : 0.055, 12, 12]}
+            />
+          )}
+          <meshBasicMaterial
+            color={
+              index === 0 && stage === 1
+                ? '#9945FF'
+                : stage === 5 && index === 10
+                  ? '#14F195'
+                  : stage >= 2 && stage <= 4 && [2, 5, 6, 9].includes(index)
+                    ? '#FFD700'
+                    : '#F4F0E8'
+            }
+            transparent
+            opacity={stage === 3 && ![0, 2, 6, 9].includes(index) ? 0.24 : 0.9}
+          />
         </mesh>
       ))}
       <points>
@@ -75,7 +97,16 @@ function Network() {
 
 export function BrainScene() {
   const [available, setAvailable] = useState(true);
+  const [stage, setStage] = useState(0);
   const dpr = useMemo(() => Math.min(window.devicePixelRatio, 1.35), []);
+  useEffect(() => {
+    const update = (event: Event) =>
+      setStage(
+        Math.max(0, Math.min(6, (event as CustomEvent<{ index?: number }>).detail?.index ?? 0)),
+      );
+    window.addEventListener('gimme-narrative-step', update);
+    return () => window.removeEventListener('gimme-narrative-step', update);
+  }, []);
   if (!available) return null;
   return (
     <Canvas
@@ -89,7 +120,7 @@ export function BrainScene() {
         });
       }}
     >
-      <Network />
+      <Network stage={stage} />
     </Canvas>
   );
 }

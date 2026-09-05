@@ -1,0 +1,311 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Gimme Idea · Backend V1 Actionable Review</title>
+    <style>
+      :root {
+        color-scheme: dark;
+        --bg: #0c0c0f;
+        --panel: #141419;
+        --line: #303038;
+        --text: #f4f1ea;
+        --muted: #aaa6b2;
+        --purple: #9945ff;
+        --red: #ff5b66;
+        --amber: #f6b94d;
+        --green: #55d69e;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--text);
+        font:
+          15px/1.55 ui-monospace,
+          SFMono-Regular,
+          Menlo,
+          monospace;
+      }
+      main {
+        width: min(1180px, calc(100% - 32px));
+        margin: 48px auto 80px;
+      }
+      header {
+        border: 1px solid var(--line);
+        padding: 32px;
+        background: linear-gradient(135deg, #191221, var(--panel) 55%);
+      }
+      h1 {
+        margin: 0 0 12px;
+        font:
+          700 clamp(32px, 5vw, 64px)/0.95 Arial,
+          sans-serif;
+        letter-spacing: -0.05em;
+      }
+      .kicker {
+        color: var(--purple);
+        text-transform: uppercase;
+        letter-spacing: 0.12em;
+      }
+      .verdict {
+        max-width: 860px;
+        color: var(--muted);
+      }
+      .gate {
+        display: inline-block;
+        margin-top: 16px;
+        padding: 8px 12px;
+        border: 1px solid var(--red);
+        color: var(--red);
+      }
+      section {
+        margin-top: 32px;
+      }
+      h2 {
+        font:
+          700 24px/1.1 Arial,
+          sans-serif;
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        background: var(--panel);
+      }
+      th,
+      td {
+        border: 1px solid var(--line);
+        padding: 12px;
+        vertical-align: top;
+        text-align: left;
+      }
+      th {
+        color: var(--muted);
+        font-size: 12px;
+        text-transform: uppercase;
+      }
+      .critical {
+        color: var(--red);
+      }
+      .high {
+        color: var(--amber);
+      }
+      .done {
+        color: var(--green);
+      }
+      code {
+        color: #d6b9ff;
+      }
+      a {
+        color: #c99cff;
+      }
+      @media (max-width: 760px) {
+        main {
+          width: min(100% - 20px, 1180px);
+          margin-top: 20px;
+        }
+        header {
+          padding: 22px;
+        }
+        table,
+        thead,
+        tbody,
+        tr,
+        th,
+        td {
+          display: block;
+        }
+        thead {
+          display: none;
+        }
+        tr {
+          margin-bottom: 12px;
+        }
+        td:before {
+          content: attr(data-label);
+          display: block;
+          color: var(--muted);
+          font-size: 11px;
+          text-transform: uppercase;
+          margin-bottom: 4px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <header>
+        <div class="kicker">Phase 3 / evidence review / 2026-09-05</div>
+        <h1>Converged locally.<br />Economics not launch-ready.</h1>
+        <p class="verdict">
+          PostgreSQL-backed product state, server auth, privacy boundaries, storage signing, worker
+          structure, and Solana reconciliation are present. The economic loop cannot be signed off
+          until deployed program parity and backend transaction/relayer execution exist.
+        </p>
+        <div class="gate">MAINNET GATE: CLOSED</div>
+      </header>
+      <section>
+        <h2>Blocking actions</h2>
+        <table>
+          <thead>
+            <tr>
+              <th>Severity</th>
+              <th>Finding</th>
+              <th>Evidence</th>
+              <th>Required action</th>
+              <th>Owner / gate</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td data-label="Severity" class="critical">CRITICAL</td>
+              <td data-label="Finding">Reviewed Solana binary is not deployed.</td>
+              <td data-label="Evidence">
+                <code>local 4a5901…c612</code><br /><code>devnet e70ea8…894</code>
+              </td>
+              <td data-label="Required action">
+                Upgrade using authority <code>Fzcna…KLJm</code>, verify executable hash and
+                <code>security.txt</code>, then run smoke/reconciliation.
+              </td>
+              <td data-label="Owner / gate">Upgrade authority<br />blocks all economic E2E</td>
+            </tr>
+            <tr>
+              <td data-label="Severity" class="critical">CRITICAL</td>
+              <td data-label="Finding">
+                No backend transaction preparation or settlement relayer.
+              </td>
+              <td data-label="Evidence">
+                Winner/resolution APIs return <code>chain*Required</code>; worker only reconciles.
+              </td>
+              <td data-label="Required action">
+                Build, threat-model, and test funding, judge, arbitration/refund, settlement, retry,
+                and dead-letter paths.
+              </td>
+              <td data-label="Owner / gate">Backend + security<br />blocks payouts</td>
+            </tr>
+            <tr>
+              <td data-label="Severity" class="high">HIGH</td>
+              <td data-label="Finding">Redis/BullMQ recovery not runtime-verified.</td>
+              <td data-label="Evidence">Docker credential helper unavailable; unit tests only.</td>
+              <td data-label="Required action">
+                Run Redis outage, worker restart, idempotency, retry, and queue-depth tests in
+                CI/staging.
+              </td>
+              <td data-label="Owner / gate">Platform<br />blocks operational readiness</td>
+            </tr>
+            <tr>
+              <td data-label="Severity" class="high">HIGH</td>
+              <td data-label="Finding">Four-role privacy matrix is incomplete.</td>
+              <td data-label="Evidence">
+                Owner/stranger/storage checks pass; moderator escalation tooling absent.
+              </td>
+              <td data-label="Required action">
+                Add Builder A/B, company judge, moderator E2E with private files, notes, search,
+                quote, and direct IDs.
+              </td>
+              <td data-label="Owner / gate">Backend + QA<br />blocks private beta</td>
+            </tr>
+            <tr>
+              <td data-label="Severity" class="high">HIGH</td>
+              <td data-label="Finding">No independent program/backend security audit.</td>
+              <td data-label="Evidence">Self-review only; dependency advisories remain.</td>
+              <td data-label="Required action">
+                Resolve/accept advisories, run secret/supply-chain review, commission external
+                contract audit proportional to TVL.
+              </td>
+              <td data-label="Owner / gate">Security<br />blocks real money</td>
+            </tr>
+            <tr>
+              <td data-label="Severity" class="high">HIGH</td>
+              <td data-label="Finding">Production dependency advisories remain open.</td>
+              <td data-label="Evidence">
+                <code>pnpm audit --prod</code>: 3 high advisories in two unpatched transitive
+                packages; 19 fixable advisories were remediated.
+              </td>
+              <td data-label="Required action">
+                Isolate inputs reaching <code>bigint-buffer</code>/<code>image-size</code>, track
+                upstream releases, and record explicit risk acceptance before release.
+              </td>
+              <td data-label="Owner / gate">Platform + security<br />blocks release sign-off</td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+      <section>
+        <h2>Verified evidence</h2>
+        <table>
+          <thead>
+            <tr>
+              <th>Status</th>
+              <th>Capability</th>
+              <th>Result</th>
+              <th>Artifact</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="done" data-label="Status">PASS</td>
+              <td data-label="Capability">Database reset and seed invariants</td>
+              <td data-label="Result">Migration and verifier completed locally.</td>
+              <td data-label="Artifact"><code>docs/V1_DATABASE_MIGRATION.md</code></td>
+            </tr>
+            <tr>
+              <td class="done" data-label="Status">PASS</td>
+              <td data-label="Capability">Cross-device canonical persistence/privacy</td>
+              <td data-label="Result">
+                Problem/Post persisted; private title excluded; duplicate event ignored.
+              </td>
+              <td data-label="Artifact"><code>scripts/verify-v1-api.mjs</code></td>
+            </tr>
+            <tr>
+              <td class="done" data-label="Status">PASS</td>
+              <td data-label="Capability">Private storage authorization</td>
+              <td data-label="Result">
+                Anonymous 401, stranger 404, owner signed URL 200, TTL 300 seconds.
+              </td>
+              <td data-label="Artifact"><code>apps/api/scripts/verify-storage.ts</code></td>
+            </tr>
+            <tr>
+              <td class="done" data-label="Status">PASS</td>
+              <td data-label="Capability">Origin load</td>
+              <td data-label="Result">5,000 requests, 0 errors, p95 30.4 ms, p99 149.7 ms.</td>
+              <td data-label="Artifact"><code>artifacts/load-v1-2026-09-05.json</code></td>
+            </tr>
+            <tr>
+              <td class="done" data-label="Status">PASS</td>
+              <td data-label="Capability">Local hardened program suite</td>
+              <td data-label="Result">Anchor suite passed against fresh local validator/build.</td>
+              <td data-label="Artifact"><code>SMART_CONTRACT_V1_HARDENING_REPORT.md</code></td>
+            </tr>
+            <tr>
+              <td class="done" data-label="Status">PASS</td>
+              <td data-label="Capability">Responsive product E2E</td>
+              <td data-label="Result">85 passed, 2 viewport-gated skips, 0 failed.</td>
+              <td data-label="Artifact"><code>playwright-report/index.html</code></td>
+            </tr>
+            <tr>
+              <td class="done" data-label="Status">PASS</td>
+              <td data-label="Capability">Production build and static checks</td>
+              <td data-label="Result">
+                Build, lint, typecheck, unit tests, and formatting passed; audit reduced 22 → 3.
+              </td>
+              <td data-label="Artifact"><code>package.json</code> quality scripts</td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+      <section>
+        <h2>Exit sequence</h2>
+        <p>
+          1. Establish deployed binary parity. 2. Implement wallet-signed preparation and
+          permissionless settlement relayer. 3. Run full chain/failure/privacy/restart E2E in
+          staging. 4. Close security and dependency findings. 5. Configure production authorities,
+          mint, RPC, monitoring, and incident response. Only then reconsider mainnet readiness.
+        </p>
+      </section>
+    </main>
+  </body>
+</html>

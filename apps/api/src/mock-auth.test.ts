@@ -20,7 +20,10 @@ describe('development mock account', () => {
     const directory = await mkdtemp(join(tmpdir(), 'gimme-idea-wallet-'));
     temporaryDirectories.push(directory);
     const keypairPath = join(directory, 'mock.keypair.json');
-    const authenticate = createDevMockAuthProvider(keypairPath);
+    const authenticate = createDevMockAuthProvider(
+      keypairPath,
+      'development-only-secret-with-32-chars',
+    );
 
     const first = await authenticate();
     const second = await authenticate();
@@ -28,6 +31,7 @@ describe('development mock account', () => {
     expect(first.wallet.address).toBe(second.wallet.address);
     expect(new PublicKey(first.wallet.address).toBase58()).toBe(first.wallet.address);
     expect(first).not.toHaveProperty('wallet.secretKey');
+    expect(first.accessToken).toMatch(/^dev\./);
     expect((await stat(keypairPath)).mode & 0o777).toBe(0o600);
   });
 });

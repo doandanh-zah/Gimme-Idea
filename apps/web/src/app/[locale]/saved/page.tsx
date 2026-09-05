@@ -2,7 +2,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { AppPageHeader } from '@/components/app-surfaces';
 import { SavedLibrary } from '@/components/saved-library';
-import { getIdea, getProblem } from '@/lib/api';
+import { bountyClient, ideaClient, problemClient, projectClient } from '@/lib/domain/client';
 import { copy, isLocale } from '@/lib/i18n';
 
 export const dynamic = 'force-dynamic';
@@ -19,15 +19,16 @@ export default async function SavedPage({
   const t = copy[locale];
   const activeTab = query.tab === 'likes' ? 'likes' : 'bookmarks';
   const [problemA, problemB, idea] = await Promise.all([
-    getProblem('restaurant-food-waste'),
-    getProblem('tenant-repair-visibility'),
-    getIdea('demand-pulse-for-kitchens'),
+    problemClient.get('restaurant-food-waste'),
+    problemClient.get('tenant-repair-visibility'),
+    ideaClient.get('demand-pulse-for-kitchens'),
   ]);
   const items = [
     ...(problemA ? [{ kind: 'problem' as const, data: problemA }] : []),
     ...(problemB ? [{ kind: 'problem' as const, data: problemB }] : []),
     ...(idea ? [{ kind: 'idea' as const, data: idea }] : []),
   ];
+  const [projects, bounties] = await Promise.all([projectClient.list(), bountyClient.list()]);
 
   return (
     <main id="main" className="app-page">
@@ -56,7 +57,13 @@ export default async function SavedPage({
           {t.shell.likes}
         </Link>
       </nav>
-      <SavedLibrary locale={locale} tab={activeTab} items={items} />
+      <SavedLibrary
+        locale={locale}
+        tab={activeTab}
+        items={items}
+        projects={projects}
+        bounties={bounties}
+      />
     </main>
   );
 }

@@ -26,7 +26,7 @@ const problem: ProblemDetailDTO = {
   relatedIdeas: [],
   bounty: {
     title: 'Test bounty',
-    status: 'mock_funded',
+    status: 'awaiting_funding',
     amountRaw: '1000000',
     currency: 'USDC',
     openToHiring: true,
@@ -100,6 +100,7 @@ describe('API boundaries', () => {
       logger: false,
       devMockAuth: () =>
         Promise.resolve({
+          accessToken: 'dev.payload.signature',
           user: {
             id: 'dev-mock-builder',
             displayName: 'Devnet Builder',

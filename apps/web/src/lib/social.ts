@@ -1,15 +1,11 @@
+import { validatePostMedia } from './social-media';
+export { POST_MEDIA_LIMITS, PostMediaValidationError, validatePostMedia } from './social-media';
+
 export type MediaAttachment = {
   kind: 'image' | 'video';
   src: string;
   name: string;
 };
-
-export const POST_MEDIA_LIMITS = {
-  maxImages: 10,
-  maxImageBytes: 5 * 1024 * 1024,
-  maxVideos: 1,
-  maxVideoBytes: 25 * 1024 * 1024,
-} as const;
 
 export type StoredMediaAttachment = {
   id: string;
@@ -45,7 +41,7 @@ export type LocalKnowledgePost = {
   primaryProblemSlug: string | null;
   bounty: {
     title: string;
-    status: 'unfunded' | 'mock_funded';
+    status: 'draft';
     amountRaw: string;
     currency: 'USDC';
     openToHiring: boolean;
@@ -53,20 +49,8 @@ export type LocalKnowledgePost = {
   attachments: StoredMediaAttachment[];
 };
 
-export type PostMediaValidationCode =
-  'unsupported' | 'too_many_images' | 'too_many_videos' | 'image_too_large' | 'video_too_large';
-
-export class PostMediaValidationError extends Error {
-  constructor(
-    public readonly code: PostMediaValidationCode,
-    public readonly fileName?: string,
-  ) {
-    super(code);
-  }
-}
-
 export type QuotedTarget = {
-  kind: 'idea' | 'problem';
+  kind: 'idea' | 'problem' | 'project' | 'bounty';
   slug: string;
   href: string;
   title: string;
@@ -96,6 +80,9 @@ export type QuotePost = {
   quotedComment?: QuotedComment;
   media?: MediaAttachment | null;
 };
+import { browserRequest } from './api';
+import { getCurrentAccessToken } from './auth';
+import { attachUploads, uploadFiles } from './uploads';
 
 export type SocialComment = {
   id: string;
@@ -162,7 +149,7 @@ function writeState(state: SocialState) {
   window.dispatchEvent(new Event(CHANGE_EVENT));
 }
 
-export function itemKey(kind: 'idea' | 'problem', slug: string) {
+export function itemKey(kind: 'idea' | 'problem' | 'project' | 'bounty', slug: string) {
   return `${kind}:${slug}`;
 }
 
@@ -180,6 +167,30 @@ export function getSocialState() {
 
 export function getQuote(id: string) {
   return readState().quotes.find((post) => post.id === id) ?? null;
+}
+
+export async function getRemoteQuote(id: string) {
+  const value = await browserRequest<{
+    id: string;
+    body: string;
+    createdAt: string;
+    actor?: SocialActor;
+    target: QuotedTarget | null;
+    quotedPostId?: string | null;
+    replies?: SocialComment[];
+  }>(`/v1/posts/${encodeURIComponent(id)}`);
+  if (!value) return null;
+  return {
+    post: {
+      id: value.id,
+      body: value.body,
+      createdAt: value.createdAt,
+      actor: value.actor,
+      target: value.target,
+      quotedPostId: value.quotedPostId ?? undefined,
+    } satisfies QuotePost,
+    comments: value.replies ?? [],
+  };
 }
 
 export function getLocalKnowledgePosts(kind?: 'idea' | 'problem') {
@@ -240,7 +251,11 @@ export function incrementViews(key: string, fallback = 0) {
   return state.views[key];
 }
 
-export function addQuote(input: {
+async function resolveEntity(kind: 'idea' | 'problem' | 'project' | 'bounty', slug: string) {
+  return browserRequest<Record<string, unknown>>(`/v1/${kind}s/${encodeURIComponent(slug)}`);
+}
+
+export async function addQuote(input: {
   body: string;
   target: QuotedTarget | null;
   actor?: SocialActor;
@@ -248,11 +263,30 @@ export function addQuote(input: {
   quotedComment?: QuotedComment;
   media?: MediaAttachment | null;
 }) {
+  if (input.media) throw new Error('Server media uploads must complete before publishing a quote.');
+  if (!input.target) throw new Error('A public quote target is required.');
+  const token = await getCurrentAccessToken();
+  if (!token) throw new Error('Your authenticated session expired. Sign in again.');
+  const target = await resolveEntity(input.target.kind, input.target.slug);
+  if (!target || typeof target.id !== 'string')
+    throw new Error('The quoted target is unavailable.');
+  const stored = await browserRequest<{ id: string; createdAt: string }>('/v1/posts', {
+    method: 'POST',
+    accessToken: token,
+    body: JSON.stringify({
+      entityType: input.target.kind,
+      entityId: target.id,
+      title: `Quote: ${input.target.title}`,
+      body: input.body || input.target.summary,
+      quotedPostId: input.quotedPostId,
+    }),
+  });
+  if (!stored) throw new Error('Could not publish the quote.');
   const state = readState();
   const post: QuotePost = {
-    id: crypto.randomUUID(),
+    id: stored.id,
     body: input.body.trim(),
-    createdAt: new Date().toISOString(),
+    createdAt: stored.createdAt,
     actor: input.actor ?? guestActor,
     target: input.target,
     quotedPostId: input.quotedPostId,
@@ -264,7 +298,7 @@ export function addQuote(input: {
   return post;
 }
 
-export function addComment(input: {
+export async function addComment(input: {
   postId: string;
   body: string;
   actor?: SocialActor;
@@ -272,13 +306,49 @@ export function addComment(input: {
   mentionUsername?: string | null;
   media?: MediaAttachment | null;
 }) {
+  if (input.media) throw new Error('Server media uploads must complete before publishing a reply.');
+  const token = await getCurrentAccessToken();
+  if (!token) throw new Error('Your authenticated session expired. Sign in again.');
+  let stored: { id: string; createdAt: string };
+  if (/^[0-9a-f]{8}-[0-9a-f-]{27}$/i.test(input.postId)) {
+    const value = await browserRequest<{ id: string; createdAt: string }>(
+      `/v1/posts/${input.postId}/replies`,
+      {
+        method: 'POST',
+        accessToken: token,
+        body: JSON.stringify({ body: input.body, parentReplyId: input.parentId }),
+      },
+    );
+    if (!value) throw new Error('Could not publish the reply.');
+    stored = value;
+  } else {
+    const [kind, slug] = input.postId.split(':') as [
+      'idea' | 'problem' | 'project' | 'bounty',
+      string,
+    ];
+    const entity = slug ? await resolveEntity(kind, slug) : null;
+    if (!entity || typeof entity.id !== 'string')
+      throw new Error('The discussion target is unavailable.');
+    const value = await browserRequest<{ id: string; createdAt: string }>('/v1/posts', {
+      method: 'POST',
+      accessToken: token,
+      body: JSON.stringify({
+        entityType: kind,
+        entityId: entity.id,
+        title: 'Discussion',
+        body: input.body,
+      }),
+    });
+    if (!value) throw new Error('Could not publish the discussion.');
+    stored = value;
+  }
   const state = readState();
   const comment: SocialComment = {
-    id: crypto.randomUUID(),
+    id: stored.id,
     postId: input.postId,
     parentId: input.parentId ?? null,
     body: input.body.trim(),
-    createdAt: new Date().toISOString(),
+    createdAt: stored.createdAt,
     actor: input.actor ?? guestActor,
     mentionUsername: input.mentionUsername ?? null,
     media: input.media ?? null,
@@ -314,63 +384,6 @@ function openMediaDatabase() {
   });
 }
 
-function completeTransaction(transaction: IDBTransaction) {
-  return new Promise<void>((resolve, reject) => {
-    transaction.oncomplete = () => resolve();
-    transaction.onerror = () => reject(transaction.error ?? new Error('Media storage failed.'));
-    transaction.onabort = () => reject(transaction.error ?? new Error('Media storage stopped.'));
-  });
-}
-
-export function validatePostMedia(files: File[]) {
-  let imageCount = 0;
-  let videoCount = 0;
-  for (const file of files) {
-    if (file.type.startsWith('image/')) {
-      imageCount += 1;
-      if (file.size > POST_MEDIA_LIMITS.maxImageBytes) {
-        throw new PostMediaValidationError('image_too_large', file.name);
-      }
-      continue;
-    }
-    if (file.type.startsWith('video/')) {
-      videoCount += 1;
-      if (file.size > POST_MEDIA_LIMITS.maxVideoBytes) {
-        throw new PostMediaValidationError('video_too_large', file.name);
-      }
-      continue;
-    }
-    throw new PostMediaValidationError('unsupported', file.name);
-  }
-  if (imageCount > POST_MEDIA_LIMITS.maxImages) {
-    throw new PostMediaValidationError('too_many_images');
-  }
-  if (videoCount > POST_MEDIA_LIMITS.maxVideos) {
-    throw new PostMediaValidationError('too_many_videos');
-  }
-}
-
-async function storePostMedia(files: File[]) {
-  if (files.length === 0) return [];
-  const database = await openMediaDatabase();
-  const transaction = database.transaction(MEDIA_STORE_NAME, 'readwrite');
-  const store = transaction.objectStore(MEDIA_STORE_NAME);
-  const attachments = files.map<StoredMediaAttachment>((file) => {
-    const id = crypto.randomUUID();
-    store.put(file, id);
-    return {
-      id,
-      kind: file.type.startsWith('video/') ? 'video' : 'image',
-      name: file.name,
-      size: file.size,
-      mimeType: file.type,
-    };
-  });
-  await completeTransaction(transaction);
-  database.close();
-  return attachments;
-}
-
 export async function getStoredMediaBlob(id: string) {
   const database = await openMediaDatabase();
   const transaction = database.transaction(MEDIA_STORE_NAME, 'readonly');
@@ -403,13 +416,86 @@ export async function createLocalKnowledgePost(input: {
   files: File[];
 }) {
   validatePostMedia(input.files);
-  const attachments = await storePostMedia(input.files);
-  const id = crypto.randomUUID();
+  const token = await getCurrentAccessToken();
+  if (!token) throw new Error('Your authenticated session expired. Sign in again.');
+  const uploaded = await uploadFiles(input.files, 'public');
+  let saved: Record<string, unknown> | null;
+  if (input.kind === 'problem') {
+    saved = await browserRequest<Record<string, unknown>>('/v1/problems', {
+      method: 'POST',
+      accessToken: token,
+      body: JSON.stringify({
+        title: input.title,
+        summary: input.summary,
+        description: input.details?.problem ?? input.summary,
+        affectedGroups: (input.details?.whoHasThisProblem ?? '')
+          .split(',')
+          .map((value) => value.trim())
+          .filter(Boolean),
+        evidence: [],
+        desiredOutcome: input.details?.whyItMatters ?? null,
+        constraints: [],
+        successMetrics: [],
+        visibility: 'public',
+      }),
+    });
+  } else {
+    if (!input.primaryProblemSlug) throw new Error('A primary public Problem is required.');
+    let problem = await resolveEntity('problem', input.primaryProblemSlug);
+    if ((!problem || typeof problem.id !== 'string') && input.details?.primaryProblemTitle) {
+      const proposed = input.details.primaryProblemTitle.trim();
+      problem = await browserRequest<Record<string, unknown>>('/v1/problems', {
+        method: 'POST',
+        accessToken: token,
+        body: JSON.stringify({
+          title: proposed,
+          summary: `A creator-proposed problem context: ${proposed}.`,
+          description: `This Problem was proposed by the creator as the primary context for a new Idea: ${proposed}.`,
+          affectedGroups: [],
+          evidence: [],
+          constraints: [],
+          successMetrics: [],
+          visibility: 'public',
+        }),
+      });
+      if (problem && typeof problem.id === 'string')
+        await browserRequest(`/v1/problems/${problem.id}/publish`, {
+          method: 'POST',
+          accessToken: token,
+        });
+    }
+    if (!problem || typeof problem.id !== 'string')
+      throw new Error('The primary Problem is unavailable.');
+    saved = await browserRequest<Record<string, unknown>>('/v1/ideas', {
+      method: 'POST',
+      accessToken: token,
+      body: JSON.stringify({
+        problemId: problem.id,
+        title: input.title,
+        summary: input.summary,
+        thesis: input.details?.opportunity ?? input.summary,
+        solution: input.details?.solution ?? input.summary,
+        opportunity: input.details?.opportunity ?? null,
+        whyNow: input.details?.whyItMatters ?? null,
+        targetUsers: [],
+        risks: [],
+        validationPlan: null,
+        visibility: 'public',
+      }),
+    });
+  }
+  if (!saved || typeof saved.id !== 'string' || typeof saved.slug !== 'string')
+    throw new Error('The server did not return the published object.');
+  await browserRequest(`/v1/${input.kind}s/${saved.id}/publish`, {
+    method: 'POST',
+    accessToken: token,
+  });
+  await attachUploads(uploaded, input.kind, saved.id);
+  const id = saved.id;
   const bountyRaw = input.kind === 'problem' ? usdcToRaw(input.bountyAmount ?? '') : null;
-  const hasFundedBounty = bountyRaw ? BigInt(bountyRaw) > 0n : false;
   const post: LocalKnowledgePost = {
     id,
-    slug: `local-${id}`,
+    slug: saved.slug,
     kind: input.kind,
     title: input.title.trim(),
     summary: input.summary.trim(),
@@ -421,13 +507,20 @@ export async function createLocalKnowledgePost(input: {
       input.kind === 'problem' && (bountyRaw || input.openToHiring)
         ? {
             title: input.title.trim(),
-            status: hasFundedBounty ? 'mock_funded' : 'unfunded',
+            // A locally entered amount is configuration intent, never proof of escrow funding.
+            status: 'draft',
             amountRaw: bountyRaw ?? '0',
             currency: 'USDC',
             openToHiring: Boolean(input.openToHiring),
           }
         : null,
-    attachments,
+    attachments: uploaded.map((asset) => ({
+      id: asset.id,
+      kind: asset.kind,
+      name: asset.name,
+      size: asset.size,
+      mimeType: asset.mimeType,
+    })),
   };
   const state = readState();
   state.knowledgePosts = [post, ...state.knowledgePosts];

@@ -91,12 +91,12 @@ export function createKnowledgeRepository(connectionString: string): KnowledgeRe
         ),
         pool.query<{
           title: string;
-          status: 'unfunded' | 'mock_funded';
+          status: NonNullable<ProblemDetailDTO['bounty']>['status'];
           amount_raw: string;
           currency: string;
           open_to_hiring: boolean;
         }>(
-          `select title,status,total_amount_raw::text amount_raw,currency,open_to_hiring from public.bounties where problem_id=$1 and status in ('unfunded','mock_funded') order by created_at limit 1`,
+          `select title,status,total_amount_raw::text amount_raw,currency,open_to_hiring from public.bounties where problem_id=$1 and status not in ('draft','cancelled') order by created_at limit 1`,
           [row.id],
         ),
       ]);

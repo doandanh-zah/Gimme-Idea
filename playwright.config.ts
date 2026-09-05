@@ -3,6 +3,7 @@ import { defineConfig, devices } from '@playwright/test';
 export default defineConfig({
   testDir: './tests/e2e',
   fullyParallel: true,
+  workers: 1,
   forbidOnly: Boolean(process.env.CI),
   retries: process.env.CI ? 2 : 0,
   reporter: [['list'], ['html', { open: 'never' }]],
@@ -12,14 +13,16 @@ export default defineConfig({
   },
   webServer: [
     {
-      command: 'pnpm --filter @gimme-idea/api start',
+      command:
+        'DATABASE_URL=postgresql://postgres:postgres@127.0.0.1:54322/postgres ENABLE_DEV_MOCK_AUTH=true DEV_AUTH_SECRET=e2e-development-auth-secret-change-me DEV_MOCK_RATE_LIMIT_MAX=100 RATE_LIMIT_MAX=100000 CORS_ALLOWED_ORIGINS=http://127.0.0.1:3000 LOG_LEVEL=silent pnpm --filter @gimme-idea/api dev',
       port: 3001,
-      reuseExistingServer: !process.env.CI,
+      reuseExistingServer: false,
     },
     {
-      command: 'pnpm --filter @gimme-idea/web start',
+      command:
+        'NEXT_PUBLIC_ENABLE_DEV_AUTH=true NEXT_PUBLIC_API_URL=http://127.0.0.1:3001 API_INTERNAL_URL=http://127.0.0.1:3001 pnpm --filter @gimme-idea/web dev',
       port: 3000,
-      reuseExistingServer: !process.env.CI,
+      reuseExistingServer: false,
     },
   ],
   projects: [

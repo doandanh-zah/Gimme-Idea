@@ -15,8 +15,8 @@ const composerCopy = {
   en: {
     idea: 'Idea',
     problem: 'Problem',
-    postIdea: 'Post idea',
-    postProblem: 'Post problem',
+    postIdea: 'Create Idea',
+    postProblem: 'Create Problem',
     title: 'Title',
     ideaTitleExample: 'Name the idea clearly',
     problemTitleExample: 'State the problem clearly',
@@ -91,8 +91,8 @@ const composerCopy = {
   vi: {
     idea: 'Ý tưởng',
     problem: 'Vấn đề',
-    postIdea: 'Đăng ý tưởng',
-    postProblem: 'Đăng vấn đề',
+    postIdea: 'Tạo Ý tưởng',
+    postProblem: 'Tạo Vấn đề',
     title: 'Tiêu đề',
     ideaTitleExample: 'Đặt tên ý tưởng thật rõ ràng',
     problemTitleExample: 'Nêu vấn đề thật rõ ràng',

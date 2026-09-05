@@ -18,7 +18,9 @@
     "seed:verify": "tsx scripts/verify-seed.ts"
   },
   "dependencies": {
+    "@gimme-idea/auth": "workspace:*",
     "@gimme-idea/contracts": "workspace:*",
+    "@gimme-idea/solana": "workspace:*",
     "drizzle-orm": "0.45.2",
     "pg": "8.23.0"
   },

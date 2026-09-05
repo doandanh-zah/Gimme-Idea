@@ -1,33 +1,28 @@
 import Fastify from 'fastify';
 
 export const jobRegistry = {
-  'research.problem': {
-    enabled: false,
-    reason: 'AI provider and Redis queue are outside Foundation Milestone',
-  },
-  'research.idea': {
-    enabled: false,
-    reason: 'AI provider and Redis queue are outside Foundation Milestone',
-  },
-  'imports.reconcile': {
-    enabled: false,
-    reason: 'Import execution is outside Foundation Milestone',
-  },
+  'research.problem': { queue: 'research', enabled: true },
+  'research.idea': { queue: 'research', enabled: true },
+  'escrow.reconcile': { queue: 'chain', enabled: true },
+  'colosseum.incremental': { queue: 'imports', enabled: true },
+  'notification.deliver': { queue: 'notifications', enabled: true },
 } as const;
 
-export function buildWorkerApp(logger = true) {
-  const app = Fastify({ logger });
-  app.get('/health', () => ({ service: 'worker', status: 'ok', version: '2.0.0-foundation' }));
-  app.get('/ready', () => ({
-    service: 'worker',
-    status: 'ready',
-    checks: {
-      lifecycle: 'ok',
-      registry: 'ok',
-      redis: 'not_configured',
-      aiProvider: 'not_configured',
-    },
-    registeredJobs: Object.keys(jobRegistry),
-  }));
+export function buildWorkerApp(options: {
+  logger?: boolean;
+  readiness: () => Promise<Record<string, 'ok' | 'failed' | 'not_configured'>>;
+}) {
+  const app = Fastify({ logger: options.logger ?? true });
+  app.get('/health', () => ({ service: 'worker', status: 'ok', version: '3.0.0-v1' }));
+  app.get('/ready', async (_request, reply) => {
+    const checks = await options.readiness();
+    if (Object.values(checks).includes('failed')) reply.code(503);
+    return {
+      service: 'worker',
+      status: reply.statusCode === 503 ? 'not_ready' : 'ready',
+      checks,
+      registeredJobs: Object.keys(jobRegistry),
+    };
+  });
   return app;
 }

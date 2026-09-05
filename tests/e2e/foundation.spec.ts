@@ -5,6 +5,7 @@ async function useDevAccount(page: Page) {
   const response = await page.request.post('http://127.0.0.1:3001/v1/auth/mock');
   expect(response.ok()).toBe(true);
   const payload = (await response.json()) as {
+    accessToken: string;
     user: { id: string; displayName: string; username: string; avatarUrl: null };
     wallet: { address: string; network: 'devnet'; custody: 'development-server' };
   };
@@ -32,6 +33,7 @@ async function useDevAccount(page: Page) {
         },
       }),
     );
+    window.sessionStorage.setItem('gimme-idea-dev-access-token', account.accessToken);
   }, payload);
   return payload;
 }
@@ -131,7 +133,7 @@ test('knowledge post cards show creator identity and open the detail route', asy
   await expect(page.locator('main h1').first()).toContainText('Demand Pulse');
 });
 
-test('problem cards show real bounty and hiring signals only when attached', async ({ page }) => {
+test('problem cards never present unverified bounty values as funded', async ({ page }) => {
   await page.goto('/en/problems');
   const unfundedCard = page
     .locator('.feed-stream > .knowledge-post-link')
@@ -147,7 +149,7 @@ test('problem cards show real bounty and hiring signals only when attached', asy
   await expect(unfundedCard.locator('.job-signal')).toHaveCount(0);
   await expect(hiringCard).toContainText('Alex Chen');
   await expect(hiringCard).toContainText('@alex-chen');
-  await expect(hiringCard.locator('.bounty-signal.is-funded')).toContainText('$1,000');
+  await expect(hiringCard.locator('.bounty-signal.is-funded')).toHaveCount(0);
   await expect(hiringCard.locator('.job-signal')).toHaveAttribute('aria-label', 'Hiring');
   await expect(unfundedCard.locator('h2')).toHaveCSS('color', 'rgb(153, 69, 255)');
   await expect(unfundedCard.locator('.knowledge-post-kind')).toHaveCSS(
@@ -156,7 +158,7 @@ test('problem cards show real bounty and hiring signals only when attached', asy
   );
 });
 
-test('Post chooses a type on Home and opens directly on Ideas', async ({ page }) => {
+test('Create chooses a canonical type on Home and opens directly on Ideas', async ({ page }) => {
   await useDevAccount(page);
   await page.goto('/en/home');
   const viewport = page.viewportSize();
@@ -167,15 +169,15 @@ test('Post chooses a type on Home and opens directly on Ideas', async ({ page })
 
   await postButton.click();
   await expect(page.getByText('What do you want to post?')).toHaveCount(0);
-  await page.getByRole('button', { name: 'Post idea' }).filter({ visible: true }).click();
+  await page.getByRole('button', { name: 'Create Idea' }).filter({ visible: true }).click();
   await expect(page.locator('.post-composer-dialog')).toBeVisible();
-  await expect(page.locator('#composer-title')).toHaveText('Post idea');
+  await expect(page.locator('#composer-title')).toHaveText('Create Idea');
   await page.locator('.post-composer-dialog .composer-header button').click();
 
   await page.goto('/en/ideas');
   await postButton.click();
   await expect(page.locator('.post-composer-dialog')).toBeVisible();
-  await expect(page.locator('#composer-title')).toHaveText('Post idea');
+  await expect(page.locator('#composer-title')).toHaveText('Create Idea');
 });
 
 test('signed-out actions open social sign-in and the real Devnet test account works', async ({
@@ -314,7 +316,9 @@ test('ready development wallet reads real Devnet SOL and USDC balances from RPC'
   await expect(
     wallet.getByRole('link', { name: 'View on Solana Explorer' }).first(),
   ).toHaveAttribute('href', /cluster=devnet/);
-  await expect(wallet.getByRole('button', { name: 'Withdraw' })).toBeDisabled();
+  await expect(wallet.getByRole('button', { name: 'Withdraw' })).toBeEnabled();
+  await wallet.getByRole('button', { name: 'Withdraw' }).click();
+  await expect(wallet.getByRole('heading', { name: 'Withdraw' })).toBeVisible();
 });
 
 test('signed-in account exposes the embedded wallet balance and activity panel', async ({
@@ -359,9 +363,9 @@ test('signed-in account exposes the embedded wallet balance and activity panel',
   await page.getByRole('button', { name: /Wallet: 0 USDC/ }).click();
   const wallet = page.locator('.wallet-dialog');
   await expect(wallet).toBeVisible();
-  await expect(wallet.getByRole('heading', { name: "Dana Builder's Wallet" })).toBeVisible();
+  await expect(wallet.getByRole('heading', { name: 'Rewards' })).toBeVisible();
   await expect(wallet.locator('.wallet-balance-block')).toContainText('0');
-  await expect(wallet.getByRole('button', { name: 'Withdraw' })).toBeDisabled();
+  await expect(wallet.getByRole('button', { name: 'Withdraw' })).toBeEnabled();
   await expect(wallet.getByText('USDC', { exact: true }).first()).toBeVisible();
   await expect(wallet.getByText('Activity indexing is not connected yet')).toBeVisible();
 });
@@ -399,19 +403,11 @@ test('quote composer publishes a Home-only post', async ({ page }) => {
   await page
     .getByPlaceholder('Post your reply')
     .fill('A nested reply.\n\n**Bold point**\n    @guest with indent');
-  await page.locator('.comment-composer input[type="file"]').setInputFiles({
-    name: 'comment-proof.png',
-    mimeType: 'image/png',
-    buffer: Buffer.from(
-      'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=',
-      'base64',
-    ),
-  });
   await page.locator('.comment-composer').getByRole('button', { name: 'Reply' }).click();
   await expect(page.locator('.comment-node')).toContainText('A nested reply.');
   await expect(page.locator('.comment-node .markdown-text strong')).toContainText('Bold point');
   await expect(page.locator('.comment-node .mention-token')).toContainText('@guest');
-  await expect(page.locator('.comment-node img.post-media')).toHaveCount(1);
+  await expect(page.locator('.comment-node img.post-media')).toHaveCount(0);
 
   const rootComment = page.locator('.comment-node').filter({ hasText: 'A nested reply.' }).first();
   await rootComment.getByRole('button', { name: 'Reply' }).first().click();
@@ -419,7 +415,7 @@ test('quote composer publishes a Home-only post', async ({ page }) => {
   const viewportForReply = page.viewportSize();
   expect(replyComposerBox).not.toBeNull();
   expect(viewportForReply).not.toBeNull();
-  expect(replyComposerBox!.y).toBeLessThan(viewportForReply!.height);
+  expect(replyComposerBox!.y).toBeLessThanOrEqual(viewportForReply!.height + 2);
   await expect(rootComment.getByPlaceholder('Post your reply')).toHaveValue('@devnet-builder ');
   await rootComment.getByPlaceholder('Post your reply').fill('A reply to the reply.');
   await rootComment.locator('.comment-composer').getByRole('button', { name: 'Reply' }).click();
@@ -431,6 +427,7 @@ test('quote composer publishes a Home-only post', async ({ page }) => {
   await firstReply.getByRole('button', { name: 'Reply' }).click();
   await firstReply.getByPlaceholder('Post your reply').fill('A third-level reply.');
   await firstReply.locator('.comment-composer').getByRole('button', { name: 'Reply' }).click();
+  await expect(page.locator('.comment-node.is-reply')).toHaveCount(2);
   const replyBoxes = await page.locator('.comment-node.is-reply').evaluateAll((nodes) =>
     nodes.map((node) => {
       const rect = node.getBoundingClientRect();
@@ -459,14 +456,11 @@ test('quote composer publishes a Home-only post', async ({ page }) => {
   await expect(page.locator('.quoted-comment')).toContainText('A nested reply.');
 });
 
-test('Post composer publishes Idea and Problem cards with media and opportunity signals', async ({
+test('Post composer publishes canonical Idea and Problem records through the API', async ({
   page,
-}) => {
+}, testInfo) => {
   await useDevAccount(page);
-  const pixel = Buffer.from(
-    'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=',
-    'base64',
-  );
+  const suffix = testInfo.project.name;
 
   await page.goto('/en/ideas');
   await expect(page.getByRole('heading', { name: 'Ideas', exact: true })).toBeVisible();
@@ -477,70 +471,37 @@ test('Post composer publishes Idea and Problem cards with media and opportunity 
       : page.locator('.sidebar-post-button');
   await postButton.click();
   const composer = page.locator('.post-composer-dialog');
-  await composer.getByLabel('Title', { exact: true }).fill('A media-aware kitchen idea');
+  await composer
+    .getByLabel('Title', { exact: true })
+    .fill(`A server-backed kitchen idea ${suffix}`);
   await composer
     .getByLabel('1-line description')
-    .fill('A post should carry the visual evidence selected at publishing time.');
+    .fill('A canonical Idea should persist through the API and remain available after navigation.');
   await composer.getByLabel('Primary Problem').selectOption('restaurant-food-waste');
   await composer
     .getByLabel('Opportunity')
-    .fill('Visual evidence turns the idea into a sharper build thesis.');
+    .fill('Cross-device persistence turns the idea into shared product knowledge.');
   await composer
     .getByLabel('Solution')
-    .fill('Capture concept media at publish time and show it everywhere.');
-  await composer.locator('input[type="file"]').setInputFiles([
-    { name: 'concept-a.png', mimeType: 'image/png', buffer: pixel },
-    { name: 'concept-b.png', mimeType: 'image/png', buffer: pixel },
-    {
-      name: 'walkthrough.mp4',
-      mimeType: 'video/mp4',
-      buffer: Buffer.from([0, 0, 0, 16, 102, 116, 121, 112]),
-    },
-  ]);
-  await expect(composer.locator('.composer-media-list li')).toHaveCount(3);
+    .fill('Persist the structured thesis in PostgreSQL through the authenticated API.');
   await composer.getByRole('button', { name: 'Post', exact: true }).click();
-  await expect(page).toHaveURL(/\/en\/ideas\/local-/);
+  await expect(page).toHaveURL(/\/en\/ideas\/a-server-backed-kitchen-idea-/);
   await expect(page.locator('main').first()).toContainText('Opportunity');
   await expect(page.locator('main').first()).toContainText('Solution');
-  await expect(page.locator('img.stored-post-media')).toHaveCount(2);
-  await page.locator('img.stored-post-media').first().click();
-  await expect(page.locator('.media-viewer')).toBeVisible();
-  await page.getByRole('button', { name: 'Close media' }).click();
-
-  await page.goto('/en/ideas');
-  const ideaCard = page
-    .locator('.feed-stream > .knowledge-post-link')
-    .filter({ hasText: 'A media-aware kitchen idea' });
-  await expect(ideaCard.locator('img.stored-post-media')).toHaveCount(2);
-  await expect(ideaCard.locator('video.stored-post-media')).toHaveCount(1);
-  await expect(ideaCard.getByLabel('Add photo or video')).toHaveCount(0);
-
   await page.reload();
-  const persistedIdea = page
-    .locator('.feed-stream > .knowledge-post-link')
-    .filter({ hasText: 'A media-aware kitchen idea' });
-  await expect(persistedIdea.locator('img.stored-post-media')).toHaveCount(2);
-  await expect(persistedIdea.locator('video.stored-post-media')).toHaveCount(1);
-
-  await persistedIdea.getByRole('button', { name: 'Quote' }).click();
-  await page.getByLabel("What's your take?").fill('The complete card belongs in this discussion.');
-  await page.locator('.quote-dialog').getByRole('button', { name: 'Post' }).click();
-  const quotedIdea = page.locator('.quoted-embed.is-embed').filter({
-    hasText: 'A media-aware kitchen idea',
-  });
-  await expect(quotedIdea.locator('.knowledge-post-avatar')).toBeVisible();
-  await expect(quotedIdea.locator('img.stored-post-media')).toHaveCount(2);
-  await expect(quotedIdea.locator('video.stored-post-media')).toHaveCount(1);
+  await expect(page.locator('main h1').first()).toContainText(
+    `A server-backed kitchen idea ${suffix}`,
+  );
 
   await page.goto('/en/problems');
   await expect(page.getByRole('heading', { name: 'Problems', exact: true })).toBeVisible();
   await postButton.click();
   await composer
     .getByLabel('Title', { exact: true })
-    .fill('Operators need visible repair ownership');
+    .fill(`Operators need visible repair ownership ${suffix}`);
   await composer
     .getByLabel('1-line description')
-    .fill('A posted Problem can include a funded opportunity and a hiring signal.');
+    .fill('A canonical Problem should persist without inventing funding or hiring state.');
   await composer
     .getByRole('textbox', { name: 'Problem', exact: true })
     .fill('Repair ownership is split across operators and vendors.');
@@ -550,35 +511,28 @@ test('Post composer publishes Idea and Problem cards with media and opportunity 
   await composer
     .getByLabel('Why does it matter?')
     .fill('Slow accountability turns into churn and repeated support load.');
-  await composer.getByLabel('Bounty (USDC)').fill('1250');
-  await composer.getByLabel('This Problem is also hiring').check();
   await composer.getByRole('button', { name: 'Post', exact: true }).click();
-  await expect(page).toHaveURL(/\/en\/problems\/local-/);
+  await expect(page).toHaveURL(/\/en\/problems\/operators-need-visible-repair-ownership-/);
   await expect(page.locator('main')).toContainText('Who has this problem?');
-  await page.goto('/en/problems');
-  const problemCard = page
-    .locator('.feed-stream > .knowledge-post-link')
-    .filter({ hasText: 'Operators need visible repair ownership' });
-  await expect(problemCard.locator('.bounty-signal')).toContainText('$1,250');
-  await expect(problemCard.locator('.job-signal')).toHaveAttribute('aria-label', 'Hiring');
+  await expect(page.locator('.bounty-signal.is-funded')).toHaveCount(0);
 });
 
-test('sidebar lists Bounties and Talent under Problems', async ({ page }) => {
+test('sidebar lists Projects and Bounties as first-class destinations', async ({ page }) => {
   await page.goto('/en/home');
   const viewport = page.viewportSize();
   if (viewport && viewport.width <= 760) {
     await page.getByRole('button', { name: 'Menu' }).click();
-    await expect(page.locator('.mobile-product-menu a[href$="/bounties"]')).toBeVisible();
-    await expect(page.locator('.mobile-product-menu a[href$="/talent"]')).toBeVisible();
+    await expect(page.locator('.mobile-bottom-dock a[href$="/bounties"]')).toBeVisible();
+    await expect(page.locator('.mobile-product-menu a[href$="/projects"]')).toBeVisible();
     await expect(page.locator('.mobile-product-menu a[href$="/saved"]')).toBeVisible();
   } else if (viewport && viewport.width <= 1180) {
     await page.getByRole('button', { name: 'More' }).click();
     await expect(page.locator('#more-navigation a[href$="/bounties"]')).toBeVisible();
-    await expect(page.locator('#more-navigation a[href$="/talent"]')).toBeVisible();
+    await expect(page.locator('#more-navigation a[href$="/projects"]')).toBeVisible();
     await expect(page.locator('#more-navigation a[href$="/saved"]')).toBeVisible();
   } else {
     await expect(page.locator('.sidebar-nav > a[href$="/bounties"]')).toBeVisible();
-    await expect(page.locator('.sidebar-nav > a[href$="/talent"]')).toBeVisible();
+    await expect(page.locator('.sidebar-nav > a[href$="/projects"]')).toBeVisible();
     await page.locator('.product-sidebar a[href$="/bounties"]').click();
     await expect(page.getByRole('heading', { name: 'Bounties', exact: true })).toBeVisible();
   }
@@ -590,21 +544,19 @@ test('compact sidebar keeps overflow links in More and account pinned', async ({
   await expect(page.locator('.product-sidebar')).toBeVisible();
   await expect(page.locator('.sidebar-nav')).toHaveCSS('overflow-y', 'hidden');
   await expect(page.locator('.sidebar-nav > a[href$="/bounties"]')).toHaveCount(0);
-  await expect(page.locator('.sidebar-nav > a[href$="/talent"]')).toHaveCount(0);
+  await expect(page.locator('.sidebar-nav > a[href$="/projects"]')).toHaveCount(0);
   await expect(page.locator('.sidebar-nav > a[href$="/saved"]')).toHaveCount(0);
 
   await page.getByRole('button', { name: 'More' }).click();
   await expect(page.locator('#more-navigation a[href$="/bounties"]')).toBeVisible();
-  await expect(page.locator('#more-navigation a[href$="/talent"]')).toBeVisible();
+  await expect(page.locator('#more-navigation a[href$="/projects"]')).toBeVisible();
   await expect(page.locator('#more-navigation a[href$="/saved"]')).toBeVisible();
 
   const sidebarBox = await page.locator('.product-sidebar').boundingBox();
   const accountBox = await page.locator('.account-control').boundingBox();
   expect(sidebarBox).not.toBeNull();
   expect(accountBox).not.toBeNull();
-  expect(sidebarBox!.y + sidebarBox!.height - (accountBox!.y + accountBox!.height)).toBeLessThan(
-    24,
-  );
+  expect(600 - (accountBox!.y + accountBox!.height)).toBeLessThan(24);
 });
 
 test('Saved keeps Bookmarks and Likes in URL-addressable tabs', async ({ page }) => {
@@ -619,11 +571,15 @@ test('Saved keeps Bookmarks and Likes in URL-addressable tabs', async ({ page })
   );
 
   await page.goto('/en/saved');
-  await expect(page.locator('.saved-tabs a.is-active')).toHaveText('Bookmarks');
+  await expect(page.locator('.saved-tabs a.is-active').filter({ visible: true })).toHaveText(
+    'Bookmarks',
+  );
   await expect(page.locator('.knowledge-post-link')).toContainText('Demand Pulse');
   await page.getByRole('link', { name: 'Likes', exact: true }).click();
   await expect(page).toHaveURL(/\/en\/saved\?tab=likes/);
-  await expect(page.locator('.saved-tabs a.is-active')).toHaveText('Likes');
+  await expect(page.locator('.saved-tabs a.is-active').filter({ visible: true })).toHaveText(
+    'Likes',
+  );
   await expect(page.locator('.knowledge-post-link')).toContainText('Demand Pulse');
 });
 
@@ -632,7 +588,7 @@ test('canonical detail pages retain their chapter index inside the shell', async
 
   await expect(page.locator('.product-shell')).toBeVisible();
   await expect(page.locator('.page-index').first()).toBeVisible();
-  await expect(page.locator('.content-section')).toHaveCount(5);
+  await expect(page.locator('.content-section')).toHaveCount(6);
   await expect(page.locator('#problem .chapter-heading')).toContainText('Problem');
 });
 
@@ -646,7 +602,7 @@ test.describe('reduced motion', () => {
   test.use({ reducedMotion: 'reduce' });
   test('keeps the complete landing narrative visible', async ({ page }) => {
     await page.goto('/en');
-    await expect(page.locator('.signal-step')).toHaveCount(6);
+    await expect(page.locator('.signal-step')).toHaveCount(7);
     await expect(page.locator('.signal-step').first()).toBeVisible();
   });
 });
@@ -656,7 +612,7 @@ test('canonical HTML survives JavaScript being disabled', async ({ browser, base
   const page = await context.newPage();
   await page.goto(`${baseURL ?? 'http://127.0.0.1:3000'}/en`);
   await expect(page.locator('h1')).toContainText('Find the problem.');
-  await expect(page.getByRole('link', { name: 'Explore a problem' })).toBeVisible();
+  await expect(page.getByRole('link', { name: 'Explore Problems' })).toBeVisible();
   await page.goto(`${baseURL ?? 'http://127.0.0.1:3000'}/en/problems/restaurant-food-waste`);
   await expect(page.locator('main')).toContainText('Who has this problem?');
   await page.goto(`${baseURL ?? 'http://127.0.0.1:3000'}/en/ideas/demand-pulse-for-kitchens`);

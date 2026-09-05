@@ -1,4 +1,5 @@
 import './globals.css';
+import './v1.css';
 import type { Metadata } from 'next';
 import { Geist, Geist_Mono } from 'next/font/google';
 import type { ReactNode } from 'react';

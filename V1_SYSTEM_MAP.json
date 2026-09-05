@@ -1,0 +1,149 @@
+{
+  "generatedAt": "2026-09-05T00:00:00+07:00",
+  "version": "v1-phase3",
+  "status": "backend-converged-with-economic-launch-blockers",
+  "api": {
+    "framework": "Fastify 5",
+    "basePath": "/v1",
+    "process": "apps/api",
+    "publicReads": [
+      "/v1/home",
+      "/v1/search",
+      "/v1/problems",
+      "/v1/ideas",
+      "/v1/projects",
+      "/v1/bounties",
+      "/v1/organizations",
+      "/v1/posts/:id"
+    ],
+    "authenticatedDomains": [
+      "profile",
+      "wallet-linking",
+      "canonical-create",
+      "bounty-intents",
+      "private-submissions",
+      "judging",
+      "posts",
+      "research",
+      "uploads",
+      "notifications",
+      "moderation"
+    ],
+    "operational": ["/health", "/ready", "/v1/chain/events"],
+    "errorShape": ["code", "message", "requestId"]
+  },
+  "database": {
+    "engine": "PostgreSQL via Supabase",
+    "canonicalFor": [
+      "identity",
+      "organizations",
+      "problems",
+      "ideas",
+      "projects",
+      "bounty-workflow",
+      "submissions",
+      "judging",
+      "posts-and-replies",
+      "research",
+      "imports",
+      "notifications",
+      "moderation",
+      "audit"
+    ],
+    "migration": "supabase/migrations/20260904211500_backend_v1_convergence.sql",
+    "poolMaxPerRepository": 12,
+    "privacy": "repository predicates plus RLS defense in depth",
+    "moneyRepresentation": "numeric(40,0) serialized as decimal strings"
+  },
+  "queues": {
+    "provider": "BullMQ over Redis",
+    "canonical": false,
+    "names": {
+      "research": ["research.problem", "research.idea"],
+      "chain": ["escrow.reconcile"],
+      "imports": ["colosseum.incremental"],
+      "notifications": ["notification.deliver"]
+    },
+    "schedules": {
+      "escrowReconciliationMs": 60000,
+      "colosseumIncrementalMs": 21600000
+    },
+    "runtimeVerified": false,
+    "runtimeBlocker": "Redis container could not be started in the current host because docker-credential-desktop is unavailable"
+  },
+  "storage": {
+    "provider": "Supabase Storage compatible signed URLs",
+    "publicBucket": "public-media",
+    "privateBucket": "private-submissions",
+    "privateDownloadTtlSeconds": 300,
+    "submissionAttachmentPolicy": "private bucket and private visibility required",
+    "runtimeVerification": "owner signed-download passed; anonymous 401; unrelated actor 404"
+  },
+  "solana": {
+    "canonicalFor": [
+      "escrow existence",
+      "funding",
+      "committed mint and amounts",
+      "winner pubkey",
+      "settlement",
+      "refund",
+      "resolution proof"
+    ],
+    "cluster": "devnet",
+    "programId": "BB2bMK8gwrDk3YG3GFECqnwnFigDoxvKDwJZiTXtzCK6",
+    "reviewedLocalBinarySha256": "4a5901ecfb0e855531fd9ed7c1fc0a6b4708d2ae359a590cc5bdcd2516dfc612",
+    "deployedBinarySha256": "e70ea81a2693facabfe3a51801d26c05ede271b4906dce9c417eb1f34e50b894",
+    "deploymentParity": false,
+    "upgradeAuthority": "FzcnaZMYcoAYpLgr7Wym2b8hrKYk3VXsRxWSLuvZKLJm",
+    "backendTransactionPreparation": false,
+    "settlementRelayer": false,
+    "mainnetReady": false
+  },
+  "auth": {
+    "productionProvider": "Privy server access-token verification",
+    "identityKey": ["auth_provider", "auth_subject"],
+    "requestActor": ["userId", "authProvider", "authSubject"],
+    "devAuth": "non-production plus explicit flag only",
+    "clientSessionTrustedAsIdentity": false,
+    "externalWalletProof": "domain-separated, user/address-bound, single-use Ed25519 challenge"
+  },
+  "privacy": {
+    "submissionDefault": "private_owner_judges",
+    "winningIdeaDefault": "restricted",
+    "bountyProjectDefault": "private",
+    "winningProjectDefault": "restricted",
+    "publicSearchIncludesSubmissions": false,
+    "publicHomeIncludesSubmissions": false,
+    "privateAiRetrievalEnabled": false,
+    "unauthorizedPrivateRead": "404 after authentication"
+  },
+  "imports": {
+    "colosseum": {
+      "mode": "configured official JSON feed",
+      "blindScraping": false,
+      "idempotency": "source plus external ID plus payload hash",
+      "rawPayloadStored": true
+    },
+    "problemSignalCanonicalByDefault": false,
+    "humanPromotionRequired": true
+  },
+  "ai": {
+    "providerModes": ["disabled", "openai_compatible"],
+    "passes": ["researcher", "independent verifier"],
+    "verdicts": ["supported", "unsupported", "unknown"],
+    "versionBinding": ["entityVersion", "pipelineVersion"],
+    "requiresHttpsSources": true,
+    "coreProductDependsOnAi": false,
+    "liveProviderVerified": false
+  },
+  "evidence": {
+    "load": "artifacts/load-v1-2026-09-05.json",
+    "responsiveE2e": "85 passed, 2 viewport-gated skips, 0 failed",
+    "qualityGates": "build, lint, typecheck, unit/integration tests, and formatting passed",
+    "productionDependencyAudit": "3 high advisories in unpatched bigint-buffer/image-size paths; 19 fixable advisories remediated",
+    "apiPersistencePrivacy": "scripts/verify-v1-api.mjs",
+    "storagePrivacy": "apps/api/scripts/verify-storage.ts",
+    "seedVerifier": "packages/db/scripts/verify-seed.ts",
+    "contractReport": "SMART_CONTRACT_V1_HARDENING_REPORT.md"
+  }
+}

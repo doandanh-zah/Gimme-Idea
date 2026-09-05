@@ -31,6 +31,7 @@ import {
   commentKey,
   commentsForPost,
   getQuote,
+  getRemoteQuote,
   getSocialState,
   getViewCount,
   incrementViews,
@@ -516,18 +517,46 @@ export function QuoteThread({ locale, postId }: { locale: Locale; postId: string
   const t = copy[locale];
   const [post, setPost] = useState<QuotePost | null>(null);
   const [comments, setComments] = useState<SocialComment[]>([]);
+  const [resolved, setResolved] = useState(false);
 
   useEffect(() => {
+    let remotePost: QuotePost | null = null;
+    let remoteComments: SocialComment[] = [];
+    let cancelled = false;
     const sync = () => {
-      setPost(getQuote(postId));
-      setComments(commentsForPost(postId));
+      const localPost = getQuote(postId);
+      const localComments = commentsForPost(postId);
+      setPost(localPost ?? remotePost);
+      setComments([
+        ...remoteComments,
+        ...localComments.filter(
+          (local) => !remoteComments.some((remote) => remote.id === local.id),
+        ),
+      ]);
     };
     sync();
+    void getRemoteQuote(postId)
+      .then((remote) => {
+        if (cancelled || !remote) return;
+        remotePost = remote.post;
+        remoteComments = remote.comments;
+        sync();
+      })
+      .catch(() => undefined)
+      .finally(() => {
+        if (!cancelled) setResolved(true);
+      });
     incrementViews(quoteKey(postId));
-    return subscribeSocial(sync);
+    const unsubscribe = subscribeSocial(sync);
+    return () => {
+      cancelled = true;
+      unsubscribe();
+    };
   }, [postId]);
 
   const threadedComments = useMemo(() => flattenCommentThread(comments), [comments]);
+
+  if (!post && !resolved) return <section className="app-empty-state" aria-busy="true" />;
 
   if (!post) {
     return (
@@ -703,15 +732,19 @@ function CommentComposer({
     <form
       ref={formRef}
       className="comment-composer"
-      onSubmit={(event) => {
+      onSubmit={async (event) => {
         event.preventDefault();
         if (!auth.requireAuth('comment')) return;
         if (!body.trim() && !media) return;
-        addComment({ postId, body, actor: auth.actor, parentId, mentionUsername, media });
-        setBody(initialBody);
-        setMedia(null);
-        setError('');
-        onDone?.();
+        try {
+          await addComment({ postId, body, actor: auth.actor, parentId, mentionUsername, media });
+          setBody(initialBody);
+          setMedia(null);
+          setError('');
+          onDone?.();
+        } catch (caught) {
+          setError(caught instanceof Error ? caught.message : 'Could not publish the reply.');
+        }
       }}
     >
       <label className="sr-only" htmlFor={fieldId}>
@@ -796,18 +829,22 @@ export function SocialComposer({
     };
   }, []);
 
-  const publish = () => {
+  const publish = async () => {
     if (!auth.requireAuth('quote')) return;
-    const post = addQuote({
-      body,
-      target,
-      actor: auth.actor,
-      quotedPostId,
-      quotedComment,
-      media,
-    });
-    onClose();
-    router.push(`/${locale}/home/${post.id}`);
+    try {
+      const post = await addQuote({
+        body,
+        target,
+        actor: auth.actor,
+        quotedPostId,
+        quotedComment,
+        media,
+      });
+      onClose();
+      router.push(`/${locale}/home/${post.id}`);
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : 'Could not publish the quote.');
+    }
   };
 
   return (

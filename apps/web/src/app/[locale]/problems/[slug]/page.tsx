@@ -1,12 +1,14 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { ArrowLeft, ArrowUpRight } from 'lucide-react';
+import { ArrowLeft, ArrowRight, ArrowUpRight } from 'lucide-react';
 import { notFound } from 'next/navigation';
 import { Eyebrow, StatusPill } from '@gimme-idea/ui';
 import { LocalKnowledgeDetail } from '@/components/local-knowledge-detail';
 import { PageIndex } from '@/components/page-index';
 import { Provenance } from '@/components/provenance';
-import { getProblem } from '@/lib/api';
+import { EntityActions } from '@/components/v1-actions';
+import { BountyCard, ProjectCard } from '@/components/v1-cards';
+import { bountyClient, problemClient, projectClient } from '@/lib/domain/client';
 import { copy, isLocale } from '@/lib/i18n';
 
 type PageProps = { params: Promise<{ locale: string; slug: string }> };
@@ -22,7 +24,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
       },
     };
   }
-  const problem = await getProblem(slug);
+  const problem = await problemClient.get(slug);
   return problem
     ? {
         title: problem.title,
@@ -41,11 +43,19 @@ export default async function ProblemPage({ params }: PageProps) {
   if (slug.startsWith('local-')) {
     return <LocalKnowledgeDetail locale={locale} kind="problem" slug={slug} />;
   }
-  const problem = await getProblem(slug);
+  const problem = await problemClient.get(slug);
   if (!problem) {
     notFound();
   }
-  const relatedIndex = problem.bounty ? '05' : '04';
+  const [ideaBounties, projects] = await Promise.all([
+    bountyClient.list('idea'),
+    projectClient.list(),
+  ]);
+  const ideaBounty = ideaBounties.find((item) => item.problem.slug === slug);
+  const historical = projects.filter(
+    (item) => item.mode === 'historical_imported' && item.problem.slug === slug,
+  );
+  const relatedIndex = ideaBounty ? '06' : '05';
   return (
     <main id="main" className="detail-page problem-page">
       <nav className="breadcrumb" aria-label="Breadcrumb">
@@ -67,17 +77,53 @@ export default async function ProblemPage({ params }: PageProps) {
           <StatusPill>{problem.provenance.origin.replace('_', ' ')}</StatusPill>
         </div>
       </header>
+      <div className="v1-canonical-actionbar">
+        <EntityActions
+          locale={locale}
+          target={{
+            kind: 'problem',
+            slug: problem.slug,
+            href: `/${locale}/problems/${problem.slug}`,
+            title: problem.title,
+            summary: problem.summary,
+            creatorName: problem.creator?.displayName ?? 'Gimme Idea',
+            creatorUsername: problem.creator?.username ?? null,
+            avatarUrl: problem.creator?.avatarUrl ?? null,
+            createdAt: problem.createdAt,
+          }}
+        />
+        <Link
+          className="button button-primary"
+          href={
+            ideaBounty ? `/${locale}/bounties/${ideaBounty.slug}/submit` : `/${locale}/create/idea`
+          }
+        >
+          {ideaBounty
+            ? locale === 'vi'
+              ? `Gửi Idea riêng tư · ${ideaBounty.amountUsdc.toLocaleString(locale)} USDC`
+              : `Submit Private Idea · ${ideaBounty.amountUsdc.toLocaleString(locale)} USDC`
+            : locale === 'vi'
+              ? 'Đề xuất Public Idea'
+              : 'Propose a Public Idea'}
+          <ArrowRight size={17} aria-hidden="true" />
+        </Link>
+      </div>
       <PageIndex
         label={t.onThisPage}
         items={[
           { index: '01', label: t.problem, href: '#problem' },
           { index: '02', label: t.whoHasThisProblem, href: '#who' },
           { index: '03', label: t.whyItMatters, href: '#why' },
-          ...(problem.bounty
-            ? [{ index: '04', label: t.opportunity, href: '#opportunity' as const }]
+          {
+            index: '04',
+            label: locale === 'vi' ? 'Những gì đã thử' : 'What was tried',
+            href: '#attempts',
+          },
+          ...(ideaBounty
+            ? [{ index: '05', label: 'Idea Bounty', href: '#opportunity' as const }]
             : []),
           { index: relatedIndex, label: t.relatedIdeas, href: '#related-ideas' },
-          { index: problem.bounty ? '06' : '05', label: t.sources, href: '#sources' },
+          { index: ideaBounty ? '07' : '06', label: t.sources, href: '#sources' },
         ]}
       />
       <div className="detail-grid">
@@ -120,32 +166,43 @@ export default async function ProblemPage({ params }: PageProps) {
               ))}
             </ul>
           </section>
-          {problem.bounty && (
+          <section
+            id="attempts"
+            className="content-section content-section-raised v1-attempt-section"
+          >
+            <div className="chapter-heading">
+              <span>04</span>
+              <div>
+                <small>
+                  {locale === 'vi' ? 'HISTORICAL INTELLIGENCE' : 'HISTORICAL INTELLIGENCE'}
+                </small>
+                <h2>{locale === 'vi' ? 'Điều gì đã được thử?' : 'What has already been tried?'}</h2>
+              </div>
+            </div>
+            {historical.length ? (
+              <div className="v1-related-records">
+                {historical.map((project) => (
+                  <ProjectCard key={project.slug} project={project} locale={locale} compact />
+                ))}
+              </div>
+            ) : (
+              <p className="empty-note">
+                {locale === 'vi'
+                  ? 'Chưa tìm thấy build lịch sử liên quan. Đây là research gap, không phải bằng chứng Problem mới.'
+                  : 'No related historical builds found yet. This is a research gap, not proof the Problem is novel.'}
+              </p>
+            )}
+          </section>
+          {ideaBounty && (
             <section id="opportunity" className="content-section">
               <div className="chapter-heading">
-                <span>04</span>
+                <span>05</span>
                 <div>
                   <small>{t.opportunity}</small>
                   <h2>{t.bounty}</h2>
                 </div>
               </div>
-              <div className="bounty-panel">
-                <div>
-                  <Eyebrow>{t.bounty}</Eyebrow>
-                  <h3>{problem.bounty.title}</h3>
-                </div>
-                <div>
-                  <StatusPill
-                    tone={problem.bounty.status === 'mock_funded' ? 'success' : 'neutral'}
-                  >
-                    {problem.bounty.status.replace('_', ' ')}
-                  </StatusPill>
-                  <p>
-                    {(Number(problem.bounty.amountRaw) / 1_000_000).toLocaleString()}{' '}
-                    {problem.bounty.currency} <small>DEV FIXTURE</small>
-                  </p>
-                </div>
-              </div>
+              <BountyCard bounty={ideaBounty} locale={locale} compact />
             </section>
           )}
           <section id="related-ideas" className="content-section content-section-raised">
@@ -167,6 +224,18 @@ export default async function ProblemPage({ params }: PageProps) {
                   <ArrowUpRight size={17} />
                 </Link>
               ))}
+              {problem.relatedIdeas.length === 0 && (
+                <Link href={`/${locale}/create/idea`}>
+                  <small>01 / OPEN</small>
+                  <strong>{locale === 'vi' ? 'Chưa có Public Idea' : 'No public Ideas yet'}</strong>
+                  <p>
+                    {locale === 'vi'
+                      ? 'Private bounty submissions, nếu có, không được hiển thị ở đây.'
+                      : 'Private bounty submissions, if any, are not shown here.'}
+                  </p>
+                  <ArrowUpRight size={17} />
+                </Link>
+              )}
             </div>
           </section>
         </article>

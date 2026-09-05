@@ -2,7 +2,7 @@
 
 import Image from 'next/image';
 import Link from 'next/link';
-import { Lightbulb, Target, X } from 'lucide-react';
+import { CircleDollarSign, Hammer, Lightbulb, Target, X } from 'lucide-react';
 import { useState } from 'react';
 import { useEffect } from 'react';
 import type { Locale } from '@gimme-idea/contracts';
@@ -102,7 +102,14 @@ export function LegacyMediaBlock({ media }: { media: MediaAttachment }) {
 }
 
 export function QuotedEmbed({ locale, target }: { locale: Locale; target: QuotedTarget }) {
-  const KindIcon = target.kind === 'idea' ? Lightbulb : Target;
+  const KindIcon =
+    target.kind === 'idea'
+      ? Lightbulb
+      : target.kind === 'project'
+        ? Hammer
+        : target.kind === 'bounty'
+          ? CircleDollarSign
+          : Target;
   const initials = target.creatorName
     .split(/\s+/)
     .filter(Boolean)

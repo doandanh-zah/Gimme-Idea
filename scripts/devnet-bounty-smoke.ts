@@ -1,4 +1,4 @@
-import { createHash } from 'node:crypto';
+import { createHash, randomUUID } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { resolve } from 'node:path';
@@ -7,46 +7,37 @@ import { AnchorProvider, Program, Wallet } from '@coral-xyz/anchor';
 import {
   ASSOCIATED_TOKEN_PROGRAM_ID,
   TOKEN_PROGRAM_ID,
-  createMint,
   getAccount,
   getAssociatedTokenAddressSync,
+  getMint,
   getOrCreateAssociatedTokenAccount,
   mintTo,
 } from '@solana/spl-token';
 import { Connection, Keypair, PublicKey, SystemProgram } from '@solana/web3.js';
 import BN from 'bn.js';
+import {
+  BOUNTY_ESCROW_PROGRAM_ID,
+  deriveBountyEscrowPda,
+  deriveBountyIdFromUuid,
+  derivePlatformConfigPda,
+  deriveVaultAddress,
+} from '../packages/solana/src/index.js';
 import type { BountyEscrow } from '../target/types/bounty_escrow.js';
 
-const PROGRAM_ID = new PublicKey('BB2bMK8gwrDk3YG3GFECqnwnFigDoxvKDwJZiTXtzCK6');
-const OWNER_AUTHORITY = new PublicKey('FzcnaZMYcoAYpLgr7Wym2b8hrKYk3VXsRxWSLuvZKLJm');
-const PLATFORM_SEED = Buffer.from('platform');
-const BOUNTY_SEED = Buffer.from('bounty');
-const DECIMALS = 6;
-const PRIZE_POOL = 10_000_000;
-const PLATFORM_FEE = 250_000;
+const PROGRAM_ID = new PublicKey(BOUNTY_ESCROW_PROGRAM_ID);
+const PRIZE = 1_000_000n;
+const FEE = 50_000n;
+const REQUIRED = PRIZE + FEE;
 
-function isSecretKey(value: unknown): value is number[] {
-  return (
-    Array.isArray(value) &&
-    value.every(
-      (item: unknown) =>
-        typeof item === 'number' && Number.isInteger(item) && item >= 0 && item <= 255,
-    )
-  );
-}
-
-function loadPayer(): Keypair {
-  const configuredPath = process.env.ANCHOR_WALLET ?? '~/.config/solana/id.json';
-  const walletPath = configuredPath.startsWith('~/')
-    ? resolve(homedir(), configuredPath.slice(2))
-    : resolve(configuredPath);
-  const secretKey: unknown = JSON.parse(readFileSync(walletPath, 'utf8'));
-  if (!isSecretKey(secretKey)) throw new Error(`Invalid Solana keypair at ${walletPath}`);
-  return Keypair.fromSecretKey(Uint8Array.from(secretKey));
-}
-
-function hash(value: string) {
-  return [...createHash('sha256').update(value).digest()];
+function loadKeypair(pathValue: string) {
+  const path = pathValue.startsWith('~/')
+    ? resolve(homedir(), pathValue.slice(2))
+    : resolve(pathValue);
+  const secret: unknown = JSON.parse(readFileSync(path, 'utf8'));
+  if (!Array.isArray(secret) || !secret.every((value) => Number.isInteger(value))) {
+    throw new Error(`Invalid Solana keypair at ${path}`);
+  }
+  return Keypair.fromSecretKey(Uint8Array.from(secret as number[]));
 }
 
 async function chainTime(connection: Connection) {
@@ -55,16 +46,42 @@ async function chainTime(connection: Connection) {
 }
 
 async function waitForChainTime(connection: Connection, timestamp: number) {
-  const timeoutAt = Date.now() + 150_000;
+  const timeout = Date.now() + 180_000;
   while ((await chainTime(connection)) < timestamp) {
-    if (Date.now() > timeoutAt)
-      throw new Error('Devnet clock did not reach the submission deadline');
-    await new Promise((resolveWait) => setTimeout(resolveWait, 2_000));
+    if (Date.now() > timeout) throw new Error(`Devnet clock did not reach ${timestamp}`);
+    await new Promise((done) => setTimeout(done, 2_000));
   }
 }
 
+function stateName(state: Record<string, unknown>) {
+  return Object.keys(state)[0];
+}
+
+function hashSmokeTerms(input: {
+  uuid: string;
+  stage: 'IDEA' | 'BUILD' | 'CANCELLATION';
+  mint: string;
+  submissionDeadline: number;
+  judgingDeadline: number;
+}) {
+  const canonicalPayload = JSON.stringify({
+    version: 1,
+    bountyUuid: input.uuid,
+    stage: input.stage,
+    mint: input.mint,
+    prizePoolRaw: PRIZE.toString(),
+    platformFeeRaw: FEE.toString(),
+    submissionDeadline: input.submissionDeadline,
+    judgingDeadline: input.judgingDeadline,
+  });
+  return createHash('sha256')
+    .update('GIMME_IDEA_TERMS_V1\0', 'utf8')
+    .update(canonicalPayload, 'utf8')
+    .digest();
+}
+
 async function main() {
-  const payer = loadPayer();
+  const payer = loadKeypair(process.env.ANCHOR_WALLET ?? '~/.config/solana/id.json');
   const rpcUrl = process.env.ANCHOR_PROVIDER_URL ?? 'https://api.devnet.solana.com';
   const connection = new Connection(rpcUrl, 'confirmed');
   const provider = new AnchorProvider(connection, new Wallet(payer), {
@@ -73,168 +90,251 @@ async function main() {
   });
   const idl = JSON.parse(readFileSync('target/idl/bounty_escrow.json', 'utf8')) as BountyEscrow;
   const program = new Program<BountyEscrow>(idl, provider);
-
   const deployed = await connection.getAccountInfo(PROGRAM_ID);
-  if (!deployed?.executable)
-    throw new Error(`Program ${PROGRAM_ID.toBase58()} is not deployed on Devnet`);
+  if (!deployed?.executable) throw new Error(`Program ${PROGRAM_ID.toBase58()} is not executable`);
 
-  const winner = Keypair.generate();
-  const mint = await createMint(connection, payer, payer.publicKey, null, DECIMALS);
-  const sponsorTokenAccount = await getOrCreateAssociatedTokenAccount(
+  const platformConfig = derivePlatformConfigPda(PROGRAM_ID);
+  const config = await program.account.platformConfig.fetch(platformConfig);
+  if (config.paused) throw new Error('Platform is paused; smoke test will not create commitments');
+  const mint = config.approvedMint;
+  const mintAccount = await getMint(connection, mint, 'confirmed', TOKEN_PROGRAM_ID);
+  const sponsorAta = await getOrCreateAssociatedTokenAccount(
     connection,
     payer,
     mint,
     payer.publicKey,
   );
-  await mintTo(
-    connection,
-    payer,
-    mint,
-    sponsorTokenAccount.address,
-    payer,
-    PRIZE_POOL + PLATFORM_FEE,
-  );
-
-  const [platformConfig] = PublicKey.findProgramAddressSync([PLATFORM_SEED], PROGRAM_ID);
-  const initializePlatformSignature = await program.methods
-    .initializePlatform(
-      OWNER_AUTHORITY,
-      OWNER_AUTHORITY,
-      OWNER_AUTHORITY,
-      500,
-      new BN(1_000_000_000),
-    )
-    .accountsStrict({
-      platformConfig,
-      approvedMint: mint,
-      admin: payer.publicKey,
-      systemProgram: SystemProgram.programId,
-    })
-    .rpc();
-
-  const nonce = `${Date.now()}-${payer.publicKey.toBase58()}`;
-  const bountyId = hash(`gimme-idea-devnet-bounty:${nonce}`);
-  const termsHash = hash(`Gimme Idea Devnet test bounty terms v1:${nonce}`);
-  const [bounty] = PublicKey.findProgramAddressSync(
-    [BOUNTY_SEED, Buffer.from(bountyId)],
-    PROGRAM_ID,
-  );
-  const vault = getAssociatedTokenAddressSync(mint, bounty, true);
-  const now = await chainTime(connection);
-  const submissionDeadline = now + 60;
-  const judgingDeadline = now + 300;
-
-  const initializeBountySignature = await program.methods
-    .initializeBounty(
-      bountyId,
-      termsHash,
-      payer.publicKey,
-      new BN(PRIZE_POOL),
-      new BN(PLATFORM_FEE),
-      new BN(submissionDeadline),
-      new BN(judgingDeadline),
-    )
-    .accountsStrict({
-      platformConfig,
-      bounty,
-      vault,
+  const requiredForRun = REQUIRED * 3n;
+  if (sponsorAta.amount < requiredForRun) {
+    if (!mintAccount.mintAuthority?.equals(payer.publicKey)) {
+      throw new Error(
+        `Sponsor needs ${requiredForRun} raw units of the approved mint; payer is not mint authority`,
+      );
+    }
+    await mintTo(
+      connection,
+      payer,
       mint,
-      sponsor: payer.publicKey,
-      tokenProgram: TOKEN_PROGRAM_ID,
-      associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
-      systemProgram: SystemProgram.programId,
-    })
-    .rpc();
+      sponsorAta.address,
+      payer,
+      requiredForRun - sponsorAta.amount,
+    );
+  }
 
-  const fundSignature = await program.methods
-    .fundBounty()
-    .accountsStrict({
-      platformConfig,
-      bounty,
-      vault,
-      sponsorTokenAccount: sponsorTokenAccount.address,
-      mint,
-      sponsor: payer.publicKey,
-      tokenProgram: TOKEN_PROGRAM_ID,
-    })
-    .rpc();
+  const runStage = async (kind: 'idea' | 'build') => {
+    const uuid = randomUUID();
+    const id = deriveBountyIdFromUuid(uuid);
+    const bounty = deriveBountyEscrowPda(id, PROGRAM_ID);
+    const vault = deriveVaultAddress(mint, bounty);
+    const winner = Keypair.generate().publicKey;
+    const winnerAta = getAssociatedTokenAddressSync(mint, winner);
+    const treasuryAta = getAssociatedTokenAddressSync(mint, config.treasury);
+    const now = await chainTime(connection);
+    const submissionDeadline = now + 30;
+    const judgingDeadline = now + 150;
+    const termsHash = hashSmokeTerms({
+      uuid,
+      stage: kind.toUpperCase() as 'IDEA' | 'BUILD',
+      mint: mint.toBase58(),
+      submissionDeadline,
+      judgingDeadline,
+    });
 
-  const activateSignature = await program.methods
-    .activateBounty()
-    .accountsStrict({
-      platformConfig,
-      bounty,
-      vault,
-      mint,
-      sponsor: payer.publicKey,
-      tokenProgram: TOKEN_PROGRAM_ID,
-    })
-    .rpc();
+    const initialize = await program.methods
+      .initializeBounty(
+        [...id],
+        [...termsHash],
+        payer.publicKey,
+        new BN(PRIZE.toString()),
+        new BN(FEE.toString()),
+        new BN(submissionDeadline),
+        new BN(judgingDeadline),
+      )
+      .accountsStrict({
+        platformConfig,
+        bounty,
+        vault,
+        mint,
+        sponsor: payer.publicKey,
+        tokenProgram: TOKEN_PROGRAM_ID,
+        associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
+        systemProgram: SystemProgram.programId,
+      })
+      .rpc();
+    const fund = await program.methods
+      .fundBounty()
+      .accountsStrict({
+        platformConfig,
+        bounty,
+        vault,
+        sponsorTokenAccount: sponsorAta.address,
+        mint,
+        sponsor: payer.publicKey,
+        tokenProgram: TOKEN_PROGRAM_ID,
+      })
+      .rpc();
+    const activate = await program.methods
+      .activateBounty()
+      .accountsStrict({
+        platformConfig,
+        bounty,
+        vault,
+        mint,
+        sponsor: payer.publicKey,
+        tokenProgram: TOKEN_PROGRAM_ID,
+      })
+      .rpc();
+    await waitForChainTime(connection, submissionDeadline);
+    const finalize = await program.methods
+      .finalizeWinner(winner)
+      .accountsStrict({ platformConfig, bounty, judge: payer.publicKey })
+      .rpc();
+    const treasuryBefore = await connection.getTokenAccountBalance(treasuryAta).catch(() => null);
+    const settle = await program.methods
+      .settleBounty()
+      .accountsStrict({
+        platformConfig,
+        bounty,
+        vault,
+        winnerTokenAccount: winnerAta,
+        treasuryTokenAccount: treasuryAta,
+        sponsorTokenAccount: sponsorAta.address,
+        winner,
+        treasury: config.treasury,
+        sponsor: payer.publicKey,
+        mint,
+        settler: payer.publicKey,
+        tokenProgram: TOKEN_PROGRAM_ID,
+        associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
+        systemProgram: SystemProgram.programId,
+      })
+      .rpc();
 
-  const winnerTokenAccount = await getOrCreateAssociatedTokenAccount(
-    connection,
-    payer,
-    mint,
-    winner.publicKey,
-  );
-  const treasuryTokenAccount = await getOrCreateAssociatedTokenAccount(
-    connection,
-    payer,
-    mint,
-    OWNER_AUTHORITY,
-  );
+    const account = await program.account.bountyEscrow.fetch(bounty);
+    const winnerBalance = (await getAccount(connection, winnerAta)).amount;
+    const treasuryAfter = (await getAccount(connection, treasuryAta)).amount;
+    const treasuryBeforeRaw = BigInt(treasuryBefore?.value.amount ?? '0');
+    const vaultClosed = (await connection.getAccountInfo(vault)) === null;
+    if (stateName(account.state) !== 'settled') throw new Error(`${kind} bounty did not settle`);
+    if (winnerBalance !== PRIZE) throw new Error(`${kind} winner payout mismatch`);
+    if (treasuryAfter - treasuryBeforeRaw !== FEE) throw new Error(`${kind} treasury fee mismatch`);
+    if (!vaultClosed) throw new Error(`${kind} vault did not close`);
 
-  await waitForChainTime(connection, submissionDeadline);
-  const finalizeSignature = await program.methods
-    .finalizeWinner(winner.publicKey)
-    .accountsStrict({ platformConfig, bounty, judge: payer.publicKey })
-    .rpc();
+    return {
+      kind,
+      databaseUuid: uuid,
+      bountyIdHex: Buffer.from(id).toString('hex'),
+      bounty: bounty.toBase58(),
+      vault: vault.toBase58(),
+      winner: winner.toBase58(),
+      finalState: stateName(account.state),
+      prizeRaw: PRIZE.toString(),
+      feeRaw: FEE.toString(),
+      winnerBalanceRaw: winnerBalance.toString(),
+      treasuryDeltaRaw: (treasuryAfter - treasuryBeforeRaw).toString(),
+      vaultClosed,
+      signatures: { initialize, fund, activate, finalize, settle },
+    };
+  };
 
-  const settleSignature = await program.methods
-    .settleBounty()
-    .accountsStrict({
-      platformConfig,
-      bounty,
-      vault,
-      winnerTokenAccount: winnerTokenAccount.address,
-      treasuryTokenAccount: treasuryTokenAccount.address,
-      sponsorTokenAccount: sponsorTokenAccount.address,
-      winner: winner.publicKey,
-      treasury: OWNER_AUTHORITY,
-      sponsor: payer.publicKey,
-      mint,
-      tokenProgram: TOKEN_PROGRAM_ID,
-    })
-    .rpc();
+  const runCancellation = async () => {
+    const uuid = randomUUID();
+    const id = deriveBountyIdFromUuid(uuid);
+    const bounty = deriveBountyEscrowPda(id, PROGRAM_ID);
+    const vault = deriveVaultAddress(mint, bounty);
+    const now = await chainTime(connection);
+    const submissionDeadline = now + 120;
+    const judgingDeadline = now + 240;
+    const termsHash = hashSmokeTerms({
+      uuid,
+      stage: 'CANCELLATION',
+      mint: mint.toBase58(),
+      submissionDeadline,
+      judgingDeadline,
+    });
+    const initialize = await program.methods
+      .initializeBounty(
+        [...id],
+        [...termsHash],
+        payer.publicKey,
+        new BN(PRIZE.toString()),
+        new BN(FEE.toString()),
+        new BN(submissionDeadline),
+        new BN(judgingDeadline),
+      )
+      .accountsStrict({
+        platformConfig,
+        bounty,
+        vault,
+        mint,
+        sponsor: payer.publicKey,
+        tokenProgram: TOKEN_PROGRAM_ID,
+        associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
+        systemProgram: SystemProgram.programId,
+      })
+      .rpc();
+    const fund = await program.methods
+      .fundBounty()
+      .accountsStrict({
+        platformConfig,
+        bounty,
+        vault,
+        sponsorTokenAccount: sponsorAta.address,
+        mint,
+        sponsor: payer.publicKey,
+        tokenProgram: TOKEN_PROGRAM_ID,
+      })
+      .rpc();
+    const cancel = await program.methods
+      .cancelBeforeActivation()
+      .accountsStrict({
+        bounty,
+        vault,
+        sponsorTokenAccount: sponsorAta.address,
+        mint,
+        sponsor: payer.publicKey,
+        tokenProgram: TOKEN_PROGRAM_ID,
+        associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
+        systemProgram: SystemProgram.programId,
+      })
+      .rpc();
+    const account = await program.account.bountyEscrow.fetch(bounty);
+    return {
+      databaseUuid: uuid,
+      bountyIdHex: Buffer.from(id).toString('hex'),
+      bounty: bounty.toBase58(),
+      finalState: stateName(account.state),
+      vaultClosed: (await connection.getAccountInfo(vault)) === null,
+      signatures: { initialize, fund, cancel },
+    };
+  };
 
-  const winnerBalance = await getAccount(connection, winnerTokenAccount.address);
-  const treasuryBalance = await getAccount(connection, treasuryTokenAccount.address);
-  const vaultBalance = await getAccount(connection, vault);
-  if (winnerBalance.amount !== BigInt(PRIZE_POOL)) throw new Error('Winner payout mismatch');
-  if (treasuryBalance.amount !== BigInt(PLATFORM_FEE)) throw new Error('Treasury fee mismatch');
-  if (vaultBalance.amount !== 0n) throw new Error('Vault must be empty after settlement');
+  // Product invariant: Stage 2 is only created after Stage 1 is observably settled.
+  const idea = await runStage('idea');
+  const build = await runStage('build');
+  if (idea.bountyIdHex === build.bountyIdHex || idea.bounty === build.bounty) {
+    throw new Error('Idea and Build bounty identities collided');
+  }
+  const cancellation = await runCancellation();
 
   console.log(
     JSON.stringify(
       {
+        schemaVersion: 1,
         network: 'devnet',
-        program: PROGRAM_ID.toBase58(),
+        programId: PROGRAM_ID.toBase58(),
         platformConfig: platformConfig.toBase58(),
-        ownerAuthority: OWNER_AUTHORITY.toBase58(),
-        mint: mint.toBase58(),
-        bounty: bounty.toBase58(),
-        vault: vault.toBase58(),
-        winner: winner.publicKey.toBase58(),
-        prizeRaw: PRIZE_POOL.toString(),
-        platformFeeRaw: PLATFORM_FEE.toString(),
-        signatures: {
-          initializePlatform: initializePlatformSignature,
-          initializeBounty: initializeBountySignature,
-          fund: fundSignature,
-          activate: activateSignature,
-          finalize: finalizeSignature,
-          settle: settleSignature,
+        approvedMint: mint.toBase58(),
+        sponsor: payer.publicKey.toBase58(),
+        idea,
+        build,
+        cancellation,
+        resolution: {
+          status: 'not_run',
+          reason:
+            'The configured Devnet arbitration authority keypair was not supplied to this smoke run.',
         },
+        completedAt: new Date().toISOString(),
       },
       null,
       2,

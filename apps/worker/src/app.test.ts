@@ -5,20 +5,32 @@ const apps: ReturnType<typeof buildWorkerApp>[] = [];
 afterEach(async () => {
   await Promise.all(apps.splice(0).map((app) => app.close()));
 });
-describe('foundation worker', () => {
-  it('boots with an explicit disabled registry', async () => {
-    const app = buildWorkerApp(false);
+describe('v1 worker', () => {
+  it('reports dependency readiness and an enabled durable registry', async () => {
+    const app = buildWorkerApp({
+      logger: false,
+      readiness: () =>
+        Promise.resolve({
+          redis: 'ok',
+          database: 'ok',
+          solana: 'ok',
+          aiProvider: 'not_configured',
+        }),
+    });
     apps.push(app);
     const response = await app.inject('/ready');
     expect(response.statusCode).toBe(200);
     expect(response.json()).toMatchObject({
       status: 'ready',
-      checks: { redis: 'not_configured', aiProvider: 'not_configured' },
+      checks: { redis: 'ok', aiProvider: 'not_configured' },
     });
-    expect(Object.values(jobRegistry).every((job) => !job.enabled)).toBe(true);
+    expect(Object.values(jobRegistry).every((job) => job.enabled)).toBe(true);
   });
   it('closes cleanly', async () => {
-    const app = buildWorkerApp(false);
+    const app = buildWorkerApp({
+      logger: false,
+      readiness: () => Promise.resolve({ redis: 'ok' }),
+    });
     await app.ready();
     await expect(app.close()).resolves.toBeUndefined();
   });

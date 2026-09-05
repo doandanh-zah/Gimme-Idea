@@ -1,3 +1,9 @@
+import { sha256 } from '@noble/hashes/sha256';
+import {
+  ASSOCIATED_TOKEN_PROGRAM_ID,
+  TOKEN_PROGRAM_ID,
+  getAssociatedTokenAddressSync,
+} from '@solana/spl-token';
 import { Connection, PublicKey } from '@solana/web3.js';
 
 export const BOUNTY_ESCROW_PROGRAM_ID =
@@ -11,6 +17,11 @@ export const DEVNET_DEMO_BOUNTY_ADDRESS =
 
 const BOUNTY_DISCRIMINATOR = Uint8Array.from([59, 18, 13, 80, 225, 187, 6, 16]);
 const BOUNTY_ACCOUNT_SIZE = 266;
+const PLATFORM_SEED = new TextEncoder().encode('platform');
+const BOUNTY_SEED = new TextEncoder().encode('bounty');
+const BOUNTY_ID_DOMAIN = new TextEncoder().encode('GIMME_IDEA_BOUNTY_V1');
+const UUID_PATTERN =
+  /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
 
 export type BountyState =
   'initialized' | 'funded' | 'active' | 'winner_selected' | 'resolution' | 'settled' | 'refunded';
@@ -40,7 +51,7 @@ export type DevnetBountySnapshot = {
   fetchedAt: string;
 };
 
-const BOUNTY_STATES: BountyState[] = [
+export const BOUNTY_STATES: readonly BountyState[] = [
   'initialized',
   'funded',
   'active',
@@ -50,8 +61,110 @@ const BOUNTY_STATES: BountyState[] = [
   'refunded',
 ];
 
+type PublicKeyInput = PublicKey | string;
+
+function toPublicKey(value: PublicKeyInput, label: string) {
+  try {
+    return value instanceof PublicKey ? value : new PublicKey(value);
+  } catch {
+    throw new Error(`Invalid ${label}`);
+  }
+}
+
+export function validateProgramId(
+  value: PublicKeyInput,
+  expected: PublicKeyInput = BOUNTY_ESCROW_PROGRAM_ID,
+) {
+  const programId = toPublicKey(value, 'program ID');
+  const expectedProgramId = toPublicKey(expected, 'expected program ID');
+  if (!programId.equals(expectedProgramId)) {
+    throw new Error(
+      `Unexpected bounty escrow program ID: ${programId.toBase58()}; expected ${expectedProgramId.toBase58()}`,
+    );
+  }
+  return programId;
+}
+
+export function derivePlatformConfigPda(programId: PublicKeyInput = BOUNTY_ESCROW_PROGRAM_ID) {
+  return PublicKey.findProgramAddressSync([PLATFORM_SEED], toPublicKey(programId, 'program ID'))[0];
+}
+
+export function deriveBountyIdFromUuid(uuid: string) {
+  if (!UUID_PATTERN.test(uuid)) throw new Error('Bounty UUID must use canonical 8-4-4-4-12 form');
+  const hex = uuid.replaceAll('-', '');
+  const uuidBytes = Uint8Array.from({ length: 16 }, (_, index) =>
+    Number.parseInt(hex.slice(index * 2, index * 2 + 2), 16),
+  );
+  const input = new Uint8Array(BOUNTY_ID_DOMAIN.length + uuidBytes.length);
+  input.set(BOUNTY_ID_DOMAIN);
+  input.set(uuidBytes, BOUNTY_ID_DOMAIN.length);
+  return sha256(input);
+}
+
+export function deriveBountyEscrowPda(
+  bountyId: Uint8Array,
+  programId: PublicKeyInput = BOUNTY_ESCROW_PROGRAM_ID,
+) {
+  if (bountyId.byteLength !== 32) throw new Error('Bounty ID must be exactly 32 bytes');
+  return PublicKey.findProgramAddressSync(
+    [BOUNTY_SEED, bountyId],
+    toPublicKey(programId, 'program ID'),
+  )[0];
+}
+
+export function deriveVaultAddress(mint: PublicKeyInput, bounty: PublicKeyInput) {
+  return getAssociatedTokenAddressSync(
+    toPublicKey(mint, 'mint'),
+    toPublicKey(bounty, 'bounty'),
+    true,
+    TOKEN_PROGRAM_ID,
+    ASSOCIATED_TOKEN_PROGRAM_ID,
+  );
+}
+
+export function mapBountyState(value: number | string | Record<string, unknown>): BountyState {
+  if (typeof value === 'number') {
+    const state = BOUNTY_STATES[value];
+    if (state) return state;
+  } else {
+    const raw = typeof value === 'string' ? value : (Object.keys(value)[0] ?? '');
+    const normalized = raw
+      .replace(/([a-z0-9])([A-Z])/g, '$1_$2')
+      .replace(/[ -]/g, '_')
+      .toLowerCase();
+    if ((BOUNTY_STATES as readonly string[]).includes(normalized)) {
+      return normalized as BountyState;
+    }
+  }
+  throw new Error('Invalid bounty state');
+}
+
 function bytesToHex(bytes: Uint8Array) {
   return [...bytes].map((byte) => byte.toString(16).padStart(2, '0')).join('');
+}
+
+function canonicalValue(value: unknown): unknown {
+  if (Array.isArray(value)) return value.map(canonicalValue);
+  if (value && typeof value === 'object') {
+    return Object.fromEntries(
+      Object.entries(value as Record<string, unknown>)
+        .filter(([, entry]) => entry !== undefined)
+        .sort(([left], [right]) => left.localeCompare(right))
+        .map(([key, entry]) => [key, canonicalValue(entry)]),
+    );
+  }
+  if (typeof value === 'number' && !Number.isSafeInteger(value)) {
+    throw new Error('Canonical bounty terms cannot contain unsafe numbers. Use integer strings.');
+  }
+  return value;
+}
+
+export function canonicalizeBountyTerms(terms: Record<string, unknown>) {
+  return JSON.stringify(canonicalValue(terms));
+}
+
+export function hashBountyTerms(terms: Record<string, unknown>) {
+  return bytesToHex(sha256(new TextEncoder().encode(canonicalizeBountyTerms(terms))));
 }
 
 function readU64(data: Uint8Array, offset: number) {
@@ -72,7 +185,8 @@ function isZeroPublicKey(value: string) {
   return value === '11111111111111111111111111111111';
 }
 
-export function decodeBountyAccount(address: string, data: Uint8Array): OnchainBounty {
+export function decodeBountyEscrow(address: string, data: Uint8Array): OnchainBounty {
+  toPublicKey(address, 'bounty address');
   if (data.byteLength !== BOUNTY_ACCOUNT_SIZE) {
     throw new Error(`Invalid bounty account size: ${data.byteLength}`);
   }
@@ -81,8 +195,7 @@ export function decodeBountyAccount(address: string, data: Uint8Array): OnchainB
   }
 
   const winner = readPublicKey(data, 208);
-  const state = BOUNTY_STATES[data[240] ?? -1];
-  if (!state) throw new Error('Invalid bounty state');
+  const state = mapBountyState(data[240] ?? -1);
 
   return {
     address,
@@ -103,6 +216,9 @@ export function decodeBountyAccount(address: string, data: Uint8Array): OnchainB
     settledAt: readI64(data, 257) || null,
   };
 }
+
+/** @deprecated Use decodeBountyEscrow. */
+export const decodeBountyAccount = decodeBountyEscrow;
 
 export async function fetchDevnetBountySnapshot(
   bountyAddress = DEVNET_DEMO_BOUNTY_ADDRESS,
@@ -131,9 +247,7 @@ export async function fetchDevnetBountySnapshot(
   return {
     programDeployed: Boolean(programAccount?.executable),
     bounty:
-      bountyAccount && bountyAddress
-        ? decodeBountyAccount(bountyAddress, bountyAccount.data)
-        : null,
+      bountyAccount && bountyAddress ? decodeBountyEscrow(bountyAddress, bountyAccount.data) : null,
     fetchedAt: new Date().toISOString(),
   };
 }
