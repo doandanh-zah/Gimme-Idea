@@ -4,6 +4,7 @@ import {
   PrivyProvider,
   getAccessToken as getPrivyAccessToken,
   useLogin,
+  useLoginWithOAuth,
   useLogout,
   usePrivy,
   type User as PrivyUser,
@@ -95,9 +96,10 @@ const DEV_TOKEN_STORAGE_KEY = 'gimme-idea-dev-access-token';
 const PUBLIC_API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://127.0.0.1:3001';
 const PRIVY_APP_ID = process.env.NEXT_PUBLIC_PRIVY_APP_ID?.trim() ?? '';
 const PRIVY_CLIENT_ID = process.env.NEXT_PUBLIC_PRIVY_CLIENT_ID?.trim() ?? '';
-const FACEBOOK_LOGIN_METHOD =
-  (process.env.NEXT_PUBLIC_PRIVY_FACEBOOK_LOGIN_METHOD?.trim() as `privy:${string}` | undefined) ??
-  'privy:facebook';
+const FACEBOOK_OAUTH_PROVIDER =
+  (process.env.NEXT_PUBLIC_PRIVY_FACEBOOK_OAUTH_PROVIDER?.trim() as
+    | `custom:${string}`
+    | undefined) ?? 'custom:facebook';
 const DEV_AUTH_ENABLED =
   process.env.NODE_ENV !== 'production' && process.env.NEXT_PUBLIC_ENABLE_DEV_AUTH === 'true';
 
@@ -473,6 +475,7 @@ function PrivyAuthBridge({ children }: { children: ReactNode }) {
   const privy = usePrivy();
   const { wallets } = usePrivySolanaWallets();
   const { logout: logoutPrivy } = useLogout();
+  const { initOAuth } = useLoginWithOAuth();
   const state = useSharedSessionState();
   const { setError, setHydrated, setSession, setSessionState } = state;
   const embeddedWallet = wallets.find((wallet) => wallet.standardWallet.name === 'Privy');
@@ -529,11 +532,20 @@ function PrivyAuthBridge({ children }: { children: ReactNode }) {
         setError(message);
         throw new Error(message);
       }
-      const method =
-        provider === 'google' ? 'google' : provider === 'x' ? 'twitter' : FACEBOOK_LOGIN_METHOD;
-      login({ loginMethods: [method] });
+      if (provider === 'facebook') {
+        try {
+          await initOAuth({ provider: FACEBOOK_OAUTH_PROVIDER });
+        } catch (caught) {
+          const message =
+            caught instanceof Error ? caught.message : 'Could not start Facebook sign-in.';
+          setError(message);
+          throw caught instanceof Error ? caught : new Error(message);
+        }
+        return;
+      }
+      login({ loginMethods: [provider === 'google' ? 'google' : 'twitter'] });
     },
-    [login, privy.ready, setError],
+    [initOAuth, login, privy.ready, setError],
   );
 
   const logout = useCallback(async () => {
@@ -563,7 +575,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       appId={PRIVY_APP_ID}
       clientId={PRIVY_CLIENT_ID || undefined}
       config={{
-        loginMethods: ['google', 'twitter', FACEBOOK_LOGIN_METHOD],
+        loginMethods: ['google', 'twitter'],
         appearance: {
           theme: 'dark',
           accentColor: '#BA91F5',
