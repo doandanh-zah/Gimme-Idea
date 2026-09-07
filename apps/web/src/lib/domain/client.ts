@@ -1,3 +1,4 @@
+import { publicEntityHref } from './routes';
 import { getIdea, getProblem, request, browserRequest } from '@/lib/api';
 import type {
   BountyModel,
@@ -28,8 +29,8 @@ function problemFrom(value: unknown): ProblemReferenceModel {
     slug: asString(row.slug),
     title: asString(row.title),
     summary: asString(row.summary),
-    industry: asString(row.industry, 'Unspecified'),
-    region: asString(row.region, 'Unspecified'),
+    industry: asString(row.industry),
+    region: asString(row.region),
   };
 }
 function organizationFrom(row: Row): OrganizationSummary {
@@ -87,9 +88,14 @@ function bountyFrom(row: Row): BountyModel {
     objective: asString(row.objective, row.description as string),
     requirements: asArray(row.requirements),
     constraints: asArray(row.constraints),
-    criteria: [],
+    criteria: Array.isArray(row.criteria)
+      ? row.criteria
+          .filter((value): value is Row => !!value && typeof value === 'object')
+          .map((value) => ({ name: asString(value.name), weight: Number(value.weight) }))
+          .filter((value) => value.name && Number.isFinite(value.weight))
+      : [],
     eligibility: asArray(row.eligibility),
-    ipTerms: asString(row.ip_terms, 'Terms are shown before submission.'),
+    ipTerms: asString(row.ipTerms ?? row.ip_terms, 'Terms are shown before submission.'),
     termsHash: asString(row.termsHash ?? row.terms_hash),
   };
 }
@@ -109,12 +115,12 @@ function projectFrom(row: Row): ProjectModel {
     origin: 'api',
     status: stage,
     problem,
-    team: [],
-    technologies: [],
+    team: asArray(row.team),
+    technologies: asArray(row.technologies ?? row.tech_stack),
     repositoryUrl: asString(row.repositoryUrl ?? row.repository_url) || undefined,
     demoUrl: asString(row.demoUrl ?? row.demo_url) || undefined,
     research: {
-      problemSignal: 'Research is queued from the canonical project record.',
+      problemSignal: problem.title || 'No linked public Problem is available.',
       approach: asString(row.description),
       targetUsers: [],
       whatChanged: 'No verified update recorded.',
@@ -128,8 +134,14 @@ function projectFrom(row: Row): ProjectModel {
   };
 }
 
-export const problemClient = { get: getProblem, list: () => list('/v1/problems') };
-export const ideaClient = { get: getIdea, list: () => list('/v1/ideas') };
+export const problemClient = {
+  get: getProblem,
+  list: (offset = 0, limit = 30) => list(`/v1/problems?offset=${offset}&limit=${limit}`),
+};
+export const ideaClient = {
+  get: getIdea,
+  list: (offset = 0, limit = 30) => list(`/v1/ideas?offset=${offset}&limit=${limit}`),
+};
 export const homeClient = {
   list: async (): Promise<HomeFeedItem[]> => {
     const rows = await list('/v1/home');
@@ -156,8 +168,8 @@ export const homeClient = {
                 type: 'problem',
                 priority: Number(row.priority),
                 problem: problemFrom(found),
-                ideaCount: 0,
-                archiveCount: 0,
+                ideaCount: typeof found.ideaCount === 'number' ? found.ideaCount : undefined,
+                archiveCount: undefined,
               },
             ]
           : [];
@@ -179,15 +191,22 @@ export const homeClient = {
   },
 };
 export const projectClient = {
-  list: async () => (await list('/v1/projects')).map(projectFrom),
+  list: async (offset = 0, limit = 30, filter?: string) =>
+    (
+      await list(
+        `/v1/projects?offset=${offset}&limit=${limit}${filter ? `&filter=${encodeURIComponent(filter)}` : ''}`,
+      )
+    ).map(projectFrom),
   get: async (slug: string) => {
     const value = await request(`/v1/projects/${encodeURIComponent(slug)}`);
     return value ? projectFrom(value as Row) : null;
   },
 };
 export const bountyClient = {
-  list: async (stage?: BountyStage) => {
-    const values = (await list('/v1/bounties')).map(bountyFrom);
+  list: async (stage?: BountyStage, offset = 0, limit = 30) => {
+    const values = (
+      await list(`/v1/bounties?offset=${offset}&limit=${limit}${stage ? `&stage=${stage}` : ''}`)
+    ).map(bountyFrom);
     return stage ? values.filter((item) => item.stage === stage) : values;
   },
   get: async (slug: string) => {
@@ -218,6 +237,11 @@ export const submissionClient = {
           status: asString(value.status) as PrivateSubmissionModel['status'],
           submittedAt: date(value.submitted_at),
           snapshotVersion: String(value.current_version),
+          snapshot:
+            value.snapshot && typeof value.snapshot === 'object'
+              ? (value.snapshot as Row)
+              : undefined,
+          contentHash: typeof value.content_hash === 'string' ? value.content_hash : undefined,
         }
       : null;
   },
@@ -246,22 +270,65 @@ export const submissionClient = {
     input: unknown,
     accessToken: string,
     idempotencyKey = crypto.randomUUID(),
-  ) =>
-    browserRequest(`/v1/bounties/${encodeURIComponent(bountyId)}/submissions`, {
-      method: 'POST',
-      accessToken,
-      headers: { 'idempotency-key': idempotencyKey },
-      body: JSON.stringify(input),
-    }),
+  ) => {
+    const receipt = await browserRequest<Row>(
+      `/v1/bounties/${encodeURIComponent(bountyId)}/submissions`,
+      {
+        method: 'POST',
+        accessToken,
+        headers: { 'idempotency-key': idempotencyKey },
+        body: JSON.stringify(input),
+      },
+    );
+    if (
+      !receipt ||
+      typeof receipt.id !== 'string' ||
+      typeof receipt.submittedAt !== 'string' ||
+      !Number.isFinite(Date.parse(receipt.submittedAt))
+    )
+      throw new Error(
+        'The submission could not be confirmed. Check your entries before trying again.',
+      );
+    return {
+      id: receipt.id,
+      submittedAt: receipt.submittedAt,
+      version:
+        typeof receipt.version === 'number' &&
+        Number.isInteger(receipt.version) &&
+        receipt.version > 0
+          ? receipt.version
+          : null,
+      contentHash:
+        typeof receipt.contentHash === 'string' && /^[a-f0-9]{64}$/.test(receipt.contentHash)
+          ? receipt.contentHash
+          : null,
+      payoutWalletAddress:
+        typeof receipt.payoutWalletAddress === 'string' ? receipt.payoutWalletAddress : null,
+    };
+  },
 };
 
-export async function searchPublicCatalog(locale: string, query: string): Promise<SearchResult[]> {
-  const rows = await list(`/v1/search?q=${encodeURIComponent(query)}`);
-  return rows.map((row) => ({
-    type: asString(row.type) as SearchResult['type'],
-    title: asString(row.title),
-    summary: asString(row.summary),
-    href: `/${locale}/${asString(row.type) === 'organization' ? 'org' : `${asString(row.type)}s`}/${asString(row.slug)}`,
-    origin: 'api',
-  }));
+export async function searchPublicCatalog(
+  locale: string,
+  query: string,
+  offset = 0,
+  limit = 30,
+): Promise<SearchResult[]> {
+  const rows = await list(
+    `/v1/search?q=${encodeURIComponent(query)}&offset=${offset}&limit=${limit}`,
+  );
+  return rows.flatMap((row): SearchResult[] => {
+    const href = publicEntityHref(locale, asString(row.type), asString(row.slug));
+    return href
+      ? [
+          {
+            type: asString(row.type) as SearchResult['type'],
+            title: asString(row.title),
+            summary: asString(row.summary),
+            href,
+            origin: 'api',
+          },
+        ]
+      : [];
+  });
 }

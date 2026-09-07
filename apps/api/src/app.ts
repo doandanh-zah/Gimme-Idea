@@ -1,3 +1,8 @@
+import {
+  reactionParamsSchema,
+  reactionUpdateSchema,
+  libraryQuerySchema,
+} from '@gimme-idea/contracts';
 import Fastify, { type FastifyInstance, type FastifyRequest } from 'fastify';
 import { createHash, timingSafeEqual } from 'node:crypto';
 import cors from '@fastify/cors';
@@ -123,6 +128,7 @@ export async function buildApp(options: AppOptions): Promise<FastifyInstance> {
   await app.register(cors, {
     origin: (origin, callback) => callback(null, !origin || allowed.has(origin)),
     credentials: true,
+    methods: ['GET', 'HEAD', 'POST', 'PUT', 'PATCH'],
   });
   await app.register(rateLimit, { max: options.rateLimitMax ?? 120, timeWindow: '1 minute' });
 
@@ -219,20 +225,31 @@ export async function buildApp(options: AppOptions): Promise<FastifyInstance> {
   for (const kind of ['problems', 'ideas', 'projects', 'bounties', 'organizations'] as const) {
     app.get(`/v1/${kind}`, async (request) => {
       if (!platformRepository) return [];
-      const query = request.query as { limit?: string; offset?: string };
+      const query = request.query as {
+        limit?: string;
+        offset?: string;
+        filter?: string;
+        stage?: string;
+      };
       return platformRepository.listCatalog(
         kind,
         Math.min(Math.max(Number(query.limit) || 30, 1), 100),
         Math.max(Number(query.offset) || 0, 0),
+        kind === 'projects' && ['historical', 'community', 'active'].includes(query.filter ?? '')
+          ? query.filter
+          : kind === 'bounties' && ['idea', 'build'].includes(query.stage ?? '')
+            ? query.stage
+            : undefined,
       );
     });
   }
   app.get('/v1/search', async (request) => {
-    const query = request.query as { q?: string; limit?: string };
+    const query = request.query as { q?: string; limit?: string; offset?: string };
     return (
       platformRepository?.searchPublic(
         (query.q ?? '').trim().slice(0, 200),
-        Math.min(Number(query.limit) || 30, 100),
+        Math.min(Math.max(Number(query.limit) || 30, 1), 100),
+        Math.max(Number(query.offset) || 0, 0),
       ) ?? []
     );
   });
@@ -293,14 +310,24 @@ export async function buildApp(options: AppOptions): Promise<FastifyInstance> {
     return reply
       .code(201)
       .send(
-        await platformRepository!.createProblem(actor.id, createProblemSchema.parse(request.body)),
+        await platformRepository!.createProblem(
+          actor.id,
+          createProblemSchema.parse(request.body),
+          request.headers['idempotency-key'] ? idempotencyKey(request) : undefined,
+        ),
       );
   });
   app.post('/v1/ideas', async (request, reply) => {
     const actor = await actorFor(request, authVerifier, platformRepository);
     return reply
       .code(201)
-      .send(await platformRepository!.createIdea(actor.id, createIdeaSchema.parse(request.body)));
+      .send(
+        await platformRepository!.createIdea(
+          actor.id,
+          createIdeaSchema.parse(request.body),
+          request.headers['idempotency-key'] ? idempotencyKey(request) : undefined,
+        ),
+      );
   });
   app.post<{ Params: { kind: 'problems' | 'ideas'; id: string } }>(
     '/v1/:kind/:id/publish',
@@ -525,6 +552,7 @@ export async function buildApp(options: AppOptions): Promise<FastifyInstance> {
           actor.id,
           request.params.id,
           createSubmissionSchema.parse(request.body),
+          request.headers['idempotency-key'] ? idempotencyKey(request) : undefined,
         ),
       );
   });
@@ -652,13 +680,37 @@ export async function buildApp(options: AppOptions): Promise<FastifyInstance> {
       }),
     );
   });
+  app.get('/v1/me/reactions/:kind/:slug', async (request) => {
+    const actor = await actorFor(request, authVerifier, platformRepository);
+    const { kind, slug } = reactionParamsSchema.parse(request.params);
+    const value = await platformRepository!.getReactions(actor.id, kind, slug);
+    if (!value) throw httpError(404, 'NOT_FOUND', 'Public content is unavailable.');
+    return value;
+  });
+  app.put('/v1/me/reactions/:kind/:slug', async (request, reply) => {
+    const actor = await actorFor(request, authVerifier, platformRepository);
+    const { kind, slug } = reactionParamsSchema.parse(request.params);
+    const body = reactionUpdateSchema.parse(request.body);
+    await platformRepository!.setReaction(actor.id, kind, slug, body.action, body.enabled);
+    return reply.code(204).send();
+  });
+  app.get('/v1/me/library', async (request) => {
+    const actor = await actorFor(request, authVerifier, platformRepository);
+    const query = libraryQuerySchema.parse(request.query);
+    return platformRepository!.listLibrary(actor.id, query.category, query.limit, query.offset);
+  });
   app.get('/v1/notifications', async (request) => {
     const actor = await actorFor(request, authVerifier, platformRepository);
-    const query = request.query as { limit?: string };
+    const query = request.query as { limit?: string; offset?: string };
     return platformRepository!.listNotifications(
       actor.id,
       Math.min(Math.max(Number(query.limit) || 30, 1), 100),
+      Math.max(Math.floor(Number(query.offset) || 0), 0),
     );
+  });
+  app.get('/v1/notifications/unread-count', async (request) => {
+    const actor = await actorFor(request, authVerifier, platformRepository);
+    return { count: await platformRepository!.unreadNotificationCount(actor.id) };
   });
   app.patch<{ Params: { id: string } }>('/v1/notifications/:id/read', async (request, reply) => {
     const actor = await actorFor(request, authVerifier, platformRepository);
@@ -774,8 +826,11 @@ export async function buildApp(options: AppOptions): Promise<FastifyInstance> {
     const allowed =
       body.visibility === 'private'
         ? ['image/png', 'image/jpeg', 'image/webp', 'application/pdf', 'video/mp4', 'video/webm']
-        : ['image/png', 'image/jpeg', 'image/webp', 'image/gif'];
-    const max = body.visibility === 'private' ? 25 * 1024 * 1024 : 5 * 1024 * 1024;
+        : ['image/png', 'image/jpeg', 'image/webp', 'image/gif', 'video/mp4', 'video/webm'];
+    const max =
+      body.visibility === 'private' || body.contentType.startsWith('video/')
+        ? 25 * 1024 * 1024
+        : 5 * 1024 * 1024;
     if (!allowed.includes(body.contentType) || body.sizeBytes > max)
       throw httpError(400, 'UPLOAD_REJECTED', 'The upload type or size is not allowed.');
     const asset = await platformRepository!.createMediaAsset(actor.id, {
@@ -801,10 +856,15 @@ export async function buildApp(options: AppOptions): Promise<FastifyInstance> {
     return reply.code(204).send();
   });
   app.get<{ Params: { id: string } }>('/v1/uploads/:id/download', async (request) => {
-    const actor = await actorFor(request, authVerifier, platformRepository);
+    const actor = request.headers.authorization
+      ? await actorFor(request, authVerifier, platformRepository)
+      : null;
     if (!options.storage)
       throw httpError(503, 'STORAGE_UNAVAILABLE', 'Object storage is not configured.');
-    const asset = await platformRepository!.getMediaAssetForView(actor.id, request.params.id);
+    const asset = await platformRepository?.getMediaAssetForView(
+      actor?.id ?? null,
+      request.params.id,
+    );
     if (!asset) throw httpError(404, 'NOT_FOUND', 'Media asset not found.');
     return {
       url: await options.storage.createSignedDownload(asset.bucket, asset.objectKey, 300),

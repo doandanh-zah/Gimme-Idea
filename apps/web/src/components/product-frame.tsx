@@ -1,4 +1,5 @@
 'use client';
+import { useNotificationCount } from '@/lib/use-notification-count';
 
 import Image from 'next/image';
 import Link from 'next/link';
@@ -23,13 +24,15 @@ import {
   Wallet,
   X,
 } from 'lucide-react';
-import { usePathname, useRouter } from 'next/navigation';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import type { ReactNode } from 'react';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { Locale } from '@gimme-idea/contracts';
 import { AuthDialog } from '@/components/auth-dialog';
 import { PostComposer } from '@/components/post-composer';
 import { WalletDialog } from '@/components/wallet-dialog';
+import { browserRequest } from '@/lib/api';
+import { publicEntityHref } from '@/lib/domain/routes';
 import { useAuth } from '@/lib/auth';
 import { formatUsdcAmount } from '@/lib/format-number';
 
@@ -89,11 +92,17 @@ export function ProductFrame({
   children: ReactNode;
 }) {
   const pathname = usePathname();
+  const unreadCount = useNotificationCount();
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const [problemContext, setProblemContext] = useState('');
+  const openerRef = useRef<HTMLElement | null>(null);
+  const handledCreateRoute = useRef('');
+  const pendingCreate = useRef<{ type: 'idea' | 'problem'; problemId?: string } | null>(null);
   const auth = useAuth();
   const [openPanel, setOpenPanel] = useState<OpenPanel>(null);
   const [composer, setComposer] = useState<ComposerType>(null);
-  const [query, setQuery] = useState('');
+  const [query, setQuery] = useState(searchParams.get('q') ?? '');
   const [compactNav, setCompactNav] = useState(false);
   const [authDialogOpen, setAuthDialogOpen] = useState(false);
   const [walletDialogOpen, setWalletDialogOpen] = useState(false);
@@ -103,8 +112,15 @@ export function ProductFrame({
   const mobilePostRef = useRef<HTMLDivElement>(null);
   const postTriggerRef = useRef<HTMLButtonElement>(null);
 
+  useEffect(() => {
+    document.documentElement.lang = locale;
+  }, [locale]);
+
   const isLanding = pathname === `/${locale}`;
   const otherLocale = locale === 'en' ? 'vi' : 'en';
+  const focused =
+    pathname.split('/').filter(Boolean).length > 2 ||
+    /\/(dashboard|settings|profile|saved|notifications|search|terms|privacy)$/.test(pathname);
 
   const navItems = [
     { label: labels.home, href: `/${locale}/home`, icon: Home, match: `/${locale}/home` },
@@ -139,7 +155,7 @@ export function ProductFrame({
       href: `/${locale}/notifications`,
       icon: Bell,
       match: `/${locale}/notifications`,
-      badge: '0',
+      badge: unreadCount ? String(unreadCount) : undefined,
     },
     {
       label: labels.profile,
@@ -157,48 +173,46 @@ export function ProductFrame({
     `/${locale}/home`,
     `/${locale}/problems`,
     `/${locale}/bounties`,
-    `/${locale}/profile`,
+    `/${locale}/ideas`,
   ]);
   const mobileMenuItems = navItems.filter((item) => !dockHrefs.has(item.href));
 
-  const suggestions = useMemo(
-    () => [
-      {
-        type: labels.problems,
-        title: 'Restaurant food waste',
-        href: `/${locale}/problems/restaurant-food-waste`,
-      },
-      {
-        type: labels.problems,
-        title: 'Tenant repair visibility',
-        href: `/${locale}/problems/tenant-repair-visibility`,
-      },
-      {
-        type: labels.ideas,
-        title: 'Demand Pulse for Kitchens',
-        href: `/${locale}/ideas/demand-pulse-for-kitchens`,
-      },
-      {
-        type: labels.projects,
-        title: 'Pantry Pulse',
-        href: `/${locale}/projects/pantry-pulse-archive`,
-      },
-      {
-        type: labels.bounties,
-        title: 'Restaurant demand Idea Bounty',
-        href: `/${locale}/bounties/restaurant-demand-idea`,
-      },
-      {
-        type: labels.bounties,
-        title: 'FoodLoop Build Bounty',
-        href: `/${locale}/bounties/foodloop-build`,
-      },
-    ],
-    [labels.bounties, labels.ideas, labels.problems, labels.projects, locale],
-  );
-  const filteredSuggestions = query.trim()
-    ? suggestions.filter((item) => item.title.toLowerCase().includes(query.trim().toLowerCase()))
-    : suggestions;
+  const [filteredSuggestions, setSuggestions] = useState<
+    { type: string; title: string; href: string }[]
+  >([]);
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- Reset the external resource state for a new request.
+    setQuery(searchParams.get('q') ?? '');
+  }, [searchParams]);
+  useEffect(() => {
+    const controller = new AbortController();
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- Reset the external resource state for a new request.
+    setSuggestions([]);
+    if (!query.trim()) return;
+    const timer = window.setTimeout(() => {
+      void browserRequest<{ type: string; title: string; slug: string }[]>(
+        `/v1/search?q=${encodeURIComponent(query)}&limit=6`,
+        { signal: controller.signal },
+      )
+        .then((rows) => {
+          if (!controller.signal.aborted)
+            setSuggestions(
+              (rows ?? []).flatMap((row) => {
+                const href = publicEntityHref(locale, row.type, row.slug);
+                return href ? [{ type: row.type, title: row.title, href }] : [];
+              }),
+            );
+        })
+        .catch(() => {
+          if (!controller.signal.aborted) setSuggestions([]);
+        });
+    }, 200);
+    return () => {
+      clearTimeout(timer);
+      controller.abort();
+    };
+  }, [query, locale]);
+  const localeHref = `/${otherLocale}${pathname.slice(locale.length + 1)}${searchParams.size ? `?${searchParams}` : ''}`;
   const accountName = auth.session?.displayName ?? labels.guest;
   const accountUsername = auth.session?.username ?? 'guest';
   const accountInitials = auth.session?.avatarInitials ?? 'G';
@@ -206,7 +220,7 @@ export function ProductFrame({
   const walletBalance = formatUsdcAmount(auth.wallet?.balanceUsdc ?? '0', 'compact');
 
   useEffect(() => {
-    const media = window.matchMedia('(max-width: 1180px), (max-height: 780px)');
+    const media = window.matchMedia('(max-width: 1280px)');
     const apply = () => setCompactNav(media.matches);
     apply();
     media.addEventListener('change', apply);
@@ -224,15 +238,44 @@ export function ProductFrame({
 
   useEffect(() => {
     const openCreate = (event: Event) => {
-      const detail = (event as CustomEvent<{ type?: ComposerType }>).detail;
+      const detail = (event as CustomEvent<{ type?: ComposerType; problemId?: string }>).detail;
       if (detail?.type === 'idea' || detail?.type === 'problem') {
+        openerRef.current =
+          document.activeElement instanceof HTMLElement ? document.activeElement : null;
+        pendingCreate.current = { type: detail.type, problemId: detail.problemId };
         if (!auth.requireAuth('create')) return;
+        setProblemContext(detail.problemId ?? '');
         setComposer(detail.type);
+        pendingCreate.current = null;
       }
     };
     window.addEventListener('gimme-open-create', openCreate);
     return () => window.removeEventListener('gimme-open-create', openCreate);
   }, [auth]);
+
+  useEffect(() => {
+    if (!auth.hydrated) return;
+    const match = pathname.match(/\/create\/(idea|problem)$/);
+    if (!match) {
+      handledCreateRoute.current = '';
+      return;
+    }
+    const routeKey = `${pathname}?${searchParams}`;
+    if (handledCreateRoute.current === routeKey) return;
+    let cancelled = false;
+    queueMicrotask(() => {
+      if (cancelled) return;
+      handledCreateRoute.current = routeKey;
+      window.dispatchEvent(
+        new CustomEvent('gimme-open-create', {
+          detail: { type: match[1], problemId: searchParams.get('problemId') ?? '' },
+        }),
+      );
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [auth.hydrated, pathname, searchParams]);
 
   useEffect(() => {
     const onPointerDown = (event: MouseEvent) => {
@@ -257,18 +300,32 @@ export function ProductFrame({
     };
   }, [openPanel]);
 
+  useEffect(() => {
+    if (auth.isSignedIn && pendingCreate.current) {
+      const intent = pendingCreate.current;
+      pendingCreate.current = null;
+      setAuthDialogOpen(false);
+      setProblemContext(intent.problemId ?? '');
+      setComposer(intent.type);
+    }
+  }, [auth.isSignedIn]);
+
   const closePanels = () => setOpenPanel(null);
   const openAuthDialog = () => {
     setOpenPanel(null);
     setAuthDialogOpen(true);
   };
   const openComposer = (type: Exclude<ComposerType, null>) => {
+    openerRef.current =
+      document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    pendingCreate.current = { type };
     if (!auth.requireAuth('post')) return;
+    pendingCreate.current = null;
+    setProblemContext('');
     setOpenPanel(null);
     setComposer(type);
   };
   const handlePost = () => {
-    if (!auth.requireAuth('post')) return;
     if (pathname.startsWith(`/${locale}/ideas`)) return openComposer('idea');
     if (pathname.startsWith(`/${locale}/problems`)) return openComposer('problem');
     setOpenPanel((value) => (value === 'post' ? null : 'post'));
@@ -278,7 +335,7 @@ export function ProductFrame({
     return (
       <div className="site-shell landing-only-shell" lang={locale}>
         <a className="skip-link" href="#main">
-          Skip to content
+          {locale === 'vi' ? 'Đến nội dung chính' : 'Skip to content'}
         </a>
         <header className="landing-header">
           <div className="landing-header-inner">
@@ -286,6 +343,14 @@ export function ProductFrame({
               <Image src="/brand/logo-gmi.png" alt="" width={36} height={36} priority />
               <span>GIMME IDEA</span>
             </Link>
+            <nav
+              className="landing-links"
+              aria-label={locale === 'vi' ? 'Điều hướng chính' : 'Main navigation'}
+            >
+              <Link href={`/${locale}/problems`}>{labels.problems}</Link>
+              <Link href={`/${locale}/ideas`}>{labels.ideas}</Link>
+              <Link href={`/${locale}/bounties`}>{labels.bounties}</Link>
+            </nav>
             <div className="landing-header-actions">
               <Link className="landing-app-link" href={`/${locale}/home`}>
                 {labels.openApp}
@@ -299,7 +364,7 @@ export function ProductFrame({
         </header>
         {children}
         <footer className="site-footer">
-          <span>GIMME IDEA / FOUNDATION 02</span>
+          <span>GIMME IDEA</span>
           <span>PROBLEM → IDEA → PROJECT</span>
         </footer>
       </div>
@@ -309,7 +374,7 @@ export function ProductFrame({
   return (
     <div className="product-canvas" lang={locale}>
       <a className="skip-link" href="#main">
-        Skip to content
+        {locale === 'vi' ? 'Đến nội dung chính' : 'Skip to content'}
       </a>
 
       <header className="mobile-product-header">
@@ -373,7 +438,19 @@ export function ProductFrame({
             ))}
             <Link href={`/${locale}/dashboard`} onClick={closePanels}>
               <Blocks size={iconSize} aria-hidden="true" />
-              <span>{locale === 'vi' ? 'Company dashboard' : 'Company dashboard'}</span>
+              <span>{locale === 'vi' ? 'Quản lý doanh nghiệp' : 'Company dashboard'}</span>
+            </Link>
+            <Link
+              href={localeHref}
+              onClick={(event) => {
+                event.preventDefault();
+                router.push(`${localeHref}${window.location.hash}`);
+                closePanels();
+              }}
+              lang={otherLocale}
+            >
+              <Globe2 size={iconSize} aria-hidden="true" />
+              <span>{otherLocale.toUpperCase()}</span>
             </Link>
             <Link href={`/${locale}/settings`} onClick={closePanels}>
               <Settings size={iconSize} aria-hidden="true" />
@@ -426,7 +503,7 @@ export function ProductFrame({
         </div>
       )}
 
-      <div className="product-shell">
+      <div className={`product-shell${focused ? ' is-focused' : ''}`}>
         <aside className="product-sidebar" aria-label="Product navigation">
           <div className="sidebar-inner">
             <Link className="sidebar-brand" href={`/${locale}/home`} aria-label="Gimme Idea home">
@@ -434,6 +511,7 @@ export function ProductFrame({
               <span>GIMME IDEA</span>
             </Link>
 
+            <p className="sidebar-section-label">{locale === 'vi' ? 'KHÁM PHÁ' : 'DISCOVER'}</p>
             <nav className="sidebar-nav" aria-label="Primary navigation">
               {primaryNav.map((item) => (
                 <ShellNavLink
@@ -474,7 +552,7 @@ export function ProductFrame({
                   </Link>
                   <Link href={`/${locale}/dashboard`} onClick={closePanels}>
                     <Blocks size={18} aria-hidden="true" />
-                    {locale === 'vi' ? 'Company dashboard' : 'Company dashboard'}
+                    {locale === 'vi' ? 'Quản lý doanh nghiệp' : 'Company dashboard'}
                   </Link>
                   <Link href={`/${locale}/settings`} onClick={closePanels}>
                     <Settings size={18} aria-hidden="true" />
@@ -559,21 +637,85 @@ export function ProductFrame({
           </div>
         </aside>
 
-        <div className="product-main">{children}</div>
+        <div className="product-main">
+          <header className="workspace-topbar">
+            <Link className="workspace-breadcrumb" href={`/${locale}/home`}>
+              <span className="network-dot" />
+              {locale === 'vi' ? 'Mạng lưới ý tưởng' : 'The problem network'}
+            </Link>
+            <form role="search" className="workspace-search" action={`/${locale}/search`}>
+              <Search size={17} aria-hidden="true" />
+              <label className="sr-only" htmlFor="workspace-search">
+                {labels.search}
+              </label>
+              <input
+                id="workspace-search"
+                type="search"
+                name="q"
+                defaultValue={searchParams.get('q') ?? ''}
+                key={searchParams.get('q') ?? ''}
+                placeholder={labels.searchPlaceholder}
+                autoComplete="off"
+              />
+              <button type="submit" aria-label={labels.search}>
+                <ChevronRight size={16} aria-hidden="true" />
+              </button>
+            </form>
+            <Link
+              className="workspace-locale"
+              href={localeHref}
+              onClick={(event) => {
+                if (window.location.hash) {
+                  event.preventDefault();
+                  router.push(localeHref + window.location.hash);
+                }
+              }}
+              hrefLang={otherLocale}
+            >
+              {otherLocale.toUpperCase()}
+            </Link>
+          </header>
+          {children}
+        </div>
 
         <aside className="discovery-rail" aria-label={labels.suggestions}>
           <div className="discovery-inner">
-            <SearchBox
-              id="desktop-global-search"
-              labels={labels}
-              query={query}
-              setQuery={setQuery}
-              suggestions={filteredSuggestions}
-              pathname={pathname}
-              locale={locale}
-              onSubmit={(value) => router.push(`/${locale}/search?q=${encodeURIComponent(value)}`)}
-              onNavigate={closePanels}
-            />
+            <section className="rail-company">
+              <span className="rail-company-icon">
+                <Blocks size={24} aria-hidden="true" />
+              </span>
+              <p className="v1-kicker">
+                {locale === 'vi' ? 'CHO DOANH NGHIỆP' : 'FOR ORGANIZATIONS'}
+              </p>
+              <h2>
+                {locale === 'vi'
+                  ? 'Vấn đề của bạn. Góc nhìn mới.'
+                  : 'Your challenge. Fresh perspectives.'}
+              </h2>
+              <p>
+                {locale === 'vi'
+                  ? 'Đăng vấn đề và tìm người có thể giải quyết.'
+                  : 'Share a real problem. Find the people who can solve it.'}
+              </p>
+              <Link href={`/${locale}/create/problem`}>
+                {labels.postProblem}
+                <ChevronRight size={17} aria-hidden="true" />
+              </Link>
+            </section>
+            <div className="rail-footer">
+              <span>Gimme Idea</span>
+              <Link
+                href={localeHref}
+                onClick={(event) => {
+                  if (window.location.hash) {
+                    event.preventDefault();
+                    router.push(localeHref + window.location.hash);
+                  }
+                }}
+              >
+                {otherLocale === 'vi' ? 'Tiếng Việt' : 'English'}
+              </Link>
+            </div>
           </div>
         </aside>
       </div>
@@ -591,6 +733,12 @@ export function ProductFrame({
           icon={Target}
           active={pathname.startsWith(`/${locale}/problems`)}
         />
+        <ShellDockLink
+          href={`/${locale}/ideas`}
+          label={labels.ideas}
+          icon={Lightbulb}
+          active={pathname.startsWith(`/${locale}/ideas`)}
+        />
         <button
           type="button"
           className="dock-post-button"
@@ -606,22 +754,30 @@ export function ProductFrame({
           icon={CircleDollarSign}
           active={pathname.startsWith(`/${locale}/bounties`)}
         />
-        <ShellDockLink
-          href={`/${locale}/profile`}
-          label={labels.profile}
-          icon={User}
-          active={pathname.startsWith(`/${locale}/profile`)}
-        />
       </nav>
 
-      <PostComposer
-        type={composer}
-        locale={locale}
-        onClose={() => {
-          setComposer(null);
-          postTriggerRef.current?.focus();
-        }}
-      />
+      {composer && (
+        <PostComposer
+          key={`${auth.session?.id}:${composer}:${problemContext}`}
+          initialProblem={problemContext}
+          type={composer}
+          locale={locale}
+          onClose={() => {
+            setComposer(null);
+            const opener = openerRef.current;
+            requestAnimationFrame(() => {
+              if (opener?.isConnected && opener.getClientRects().length) opener.focus();
+              else {
+                const heading = document.querySelector<HTMLElement>('#main h1');
+                if (heading) {
+                  heading.tabIndex = -1;
+                  heading.focus();
+                }
+              }
+            });
+          }}
+        />
+      )}
       <AuthDialog locale={locale} open={authDialogOpen} onClose={() => setAuthDialogOpen(false)} />
       <WalletDialog
         locale={locale}
@@ -652,13 +808,21 @@ function ShellNavLink({
     <Link
       href={item.href}
       className={`${active ? 'sidebar-link is-active' : 'sidebar-link'}${item.groupStart ? ' is-group-start' : ''}`}
-      aria-label={item.label}
+      aria-label={
+        item.badge
+          ? `${item.label}, ${item.badge} ${item.href.startsWith('/vi/') ? 'chưa đọc' : 'unread'}`
+          : item.label
+      }
       aria-current={active ? 'page' : undefined}
       onClick={onNavigate}
     >
       <Icon size={iconSize} aria-hidden="true" />
       <span>{item.label}</span>
-      {item.badge && <small aria-label={`${item.badge} unread`}>{item.badge}</small>}
+      {item.badge && (
+        <small aria-label={`${item.badge} ${item.href.startsWith('/vi/') ? 'chưa đọc' : 'unread'}`}>
+          {item.badge}
+        </small>
+      )}
     </Link>
   );
 }
@@ -738,7 +902,11 @@ function SearchBox({
             <span>{String(suggestions.length).padStart(2, '0')}</span>
           </div>
           {suggestions.length === 0 ? (
-            <p className="rail-empty">No matching nodes.</p>
+            <p className="rail-empty">
+              {locale === 'vi'
+                ? 'Không có gợi ý. Nhấn Enter để tìm trong toàn bộ mạng lưới.'
+                : 'No suggestions. Press Enter to search the network.'}
+            </p>
           ) : (
             <div className="suggestion-list">
               {suggestions.map((item) => (
@@ -760,69 +928,84 @@ function SearchBox({
 
 function ContextualIntelligence({ pathname, locale }: { pathname: string; locale: Locale }) {
   const vi = locale === 'vi';
-  const context = pathname.includes('/bounties/')
-    ? {
-        label: 'STAGE',
-        rows: [
-          ['Idea competition', 'Direction first'],
-          ['Build competition', 'Execution second'],
-          ['Funding trust', 'Always explicit'],
-        ],
-      }
-    : pathname.includes('/projects/')
-      ? {
-          label: 'CONTEXT',
-          rows: [
-            ['Original Problem', 'Always linked'],
-            ['Source facts', 'Separated'],
-            ['GI Research', 'Provenance shown'],
-          ],
-        }
-      : pathname.includes('/ideas/')
-        ? {
-            label: 'LANDSCAPE',
-            rows: [
-              ['Related historical builds', '8'],
-              ['Public Projects', '3'],
-              ['Build opportunities', '1'],
-            ],
-          }
-        : pathname.includes('/problems/')
-          ? {
-              label: 'RELATED INTELLIGENCE',
-              rows: [
-                ['Historical builds', '17'],
-                ['Similar Problems', '8'],
-                ['Active Bounties', '2'],
-              ],
-            }
-          : {
-              label: 'OPPORTUNITIES',
-              rows: [
-                ['Idea Bounties', '12'],
-                ['Build Bounties', '7'],
-                ['Historical builds', '5,000+'],
-              ],
-            };
+  const isBounty = pathname.includes('/bounties');
+  const steps = isBounty
+    ? [
+        {
+          href: '/bounties?stage=idea',
+          icon: Lightbulb,
+          title: vi ? 'Đề xuất hướng giải' : 'Propose a direction',
+          body: vi ? 'Idea Bounty · Bài gửi riêng tư' : 'Idea Bounty · Private proposals',
+        },
+        {
+          href: '/bounties?stage=build',
+          icon: Blocks,
+          title: vi ? 'Chứng minh khả năng' : 'Prove the execution',
+          body: vi ? 'Build Bounty · Theo điều khoản' : 'Build Bounty · Terms-based access',
+        },
+      ]
+    : [
+        {
+          href: '/problems',
+          icon: Target,
+          title: vi ? 'Bắt đầu với vấn đề' : 'Start with a problem',
+          body: vi ? 'Hiểu điều cần giải quyết' : 'Understand what needs solving',
+        },
+        {
+          href: '/ideas',
+          icon: Lightbulb,
+          title: vi ? 'Khám phá hướng giải' : 'Explore different directions',
+          body: vi ? 'Ý tưởng gắn với bối cảnh thật' : 'Ideas rooted in real context',
+        },
+        {
+          href: '/projects',
+          icon: Blocks,
+          title: vi ? 'Học từ những bản build' : 'Learn from real builds',
+          body: vi ? 'Điều đã thử và bài học để lại' : 'What was tried. What was learned.',
+        },
+      ];
   return (
     <section
-      className="v1-context-rail"
-      aria-label={vi ? 'Thông tin theo ngữ cảnh' : 'Contextual intelligence'}
+      className="network-guide"
+      aria-label={vi ? 'Lối đi trong mạng lưới' : 'Explore the network'}
     >
-      <div className="rail-heading">
-        <h2>{context.label}</h2>
-      </div>
-      <dl>
-        {context.rows.map(([label, value]) => (
-          <div key={label}>
-            <dt>{label}</dt>
-            <dd>{value}</dd>
-          </div>
+      <p className="v1-kicker">
+        {isBounty
+          ? vi
+            ? 'HAI GIAI ĐOẠN'
+            : 'TWO STAGES'
+          : vi
+            ? 'KẾT NỐI CÁC ĐIỂM'
+            : 'CONNECT THE DOTS'}
+      </p>
+      <h2>
+        {isBounty
+          ? vi
+            ? 'Từ hướng giải đến thực thi.'
+            : 'Direction, then execution.'
+          : vi
+            ? 'Mọi bản build đều có khởi đầu.'
+            : 'Every build starts somewhere.'}
+      </h2>
+      <div className="network-guide-steps">
+        {steps.map(({ href, icon: Icon, title, body }, index) => (
+          <Link key={href} href={`/${locale}${href}`}>
+            <span className={`guide-node node-${index}`}>
+              <Icon size={19} aria-hidden="true" />
+            </span>
+            <span>
+              <strong>{title}</strong>
+              <small>{body}</small>
+            </span>
+            <ChevronRight size={15} aria-hidden="true" />
+          </Link>
         ))}
-      </dl>
-      <Link href={`/${locale}/search`}>
-        {vi ? 'Khám phá tất cả' : 'Explore all'} <ChevronRight size={15} aria-hidden="true" />
-      </Link>
+      </div>
+      <p className="network-guide-note">
+        {vi
+          ? 'Ý tưởng công khai để chia sẻ. Bài dự thi riêng tư để cạnh tranh.'
+          : 'Public ideas for sharing. Private submissions for competing.'}
+      </p>
     </section>
   );
 }

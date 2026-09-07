@@ -1,11 +1,11 @@
 # Gimme Idea — preserved brand assets
 
-This branch is intentionally empty except for the current brand references kept for the rebuild.
+Canonical brand references for the Gimme Idea frontend. Colors below reflect the owner’s update on 2026-09-06.
 
 ## Colors
 
-- Gold: `#FFD700`
-- Purple: `#9945FF`
+- Gold: `#F9D65C`
+- Purple: `#BA91F5`
 
 ## Fonts
 

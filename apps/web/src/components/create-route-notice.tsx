@@ -1,13 +1,14 @@
 'use client';
 import Link from 'next/link';
 import { ArrowLeft, Lightbulb, Target } from 'lucide-react';
-import { useEffect } from 'react';
+import { useSearchParams } from 'next/navigation';
 import type { Locale } from '@gimme-idea/contracts';
 
 export function CreateRouteNotice({ locale, type }: { locale: Locale; type: 'idea' | 'problem' }) {
-  useEffect(() => {
-    window.dispatchEvent(new CustomEvent('gimme-open-create', { detail: { type } }));
-  }, [type]);
+  const searchParams = useSearchParams();
+  const problemId = searchParams.get('problemId') ?? '';
+  const open = () =>
+    window.dispatchEvent(new CustomEvent('gimme-open-create', { detail: { type, problemId } }));
   const Icon = type === 'idea' ? Lightbulb : Target;
   return (
     <section className={`v1-create-route is-${type}`}>
@@ -31,6 +32,9 @@ export function CreateRouteNotice({ locale, type }: { locale: Locale; type: 'ide
             ? 'Mỗi Idea công khai phải có đúng một Primary Problem.'
             : 'Every public Idea must have exactly one Primary Problem.'}
       </p>
+      <button type="button" className="button button-primary" onClick={open}>
+        {locale === 'vi' ? 'Tiếp tục tạo' : 'Continue creating'}
+      </button>
       <Link
         className="v1-back-link"
         href={`/${locale}/${type === 'problem' ? 'problems' : 'ideas'}`}

@@ -3,8 +3,7 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import { CircleDollarSign, Hammer, Lightbulb, Target, X } from 'lucide-react';
-import { useState } from 'react';
-import { useEffect } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { Locale } from '@gimme-idea/contracts';
 import { PostMediaGallery } from '@/components/post-media-gallery';
 import type { MediaAttachment, QuotedTarget } from '@/lib/social';
@@ -12,6 +11,7 @@ import { formatPostTime } from '@/lib/time';
 
 export function MediaBlock({ media }: { media: MediaAttachment }) {
   const [viewerOpen, setViewerOpen] = useState(false);
+  const viewerRef = useRef<HTMLDialogElement>(null);
   // User-selected data URLs are already local and have no stable dimensions for next/image.
   // eslint-disable-next-line @next/next/no-img-element
   const image = <img className="post-media" src={media.src} alt={media.name} />;
@@ -26,11 +26,14 @@ export function MediaBlock({ media }: { media: MediaAttachment }) {
 
   useEffect(() => {
     if (!viewerOpen) return;
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') setViewerOpen(false);
+    const opener = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    const dialog = viewerRef.current;
+    dialog?.showModal();
+    dialog?.querySelector<HTMLButtonElement>('button')?.focus();
+    return () => {
+      dialog?.close();
+      if (opener?.isConnected) opener.focus();
     };
-    document.addEventListener('keydown', onKeyDown);
-    return () => document.removeEventListener('keydown', onKeyDown);
   }, [viewerOpen]);
 
   return (
@@ -65,10 +68,14 @@ export function MediaBlock({ media }: { media: MediaAttachment }) {
         </button>
       )}
       {viewerOpen && (
-        <div
+        <dialog
+          ref={viewerRef}
           className="media-viewer"
-          role="dialog"
-          aria-modal="true"
+          onCancel={(event) => {
+            event.preventDefault();
+            setViewerOpen(false);
+          }}
+          onClose={() => setViewerOpen(false)}
           aria-label={media.name}
           onClick={() => setViewerOpen(false)}
         >
@@ -83,7 +90,7 @@ export function MediaBlock({ media }: { media: MediaAttachment }) {
           <div className="media-viewer-frame" onClick={(event) => event.stopPropagation()}>
             {viewer}
           </div>
-        </div>
+        </dialog>
       )}
     </>
   );

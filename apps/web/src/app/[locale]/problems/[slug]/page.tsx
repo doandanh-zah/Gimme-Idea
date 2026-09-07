@@ -1,3 +1,4 @@
+import { PostMediaGallery } from '@/components/post-media-gallery';
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { ArrowLeft, ArrowRight, ArrowUpRight } from 'lucide-react';
@@ -56,15 +57,16 @@ export default async function ProblemPage({ params }: PageProps) {
     (item) => item.mode === 'historical_imported' && item.problem.slug === slug,
   );
   const relatedIndex = ideaBounty ? '06' : '05';
+  const acceptingIdeas = ideaBounty?.status === 'open';
   return (
     <main id="main" className="detail-page problem-page">
       <nav className="breadcrumb" aria-label="Breadcrumb">
-        <Link href={`/${locale}`}>
+        <Link href={`/${locale}/problems`}>
           <ArrowLeft size={14} />
-          {t.navHome}
+          {t.navProblems}
         </Link>
         <span>/</span>
-        <strong>{t.navProblems}</strong>
+        <strong>{locale === 'vi' ? 'Chi tiết' : 'Overview'}</strong>
       </nav>
       <header className="detail-header">
         <div>
@@ -95,16 +97,22 @@ export default async function ProblemPage({ params }: PageProps) {
         <Link
           className="button button-primary"
           href={
-            ideaBounty ? `/${locale}/bounties/${ideaBounty.slug}/submit` : `/${locale}/create/idea`
+            ideaBounty
+              ? `/${locale}/bounties/${ideaBounty.slug}${acceptingIdeas ? '/submit' : ''}`
+              : `/${locale}/create/idea?problemId=${encodeURIComponent(problem.slug)}`
           }
         >
           {ideaBounty
-            ? locale === 'vi'
-              ? `Gửi Idea riêng tư · ${ideaBounty.amountUsdc.toLocaleString(locale)} USDC`
-              : `Submit Private Idea · ${ideaBounty.amountUsdc.toLocaleString(locale)} USDC`
+            ? acceptingIdeas
+              ? locale === 'vi'
+                ? 'Gửi ý tưởng riêng tư'
+                : 'Submit a private idea'
+              : locale === 'vi'
+                ? 'Xem Idea Bounty'
+                : 'View Idea Bounty'
             : locale === 'vi'
-              ? 'Đề xuất Public Idea'
-              : 'Propose a Public Idea'}
+              ? 'Đề xuất ý tưởng công khai'
+              : 'Propose a public idea'}
           <ArrowRight size={17} aria-hidden="true" />
         </Link>
       </div>
@@ -128,6 +136,9 @@ export default async function ProblemPage({ params }: PageProps) {
       />
       <div className="detail-grid">
         <article className="canonical-content">
+          {Boolean(problem.media?.length) && (
+            <PostMediaGallery attachments={problem.media!} locale={locale} />
+          )}
           <section id="problem" className="content-section">
             <div className="chapter-heading">
               <span>01</span>
@@ -137,6 +148,25 @@ export default async function ProblemPage({ params }: PageProps) {
               </div>
             </div>
             <p className="long-copy">{problem.description}</p>
+            {(problem.industry || problem.region) && (
+              <p>{[problem.industry, problem.region].filter(Boolean).join(' · ')}</p>
+            )}
+            {problem.desiredOutcome && (
+              <>
+                <h3>{locale === 'vi' ? 'Kết quả mong muốn' : 'Desired outcome'}</h3>
+                <p className="long-copy">{problem.desiredOutcome}</p>
+              </>
+            )}
+            {!!problem.constraints?.length && (
+              <>
+                <h3>{locale === 'vi' ? 'Ràng buộc' : 'Constraints'}</h3>
+                <ul>
+                  {problem.constraints.map((value) => (
+                    <li key={value}>{value}</li>
+                  ))}
+                </ul>
+              </>
+            )}
           </section>
           <section id="who" className="content-section content-section-raised">
             <div className="chapter-heading">
@@ -225,7 +255,7 @@ export default async function ProblemPage({ params }: PageProps) {
                 </Link>
               ))}
               {problem.relatedIdeas.length === 0 && (
-                <Link href={`/${locale}/create/idea`}>
+                <Link href={`/${locale}/create/idea?problemId=${encodeURIComponent(problem.slug)}`}>
                   <small>01 / OPEN</small>
                   <strong>{locale === 'vi' ? 'Chưa có Public Idea' : 'No public Ideas yet'}</strong>
                   <p>
@@ -239,7 +269,7 @@ export default async function ProblemPage({ params }: PageProps) {
             </div>
           </section>
         </article>
-        <Provenance id="sources" value={problem.provenance} label={t.sourceLabel} />
+        <Provenance locale={locale} id="sources" value={problem.provenance} label={t.sourceLabel} />
       </div>
     </main>
   );

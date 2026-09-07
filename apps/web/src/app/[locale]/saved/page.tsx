@@ -2,7 +2,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { AppPageHeader } from '@/components/app-surfaces';
 import { SavedLibrary } from '@/components/saved-library';
-import { bountyClient, ideaClient, problemClient, projectClient } from '@/lib/domain/client';
+import { catalogPage } from '@/lib/pagination';
 import { copy, isLocale } from '@/lib/i18n';
 
 export const dynamic = 'force-dynamic';
@@ -12,23 +12,12 @@ export default async function SavedPage({
   searchParams,
 }: {
   params: Promise<{ locale: string }>;
-  searchParams: Promise<{ tab?: string }>;
+  searchParams: Promise<{ tab?: string; page?: string }>;
 }) {
   const [{ locale }, query] = await Promise.all([params, searchParams]);
   if (!isLocale(locale)) notFound();
   const t = copy[locale];
   const activeTab = query.tab === 'likes' ? 'likes' : 'bookmarks';
-  const [problemA, problemB, idea] = await Promise.all([
-    problemClient.get('restaurant-food-waste'),
-    problemClient.get('tenant-repair-visibility'),
-    ideaClient.get('demand-pulse-for-kitchens'),
-  ]);
-  const items = [
-    ...(problemA ? [{ kind: 'problem' as const, data: problemA }] : []),
-    ...(problemB ? [{ kind: 'problem' as const, data: problemB }] : []),
-    ...(idea ? [{ kind: 'idea' as const, data: idea }] : []),
-  ];
-  const [projects, bounties] = await Promise.all([projectClient.list(), bountyClient.list()]);
 
   return (
     <main id="main" className="app-page">
@@ -57,13 +46,7 @@ export default async function SavedPage({
           {t.shell.likes}
         </Link>
       </nav>
-      <SavedLibrary
-        locale={locale}
-        tab={activeTab}
-        items={items}
-        projects={projects}
-        bounties={bounties}
-      />
+      <SavedLibrary locale={locale} tab={activeTab} page={catalogPage(query.page)} />
     </main>
   );
 }

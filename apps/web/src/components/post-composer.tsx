@@ -1,14 +1,18 @@
 'use client';
 
-import { BriefcaseBusiness, ImagePlus, LoaderCircle, Trash2, Video, X } from 'lucide-react';
+import { userErrorMessage } from '@/lib/error-message';
+
+import { ImagePlus, LoaderCircle, Trash2, Video, X } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useEffect, useId, useMemo, useRef, useState } from 'react';
 import type { Locale } from '@gimme-idea/contracts';
 import {
   createLocalKnowledgePost,
+  type PublishOperation,
   PostMediaValidationError,
   validatePostMedia,
 } from '@/lib/social';
+import { browserRequest } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
 
 const composerCopy = {
@@ -71,7 +75,8 @@ const composerCopy = {
     close: 'Close',
     publish: 'Post',
     publishing: 'Posting…',
-    localNote: 'This foundation post and its media stay on this device.',
+    localNote:
+      'Text drafts stay on this device. Posting publishes your content and uploads to the network.',
     titleRequired: 'Add a title.',
     descriptionRequired: 'Add a description.',
     problemBodyRequired: 'Describe the problem.',
@@ -81,7 +86,7 @@ const composerCopy = {
     opportunityRequired: 'Add the opportunity.',
     solutionRequired: 'Add the solution.',
     invalidBounty: 'Use a valid USDC amount with up to 6 decimal places.',
-    storageError: 'Could not save this post on the device. Keep the files and try again.',
+    storageError: 'Could not publish. Your text is kept; check your connection and try again.',
     unsupported: 'Only image and video files are supported.',
     tooManyImages: 'A post can contain up to 10 images.',
     tooManyVideos: 'A post can contain only 1 video.',
@@ -97,12 +102,13 @@ const composerCopy = {
     ideaTitleExample: 'Đặt tên ý tưởng thật rõ ràng',
     problemTitleExample: 'Nêu vấn đề thật rõ ràng',
     description: 'Mô tả 1 câu',
-    descriptionExample: 'Giữ đủ ngắn để card post đọc được ngay.',
-    problemBody: 'Problem',
-    problemBodyExample: 'Chuyện gì đang xảy ra, pain point cụ thể là gì?',
-    whoHasThisProblem: 'Who has this problem?',
-    whoHasThisProblemExample: 'Nêu user, buyer, operator, cộng đồng hoặc phân khúc thị trường.',
-    whyItMatters: 'Why does it matter?',
+    descriptionExample: 'Viết ngắn gọn để người đọc hiểu ngay trong danh sách.',
+    problemBody: 'Vấn đề',
+    problemBodyExample: 'Chuyện gì đang xảy ra và khó khăn cụ thể là gì?',
+    whoHasThisProblem: 'Ai gặp vấn đề này?',
+    whoHasThisProblemExample:
+      'Nêu người dùng, người mua, người vận hành hoặc cộng đồng đang gặp vấn đề.',
+    whyItMatters: 'Vì sao đáng giải quyết?',
     whyItMattersExample: 'Nếu không giải quyết thì điều gì hỏng, lãng phí, chậm lại hoặc tốn kém?',
     primaryProblem: 'Vấn đề chính',
     chooseProblem: 'Chọn vấn đề mà ý tưởng này giải quyết',
@@ -110,31 +116,31 @@ const composerCopy = {
     newProblemTitle: 'Tiêu đề Problem mới',
     restaurantProblem: 'Lãng phí thực phẩm tại nhà hàng',
     repairProblem: 'Minh bạch sửa chữa cho người thuê nhà',
-    opportunity: 'Opportunity',
+    opportunity: 'Cơ hội',
     opportunityExample: 'Cơ hội gì mở ra nếu vấn đề này được giải quyết?',
-    solution: 'Solution',
-    solutionExample: 'Mô tả sản phẩm, workflow hoặc cơ chế giải quyết.',
-    addMoreDetails: 'Add more details',
+    solution: 'Giải pháp',
+    solutionExample: 'Mô tả sản phẩm, quy trình hoặc cách giải quyết.',
+    addMoreDetails: 'Thêm chi tiết',
     hideMoreDetails: 'Ẩn chi tiết',
-    regionMarket: 'Region / Market',
-    industry: 'Industry',
-    currentWorkaround: 'Current workaround',
-    existingSolutions: 'Existing solutions',
-    desiredOutcome: 'Desired outcome',
-    evidenceSource: 'Evidence / source',
-    constraints: 'Constraints',
-    knownData: 'Data họ biết',
-    howItWorks: 'How it works',
-    targetSegment: 'Target segment',
-    whyNow: 'Why now',
-    businessModel: 'Business model',
-    goToMarket: 'Go-to-market',
-    technicalApproach: 'Technical approach',
-    competitors: 'Competitors',
-    risks: 'Risks',
-    previousAttempts: 'Previous attempts creator biết',
-    dependencies: 'Dependencies',
-    successMetrics: 'Success metrics',
+    regionMarket: 'Khu vực / Thị trường',
+    industry: 'Lĩnh vực',
+    currentWorkaround: 'Cách xử lý hiện tại',
+    existingSolutions: 'Giải pháp hiện có',
+    desiredOutcome: 'Kết quả mong muốn',
+    evidenceSource: 'Bằng chứng / nguồn',
+    constraints: 'Ràng buộc',
+    knownData: 'Dữ liệu đã biết',
+    howItWorks: 'Cách hoạt động',
+    targetSegment: 'Nhóm người dùng',
+    whyNow: 'Vì sao là lúc này',
+    businessModel: 'Mô hình kinh doanh',
+    goToMarket: 'Tiếp cận thị trường',
+    technicalApproach: 'Hướng kỹ thuật',
+    competitors: 'Đối thủ',
+    risks: 'Rủi ro',
+    previousAttempts: 'Những cách đã thử',
+    dependencies: 'Phụ thuộc',
+    successMetrics: 'Tiêu chí thành công',
     links: 'GitHub / demo / deck',
     bounty: 'Bounty (USDC)',
     bountyHint: 'Không bắt buộc. Nhập số USDC nguyên hoặc thập phân.',
@@ -146,7 +152,8 @@ const composerCopy = {
     close: 'Đóng',
     publish: 'Đăng',
     publishing: 'Đang đăng…',
-    localNote: 'Bài foundation và media hiện được lưu trên thiết bị này.',
+    localNote:
+      'Bản nháp văn bản lưu trên thiết bị. Khi đăng, nội dung và tệp được xuất bản lên mạng lưới.',
     titleRequired: 'Hãy nhập tiêu đề.',
     descriptionRequired: 'Hãy nhập mô tả.',
     problemBodyRequired: 'Hãy mô tả Problem.',
@@ -156,7 +163,7 @@ const composerCopy = {
     opportunityRequired: 'Hãy nhập Opportunity.',
     solutionRequired: 'Hãy nhập Solution.',
     invalidBounty: 'Nhập số USDC hợp lệ với tối đa 6 chữ số thập phân.',
-    storageError: 'Không thể lưu bài trên thiết bị. File vẫn được giữ để bạn thử lại.',
+    storageError: 'Chưa thể đăng. Nội dung vẫn được giữ; kiểm tra kết nối rồi thử lại.',
     unsupported: 'Chỉ hỗ trợ file ảnh và video.',
     tooManyImages: 'Một bài đăng có tối đa 10 ảnh.',
     tooManyVideos: 'Một bài đăng chỉ có tối đa 1 video.',
@@ -167,7 +174,7 @@ const composerCopy = {
 
 function mediaErrorMessage(locale: Locale, error: unknown) {
   const t = composerCopy[locale];
-  if (!(error instanceof PostMediaValidationError)) return t.storageError;
+  if (!(error instanceof PostMediaValidationError)) return userErrorMessage(locale, error);
   const messages = {
     unsupported: t.unsupported,
     too_many_images: t.tooManyImages,
@@ -193,71 +200,156 @@ function SelectedMediaPreview({ file }: { file: File }) {
   return <img src={source} alt="" />;
 }
 
-function slugify(value: string) {
-  return value
-    .trim()
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '')
-    .slice(0, 80);
-}
-
 export function PostComposer({
   type,
   locale,
   onClose,
+  initialProblem = '',
 }: {
   type: 'idea' | 'problem' | null;
   locale: Locale;
   onClose: () => void;
+  initialProblem?: string;
 }) {
   const t = composerCopy[locale];
   const router = useRouter();
   const auth = useAuth();
+  const draftKey = `gimme-composer:${auth.session?.id ?? 'guest'}:${type}:${initialProblem}`;
+  const [draft] = useState<Record<string, string>>(() => {
+    try {
+      return JSON.parse(localStorage.getItem(draftKey) ?? '{}');
+    } catch {
+      return {};
+    }
+  });
+  const [operation] = useState<PublishOperation>(() => {
+    try {
+      return JSON.parse(draft.operation ?? '{"uploaded":[]}');
+    } catch {
+      return { uploaded: [] };
+    }
+  });
+  const [progress, setProgress] = useState('');
+  const [draftError, setDraftError] = useState(false);
+  const finished = useRef(false);
+  const [problemOptions, setProblemOptions] = useState<
+    { id: string; slug: string; title: string }[]
+  >([]);
+  const [problemLoad, setProblemLoad] = useState<'loading' | 'ready' | 'error'>('loading');
+  const [problemRetry, setProblemRetry] = useState(0);
+  const [problemQuery, setProblemQuery] = useState('');
+  const [problemOffset, setProblemOffset] = useState(0);
+  const [hasMoreProblems, setHasMoreProblems] = useState(false);
+  const restoredProblem = draft.primaryProblem || initialProblem;
+  useEffect(() => {
+    if (type !== 'idea') return;
+    const controller = new AbortController();
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- Reset the external resource state for a new request.
+    setProblemLoad('loading');
+    type Option = { id: string; slug: string; title: string };
+    void Promise.all([
+      browserRequest<Option[]>(`/v1/problems?limit=100&offset=${problemOffset}`, {
+        signal: controller.signal,
+      }),
+      restoredProblem && problemOffset === 0
+        ? browserRequest<Option>(`/v1/problems/${encodeURIComponent(restoredProblem)}`, {
+            signal: controller.signal,
+          })
+        : Promise.resolve(null),
+    ])
+      .then(([rows, selected]) => {
+        if (!controller.signal.aborted) {
+          setProblemOptions((previous) => {
+            const options = [
+              ...(problemOffset ? previous : []),
+              ...(selected ? [selected] : []),
+              ...(rows ?? []),
+            ];
+            return options.filter(
+              (item, index) => options.findIndex((other) => other.id === item.id) === index,
+            );
+          });
+          setHasMoreProblems(rows?.length === 100);
+          setProblemLoad('ready');
+        }
+      })
+      .catch(() => {
+        if (!controller.signal.aborted) setProblemLoad('error');
+      });
+    return () => controller.abort();
+  }, [type, problemRetry, problemOffset, restoredProblem]);
   const dialogRef = useRef<HTMLDialogElement>(null);
   const mediaInputId = useId();
-  const [title, setTitle] = useState('');
-  const [description, setDescription] = useState('');
-  const [problemBody, setProblemBody] = useState('');
-  const [whoHasThisProblem, setWhoHasThisProblem] = useState('');
-  const [whyItMatters, setWhyItMatters] = useState('');
-  const [opportunity, setOpportunity] = useState('');
-  const [solution, setSolution] = useState('');
-  const [primaryProblem, setPrimaryProblem] = useState('');
+  const [title, setTitle] = useState(draft.title ?? '');
+  const [description, setDescription] = useState(draft.description ?? '');
+  const [problemBody, setProblemBody] = useState(draft.problemBody ?? '');
+  const [whoHasThisProblem, setWhoHasThisProblem] = useState(draft.whoHasThisProblem ?? '');
+  const [whyItMatters, setWhyItMatters] = useState(draft.whyItMatters ?? '');
+  const [opportunity, setOpportunity] = useState(draft.opportunity ?? '');
+  const [solution, setSolution] = useState(draft.solution ?? '');
+  const [primaryProblem, setPrimaryProblem] = useState(draft.primaryProblem || initialProblem);
   const [newPrimaryProblemTitle, setNewPrimaryProblemTitle] = useState('');
-  const [bountyAmount, setBountyAmount] = useState('');
-  const [openToHiring, setOpenToHiring] = useState(false);
+  const bountyAmount = '';
+  const openToHiring = false;
   const [detailsOpen, setDetailsOpen] = useState(false);
-  const [extraDetails, setExtraDetails] = useState<Record<string, string>>({});
+  const [extraDetails, setExtraDetails] = useState<Record<string, string>>(() => {
+    try {
+      return JSON.parse(draft.extraDetails ?? '{}');
+    } catch {
+      return {};
+    }
+  });
   const [files, setFiles] = useState<File[]>([]);
   const [submitted, setSubmitted] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [mediaError, setMediaError] = useState('');
   const [formError, setFormError] = useState('');
 
-  const reset = () => {
-    setTitle('');
-    setDescription('');
-    setProblemBody('');
-    setWhoHasThisProblem('');
-    setWhyItMatters('');
-    setOpportunity('');
-    setSolution('');
-    setPrimaryProblem('');
-    setNewPrimaryProblemTitle('');
-    setBountyAmount('');
-    setOpenToHiring(false);
-    setDetailsOpen(false);
-    setExtraDetails({});
-    setFiles([]);
-    setSubmitted(false);
-    setSubmitting(false);
-    setMediaError('');
-    setFormError('');
-  };
-
+  const draftText = JSON.stringify({
+    title,
+    description,
+    problemBody,
+    whoHasThisProblem,
+    whyItMatters,
+    opportunity,
+    solution,
+    primaryProblem,
+    extraDetails: JSON.stringify(extraDetails),
+    operation: JSON.stringify(operation),
+    mediaNames: files.map((file) => file.name).join(', ') || draft.mediaNames || '',
+  });
+  useEffect(() => {
+    if (finished.current) return;
+    const timer = setTimeout(() => {
+      if (finished.current) return;
+      try {
+        localStorage.setItem(draftKey, draftText);
+        setDraftError(false);
+      } catch {
+        setDraftError(true);
+      }
+    }, 200);
+    return () => clearTimeout(timer);
+  }, [draftKey, draftText]);
   const dismiss = () => {
-    reset();
+    if (submitting) return;
+    try {
+      if (!finished.current) localStorage.setItem(draftKey, draftText);
+    } catch {
+      setDraftError(true);
+      return;
+    }
+    onClose();
+  };
+  const discard = () => {
+    if (submitting) return;
+    try {
+      localStorage.removeItem(draftKey);
+    } catch {
+      setDraftError(true);
+      return;
+    }
+    finished.current = true;
     onClose();
   };
 
@@ -276,14 +368,11 @@ export function PostComposer({
     submitted && type === 'problem' && !whoHasThisProblem.trim() ? t.whoRequired : '';
   const whyError = submitted && type === 'problem' && !whyItMatters.trim() ? t.whyRequired : '';
   const primaryProblemError =
-    submitted && type === 'idea' && !primaryProblem && !newPrimaryProblemTitle.trim()
-      ? t.problemRequired
-      : '';
+    submitted && type === 'idea' && !primaryProblem ? t.problemRequired : '';
   const opportunityError =
     submitted && type === 'idea' && !opportunity.trim() ? t.opportunityRequired : '';
   const solutionError = submitted && type === 'idea' && !solution.trim() ? t.solutionRequired : '';
-  const bountyIsValid = !bountyAmount || /^\d+(?:\.\d{1,6})?$/.test(bountyAmount.trim());
-  const bountyError = submitted && type === 'problem' && !bountyIsValid ? t.invalidBounty : '';
+  const bountyIsValid = true;
 
   const addFiles = (incoming: File[]) => {
     const next = [...files, ...incoming];
@@ -306,16 +395,12 @@ export function PostComposer({
       !description.trim() ||
       (type === 'problem' &&
         (!problemBody.trim() || !whoHasThisProblem.trim() || !whyItMatters.trim())) ||
-      (type === 'idea' &&
-        (!opportunity.trim() ||
-          !solution.trim() ||
-          (!primaryProblem && !newPrimaryProblemTitle.trim()))) ||
+      (type === 'idea' && (!opportunity.trim() || !solution.trim() || !primaryProblem)) ||
       !bountyIsValid
     ) {
       return;
     }
-    const primaryProblemSlug =
-      primaryProblem || (newPrimaryProblemTitle.trim() ? slugify(newPrimaryProblemTitle) : null);
+    const primaryProblemSlug = primaryProblem || null;
     const filteredExtra = Object.fromEntries(
       Object.entries(extraDetails).filter(([, value]) => value.trim()),
     );
@@ -344,9 +429,42 @@ export function PostComposer({
         bountyAmount,
         openToHiring,
         files,
+        operation: operation,
+        onProgress: (phase, current, total) => {
+          const labels =
+            locale === 'vi'
+              ? {
+                  upload: 'Đang tải tệp',
+                  create: 'Đang lưu nội dung',
+                  attach: 'Đang gắn tệp',
+                  publish: 'Đang xuất bản',
+                }
+              : {
+                  upload: 'Uploading files',
+                  create: 'Saving content',
+                  attach: 'Attaching files',
+                  publish: 'Publishing',
+                };
+          setProgress(`${labels[phase]}${phase === 'upload' ? ` ${current}/${total}` : '…'}`);
+          try {
+            localStorage.setItem(
+              draftKey,
+              JSON.stringify({ ...JSON.parse(draftText), operation: JSON.stringify(operation) }),
+            );
+          } catch {
+            setDraftError(true);
+          }
+        },
       });
       const destination = `/${locale}/${type === 'idea' ? 'ideas' : 'problems'}/${post.slug}`;
-      dismiss();
+      finished.current = true;
+      try {
+        localStorage.removeItem(draftKey);
+      } catch {
+        /* Published content is safe on the server. */
+      }
+      onClose();
+      router.refresh();
       router.push(destination);
     } catch (error) {
       setFormError(mediaErrorMessage(locale, error));
@@ -360,26 +478,15 @@ export function PostComposer({
   const problemExtraFields = [
     ['regionMarket', t.regionMarket],
     ['industry', t.industry],
-    ['currentWorkaround', t.currentWorkaround],
-    ['existingSolutions', t.existingSolutions],
     ['desiredOutcome', t.desiredOutcome],
     ['evidenceSource', t.evidenceSource],
     ['constraints', t.constraints],
-    ['knownData', t.knownData],
   ] as const;
   const ideaExtraFields = [
-    ['howItWorks', t.howItWorks],
     ['targetSegment', t.targetSegment],
     ['whyNow', t.whyNow],
-    ['businessModel', t.businessModel],
-    ['goToMarket', t.goToMarket],
-    ['technicalApproach', t.technicalApproach],
-    ['competitors', t.competitors],
     ['risks', t.risks],
-    ['previousAttempts', t.previousAttempts],
-    ['dependencies', t.dependencies],
     ['successMetrics', t.successMetrics],
-    ['links', t.links],
   ] as const;
   const optionalFields = type === 'problem' ? problemExtraFields : ideaExtraFields;
 
@@ -412,11 +519,16 @@ export function PostComposer({
           </button>
         </div>
 
-        <div className="post-composer-body">
+        <fieldset
+          className="post-composer-body"
+          disabled={submitting || Boolean(operation.saved) || Boolean(operation.createUncertain)}
+        >
           <div className="composer-field">
             <label htmlFor="post-title">{t.title}</label>
             <input
               id="post-title"
+              required
+              minLength={type === 'problem' ? 8 : 5}
               value={title}
               maxLength={120}
               autoComplete="off"
@@ -437,6 +549,8 @@ export function PostComposer({
             <label htmlFor="post-description">{t.description}</label>
             <textarea
               id="post-description"
+              required
+              minLength={20}
               value={description}
               rows={2}
               maxLength={180}
@@ -459,6 +573,8 @@ export function PostComposer({
                 <label htmlFor="post-problem-body">{t.problemBody}</label>
                 <textarea
                   id="post-problem-body"
+                  required
+                  minLength={30}
                   value={problemBody}
                   rows={5}
                   maxLength={1400}
@@ -478,6 +594,8 @@ export function PostComposer({
                 <label htmlFor="post-who">{t.whoHasThisProblem}</label>
                 <textarea
                   id="post-who"
+                  required
+                  minLength={1}
                   value={whoHasThisProblem}
                   rows={3}
                   maxLength={700}
@@ -497,6 +615,8 @@ export function PostComposer({
                 <label htmlFor="post-why">{t.whyItMatters}</label>
                 <textarea
                   id="post-why"
+                  required
+                  minLength={1}
                   value={whyItMatters}
                   rows={3}
                   maxLength={700}
@@ -521,6 +641,7 @@ export function PostComposer({
                 <label htmlFor="post-primary-problem">{t.primaryProblem}</label>
                 <select
                   id="post-primary-problem"
+                  required
                   value={primaryProblem}
                   aria-invalid={Boolean(primaryProblemError)}
                   aria-describedby={primaryProblemError ? 'post-primary-problem-error' : undefined}
@@ -530,20 +651,63 @@ export function PostComposer({
                   }}
                 >
                   <option value="">{t.chooseProblem}</option>
-                  <option value="restaurant-food-waste">{t.restaurantProblem}</option>
-                  <option value="tenant-repair-visibility">{t.repairProblem}</option>
+                  {problemOptions
+                    .filter(
+                      (problem) =>
+                        problem.slug === primaryProblem ||
+                        problem.title
+                          .toLocaleLowerCase(locale)
+                          .includes(problemQuery.toLocaleLowerCase(locale)),
+                    )
+                    .map((problem) => (
+                      <option key={problem.id} value={problem.slug}>
+                        {problem.title}
+                      </option>
+                    ))}
                 </select>
+                <label htmlFor="problem-filter">
+                  {locale === 'vi' ? 'Tìm vấn đề' : 'Find a Problem'}
+                </label>
                 <input
-                  id="post-new-primary-problem"
-                  value={newPrimaryProblemTitle}
-                  autoComplete="off"
-                  placeholder={t.createNewProblem}
-                  aria-label={t.newProblemTitle}
-                  onChange={(event) => {
-                    setNewPrimaryProblemTitle(event.target.value);
-                    if (event.target.value.trim()) setPrimaryProblem('');
-                  }}
+                  id="problem-filter"
+                  type="search"
+                  value={problemQuery}
+                  onChange={(event) => setProblemQuery(event.target.value)}
                 />
+                <p role="status">
+                  {problemLoad === 'loading'
+                    ? locale === 'vi'
+                      ? 'Đang tải vấn đề…'
+                      : 'Loading Problems…'
+                    : problemLoad === 'error'
+                      ? locale === 'vi'
+                        ? 'Chưa tải được vấn đề.'
+                        : 'Could not load Problems.'
+                      : !problemOptions.some((problem) =>
+                            problem.title
+                              .toLocaleLowerCase(locale)
+                              .includes(problemQuery.toLocaleLowerCase(locale)),
+                          )
+                        ? locale === 'vi'
+                          ? 'Không có kết quả phù hợp.'
+                          : 'No matching Problems.'
+                        : ''}
+                </p>
+                {hasMoreProblems && problemLoad === 'ready' && (
+                  <button type="button" onClick={() => setProblemOffset((value) => value + 100)}>
+                    {locale === 'vi' ? 'Tải thêm vấn đề để tìm' : 'Load more Problems to search'}
+                  </button>
+                )}
+                {problemLoad === 'error' && (
+                  <button type="button" onClick={() => setProblemRetry((value) => value + 1)}>
+                    {locale === 'vi' ? 'Thử lại' : 'Try again'}
+                  </button>
+                )}
+                <p>
+                  {locale === 'vi'
+                    ? 'Cần vấn đề mới? Lưu bản nháp rồi tạo Vấn đề với mô tả đầy đủ.'
+                    : 'Need a new Problem? Save this draft, then create a Problem with a full description.'}
+                </p>
                 {primaryProblemError && (
                   <span id="post-primary-problem-error" className="composer-field-error">
                     {primaryProblemError}
@@ -554,6 +718,8 @@ export function PostComposer({
                 <label htmlFor="post-opportunity">{t.opportunity}</label>
                 <textarea
                   id="post-opportunity"
+                  required
+                  minLength={20}
                   value={opportunity}
                   rows={4}
                   maxLength={1000}
@@ -573,6 +739,8 @@ export function PostComposer({
                 <label htmlFor="post-solution">{t.solution}</label>
                 <textarea
                   id="post-solution"
+                  required
+                  minLength={20}
                   value={solution}
                   rows={4}
                   maxLength={1000}
@@ -622,39 +790,11 @@ export function PostComposer({
           </fieldset>
 
           {type === 'problem' && (
-            <fieldset className="composer-problem-options">
-              <legend>{t.bounty}</legend>
-              <div className="composer-field">
-                <label className="sr-only" htmlFor="post-bounty">
-                  {t.bounty}
-                </label>
-                <input
-                  id="post-bounty"
-                  value={bountyAmount}
-                  inputMode="decimal"
-                  autoComplete="off"
-                  placeholder="1000"
-                  aria-invalid={Boolean(bountyError)}
-                  aria-describedby={bountyError ? 'post-bounty-error' : 'post-bounty-hint'}
-                  onChange={(event) => setBountyAmount(event.target.value)}
-                />
-                <small id="post-bounty-hint">{t.bountyHint}</small>
-                {bountyError && (
-                  <span id="post-bounty-error" className="composer-field-error">
-                    {bountyError}
-                  </span>
-                )}
-              </div>
-              <label className="composer-checkbox">
-                <input
-                  type="checkbox"
-                  checked={openToHiring}
-                  onChange={(event) => setOpenToHiring(event.target.checked)}
-                />
-                <BriefcaseBusiness size={18} aria-hidden="true" />
-                <span>{t.hiring}</span>
-              </label>
-            </fieldset>
+            <p className="empty-note">
+              {locale === 'vi'
+                ? 'Thiết lập Bounty là bước riêng sau khi xuất bản vấn đề.'
+                : 'Bounty setup is a separate step after publishing the Problem.'}
+            </p>
           )}
 
           <fieldset className="composer-media-fieldset">
@@ -664,7 +804,7 @@ export function PostComposer({
               id={mediaInputId}
               className="sr-only"
               type="file"
-              accept="image/*,video/*"
+              accept="image/png,image/jpeg,image/webp,image/gif,video/mp4,video/webm"
               multiple
               onInput={(event) => {
                 const incoming = Array.from(event.currentTarget.files ?? []);
@@ -716,17 +856,44 @@ export function PostComposer({
             )}
           </fieldset>
 
+          {draft.mediaNames && !files.length && (
+            <p role="status">
+              {locale === 'vi' ? 'Hãy chọn lại tệp cho bản nháp: ' : 'Reselect draft files: '}
+              {draft.mediaNames}
+            </p>
+          )}
+          {draftError && (
+            <p role="alert">
+              {locale === 'vi'
+                ? 'Không thể lưu bản nháp trên thiết bị. Giữ màn hình này mở hoặc sao chép nội dung.'
+                : 'Cannot save this draft on the device. Keep this editor open or copy your text.'}
+            </p>
+          )}
+          {progress && <p role="status">{progress}</p>}
           <p className="composer-local-note">{t.localNote}</p>
           {formError && (
             <p className="composer-form-error" role="alert">
               {formError}
             </p>
           )}
-        </div>
+        </fieldset>
 
         <div className="composer-footer">
-          <button type="button" className="button button-quiet" onClick={dismiss}>
-            {t.close}
+          <button
+            type="button"
+            className="button button-quiet"
+            disabled={submitting}
+            onClick={discard}
+          >
+            {locale === 'vi' ? 'Bỏ bản nháp' : 'Discard draft'}
+          </button>
+          <button
+            type="button"
+            className="button button-quiet"
+            disabled={submitting}
+            onClick={dismiss}
+          >
+            {locale === 'vi' ? 'Lưu nháp và đóng' : 'Save draft and close'}
           </button>
           <button type="submit" className="button button-primary" disabled={submitting}>
             {submitting && (

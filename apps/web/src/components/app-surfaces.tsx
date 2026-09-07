@@ -1,5 +1,15 @@
 import Link from 'next/link';
-import { ArrowUpRight, Inbox } from 'lucide-react';
+import {
+  ArrowUpRight,
+  Blocks,
+  Bookmark,
+  CircleDollarSign,
+  Compass,
+  Inbox,
+  Lightbulb,
+  Search,
+  Target,
+} from 'lucide-react';
 import type { ReactNode } from 'react';
 
 export { KnowledgePost } from '@/components/knowledge-post';
@@ -15,8 +25,29 @@ export function AppPageHeader({
   summary: string;
   aside?: ReactNode;
 }) {
+  const tone = eyebrow.includes('PROBLEM')
+    ? 'problem'
+    : eyebrow.includes('/ IDEAS')
+      ? 'idea'
+      : 'neutral';
+  const Icon = eyebrow.includes('PROBLEM')
+    ? Target
+    : eyebrow.includes('/ IDEAS')
+      ? Lightbulb
+      : eyebrow.includes('PROJECT')
+        ? Blocks
+        : eyebrow.includes('OPPORTUNITY')
+          ? CircleDollarSign
+          : eyebrow.includes('SEARCH') || eyebrow.includes('CATALOG')
+            ? Search
+            : eyebrow.includes('SAVED')
+              ? Bookmark
+              : Compass;
   return (
-    <header className="app-page-header">
+    <header className={`app-page-header is-${tone}`}>
+      <span className="page-symbol" aria-hidden="true">
+        <Icon size={28} strokeWidth={1.5} />
+      </span>
       <div>
         <p>{eyebrow}</p>
         <h1>{title}</h1>

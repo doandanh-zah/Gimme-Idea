@@ -11,7 +11,7 @@ import {
   WalletCards,
   X,
 } from 'lucide-react';
-import { useEffect, useRef, useState } from 'react';
+import { useId, useEffect, useRef, useState } from 'react';
 import type { Locale } from '@gimme-idea/contracts';
 import { formatWalletAddress, useAuth } from '@/lib/auth';
 import {
@@ -40,7 +40,7 @@ const copy = {
     loadError: 'Could not read balances from Solana Devnet.',
     balance: 'Balance',
     withdraw: 'Withdraw',
-    withdrawUnavailable: 'Withdrawal signing is not connected in this frontend phase.',
+    withdrawUnavailable: 'Withdrawals are not available yet.',
     assets: 'Assets',
     feeReserve: 'Network fee reserve',
     activity: 'Activity',
@@ -71,7 +71,7 @@ const copy = {
     loadError: 'Không thể đọc số dư từ Solana Devnet.',
     balance: 'Số dư',
     withdraw: 'Rút tiền',
-    withdrawUnavailable: 'Luồng ký rút tiền chưa được kết nối trong frontend phase này.',
+    withdrawUnavailable: 'Tính năng rút tiền hiện chưa khả dụng.',
     assets: 'Tài sản',
     feeReserve: 'Dự trữ phí mạng',
     activity: 'Lịch sử',
@@ -98,22 +98,26 @@ export function WalletDialog({
 }) {
   const t = copy[locale];
   const auth = useAuth();
+  const dialogId = useId();
   const dialogRef = useRef<HTMLDialogElement>(null);
   const [copied, setCopied] = useState(false);
-  const [balances, setBalances] = useState<DevnetBalances | null>(null);
+  const [balanceResult, setBalanceResult] = useState<{
+    address: string;
+    value: DevnetBalances;
+  } | null>(null);
+  const [refresh, setRefresh] = useState(0);
   const [balanceState, setBalanceState] = useState<'idle' | 'loading' | 'ready' | 'error'>('idle');
   const [withdrawOpen, setWithdrawOpen] = useState(false);
-  const [withdrawReview, setWithdrawReview] = useState(false);
-  const [withdrawAmount, setWithdrawAmount] = useState('');
-  const [withdrawDestination, setWithdrawDestination] = useState('');
   const wallet = auth.wallet;
   const syncWalletUsdcBalance = auth.syncWalletUsdcBalance;
-  const usdcValue = balances?.usdc ?? wallet?.balanceUsdc ?? null;
+  const balances = balanceResult?.address === wallet?.address ? balanceResult?.value : null;
+  const usdcValue = balances?.usdc ?? null;
   const tokenBalance = formatUsdcAmount(usdcValue, 'detailed');
   const fiatBalance = formatStableValue(usdcValue, 'detailed');
   const solBalance = formatSolAmount(balances?.sol ?? null, 'detailed');
   const isBalanceLoading =
-    wallet?.status === 'ready' && (balanceState === 'idle' || balanceState === 'loading');
+    wallet?.status === 'ready' &&
+    ((!balances && balanceState !== 'error') || balanceState === 'loading');
 
   useEffect(() => {
     const dialog = dialogRef.current;
@@ -127,10 +131,13 @@ export function WalletDialog({
       return;
     }
     const controller = new AbortController();
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- Reset the external resource state for a new request.
+    setBalanceState('loading');
+    const address = wallet.address;
     void fetchDevnetBalances(wallet.address, controller.signal)
       .then((next) => {
         if (controller.signal.aborted) return;
-        setBalances(next);
+        setBalanceResult({ address, value: next });
         setBalanceState('ready');
         syncWalletUsdcBalance(next.usdc);
       })
@@ -144,25 +151,11 @@ export function WalletDialog({
         setBalanceState('error');
       });
     return () => controller.abort();
-  }, [open, syncWalletUsdcBalance, wallet?.address, wallet?.status]);
-
-  const refreshBalances = async () => {
-    if (!wallet?.address || wallet.status !== 'ready') return;
-    setBalanceState('loading');
-    try {
-      const next = await fetchDevnetBalances(wallet.address);
-      setBalances(next);
-      setBalanceState('ready');
-      syncWalletUsdcBalance(next.usdc);
-    } catch {
-      setBalanceState('error');
-    }
-  };
+  }, [open, syncWalletUsdcBalance, wallet?.address, wallet?.status, refresh]);
 
   const closeDialog = () => {
     setCopied(false);
     setWithdrawOpen(false);
-    setWithdrawReview(false);
     onClose();
   };
 
@@ -177,7 +170,7 @@ export function WalletDialog({
     <dialog
       ref={dialogRef}
       className="wallet-dialog"
-      aria-labelledby="wallet-dialog-title"
+      aria-labelledby={`${dialogId}-wallet-dialog-title`}
       onClose={closeDialog}
       onCancel={(event) => {
         event.preventDefault();
@@ -187,7 +180,7 @@ export function WalletDialog({
       <div className="wallet-dialog-shell">
         <header className="wallet-dialog-header">
           <div className="wallet-title-row">
-            <h2 id="wallet-dialog-title">{t.wallet}</h2>
+            <h2 id={`${dialogId}-wallet-dialog-title`}>{t.wallet}</h2>
             {wallet?.status === 'ready' && wallet.address && (
               <button
                 className="wallet-address-button"
@@ -226,7 +219,7 @@ export function WalletDialog({
           </p>
         </header>
 
-        <section className="wallet-summary" aria-labelledby="wallet-balance-heading">
+        <section className="wallet-summary" aria-labelledby={`${dialogId}-wallet-balance-heading`}>
           <div className="wallet-balance-block">
             <strong
               className={`wallet-number${isBalanceLoading ? ' is-loading' : ''}`}
@@ -236,16 +229,15 @@ export function WalletDialog({
               {isBalanceLoading && !balances ? '—' : fiatBalance.display}
             </strong>
             <small>USD</small>
-            <span id="wallet-balance-heading">{t.balance}</span>
+            <span id={`${dialogId}-wallet-balance-heading`}>{t.balance}</span>
           </div>
           <button
             type="button"
             className="wallet-withdraw-button"
-            aria-describedby="wallet-withdraw-note"
+            aria-describedby={`${dialogId}-wallet-withdraw-note`}
             title={t.withdrawUnavailable}
             onClick={() => {
               setWithdrawOpen((value) => !value);
-              setWithdrawReview(false);
               trackFrontendEvent({ name: 'withdraw_start', origin: 'local_dev' });
             }}
           >
@@ -256,7 +248,7 @@ export function WalletDialog({
             <ShieldCheck size={16} aria-hidden="true" />
             {t.security}
           </p>
-          <p id="wallet-withdraw-note" className="wallet-withdraw-note">
+          <p id={`${dialogId}-wallet-withdraw-note`} className="wallet-withdraw-note">
             {t.withdrawUnavailable}
           </p>
           {wallet?.status === 'ready' && (
@@ -268,7 +260,7 @@ export function WalletDialog({
               )}
               <button
                 type="button"
-                onClick={() => void refreshBalances()}
+                onClick={() => setRefresh((value) => value + 1)}
                 disabled={isBalanceLoading}
                 aria-label={balanceState === 'error' ? t.retry : t.refresh}
               >
@@ -284,94 +276,20 @@ export function WalletDialog({
         </section>
 
         {withdrawOpen && (
-          <section className="v1-withdraw-panel" aria-labelledby="withdraw-heading">
+          <section className="v1-withdraw-panel" aria-labelledby={`${dialogId}-withdraw-heading`}>
             <header>
               <WalletCards size={20} aria-hidden="true" />
               <div>
                 <p className="v1-kicker">GIMME WALLET / DEVNET</p>
-                <h3 id="withdraw-heading">{t.withdraw}</h3>
+                <h3 id={`${dialogId}-withdraw-heading`}>{t.withdraw}</h3>
               </div>
             </header>
-            {!withdrawReview ? (
-              <form
-                onSubmit={(event) => {
-                  event.preventDefault();
-                  if (withdrawAmount.trim() && withdrawDestination.trim()) setWithdrawReview(true);
-                }}
-              >
-                <label htmlFor="withdraw-amount">{locale === 'vi' ? 'Số lượng' : 'Amount'} *</label>
-                <div className="v1-amount-field">
-                  <input
-                    id="withdraw-amount"
-                    type="text"
-                    inputMode="decimal"
-                    value={withdrawAmount}
-                    onChange={(event) => setWithdrawAmount(event.target.value)}
-                    placeholder="0.00"
-                    autoComplete="off"
-                  />
-                  <span>USDC</span>
-                </div>
-                <label htmlFor="withdraw-destination">
-                  {locale === 'vi' ? 'Địa chỉ Solana nhận' : 'Destination Solana address'} *
-                </label>
-                <input
-                  id="withdraw-destination"
-                  type="text"
-                  value={withdrawDestination}
-                  onChange={(event) => setWithdrawDestination(event.target.value)}
-                  autoComplete="off"
-                  spellCheck={false}
-                  placeholder="7xKX…p2aB"
-                />
-                <button className="button button-primary" type="submit">
-                  {locale === 'vi' ? 'Kiểm tra lệnh rút' : 'Review Withdrawal'}
-                </button>
-              </form>
-            ) : (
-              <div className="v1-withdraw-review">
-                <dl>
-                  <div>
-                    <dt>{locale === 'vi' ? 'Số lượng' : 'Amount'}</dt>
-                    <dd>{withdrawAmount} USDC</dd>
-                  </div>
-                  <div>
-                    <dt>{locale === 'vi' ? 'Đích đến' : 'Destination'}</dt>
-                    <dd>{withdrawDestination}</dd>
-                  </div>
-                  <div>
-                    <dt>Network</dt>
-                    <dd>Solana Devnet</dd>
-                  </div>
-                  <div>
-                    <dt>{locale === 'vi' ? 'Phí ước tính' : 'Estimated fee'}</dt>
-                    <dd>{locale === 'vi' ? 'Chưa có' : 'Unavailable'}</dd>
-                  </div>
-                </dl>
-                <p role="status">
-                  {locale === 'vi'
-                    ? 'Withdrawal chưa được kết nối. Không có giao dịch nào được ký hoặc gửi.'
-                    : 'Withdrawal is not connected. No transaction can be signed or submitted.'}
-                </p>
-                <div>
-                  <button
-                    type="button"
-                    className="button button-quiet"
-                    onClick={() => setWithdrawReview(false)}
-                  >
-                    {locale === 'vi' ? 'Sửa' : 'Edit'}
-                  </button>
-                  <button type="button" className="button button-primary" disabled>
-                    {locale === 'vi' ? 'Xác nhận chưa khả dụng' : 'Confirmation unavailable'}
-                  </button>
-                </div>
-              </div>
-            )}
+            <p role="status">{t.withdrawUnavailable}</p>
           </section>
         )}
 
-        <section className="wallet-section" aria-labelledby="wallet-assets-heading">
-          <h3 id="wallet-assets-heading">{t.assets}</h3>
+        <section className="wallet-section" aria-labelledby={`${dialogId}-wallet-assets-heading`}>
+          <h3 id={`${dialogId}-wallet-assets-heading`}>{t.assets}</h3>
           <div className="wallet-asset-row">
             <span className="usdc-mark" aria-hidden="true">
               $
@@ -412,8 +330,8 @@ export function WalletDialog({
           </div>
         </section>
 
-        <section className="wallet-section" aria-labelledby="wallet-activity-heading">
-          <h3 id="wallet-activity-heading">{t.activity}</h3>
+        <section className="wallet-section" aria-labelledby={`${dialogId}-wallet-activity-heading`}>
+          <h3 id={`${dialogId}-wallet-activity-heading`}>{t.activity}</h3>
           {wallet?.activities.length ? (
             <ul className="wallet-activity-list">
               {wallet.activities.slice(0, 3).map((activity) => {

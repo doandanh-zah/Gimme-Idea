@@ -2,125 +2,201 @@
 
 import { Canvas, useFrame } from '@react-three/fiber';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import type { Group } from 'three';
+import { useNarrativeStage } from '@/lib/narrative-stage';
+import { Group, MathUtils } from 'three';
 
-const nodes: [number, number, number][] = [
-  [-1.4, 0.9, 0],
-  [-0.65, 1.35, 0.2],
-  [0.15, 1.15, -0.1],
-  [1.1, 0.7, 0.1],
-  [-1.55, 0.05, 0.1],
-  [-0.65, 0.3, 0.45],
-  [0.35, 0.35, 0.25],
-  [1.45, -0.1, 0],
-  [-1.1, -0.85, 0.1],
-  [-0.15, -0.55, 0.4],
-  [0.75, -0.75, 0.15],
-  [0.15, -1.4, 0],
-];
-const paths = [
-  [0, 1, 2, 3],
-  [0, 4, 5, 6, 3],
-  [4, 8, 9, 10, 7],
-  [8, 11, 10],
-  [2, 6, 9, 11],
-  [3, 7, 10],
-];
-const linePositions = new Float32Array(
-  paths.flatMap((path) =>
-    path
-      .slice(1)
-      .flatMap((nodeIndex, edgeIndex) => [...nodes[path[edgeIndex]!]!, ...nodes[nodeIndex]!]),
-  ),
-);
-const particlePositions = new Float32Array(
-  Array.from({ length: 18 }, (_, index) => [
-    Math.sin(index * 2.17) * 2,
-    Math.cos(index * 1.31) * 1.8,
-    Math.sin(index * 0.73) * 0.55,
-  ]).flat(),
-);
-
-function Network({ stage }: { stage: number }) {
-  const group = useRef<Group>(null);
-  useFrame(({ clock }) => {
-    if (group.current) {
-      group.current.rotation.y = Math.sin(clock.elapsedTime * 0.18) * 0.18;
-      group.current.rotation.x = Math.cos(clock.elapsedTime * 0.14) * 0.06;
+// Deterministic paired hemispheres: a neural sculpture, not a medical model.
+function hemisphere(side: number) {
+  const points: number[] = [];
+  const lines: number[] = [];
+  const rows = 18,
+    columns = 30;
+  for (let row = 0; row <= rows; row++) {
+    const phi = (Math.PI * row) / rows;
+    for (let column = 0; column <= columns; column++) {
+      const theta = (Math.PI * 2 * column) / columns;
+      const fold = 1 + 0.055 * Math.sin(theta * 6 + phi * 7);
+      points.push(
+        side * (0.7 + 0.68 * Math.sin(phi) * Math.cos(theta) * fold),
+        1.06 * Math.cos(phi) * fold,
+        0.85 * Math.sin(phi) * Math.sin(theta) * fold,
+      );
     }
+  }
+  for (let row = 0; row < rows; row++)
+    for (let column = 0; column < columns; column++) {
+      const index = (row * (columns + 1) + column) * 3;
+      for (const next of [index + 3, index + (columns + 1) * 3])
+        lines.push(...points.slice(index, index + 3), ...points.slice(next, next + 3));
+    }
+  return { points: new Float32Array(points), lines: new Float32Array(lines) };
+}
+const left = hemisphere(-1);
+const right = hemisphere(1);
+
+function Hemisphere({ side, stage }: { side: number; stage: number }) {
+  const group = useRef<Group>(null);
+  const data = side < 0 ? left : right;
+  useFrame((_, delta) => {
+    if (!group.current) return;
+    const spread =
+      stage >= 2 && stage <= 3
+        ? 0.42
+        : stage === 4
+          ? 0.12
+          : stage === 5
+            ? 0.24
+            : stage === 6
+              ? 0.06
+              : 0;
+    group.current.position.x = MathUtils.damp(group.current.position.x, side * spread, 4, delta);
+    group.current.rotation.z = MathUtils.damp(
+      group.current.rotation.z,
+      side * (stage === 3 ? -0.18 : 0),
+      4,
+      delta,
+    );
   });
   return (
     <group ref={group}>
       <lineSegments>
         <bufferGeometry>
-          <bufferAttribute attach="attributes-position" args={[linePositions, 3]} />
+          <bufferAttribute attach="attributes-position" args={[data.lines, 3]} />
         </bufferGeometry>
         <lineBasicMaterial
-          color={stage === 1 ? '#9945FF' : stage >= 2 && stage <= 4 ? '#FFD700' : '#F4F0E8'}
+          color={side < 0 ? '#BA91F5' : '#F9D65C'}
           transparent
-          opacity={stage === 0 || stage === 6 ? 0.2 : 0.44}
+          opacity={stage === 4 ? 0.16 : 0.32}
         />
       </lineSegments>
-      {nodes.map((position, index) => (
-        <mesh key={index} position={position}>
-          {stage === 4 && index > 5 ? (
-            <boxGeometry args={[0.12, 0.12, 0.12]} />
-          ) : (
-            <sphereGeometry
-              args={[index === 0 && stage === 1 ? 0.14 : index % 4 === 0 ? 0.09 : 0.055, 12, 12]}
-            />
-          )}
-          <meshBasicMaterial
-            color={
-              index === 0 && stage === 1
-                ? '#9945FF'
-                : stage === 5 && index === 10
-                  ? '#14F195'
-                  : stage >= 2 && stage <= 4 && [2, 5, 6, 9].includes(index)
-                    ? '#FFD700'
-                    : '#F4F0E8'
-            }
-            transparent
-            opacity={stage === 3 && ![0, 2, 6, 9].includes(index) ? 0.24 : 0.9}
-          />
-        </mesh>
-      ))}
       <points>
         <bufferGeometry>
-          <bufferAttribute attach="attributes-position" args={[particlePositions, 3]} />
+          <bufferAttribute attach="attributes-position" args={[data.points, 3]} />
         </bufferGeometry>
-        <pointsMaterial color="#9945FF" size={0.028} transparent opacity={0.65} />
+        <pointsMaterial
+          color={side < 0 ? '#BA91F5' : '#F9D65C'}
+          size={0.022}
+          transparent
+          opacity={0.8}
+          sizeAttenuation
+        />
       </points>
     </group>
   );
 }
+function Network({ stage }: { stage: number }) {
+  const group = useRef<Group>(null);
+  useFrame(({ clock, pointer }, delta) => {
+    if (!group.current) return;
+    group.current.rotation.y = MathUtils.damp(
+      group.current.rotation.y,
+      Math.sin(clock.elapsedTime * 0.13) * 0.22 + pointer.x * 0.12,
+      3,
+      delta,
+    );
+    group.current.rotation.x = MathUtils.damp(
+      group.current.rotation.x,
+      -0.08 + pointer.y * 0.06,
+      3,
+      delta,
+    );
+  });
+  return (
+    <group ref={group} rotation={[0, 0.2, 0.06]}>
+      <Hemisphere side={-1} stage={stage} />
+      <Hemisphere side={1} stage={stage} />
+      {Array.from({ length: 8 }, (_, i) => (
+        <mesh
+          key={i}
+          position={[
+            Math.sin(i * 2.1) * (stage >= 2 ? 1.9 : 1.45),
+            Math.cos(i * 1.6) * 1.55,
+            Math.sin(i) * 0.5,
+          ]}
+          rotation={[i * 0.3, i * 0.5, 0]}
+        >
+          {stage === 6 ? (
+            <torusGeometry args={[0.08, 0.025, 6, 12]} />
+          ) : stage === 4 || stage === 5 ? (
+            <boxGeometry args={[0.13, 0.13, 0.13]} />
+          ) : (
+            <octahedronGeometry args={[0.055]} />
+          )}
+          <meshBasicMaterial color={i % 2 === 0 ? '#BA91F5' : '#F9D65C'} wireframe={stage === 4} />
+        </mesh>
+      ))}
+    </group>
+  );
+}
 
-export function BrainScene() {
+function RenderFrame({ onReady }: { onReady: () => void }) {
+  const ready = useRef(false);
+  useFrame(({ gl, scene, camera }) => {
+    gl.render(scene, camera);
+    if (!ready.current) {
+      ready.current = true;
+      onReady();
+    }
+  }, 1);
+  return null;
+}
+export function BrainScene({
+  paused = false,
+  onReady,
+  onFailure,
+}: {
+  paused?: boolean;
+  onReady: () => void;
+  onFailure: () => void;
+}) {
   const [available, setAvailable] = useState(true);
-  const [stage, setStage] = useState(0);
+  const [active, setActive] = useState(true);
+  const [visible, setVisible] = useState(true);
+  const stage = useNarrativeStage();
+  const [ready, setReady] = useState(false);
+  const wrapper = useRef<HTMLDivElement>(null);
   const dpr = useMemo(() => Math.min(window.devicePixelRatio, 1.35), []);
   useEffect(() => {
-    const update = (event: Event) =>
-      setStage(
-        Math.max(0, Math.min(6, (event as CustomEvent<{ index?: number }>).detail?.index ?? 0)),
-      );
-    window.addEventListener('gimme-narrative-step', update);
-    return () => window.removeEventListener('gimme-narrative-step', update);
+    const visibility = () => setVisible(document.visibilityState === 'visible');
+    document.addEventListener('visibilitychange', visibility);
+    const observer = new IntersectionObserver(([entry]) =>
+      setActive(Boolean(entry?.isIntersecting)),
+    );
+    if (wrapper.current) observer.observe(wrapper.current);
+    return () => {
+      observer.disconnect();
+      document.removeEventListener('visibilitychange', visibility);
+    };
   }, []);
   if (!available) return null;
   return (
-    <Canvas
-      className="brain-canvas"
-      dpr={dpr}
-      camera={{ position: [0, 0, 5], fov: 42 }}
-      gl={{ antialias: true, powerPreference: 'high-performance' }}
-      onCreated={({ gl }) => {
-        gl.domElement.addEventListener('webglcontextlost', () => setAvailable(false), {
-          once: true,
-        });
-      }}
-    >
-      <Network stage={stage} />
-    </Canvas>
+    <div ref={wrapper} className="brain-canvas" data-scene-ready={ready} aria-hidden="true">
+      <Canvas
+        dpr={dpr}
+        frameloop={active && visible && !paused ? 'always' : 'never'}
+        camera={{ position: [0, 0, 5], fov: 43 }}
+        gl={{ antialias: true, alpha: true, powerPreference: 'low-power' }}
+        onCreated={({ gl }) => {
+          gl.domElement.addEventListener(
+            'webglcontextlost',
+            () => {
+              setAvailable(false);
+              onFailure();
+            },
+            {
+              once: true,
+            },
+          );
+        }}
+      >
+        <Network stage={stage} />
+        <RenderFrame
+          onReady={() => {
+            setReady(true);
+            onReady();
+          }}
+        />
+      </Canvas>
+    </div>
   );
 }

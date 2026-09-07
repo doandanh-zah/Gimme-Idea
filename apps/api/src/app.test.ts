@@ -61,6 +61,32 @@ afterEach(async () => {
 });
 
 describe('API boundaries', () => {
+  it('allows browser mutation preflights only for configured origins', async () => {
+    const origin = 'http://127.0.0.1:3010';
+    const app = await buildApp({ repository: repo, logger: false, allowedOrigins: [origin] });
+    apps.push(app);
+    for (const method of ['PUT', 'PATCH']) {
+      const response = await app.inject({
+        method: 'OPTIONS',
+        url: '/v1/me/reactions/problem/test-problem',
+        headers: {
+          origin,
+          'access-control-request-method': method,
+          'access-control-request-headers': 'authorization,content-type',
+        },
+      });
+      expect(response.statusCode).toBe(204);
+      expect(response.headers['access-control-allow-origin']).toBe(origin);
+      expect(response.headers['access-control-allow-methods']).toContain(method);
+    }
+    const denied = await app.inject({
+      method: 'OPTIONS',
+      url: '/v1/me/reactions/problem/test-problem',
+      headers: { origin: 'https://untrusted.example', 'access-control-request-method': 'PUT' },
+    });
+    expect(denied.headers['access-control-allow-origin']).toBeUndefined();
+  });
+
   it('reports health and readiness', async () => {
     const app = await buildApp({ repository: repo, logger: false });
     apps.push(app);

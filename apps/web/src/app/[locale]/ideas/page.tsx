@@ -1,16 +1,31 @@
+import Link from 'next/link';
+import { ArrowUpRight } from 'lucide-react';
 import { notFound } from 'next/navigation';
 import { AppPageHeader } from '@/components/app-surfaces';
 import { KnowledgeFeed } from '@/components/knowledge-feed';
 import { getIdea } from '@/lib/api';
+import { ideaClient } from '@/lib/domain/client';
+import { CatalogPagination } from '@/components/catalog-pagination';
+import { catalogPage, catalogPageSize } from '@/lib/pagination';
 import { copy, isLocale } from '@/lib/i18n';
 
 export const dynamic = 'force-dynamic';
 
-export default async function IdeasFeed({ params }: { params: Promise<{ locale: string }> }) {
-  const { locale } = await params;
+export default async function IdeasFeed({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ locale: string }>;
+  searchParams: Promise<{ page?: string }>;
+}) {
+  const [{ locale }, query] = await Promise.all([params, searchParams]);
   if (!isLocale(locale)) notFound();
   const t = copy[locale];
-  const idea = await getIdea('demand-pulse-for-kitchens');
+  const page = catalogPage(query.page);
+  const rows = await ideaClient.list((page - 1) * catalogPageSize, catalogPageSize + 1);
+  const items = (
+    await Promise.all(rows.slice(0, catalogPageSize).map((row) => getIdea(String(row.slug))))
+  ).filter((item) => item !== null);
 
   return (
     <main id="main" className="app-page">
@@ -23,7 +38,24 @@ export default async function IdeasFeed({ params }: { params: Promise<{ locale: 
             : 'Buildable approaches with a clear Primary Problem and research trail.'
         }
       />
-      <KnowledgeFeed locale={locale} kind="idea" initialItems={idea ? [idea] : []} />
+      <aside className="catalog-intro is-idea">
+        <p>
+          {locale === 'vi'
+            ? 'Mỗi ý tưởng bắt đầu từ một vấn đề thật. Bạn có một góc nhìn khác?'
+            : 'Every idea starts with a real problem. Have a different perspective?'}
+        </p>
+        <Link href={`/${locale}/create/idea`}>
+          {locale === 'vi' ? 'Đề xuất ý tưởng' : 'Propose an idea'}
+          <ArrowUpRight size={18} aria-hidden="true" />
+        </Link>
+      </aside>
+      <KnowledgeFeed locale={locale} kind="idea" initialItems={items} />
+      <CatalogPagination
+        locale={locale}
+        path={`/${locale}/ideas`}
+        page={page}
+        hasNext={rows.length > catalogPageSize}
+      />
     </main>
   );
 }

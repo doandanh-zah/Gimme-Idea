@@ -15,8 +15,19 @@ import type { Locale } from '@gimme-idea/contracts';
 import type { BountyModel, ProblemReferenceModel, ProjectModel } from '@/lib/domain/types';
 import { DataOriginBadge, FundingStatus, RewardAmount } from '@/components/v1-primitives';
 
-function daysUntil(value: string) {
-  return Math.max(0, Math.ceil((new Date(value).getTime() - Date.now()) / 86_400_000));
+function timeLeft(value: string, locale: Locale) {
+  const remaining = Date.parse(value) - Date.now();
+  if (!Number.isFinite(remaining))
+    return locale === 'vi' ? 'Chưa có thời hạn' : 'Deadline unavailable';
+  if (remaining <= 0) return locale === 'vi' ? 'Đã hết hạn' : 'Closed';
+  const days = Math.floor(remaining / 86400000);
+  const hours = Math.floor(remaining / 3600000);
+  const minutes = Math.max(1, Math.ceil(remaining / 60000));
+  return days
+    ? `${days} ${locale === 'vi' ? 'ngày' : 'days'}`
+    : hours
+      ? `${hours} ${locale === 'vi' ? 'giờ' : 'hours'}`
+      : `${minutes} ${locale === 'vi' ? 'phút' : 'minutes'}`;
 }
 
 export function BountyCard({
@@ -50,7 +61,9 @@ export function BountyCard({
       </header>
       <div className="v1-bounty-lead">
         <p>{bounty.organization.name}</p>
-        <h2>{bounty.problem.title}</h2>
+        <h2>
+          <Link href={`/${locale}/bounties/${bounty.slug}`}>{bounty.title}</Link>
+        </h2>
         {!compact && <span>{bounty.summary}</span>}
       </div>
       <div className="v1-bounty-value">
@@ -60,9 +73,7 @@ export function BountyCard({
             <dt>
               <Clock3 size={14} aria-hidden="true" /> {locale === 'vi' ? 'Còn lại' : 'Time left'}
             </dt>
-            <dd>
-              {daysUntil(bounty.deadline)} {locale === 'vi' ? 'ngày' : 'days'}
-            </dd>
+            <dd>{timeLeft(bounty.deadline, locale)}</dd>
           </div>
           <div>
             <dt>
@@ -102,8 +113,8 @@ export function BountyCard({
         <Link href={`/${locale}/bounties/${bounty.slug}`}>
           {isIdea
             ? locale === 'vi'
-              ? 'Khám phá Problem'
-              : 'Explore Problem'
+              ? 'Xem Idea Bounty'
+              : 'View Idea Bounty'
             : locale === 'vi'
               ? 'Xem Build Bounty'
               : 'View Build Bounty'}
@@ -122,8 +133,8 @@ export function ProblemDiscoveryCard({
 }: {
   problem: ProblemReferenceModel;
   locale: Locale;
-  ideaCount: number;
-  archiveCount: number;
+  ideaCount?: number;
+  archiveCount?: number;
 }) {
   return (
     <article className="v1-record-card v1-problem-card">
@@ -132,21 +143,26 @@ export function ProblemDiscoveryCard({
           <Target size={17} aria-hidden="true" />
           <span>PROBLEM</span>
         </div>
-        <span className="v1-neutral-status">
-          {locale === 'vi' ? 'Chưa có bounty được xác minh' : 'No verified bounty yet'}
-        </span>
       </header>
-      <h2>{problem.title}</h2>
+      <h2>
+        <Link href={`/${locale}/problems/${problem.slug}`}>{problem.title}</Link>
+      </h2>
       <p>{problem.summary}</p>
       <div className="v1-record-meta">
-        <span>{problem.industry}</span>
-        <span>{problem.region}</span>
+        {problem.industry && <span>{problem.industry}</span>}
+        {problem.region && <span>{problem.region}</span>}
         <span>
-          {ideaCount} {locale === 'vi' ? 'Ý tưởng công khai' : 'public Ideas'}
+          {ideaCount !== undefined
+            ? `${ideaCount} ${locale === 'vi' ? 'Ý tưởng công khai' : 'public Ideas'}`
+            : locale === 'vi'
+              ? 'Khám phá ý tưởng'
+              : 'Explore Ideas'}
         </span>
-        <span>
-          {archiveCount} {locale === 'vi' ? 'build lịch sử' : 'historical builds'}
-        </span>
+        {archiveCount !== undefined && (
+          <span>
+            {archiveCount} {locale === 'vi' ? 'build lịch sử' : 'historical builds'}
+          </span>
+        )}
       </div>
       <footer>
         <Link href={`/${locale}/problems/${problem.slug}`}>
@@ -189,7 +205,9 @@ export function ProjectCard({
           {project.source.label} · {project.source.year} · {project.source.result}
         </p>
       )}
-      <h2>{project.name}</h2>
+      <h2>
+        <Link href={`/${locale}/projects/${project.slug}`}>{project.name}</Link>
+      </h2>
       <p>{project.summary}</p>
       {!compact && (
         <div className="v1-project-signal">

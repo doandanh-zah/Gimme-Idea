@@ -1,0 +1,88 @@
+[
+  {
+    "path": "/vi/home",
+    "status": 200,
+    "heading": "Trang chủ",
+    "overflow": false,
+    "violations": []
+  },
+  {
+    "path": "/vi/problems",
+    "status": 200,
+    "heading": "Vấn đề",
+    "overflow": false,
+    "violations": []
+  },
+  {
+    "path": "/vi/ideas",
+    "status": 200,
+    "heading": "Ý tưởng",
+    "overflow": false,
+    "violations": []
+  },
+  {
+    "path": "/vi/projects",
+    "status": 200,
+    "heading": "Dự án",
+    "overflow": false,
+    "violations": []
+  },
+  {
+    "path": "/vi/bounties",
+    "status": 200,
+    "heading": "Bounty",
+    "overflow": false,
+    "violations": []
+  },
+  {
+    "path": "/vi/search?q=restaurants",
+    "status": 200,
+    "heading": "Tìm kiếm",
+    "overflow": false,
+    "violations": []
+  },
+  {
+    "path": "/vi/problems/restaurant-food-waste",
+    "status": 200,
+    "heading": "Restaurants cannot match daily supply to volatile demand",
+    "overflow": false,
+    "violations": []
+  },
+  {
+    "path": "/vi/ideas/demand-pulse-for-kitchens",
+    "status": 200,
+    "heading": "Demand Pulse for independent kitchens",
+    "overflow": false,
+    "violations": []
+  },
+  {
+    "width": 768,
+    "overflow": false,
+    "main": 680
+  },
+  {
+    "width": 1180,
+    "overflow": false,
+    "main": 820
+  },
+  {
+    "width": 1181,
+    "overflow": false,
+    "main": 820
+  },
+  {
+    "width": 1280,
+    "overflow": false,
+    "main": 820
+  },
+  {
+    "width": 1281,
+    "overflow": false,
+    "main": 820
+  },
+  {
+    "width": 1440,
+    "overflow": false,
+    "main": 820
+  }
+]

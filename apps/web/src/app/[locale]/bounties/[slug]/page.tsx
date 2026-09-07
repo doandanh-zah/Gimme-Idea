@@ -32,7 +32,13 @@ export default async function BountyDetail({ params }: Props) {
   const bounty = await bountyClient.get(slug);
   if (!bounty) notFound();
   const isIdea = bounty.stage === 'idea';
-  const acceptingSubmissions = bounty.status === 'open';
+  // Server request time determines whether this competition can accept entries.
+  // eslint-disable-next-line react-hooks/purity
+  const requestTime = Date.now();
+  const acceptingSubmissions =
+    bounty.status === 'open' &&
+    Date.parse(bounty.deadline) > requestTime &&
+    bounty.criteria.length > 0;
   return (
     <main id="main" className={`app-page v1-detail-page v1-bounty-detail is-${bounty.stage}`}>
       <Link className="v1-back-link" href={`/${locale}/bounties`}>
@@ -54,9 +60,11 @@ export default async function BountyDetail({ params }: Props) {
             <VisibilityBadge visibility={bounty.visibility} locale={locale} />
             <span className="v1-deadline">
               <Clock3 size={14} aria-hidden="true" />
-              {new Intl.DateTimeFormat(locale, { dateStyle: 'medium' }).format(
-                new Date(bounty.deadline),
-              )}
+              {new Intl.DateTimeFormat(locale, {
+                dateStyle: 'medium',
+                timeStyle: 'long',
+                timeZone: 'UTC',
+              }).format(new Date(bounty.deadline))}
             </span>
           </div>
           <EntityActions
@@ -82,8 +90,8 @@ export default async function BountyDetail({ params }: Props) {
               >
                 <LockKeyhole size={17} aria-hidden="true" />
                 {locale === 'vi'
-                  ? `Gửi Idea riêng tư · ${bounty.amountUsdc.toLocaleString()} USDC`
-                  : `Submit Private Idea · ${bounty.amountUsdc.toLocaleString()} USDC`}
+                  ? `Gửi Idea riêng tư · ${bounty.amountUsdc.toLocaleString(locale, { maximumFractionDigits: 6 })} USDC`
+                  : `Submit Private Idea · ${bounty.amountUsdc.toLocaleString(locale, { maximumFractionDigits: 6 })} USDC`}
               </Link>
             ) : (
               <a className="button button-primary" href="#build-access">
@@ -135,6 +143,13 @@ export default async function BountyDetail({ params }: Props) {
         <section>
           <p className="v1-kicker">03 / REVIEW</p>
           <h2>{locale === 'vi' ? 'Tiêu chí đánh giá' : 'Judging criteria'}</h2>
+          {!bounty.criteria.length && (
+            <p>
+              {locale === 'vi'
+                ? 'Tiêu chí chưa được công bố. Bounty chưa sẵn sàng nhận bài.'
+                : 'Criteria have not been published. This Bounty is not ready for entries.'}
+            </p>
+          )}
           <div className="v1-criteria">
             {bounty.criteria.map((criterion) => (
               <div key={criterion.name}>

@@ -1,0 +1,113 @@
+[
+  {
+    "fontBlocked": false,
+    "cls": 0,
+    "overflow": false,
+    "displayFont": "alumni-sans, \"Arial Narrow\", Arial, sans-serif",
+    "bodyFont": "-apple-system, \"system-ui\", \"Segoe UI\", Roboto, Arial, sans-serif",
+    "failures": [
+      "http://127.0.0.1:3011/vi/problems?_rsc=TPhJYwlKcYp9unfU",
+      "http://127.0.0.1:3011/vi/ideas?_rsc=TPhJYwlKcYp9unfU",
+      "http://127.0.0.1:3011/vi/bounties?_rsc=TPhJYwlKcYp9unfU",
+      "http://127.0.0.1:3011/vi/home?_rsc=TPhJYwlKcYp9unfU",
+      "http://127.0.0.1:3011/vi/create/problem?_rsc=TPhJYwlKcYp9unfU",
+      "http://127.0.0.1:3011/vi?_rsc=wwoun_2ymdE5WGKl",
+      "http://127.0.0.1:3011/vi/problems?_rsc=eoC1vJ49NwrBz-T8",
+      "http://127.0.0.1:3011/vi/ideas?_rsc=y0b45fR_gteMhehV",
+      "http://127.0.0.1:3011/vi/bounties?_rsc=xUmaKqf0XBt1HRYS",
+      "http://127.0.0.1:3011/en?_rsc=wwoun_2ymdE5WGKl",
+      "http://127.0.0.1:3011/vi/home?_rsc=sUmL2Qd8EdvUL080",
+      "http://127.0.0.1:3011/vi/create/problem?_rsc=wwoun_2ymdE5WGKl"
+    ],
+    "webglFallback": true
+  },
+  {
+    "fontBlocked": true,
+    "cls": 0,
+    "overflow": false,
+    "displayFont": "alumni-sans, \"Arial Narrow\", Arial, sans-serif",
+    "bodyFont": "-apple-system, \"system-ui\", \"Segoe UI\", Roboto, Arial, sans-serif",
+    "failures": [
+      "https://use.typekit.net/qqv3drj.css",
+      "http://127.0.0.1:3011/vi/problems?_rsc=TPhJYwlKcYp9unfU",
+      "http://127.0.0.1:3011/vi/ideas?_rsc=TPhJYwlKcYp9unfU",
+      "http://127.0.0.1:3011/vi/bounties?_rsc=TPhJYwlKcYp9unfU",
+      "http://127.0.0.1:3011/vi/home?_rsc=TPhJYwlKcYp9unfU",
+      "http://127.0.0.1:3011/vi/create/problem?_rsc=TPhJYwlKcYp9unfU",
+      "http://127.0.0.1:3011/vi?_rsc=wwoun_2ymdE5WGKl",
+      "http://127.0.0.1:3011/vi/problems?_rsc=eoC1vJ49NwrBz-T8",
+      "http://127.0.0.1:3011/vi/ideas?_rsc=y0b45fR_gteMhehV",
+      "http://127.0.0.1:3011/vi/bounties?_rsc=xUmaKqf0XBt1HRYS",
+      "http://127.0.0.1:3011/vi/home?_rsc=sUmL2Qd8EdvUL080",
+      "http://127.0.0.1:3011/en?_rsc=wwoun_2ymdE5WGKl",
+      "http://127.0.0.1:3011/vi/create/problem?_rsc=wwoun_2ymdE5WGKl"
+    ],
+    "webglFallback": true
+  },
+  {
+    "width": 320,
+    "overflow": false,
+    "target": 128.390625,
+    "indexBottom": 126
+  },
+  {
+    "width": 360,
+    "overflow": false,
+    "target": 128.296875,
+    "indexBottom": 126
+  },
+  {
+    "width": 760,
+    "overflow": false,
+    "target": 128.40625,
+    "indexBottom": 126
+  },
+  {
+    "width": 761,
+    "overflow": false,
+    "target": 68.40625,
+    "indexBottom": 66
+  },
+  {
+    "width": 768,
+    "overflow": false,
+    "target": 68.40625,
+    "indexBottom": 66
+  },
+  {
+    "width": 769,
+    "overflow": false,
+    "target": 68.40625,
+    "indexBottom": 66
+  },
+  {
+    "width": 1180,
+    "overflow": false,
+    "target": 68.40625,
+    "indexBottom": 66
+  },
+  {
+    "width": 1181,
+    "overflow": false,
+    "target": 68.40625,
+    "indexBottom": 66
+  },
+  {
+    "width": 1280,
+    "overflow": false,
+    "target": 68.40625,
+    "indexBottom": 66
+  },
+  {
+    "width": 1281,
+    "overflow": false,
+    "target": 68.40625,
+    "indexBottom": 66
+  },
+  {
+    "width": 1440,
+    "overflow": false,
+    "target": 68.40625,
+    "indexBottom": 66
+  }
+]

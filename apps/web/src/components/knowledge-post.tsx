@@ -15,16 +15,13 @@ import { useEffect, useState } from 'react';
 import type { IdeaDetailDTO, Locale, ProblemDetailDTO } from '@gimme-idea/contracts';
 import { PostMediaGallery } from '@/components/post-media-gallery';
 import { SocialComposer } from '@/components/quote-post';
+import { useEntityReactions } from '@/lib/use-entity-reactions';
 import { useAuth } from '@/lib/auth';
 import {
   getViewCount,
   incrementViews,
-  isBookmarked,
-  isLiked,
   itemKey,
   subscribeSocial,
-  toggleBookmark,
-  toggleLike,
   type LocalKnowledgePost,
   type QuotedTarget,
 } from '@/lib/social';
@@ -85,14 +82,8 @@ function formatBountyAmount(locale: Locale, amountRaw: string, currency: string)
     style: 'currency',
     currency: 'USD',
     minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
+    maximumFractionDigits: 6,
   }).format(amount);
-}
-
-function formatCount(value: number) {
-  return new Intl.NumberFormat('en', { notation: 'compact', maximumFractionDigits: 1 }).format(
-    value,
-  );
 }
 
 function toQuotedTarget(
@@ -148,17 +139,25 @@ export function KnowledgePost({
       ? formatBountyAmount(locale, bounty.amountRaw, bounty.currency)
       : null;
   const key = itemKey(item.kind, data.slug);
-  const fallbackViews = 'local' in item ? 0 : item.data.provenance.sources.length;
-  const [saved, setSaved] = useState(false);
-  const [liked, setLiked] = useState(false);
-  const [views, setViews] = useState(fallbackViews);
+  const fallbackViews = 0;
+  const reactions = useEntityReactions(item.kind, data.slug, locale);
+  const saved = reactions.bookmarked;
+  const liked = reactions.liked;
+  const [, setViews] = useState(fallbackViews);
   const [shareLabel, setShareLabel] = useState<string>(t.share);
   const [quoteOpen, setQuoteOpen] = useState(false);
+  const [pendingQuote, setPendingQuote] = useState(false);
+  const [shareError, setShareError] = useState(false);
+  useEffect(() => {
+    if (!auth.isSignedIn || !pendingQuote) return;
+    queueMicrotask(() => {
+      setQuoteOpen(true);
+      setPendingQuote(false);
+    });
+  }, [auth.isSignedIn, pendingQuote]);
 
   useEffect(() => {
     const sync = () => {
-      setSaved(isBookmarked(key));
-      setLiked(isLiked(key));
       setViews(getViewCount(key, fallbackViews));
     };
     sync();
@@ -166,8 +165,8 @@ export function KnowledgePost({
   }, [fallbackViews, key]);
 
   const share = async () => {
-    if (!auth.requireAuth('share')) return;
     const url = new URL(href, window.location.origin).toString();
+    setShareError(false);
     try {
       if (navigator.share) {
         await navigator.share({ title: data.title, url });
@@ -176,10 +175,10 @@ export function KnowledgePost({
       await navigator.clipboard.writeText(url);
       setShareLabel(t.copied);
       window.setTimeout(() => setShareLabel(t.share), 1500);
-    } catch {
-      await navigator.clipboard.writeText(url);
-      setShareLabel(t.copied);
-      window.setTimeout(() => setShareLabel(t.share), 1500);
+    } catch (error) {
+      if (error instanceof DOMException && error.name === 'AbortError') return;
+      setShareError(true);
+      setShareLabel(locale === 'vi' ? 'Chưa sao chép được' : 'Could not copy');
     }
   };
 
@@ -222,10 +221,8 @@ export function KnowledgePost({
               aria-pressed={saved}
               aria-label={saved ? t.unsave : t.save}
               title={saved ? t.unsave : t.save}
-              onClick={() => {
-                if (!auth.requireAuth('save')) return;
-                setSaved(toggleBookmark(key));
-              }}
+              disabled={reactions.busy}
+              onClick={() => void reactions.toggle('bookmark')}
             >
               <Bookmark size={18} strokeWidth={1.75} fill={saved ? 'currentColor' : 'none'} />
             </button>
@@ -261,6 +258,24 @@ export function KnowledgePost({
         {localData && localData.attachments.length > 0 && (
           <PostMediaGallery attachments={localData.attachments} />
         )}
+        {reactions.error && (
+          <p role="alert">
+            {reactions.error}{' '}
+            <button type="button" onClick={reactions.retry}>
+              {locale === 'vi' ? 'Thử lại' : 'Retry'}
+            </button>
+          </p>
+        )}
+        {shareError && (
+          <label>
+            {locale === 'vi' ? 'Sao chép liên kết này' : 'Copy this link'}
+            <input
+              readOnly
+              value={new URL(href, window.location.origin).toString()}
+              onFocus={(event) => event.target.select()}
+            />
+          </label>
+        )}
         <footer className="knowledge-post-actions">
           <div className="knowledge-post-action-group">
             <button
@@ -271,10 +286,8 @@ export function KnowledgePost({
               aria-pressed={liked}
               aria-label={liked ? t.unlike : t.like}
               title={liked ? t.unlike : t.like}
-              onClick={() => {
-                if (!auth.requireAuth('like')) return;
-                setLiked(toggleLike(key));
-              }}
+              disabled={reactions.busy}
+              onClick={() => void reactions.toggle('like')}
             >
               <Lightbulb size={18} strokeWidth={1.75} fill={liked ? 'currentColor' : 'none'} />
             </button>
@@ -284,7 +297,10 @@ export function KnowledgePost({
               aria-label={t.quote}
               title={t.quote}
               onClick={() => {
-                if (!auth.requireAuth('quote')) return;
+                if (!auth.requireAuth('quote')) {
+                  setPendingQuote(true);
+                  return;
+                }
                 setQuoteOpen(true);
               }}
             >
@@ -293,12 +309,11 @@ export function KnowledgePost({
             <Link
               className="knowledge-post-action is-views"
               href={href}
-              title={t.views}
-              aria-label={`${t.views}: ${views}`}
+              title={t.open}
+              aria-label={locale === 'vi' ? 'Mở bài viết' : 'Open post'}
               onClick={openDetails}
             >
               <Eye size={18} strokeWidth={1.75} />
-              {views > 0 && <small>{formatCount(views)}</small>}
             </Link>
           </div>
           {(draftAmount || bounty?.openToHiring) && (

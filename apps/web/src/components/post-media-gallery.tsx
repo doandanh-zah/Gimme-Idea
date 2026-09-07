@@ -1,25 +1,55 @@
 'use client';
 
+import type { Locale } from '@gimme-idea/contracts';
 import { X } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { StoredMediaAttachment } from '@/lib/social';
+import { browserRequest } from '@/lib/api';
+import { getCurrentAccessToken } from '@/lib/auth';
 import { getStoredMediaBlob } from '@/lib/social';
 
 function StoredMedia({
   attachment,
   interactive = false,
   onOpen,
+  locale,
 }: {
   attachment: StoredMediaAttachment;
+  locale: Locale;
   interactive?: boolean;
   onOpen?: () => void;
 }) {
   const [source, setSource] = useState<string | null>(null);
   const [failed, setFailed] = useState(false);
+  const [retry, setRetry] = useState(0);
 
   useEffect(() => {
     let objectUrl: string | null = null;
     let active = true;
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- Reset the external resource state for a new request.
+    setFailed(false);
+    setSource(null);
+    if (attachment.remote) {
+      void getCurrentAccessToken()
+        .then((token) =>
+          browserRequest<{ url: string }>(
+            `/v1/uploads/${encodeURIComponent(attachment.id)}/download`,
+            { accessToken: token },
+          ),
+        )
+        .then((result) => {
+          if (active) {
+            if (result?.url) setSource(result.url);
+            else setFailed(true);
+          }
+        })
+        .catch(() => {
+          if (active) setFailed(true);
+        });
+      return () => {
+        active = false;
+      };
+    }
     void getStoredMediaBlob(attachment.id)
       .then((blob) => {
         if (!active || !blob) {
@@ -36,17 +66,36 @@ function StoredMedia({
       active = false;
       if (objectUrl) URL.revokeObjectURL(objectUrl);
     };
-  }, [attachment.id]);
+  }, [attachment.id, attachment.remote, retry]);
 
   if (failed) {
-    return <span className="stored-media-error">{attachment.name}</span>;
+    return (
+      <span className="stored-media-error">
+        {attachment.name} · {locale === 'vi' ? 'Chưa tải được tệp' : 'Media unavailable'}{' '}
+        <button type="button" onClick={() => setRetry((value) => value + 1)}>
+          {locale === 'vi' ? 'Thử lại' : 'Retry'}
+        </button>
+      </span>
+    );
   }
   if (!source) {
-    return <span className="stored-media-loading" aria-label={`Loading ${attachment.name}`} />;
+    return (
+      <span
+        className="stored-media-loading"
+        aria-label={`${locale === 'vi' ? 'Đang tải' : 'Loading'} ${attachment.name}`}
+      />
+    );
   }
   if (attachment.kind === 'video') {
     const video = (
-      <video className="stored-post-media" src={source} controls playsInline preload="metadata">
+      <video
+        className="stored-post-media"
+        src={source}
+        onError={() => setFailed(true)}
+        controls
+        playsInline
+        preload="metadata"
+      >
         {attachment.name}
       </video>
     );
@@ -54,7 +103,7 @@ function StoredMedia({
       <div className="stored-media-with-open">
         {video}
         <button type="button" className="stored-media-open-overlay" onClick={onOpen}>
-          Open
+          {locale === 'vi' ? 'Mở' : 'Open'}
         </button>
       </div>
     ) : (
@@ -62,8 +111,15 @@ function StoredMedia({
     );
   }
   // Blob URLs are local previews without stable dimensions for next/image.
-  // eslint-disable-next-line @next/next/no-img-element
-  const image = <img className="stored-post-media" src={source} alt={attachment.name} />;
+  const image = (
+    // eslint-disable-next-line @next/next/no-img-element
+    <img
+      className="stored-post-media"
+      src={source}
+      onError={() => setFailed(true)}
+      alt={attachment.name}
+    />
+  );
   return interactive ? (
     <button
       type="button"
@@ -78,18 +134,28 @@ function StoredMedia({
   );
 }
 
-export function PostMediaGallery({ attachments }: { attachments: StoredMediaAttachment[] }) {
+export function PostMediaGallery({
+  attachments,
+  locale = 'en',
+}: {
+  attachments: StoredMediaAttachment[];
+  locale?: Locale;
+}) {
   const images = attachments.filter((attachment) => attachment.kind === 'image');
   const video = attachments.find((attachment) => attachment.kind === 'video');
   const [active, setActive] = useState<StoredMediaAttachment | null>(null);
 
+  const viewerRef = useRef<HTMLDialogElement>(null);
   useEffect(() => {
     if (!active) return;
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') setActive(null);
+    const opener = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    const dialog = viewerRef.current;
+    if (dialog && !dialog.open) dialog.showModal();
+    dialog?.querySelector<HTMLButtonElement>('button')?.focus();
+    return () => {
+      if (dialog?.open) dialog.close();
+      if (opener?.isConnected) opener.focus();
     };
-    document.addEventListener('keydown', onKeyDown);
-    return () => document.removeEventListener('keydown', onKeyDown);
   }, [active]);
 
   return (
@@ -103,6 +169,7 @@ export function PostMediaGallery({ attachments }: { attachments: StoredMediaAtta
             {images.map((attachment) => (
               <figure key={attachment.id} className="post-image-frame">
                 <StoredMedia
+                  locale={locale}
                   attachment={attachment}
                   interactive
                   onOpen={() => setActive(attachment)}
@@ -113,30 +180,39 @@ export function PostMediaGallery({ attachments }: { attachments: StoredMediaAtta
         )}
         {video && (
           <div className="post-video-frame">
-            <StoredMedia attachment={video} interactive onOpen={() => setActive(video)} />
+            <StoredMedia
+              locale={locale}
+              attachment={video}
+              interactive
+              onOpen={() => setActive(video)}
+            />
           </div>
         )}
       </div>
       {active && (
-        <div
+        <dialog
+          ref={viewerRef}
           className="media-viewer"
-          role="dialog"
-          aria-modal="true"
+          onCancel={(event) => {
+            event.preventDefault();
+            setActive(null);
+          }}
+          onClose={() => setActive(null)}
           aria-label={active.name}
           onClick={() => setActive(null)}
         >
           <button
             type="button"
             className="media-viewer-close"
-            aria-label="Close media"
+            aria-label={locale === 'vi' ? 'Đóng tệp' : 'Close media'}
             onClick={() => setActive(null)}
           >
             <X size={20} aria-hidden="true" />
           </button>
           <div className="media-viewer-frame" onClick={(event) => event.stopPropagation()}>
-            <StoredMedia attachment={active} />
+            <StoredMedia locale={locale} attachment={active} />
           </div>
-        </div>
+        </dialog>
       )}
     </>
   );

@@ -1,6 +1,7 @@
 import pg from 'pg';
 import type {
   IdeaDetailDTO,
+  PublicMediaDTO,
   PreviousAttemptDTO,
   ProblemDetailDTO,
   ProvenanceDTO,
@@ -14,6 +15,10 @@ type ProblemRow = {
   summary: string;
   description: string;
   affected_groups: string[];
+  industry: string | null;
+  region: string | null;
+  desired_outcome: string | null;
+  constraints: string[];
   evidence: string[];
   severity: ProblemDetailDTO['severity'];
   status: ProblemDetailDTO['status'];
@@ -34,6 +39,9 @@ type IdeaRow = {
   thesis: string;
   solution: string;
   target_users: string[];
+  why_now: string | null;
+  risks: string[];
+  validation_plan: string | null;
   status: IdeaDetailDTO['status'];
   research_status: IdeaDetailDTO['researchStatus'];
   origin: ProvenanceDTO['origin'];
@@ -59,6 +67,18 @@ export function createKnowledgeRepository(connectionString: string): KnowledgeRe
     idleTimeoutMillis: 30_000,
     connectionTimeoutMillis: 5_000,
   });
+  async function publicMedia(kind: 'problem' | 'idea', id: string) {
+    const result = await pool.query<PublicMediaDTO>(
+      `select m.id,case when m.content_type like 'video/%' then 'video' else 'image' end kind,
+       regexp_replace(m.object_key,'^.*/','') name,m.size_bytes::float8 size,m.content_type "mimeType",true remote
+       from public.entity_media_assets a join public.media_assets m on m.id=a.media_asset_id
+       where a.entity_type=$1 and a.entity_id=$2 and m.status='uploaded' and m.visibility='public'
+       and m.bucket='public-media' and (m.content_type like 'image/%' or m.content_type like 'video/%')
+       order by a.position,a.created_at,m.id`,
+      [kind, id],
+    );
+    return result.rows;
+  }
   return {
     async ping() {
       const result = await pool.query<{ ok: number }>('select 1 as ok');
@@ -69,11 +89,12 @@ export function createKnowledgeRepository(connectionString: string): KnowledgeRe
     },
     async findProblem(slug) {
       const result = await pool.query<ProblemRow>(
-        `select p.id,p.slug,p.title,p.summary,p.description,p.affected_groups,p.evidence,p.severity,p.status,p.research_status,p.origin,p.reviewed_by_human,p.last_researched_at,p.created_at,u.username creator_username,u.display_name creator_display_name,u.avatar_url creator_avatar_url from public.problems p left join public.users u on u.id=p.created_by and u.deleted_at is null where p.slug=$1 and p.status='published' and p.deleted_at is null limit 1`,
+        `select p.id,p.slug,p.title,p.summary,p.description,p.industry,p.region,p.desired_outcome,p.constraints,p.affected_groups,p.evidence,p.severity,p.status,p.research_status,p.origin,p.reviewed_by_human,p.last_researched_at,p.created_at,u.username creator_username,u.display_name creator_display_name,u.avatar_url creator_avatar_url from public.problems p left join public.users u on u.id=p.created_by and u.deleted_at is null where p.slug=$1 and p.status='published' and p.visibility='public' and p.deleted_at is null limit 1`,
         [slug],
       );
       const row = result.rows[0];
       if (!row) return null;
+      const media = await publicMedia('problem', row.id);
       const [sourcesResult, ideasResult, bountyResult] = await Promise.all([
         pool.query<{
           id: string;
@@ -86,7 +107,7 @@ export function createKnowledgeRepository(connectionString: string): KnowledgeRe
           [row.id],
         ),
         pool.query<{ slug: string; title: string; summary: string }>(
-          `select i.slug,i.title,i.summary from public.ideas i join public.idea_problem_links l on l.idea_id=i.id where l.problem_id=$1 and i.status='published' and i.deleted_at is null order by (l.relationship_type='primary') desc,i.created_at limit 6`,
+          `select i.slug,i.title,i.summary from public.ideas i join public.idea_problem_links l on l.idea_id=i.id where l.problem_id=$1 and i.status='published' and i.visibility='public' and i.deleted_at is null order by (l.relationship_type='primary') desc,i.created_at limit 6`,
           [row.id],
         ),
         pool.query<{
@@ -109,11 +130,16 @@ export function createKnowledgeRepository(connectionString: string): KnowledgeRe
       }));
       return {
         id: row.id,
+        media,
         slug: row.slug,
         title: row.title,
         summary: row.summary,
         description: row.description,
         affectedGroups: row.affected_groups,
+        industry: row.industry,
+        region: row.region,
+        desiredOutcome: row.desired_outcome,
+        constraints: row.constraints,
         evidence: row.evidence,
         severity: row.severity,
         status: row.status,
@@ -147,14 +173,15 @@ export function createKnowledgeRepository(connectionString: string): KnowledgeRe
     },
     async findIdea(slug) {
       const result = await pool.query<IdeaRow>(
-        `select i.id,i.slug,i.title,i.summary,i.thesis,i.solution,i.target_users,i.status,i.research_status,i.origin,i.reviewed_by_human,i.last_researched_at,i.created_at,u.username creator_username,u.display_name creator_display_name,u.avatar_url creator_avatar_url from public.ideas i left join public.users u on u.id=i.created_by and u.deleted_at is null where i.slug=$1 and i.status='published' and i.deleted_at is null limit 1`,
+        `select i.id,i.slug,i.title,i.summary,i.thesis,i.solution,i.why_now,i.risks,i.validation_plan,i.target_users,i.status,i.research_status,i.origin,i.reviewed_by_human,i.last_researched_at,i.created_at,u.username creator_username,u.display_name creator_display_name,u.avatar_url creator_avatar_url from public.ideas i left join public.users u on u.id=i.created_by and u.deleted_at is null where i.slug=$1 and i.status='published' and i.visibility='public' and i.deleted_at is null limit 1`,
         [slug],
       );
       const row = result.rows[0];
       if (!row) return null;
+      const media = await publicMedia('idea', row.id);
       const [problemResult, attemptsResult, projectResult, sourcesResult] = await Promise.all([
         pool.query<{ slug: string; title: string; summary: string }>(
-          `select p.slug,p.title,p.summary from public.problems p join public.idea_problem_links l on l.problem_id=p.id where l.idea_id=$1 and l.relationship_type='primary' limit 1`,
+          `select p.slug,p.title,p.summary from public.problems p join public.idea_problem_links l on l.problem_id=p.id where l.idea_id=$1 and l.relationship_type='primary' and p.status='published' and p.visibility='public' and p.deleted_at is null limit 1`,
           [row.id],
         ),
         pool.query<{
@@ -169,7 +196,7 @@ export function createKnowledgeRepository(connectionString: string): KnowledgeRe
           [row.id],
         ),
         pool.query<{ slug: string; name: string; stage: string }>(
-          `select slug,name,stage from public.projects where idea_id=$1 and deleted_at is null order by created_at limit 1`,
+          `select slug,name,stage from public.projects where idea_id=$1 and visibility='public' and deleted_at is null order by created_at limit 1`,
           [row.id],
         ),
         pool.query<{
@@ -184,16 +211,19 @@ export function createKnowledgeRepository(connectionString: string): KnowledgeRe
         ),
       ]);
       const primaryProblem = problemResult.rows[0];
-      if (!primaryProblem)
-        throw new Error(`Published idea ${row.id} violates primary problem invariant`);
+      if (!primaryProblem) return null;
       return {
         id: row.id,
+        media,
         slug: row.slug,
         title: row.title,
         summary: row.summary,
         thesis: row.thesis,
         solution: row.solution,
         targetUsers: row.target_users,
+        whyNow: row.why_now,
+        risks: row.risks,
+        validationPlan: row.validation_plan,
         status: row.status,
         researchStatus: row.research_status,
         createdAt: row.created_at.toISOString(),

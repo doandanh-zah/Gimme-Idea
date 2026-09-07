@@ -1,0 +1,34 @@
+[
+  {
+    "route": "/vi/terms",
+    "status": 200,
+    "lang": "vi",
+    "overflow": false,
+    "mail": 1,
+    "violations": []
+  },
+  {
+    "route": "/vi/privacy",
+    "status": 200,
+    "lang": "vi",
+    "overflow": false,
+    "mail": 1,
+    "violations": []
+  },
+  {
+    "route": "/en/terms",
+    "status": 200,
+    "lang": "en",
+    "overflow": false,
+    "mail": 1,
+    "violations": []
+  },
+  {
+    "route": "/en/privacy",
+    "status": 200,
+    "lang": "en",
+    "overflow": false,
+    "mail": 1,
+    "violations": []
+  }
+]

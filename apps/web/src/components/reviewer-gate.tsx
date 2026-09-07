@@ -7,7 +7,13 @@ import { useAuth } from '@/lib/auth';
 
 export function ReviewerGate({ locale, children }: { locale: Locale; children: ReactNode }) {
   const auth = useAuth();
-  if (!auth.hydrated || !auth.isSignedIn) {
+  if (!auth.hydrated)
+    return (
+      <p role="status">
+        {locale === 'vi' ? 'Đang kiểm tra phiên đăng nhập…' : 'Checking your session…'}
+      </p>
+    );
+  if (!auth.isSignedIn) {
     return (
       <section className="v1-workspace-lock" data-private-gate="reviewer">
         <LockKeyhole size={30} aria-hidden="true" />
@@ -18,6 +24,13 @@ export function ReviewerGate({ locale, children }: { locale: Locale; children: R
             ? 'Hãy đăng nhập. Server sẽ kiểm tra membership và vai trò reviewer trước khi trả nội dung submission.'
             : 'Sign in first. The server checks membership and reviewer role before returning submission content.'}
         </p>
+        <button
+          type="button"
+          className="button button-primary"
+          onClick={() => auth.requireAuth('reviewer')}
+        >
+          {locale === 'vi' ? 'Đăng nhập' : 'Sign in'}
+        </button>
         {auth.hydrated && (
           <small>
             {locale === 'vi'

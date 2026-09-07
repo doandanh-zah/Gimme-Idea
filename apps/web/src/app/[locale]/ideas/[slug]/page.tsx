@@ -1,3 +1,4 @@
+import { PostMediaGallery } from '@/components/post-media-gallery';
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { ArrowLeft, ArrowRight, ArrowUpRight } from 'lucide-react';
@@ -84,18 +85,19 @@ export default async function IdeaPage({ params }: PageProps) {
     notFound();
   }
   const landscapeProject = (await projectClient.list()).find(
-    (project) => project.mode === 'historical_imported',
+    (project) =>
+      project.mode === 'historical_imported' && project.problem.slug === idea.primaryProblem.slug,
   );
   const attemptIndex = idea.project ? '05' : '04';
   return (
     <main id="main" className="detail-page idea-page">
       <nav className="breadcrumb" aria-label="Breadcrumb">
-        <Link href={`/${locale}`}>
+        <Link href={`/${locale}/ideas`}>
           <ArrowLeft size={14} />
-          {t.navHome}
+          {t.navIdeas}
         </Link>
         <span>/</span>
-        <strong>{t.navIdeas}</strong>
+        <strong>{locale === 'vi' ? 'Chi tiết' : 'Overview'}</strong>
       </nav>
       <header className="detail-header idea-header">
         <div>
@@ -123,10 +125,11 @@ export default async function IdeaPage({ params }: PageProps) {
             createdAt: idea.createdAt,
           }}
         />
-        <Link className="button button-primary" href={`/${locale}/projects/kitchen-signal-lab`}>
-          {locale === 'vi' ? 'Bắt đầu Project' : 'Start a Project'}{' '}
-          <ArrowRight size={17} aria-hidden="true" />
-        </Link>
+        <span className="empty-note">
+          {locale === 'vi'
+            ? 'Tạo dự án từ ý tưởng này chưa khả dụng.'
+            : 'Creating a project from this Idea is not available yet.'}
+        </span>
       </div>
       <div className="problem-anchor">
         <small>{t.primaryProblem.toUpperCase()}</small>
@@ -144,11 +147,19 @@ export default async function IdeaPage({ params }: PageProps) {
           { index: '03', label: t.targetUsers, href: '#audience' },
           ...(idea.project ? [{ index: '04', label: t.build, href: '#build' as const }] : []),
           { index: attemptIndex, label: t.attempts, href: '#attempts' },
-          { index: idea.project ? '06' : '05', label: t.sources, href: '#sources' },
+          {
+            index: idea.project ? '06' : '05',
+            label: locale === 'vi' ? 'Dự án liên quan' : 'Related projects',
+            href: '#landscape',
+          },
+          { index: idea.project ? '07' : '06', label: t.sources, href: '#sources' },
         ]}
       />
       <div className="detail-grid">
         <article className="canonical-content">
+          {Boolean(idea.media?.length) && (
+            <PostMediaGallery attachments={idea.media!} locale={locale} />
+          )}
           <section id="opportunity" className="content-section content-section-accent">
             <div className="chapter-heading">
               <span>01</span>
@@ -168,6 +179,28 @@ export default async function IdeaPage({ params }: PageProps) {
               </div>
             </div>
             <p className="long-copy">{idea.solution}</p>
+            {idea.whyNow && (
+              <>
+                <h3>{locale === 'vi' ? 'Vì sao là lúc này' : 'Why now'}</h3>
+                <p className="long-copy">{idea.whyNow}</p>
+              </>
+            )}
+            {!!idea.risks?.length && (
+              <>
+                <h3>{locale === 'vi' ? 'Rủi ro' : 'Risks'}</h3>
+                <ul>
+                  {idea.risks.map((risk) => (
+                    <li key={risk}>{risk}</li>
+                  ))}
+                </ul>
+              </>
+            )}
+            {idea.validationPlan && (
+              <>
+                <h3>{locale === 'vi' ? 'Tiêu chí thành công' : 'Success criteria'}</h3>
+                <p className="long-copy">{idea.validationPlan}</p>
+              </>
+            )}
           </section>
           <section id="audience" className="content-section content-section-raised">
             <div className="chapter-heading">
@@ -199,7 +232,10 @@ export default async function IdeaPage({ params }: PageProps) {
                   <StatusPill>{idea.project.stage}</StatusPill>
                 </div>
                 <p>Project evidence is tracked independently from the original idea thesis.</p>
-                <Link className="v1-inline-action" href={`/${locale}/projects/kitchen-signal-lab`}>
+                <Link
+                  className="v1-inline-action"
+                  href={`/${locale}/projects/${encodeURIComponent(idea.project.slug)}`}
+                >
                   {locale === 'vi' ? 'Xem Project' : 'View Project'}{' '}
                   <ArrowRight size={15} aria-hidden="true" />
                 </Link>
@@ -270,7 +306,7 @@ export default async function IdeaPage({ params }: PageProps) {
             )}
           </section>
         </article>
-        <Provenance id="sources" value={idea.provenance} label={t.sourceLabel} />
+        <Provenance locale={locale} id="sources" value={idea.provenance} label={t.sourceLabel} />
       </div>
     </main>
   );

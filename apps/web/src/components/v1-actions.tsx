@@ -5,13 +5,8 @@ import { useEffect, useState } from 'react';
 import type { Locale } from '@gimme-idea/contracts';
 import { SocialComposer } from '@/components/quote-post';
 import { useAuth } from '@/lib/auth';
-import {
-  itemKey,
-  isBookmarked,
-  subscribeSocial,
-  toggleBookmark,
-  type QuotedTarget,
-} from '@/lib/social';
+import type { QuotedTarget } from '@/lib/social';
+import { useEntityReactions } from '@/lib/use-entity-reactions';
 import { trackFrontendEvent } from '@/lib/domain/analytics';
 
 export function EntityActions({
@@ -24,26 +19,35 @@ export function EntityActions({
   allowDiscuss?: boolean;
 }) {
   const auth = useAuth();
-  const key = itemKey(target.kind, target.slug);
-  const [saved, setSaved] = useState(false);
-  const [followed, setFollowed] = useState(false);
+  const reactions = useEntityReactions(target.kind, target.slug, locale);
+  const saved = reactions.bookmarked;
   const [quoteOpen, setQuoteOpen] = useState(false);
-  const [shared, setShared] = useState(false);
-
+  const [pendingDiscuss, setPendingDiscuss] = useState(false);
   useEffect(() => {
-    const sync = () => setSaved(isBookmarked(key));
-    sync();
-    return subscribeSocial(sync);
-  }, [key]);
+    if (!auth.isSignedIn || !pendingDiscuss) return;
+    queueMicrotask(() => {
+      setQuoteOpen(true);
+      setPendingDiscuss(false);
+    });
+  }, [auth.isSignedIn, pendingDiscuss]);
+  const [shared, setShared] = useState(false);
+  const [shareError, setShareError] = useState(false);
 
   const require = (action: string) => auth.requireAuth(action);
   const share = async () => {
-    if (!require('share')) return;
     const url = new URL(target.href, window.location.origin).toString();
-    if (navigator.share) await navigator.share({ title: target.title, url }).catch(() => undefined);
-    else await navigator.clipboard.writeText(url);
-    setShared(true);
-    window.setTimeout(() => setShared(false), 1500);
+    setShareError(false);
+    try {
+      if (navigator.share) {
+        await navigator.share({ title: target.title, url });
+        return;
+      }
+      await navigator.clipboard.writeText(url);
+      setShared(true);
+      window.setTimeout(() => setShared(false), 1500);
+    } catch (error) {
+      if (!(error instanceof DOMException && error.name === 'AbortError')) setShareError(true);
+    }
   };
 
   return (
@@ -51,24 +55,20 @@ export function EntityActions({
       <button
         type="button"
         aria-pressed={saved}
-        onClick={() => {
-          if (!require('save')) return;
-          setSaved(toggleBookmark(key));
-        }}
+        disabled={reactions.busy}
+        onClick={() => void reactions.toggle('bookmark')}
       >
         <Bookmark size={17} fill={saved ? 'currentColor' : 'none'} aria-hidden="true" />
         {saved ? (locale === 'vi' ? 'Đã lưu' : 'Saved') : locale === 'vi' ? 'Lưu' : 'Save'}
       </button>
       <button
         type="button"
-        aria-pressed={followed}
-        onClick={() => {
-          if (!require('follow')) return;
-          setFollowed((value) => !value);
-        }}
+        disabled={reactions.busy}
+        aria-pressed={reactions.following}
+        onClick={() => void reactions.toggle('follow')}
       >
         <UserPlus size={17} aria-hidden="true" />
-        {followed
+        {reactions.following
           ? locale === 'vi'
             ? 'Đang theo dõi'
             : 'Following'
@@ -76,11 +76,22 @@ export function EntityActions({
             ? 'Theo dõi'
             : 'Follow'}
       </button>
+      {reactions.error && (
+        <p role="alert">
+          {reactions.error}{' '}
+          <button type="button" onClick={reactions.retry}>
+            {locale === 'vi' ? 'Thử lại' : 'Retry'}
+          </button>
+        </p>
+      )}
       {allowDiscuss && (
         <button
           type="button"
           onClick={() => {
-            if (!require('discuss')) return;
+            if (!require('discuss')) {
+              setPendingDiscuss(true);
+              return;
+            }
             if (target.kind === 'problem')
               trackFrontendEvent({ name: 'problem_discuss', entityId: target.slug });
             setQuoteOpen(true);
@@ -100,6 +111,16 @@ export function EntityActions({
             ? 'Chia sẻ'
             : 'Share'}
       </button>
+      {shareError && (
+        <label role="status">
+          {locale === 'vi' ? 'Sao chép liên kết này: ' : 'Copy this link: '}
+          <input
+            readOnly
+            value={new URL(target.href, window.location.origin).toString()}
+            onFocus={(event) => event.target.select()}
+          />
+        </label>
+      )}
       {quoteOpen && (
         <SocialComposer
           locale={locale}

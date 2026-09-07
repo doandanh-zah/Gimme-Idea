@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-return, @typescript-eslint/no-redundant-type-constituents, @typescript-eslint/no-base-to-string -- pg returns dynamic rows at this repository boundary; API serializers and Zod contracts constrain outward data. */
 import pg from 'pg';
+import { createHash } from 'node:crypto';
 import type { AuthIdentity } from '@gimme-idea/auth';
 import type {
   CreateBountyInput,
@@ -47,7 +48,62 @@ async function transaction<T>(
   }
 }
 
+async function createOnce<T>(
+  pool: pg.Pool,
+  actorId: string,
+  scope: string,
+  key: string | undefined,
+  input: unknown,
+  run: (client: pg.PoolClient) => Promise<T>,
+): Promise<T> {
+  return transaction(pool, async (client) => {
+    if (!key) return run(client);
+    const requestHash = createHash('sha256').update(JSON.stringify(input)).digest('hex');
+    await client.query('select pg_advisory_xact_lock(hashtextextended($1,0))', [
+      `${scope}:${actorId}:${key}`,
+    ]);
+    const existing = (
+      await client.query<{ request_hash: string; response_body: T }>(
+        'select request_hash,response_body from public.idempotency_keys where scope=$1 and actor_id=$2 and key=$3',
+        [scope, actorId, key],
+      )
+    ).rows[0];
+    if (existing) {
+      if (existing.request_hash !== requestHash)
+        throw Object.assign(
+          new Error(
+            'This retry key belongs to different content. Restore the original content to retry.',
+          ),
+          { statusCode: 409, code: 'IDEMPOTENCY_CONFLICT' },
+        );
+      return existing.response_body;
+    }
+    const result = await run(client);
+    await client.query(
+      `insert into public.idempotency_keys(scope,actor_id,key,request_hash,response_status,response_body,expires_at) values($1,$2,$3,$4,201,$5,now()+interval '30 days')`,
+      [scope, actorId, key, requestHash, JSON.stringify(result)],
+    );
+    return result;
+  });
+}
+
+export type ReactionKind = 'problem' | 'idea' | 'project' | 'bounty';
+export type ReactionState = { bookmarked: boolean; liked: boolean; following: boolean };
 export interface PlatformRepository {
+  getReactions(actorId: string, kind: ReactionKind, slug: string): Promise<ReactionState | null>;
+  setReaction(
+    actorId: string,
+    kind: ReactionKind,
+    slug: string,
+    action: 'bookmark' | 'like' | 'follow',
+    enabled: boolean,
+  ): Promise<void>;
+  listLibrary(
+    actorId: string,
+    category: 'bookmarks' | 'likes',
+    limit: number,
+    offset: number,
+  ): Promise<unknown[]>;
   syncActor(
     identity: AuthIdentity,
     profile?: {
@@ -61,14 +117,15 @@ export interface PlatformRepository {
     kind: 'problems' | 'ideas' | 'projects' | 'bounties' | 'organizations',
     limit: number,
     offset: number,
+    filter?: string,
   ): Promise<unknown[]>;
-  searchPublic(query: string, limit: number): Promise<unknown[]>;
+  searchPublic(query: string, limit: number, offset?: number): Promise<unknown[]>;
   home(): Promise<unknown[]>;
   findProject(slug: string, actorId?: string): Promise<unknown | null>;
   findBounty(slug: string, actorId?: string): Promise<unknown | null>;
   findOrganization(slug: string): Promise<unknown | null>;
-  createProblem(actorId: string, input: CreateProblemInput): Promise<unknown>;
-  createIdea(actorId: string, input: CreateIdeaInput): Promise<unknown>;
+  createProblem(actorId: string, input: CreateProblemInput, key?: string): Promise<unknown>;
+  createIdea(actorId: string, input: CreateIdeaInput, key?: string): Promise<unknown>;
   publishEntity(actorId: string, kind: 'problems' | 'ideas', id: string): Promise<void>;
   createBounty(
     actorId: string,
@@ -99,6 +156,7 @@ export interface PlatformRepository {
     actorId: string,
     bountyId: string,
     input: CreateSubmissionInput,
+    key?: string,
   ): Promise<unknown>;
   listSubmissions(actorId: string, bountyId: string): Promise<unknown[]>;
   findSubmission(actorId: string, submissionId: string): Promise<unknown | null>;
@@ -145,7 +203,7 @@ export interface PlatformRepository {
     id: string,
   ): Promise<{ id: string; bucket: string; objectKey: string; status: string } | null>;
   getMediaAssetForView(
-    actorId: string,
+    actorId: string | null,
     id: string,
   ): Promise<{
     id: string;
@@ -168,7 +226,8 @@ export interface PlatformRepository {
     entityId: string,
     entityVersion: number,
   ): Promise<{ id: string; created: boolean }>;
-  listNotifications(actorId: string, limit: number): Promise<unknown[]>;
+  listNotifications(actorId: string, limit: number, offset?: number): Promise<unknown[]>;
+  unreadNotificationCount(actorId: string): Promise<number>;
   markNotificationRead(actorId: string, notificationId: string): Promise<boolean>;
   createModerationFlag(
     actorId: string,
@@ -231,7 +290,87 @@ export function createPlatformRepository(connectionString: string): PlatformRepo
     connectionTimeoutMillis: 5_000,
   });
   const visibleProject = `(p.visibility='public' or p.created_by=$2 or exists(select 1 from public.bounty_participants bp where bp.bounty_id=p.originating_bounty_id and bp.user_id=$2))`;
+  const reactionCatalog = `select 'problem' type,id,slug,title,summary from public.problems where status='published' and visibility='public' and deleted_at is null
+    union all select 'idea',id,slug,title,summary from public.ideas where status='published' and visibility='public' and deleted_at is null
+    union all select 'project',id,slug,name,summary from public.projects where visibility='public' and deleted_at is null
+    union all select 'bounty',id,slug,title,description from public.bounties where status not in ('draft','cancelled')`;
   return {
+    async getReactions(actorId, kind, slug) {
+      return (
+        (
+          await pool.query<ReactionState>(
+            `with catalog as (${reactionCatalog}) select
+        exists(select 1 from public.likes l where l.user_id=$1 and l.entity_type=c.type and l.entity_id=c.id) liked,
+        exists(select 1 from public.follows f where f.follower_id=$1 and f.entity_type=c.type and f.entity_id=c.id) following,
+        exists(select 1 from public.collection_items i join public.collections x on x.id=i.collection_id where x.user_id=$1 and x.name='Saved items' and i.entity_type=c.type and i.entity_id=c.id) bookmarked
+        from catalog c where c.type=$2 and c.slug=$3`,
+            [actorId, kind, slug],
+          )
+        ).rows[0] ?? null
+      );
+    },
+    async setReaction(actorId, kind, slug, action, enabled) {
+      await transaction(pool, async (client) => {
+        const target = (
+          await client.query(
+            `with catalog as (${reactionCatalog}) select id from catalog where type=$1 and slug=$2`,
+            [kind, slug],
+          )
+        ).rows[0];
+        if (!target)
+          throw Object.assign(new Error('Public content is unavailable.'), {
+            statusCode: 404,
+            code: 'NOT_FOUND',
+          });
+        if (action === 'like' || action === 'follow') {
+          const table = action === 'like' ? 'likes' : 'follows';
+          const owner = action === 'like' ? 'user_id' : 'follower_id';
+          await client.query(
+            enabled
+              ? `insert into public.${table}(${owner},entity_type,entity_id) values($1,$2,$3) on conflict do nothing`
+              : `delete from public.${table} where ${owner}=$1 and entity_type=$2 and entity_id=$3`,
+            [actorId, kind, target.id],
+          );
+          return;
+        }
+        // Serialize creation of the user's default collection without a migration.
+        await client.query('select pg_advisory_xact_lock(hashtextextended($1,0))', [
+          `saved:${actorId}`,
+        ]);
+        let collection = (
+          await client.query(
+            "select id from public.collections where user_id=$1 and name='Saved items' order by created_at limit 1",
+            [actorId],
+          )
+        ).rows[0];
+        if (!collection && enabled)
+          collection = (
+            await client.query(
+              "insert into public.collections(user_id,name,visibility) values($1,'Saved items','private') returning id",
+              [actorId],
+            )
+          ).rows[0];
+        if (!collection) return;
+        await client.query(
+          enabled
+            ? 'insert into public.collection_items(collection_id,entity_type,entity_id) values($1,$2,$3) on conflict do nothing'
+            : 'delete from public.collection_items where collection_id=$1 and entity_type=$2 and entity_id=$3',
+          [collection.id, kind, target.id],
+        );
+      });
+    },
+    async listLibrary(actorId, category, limit, offset) {
+      const saved =
+        category === 'likes'
+          ? 'select entity_type,entity_id,created_at saved_at from public.likes where user_id=$1'
+          : "select i.entity_type,i.entity_id,i.added_at saved_at from public.collection_items i join public.collections x on x.id=i.collection_id where x.user_id=$1 and x.name='Saved items'";
+      return (
+        await pool.query(
+          `with catalog as (${reactionCatalog}),saved as (${saved}) select c.*,s.saved_at "savedAt" from catalog c join saved s on s.entity_type=c.type and s.entity_id=c.id order by s.saved_at desc,c.id limit $2 offset $3`,
+          [actorId, limit, offset],
+        )
+      ).rows;
+    },
     async syncActor(identity, profile = {}) {
       return transaction(pool, async (client) => {
         const user = await client.query<PlatformActor>(
@@ -261,17 +400,32 @@ export function createPlatformRepository(connectionString: string): PlatformRepo
         return actor;
       });
     },
-    async listCatalog(kind, limit, offset) {
+    async listCatalog(kind, limit, offset, filter) {
       const queries = {
-        problems: `select id,slug,title,summary,industry,region,severity,research_status "researchStatus",origin,created_at "createdAt" from public.problems where status='published' and visibility='public' and deleted_at is null order by created_at desc limit $1 offset $2`,
-        ideas: `select id,slug,title,summary,research_status "researchStatus",origin,created_at "createdAt" from public.ideas where status='published' and visibility='public' and deleted_at is null order by created_at desc limit $1 offset $2`,
-        projects: `select p.id,p.slug,p.name,p.summary,p.stage,p.origin_type "originType",p.visibility,p.repository_url "repositoryUrl",p.demo_url "demoUrl",p.created_at "createdAt", jsonb_build_object('slug',pr.slug,'title',pr.title,'summary',pr.summary,'industry',pr.industry,'region',pr.region) problem from public.projects p left join public.idea_problem_links l on l.idea_id=p.idea_id and l.relationship_type='primary' left join public.problems pr on pr.id=l.problem_id where p.visibility='public' and p.deleted_at is null order by p.created_at desc limit $1 offset $2`,
-        bounties: `select b.id,b.slug,b.bounty_type "type",b.title,b.description,b.objective,b.status,b.total_amount_raw::text "totalAmountRaw",b.prize_amount_raw::text "prizeAmountRaw",b.fee_amount_raw::text "feeAmountRaw",b.deadline_at "deadlineAt",b.judging_deadline_at "judgingDeadlineAt",b.terms_hash "termsHash",e.status "escrowStatus",e.escrow_address "escrowAddress",o.slug "organizationSlug",o.name "organizationName",p.slug "problemSlug",p.title "problemTitle" from public.bounties b join public.problems p on p.id=b.problem_id join public.organizations o on o.id=b.organization_id left join public.bounty_escrows e on e.bounty_id=b.id where b.status not in ('draft','cancelled') order by b.created_at desc limit $1 offset $2`,
-        organizations: `select id,slug,name,coalesce(one_line_description,description,'') description,organization_type "organizationType",verification_status "verificationStatus" from public.organizations where deleted_at is null order by created_at desc limit $1 offset $2`,
+        problems: `select id,slug,title,summary,industry,region,severity,(select count(*)::int from public.idea_problem_links l join public.ideas i on i.id=l.idea_id where l.problem_id=problems.id and i.status='published' and i.visibility='public' and i.deleted_at is null) "ideaCount",research_status "researchStatus",origin,created_at "createdAt" from public.problems where status='published' and visibility='public' and deleted_at is null order by created_at desc,id limit $1 offset $2`,
+        ideas: `select id,slug,title,summary,research_status "researchStatus",origin,created_at "createdAt" from public.ideas where status='published' and visibility='public' and deleted_at is null order by created_at desc,id limit $1 offset $2`,
+        projects: `select p.id,p.slug,p.name,p.summary,p.stage,p.origin_type "originType",p.visibility,p.repository_url "repositoryUrl",p.demo_url "demoUrl",p.created_at "createdAt", jsonb_build_object('slug',pr.slug,'title',pr.title,'summary',pr.summary,'industry',pr.industry,'region',pr.region) problem from public.projects p left join public.idea_problem_links l on l.idea_id=p.idea_id and l.relationship_type='primary' left join public.problems pr on pr.id=l.problem_id where p.visibility='public' and p.deleted_at is null and ($3::text is null or ($3='historical' and p.origin_type='historical_import') or ($3='community' and p.origin_type='community') or ($3='active' and p.stage='live')) order by p.created_at desc,p.id limit $1 offset $2`,
+        bounties: `select b.id,b.slug,b.bounty_type "type",b.title,b.description,b.objective,b.status,b.total_amount_raw::text "totalAmountRaw",b.prize_amount_raw::text "prizeAmountRaw",b.fee_amount_raw::text "feeAmountRaw",b.deadline_at "deadlineAt",b.judging_deadline_at "judgingDeadlineAt",b.terms_hash "termsHash",b.requirements,b.constraints,b.eligibility,b.ip_terms,(select count(*)::int from public.submissions s where s.bounty_id=b.id and s.status<>'draft') submission_count,e.status "escrowStatus",e.escrow_address "escrowAddress",o.slug "organizationSlug",o.name "organizationName",p.slug "problemSlug",p.title "problemTitle" from public.bounties b join public.problems p on p.id=b.problem_id join public.organizations o on o.id=b.organization_id left join public.bounty_escrows e on e.bounty_id=b.id where b.status not in ('draft','cancelled') and ($3::text is null or b.bounty_type::text=$3) order by b.created_at desc,b.id limit $1 offset $2`,
+        organizations: `select id,slug,name,coalesce(one_line_description,description,'') description,organization_type "organizationType",verification_status "verificationStatus" from public.organizations where deleted_at is null order by created_at desc,id limit $1 offset $2`,
       } as const;
-      return (await pool.query(queries[kind], [limit, offset])).rows;
+      return (
+        await pool.query(
+          queries[kind],
+          kind === 'projects' || kind === 'bounties'
+            ? [limit, offset, filter ?? null]
+            : [limit, offset],
+        )
+      ).rows;
     },
-    async searchPublic(query, limit) {
+    async searchPublic(query, limit, offset = 0) {
+      const terms =
+        query
+          .normalize('NFD')
+          .replace(/[\u0300-\u036f]/g, '')
+          .toLowerCase()
+          .replaceAll('đ', 'd')
+          .match(/[\p{L}\p{N}]+/gu)
+          ?.map((term) => (term.length > 3 ? term.replace(/s$/, '') : term)) ?? [];
       const result = await pool.query(
         `select * from (
           select 'problem' type,slug,title,summary,created_at from public.problems where status='published' and visibility='public' and deleted_at is null
@@ -279,9 +433,9 @@ export function createPlatformRepository(connectionString: string): PlatformRepo
           union all select 'project',slug,name,summary,created_at from public.projects where visibility='public' and deleted_at is null
           union all select 'bounty',slug,title,description,created_at from public.bounties where status not in ('draft','cancelled')
           union all select 'organization',slug,name,coalesce(one_line_description,description,''),created_at from public.organizations where deleted_at is null
-        ) catalog where ($1='' or to_tsvector('simple',title||' '||summary) @@ websearch_to_tsquery('simple',$1))
-        order by created_at desc limit $2`,
-        [query, limit],
+        ) catalog where not exists (select 1 from unnest($1::text[]) term where translate(lower(title||' '||coalesce(summary,'')||' '||replace(slug,'-',' ')), 'àáạảãâầấậẩẫăằắặẳẵèéẹẻẽêềếệểễìíịỉĩòóọỏõôồốộổỗơờớợởỡùúụủũưừứựửữỳýỵỷỹđ', 'aaaaaaaaaaaaaaaaaeeeeeeeeeeeiiiiiooooooooooooooooouuuuuuuuuuuyyyyyd') not like '%'||term||'%')
+        order by created_at desc,slug limit $2 offset $3`,
+        [terms, limit, offset],
       );
       return result.rows;
     },
@@ -299,7 +453,7 @@ export function createPlatformRepository(connectionString: string): PlatformRepo
     },
     async findProject(slug, actorId) {
       const result = await pool.query(
-        `select p.* from public.projects p where p.slug=$1 and p.deleted_at is null and ${visibleProject} limit 1`,
+        `select p.*,jsonb_build_object('slug',pr.slug,'title',pr.title,'summary',pr.summary,'industry',pr.industry,'region',pr.region) problem from public.projects p left join public.idea_problem_links l on l.idea_id=p.idea_id and l.relationship_type='primary' left join public.problems pr on pr.id=l.problem_id and pr.visibility='public' and pr.status='published' and pr.deleted_at is null where p.slug=$1 and p.deleted_at is null and ${visibleProject} limit 1`,
         [slug, actorId ?? null],
       );
       return result.rows[0] ?? null;
@@ -311,6 +465,7 @@ export function createPlatformRepository(connectionString: string): PlatformRepo
          jsonb_build_object('slug',o.slug,'name',o.name,'description',coalesce(o.one_line_description,o.description,'')) organization,
          case when b.selected_idea_id is null then null when exists(select 1 from public.bounty_participants bp where bp.bounty_id=b.id and bp.user_id=$2) or exists(select 1 from public.organization_members om where om.organization_id=b.organization_id and om.user_id=$2) then (select to_jsonb(i) - 'created_by' from public.ideas i where i.id=b.selected_idea_id) else jsonb_build_object('id',b.selected_idea_id,'visibility','restricted_summary') end selected_idea,
          (select count(*)::int from public.submissions s where s.bounty_id=b.id and s.status<>'draft') submission_count,
+         (select coalesce(jsonb_agg(jsonb_build_object('name',c.name,'weight',c.weight)), '[]') from public.bounty_judging_criteria c where c.bounty_id=b.id) criteria,
          (select jsonb_build_object('status',e.status,'address',e.escrow_address,'cluster',e.cluster,'lastObservedSlot',e.last_observed_slot::text,'lastReconciledAt',e.last_reconciled_at,'error',e.reconciliation_error) from public.bounty_escrows e where e.bounty_id=b.id) escrow
          from public.bounties b join public.problems p on p.id=b.problem_id join public.organizations o on o.id=b.organization_id where b.slug=$1 limit 1`,
         [slug, actorId ?? null],
@@ -327,32 +482,34 @@ export function createPlatformRepository(connectionString: string): PlatformRepo
         ).rows[0] ?? null
       );
     },
-    async createProblem(actorId, input) {
-      const slug = `${slugBase(input.title)}-${crypto.randomUUID().slice(0, 8)}`;
-      return (
-        await pool.query(
-          `insert into public.problems(slug,title,summary,description,industry,region,affected_groups,evidence,desired_outcome,constraints,success_metrics,visibility,organization_id,created_by,status,research_status,origin,reviewed_by_human) values($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,'draft','unresearched','human',true) returning *`,
-          [
-            slug,
-            input.title,
-            input.summary,
-            input.description,
-            input.industry ?? null,
-            input.region ?? null,
-            input.affectedGroups,
-            input.evidence,
-            input.desiredOutcome ?? null,
-            input.constraints,
-            input.successMetrics,
-            input.visibility,
-            input.organizationId ?? null,
-            actorId,
-          ],
-        )
-      ).rows[0];
+    async createProblem(actorId, input, key) {
+      return createOnce(pool, actorId, 'problem:create', key, input, async (client) => {
+        const slug = `${slugBase(input.title)}-${crypto.randomUUID().slice(0, 8)}`;
+        return (
+          await client.query(
+            `insert into public.problems(slug,title,summary,description,industry,region,affected_groups,evidence,desired_outcome,constraints,success_metrics,visibility,organization_id,created_by,status,research_status,origin,reviewed_by_human) values($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,'draft','unresearched','human',true) returning *`,
+            [
+              slug,
+              input.title,
+              input.summary,
+              input.description,
+              input.industry ?? null,
+              input.region ?? null,
+              input.affectedGroups,
+              input.evidence,
+              input.desiredOutcome ?? null,
+              input.constraints,
+              input.successMetrics,
+              input.visibility,
+              input.organizationId ?? null,
+              actorId,
+            ],
+          )
+        ).rows[0];
+      });
     },
-    async createIdea(actorId, input) {
-      return transaction(pool, async (client) => {
+    async createIdea(actorId, input, key) {
+      return createOnce(pool, actorId, 'idea:create', key, input, async (client) => {
         const slug = `${slugBase(input.title)}-${crypto.randomUUID().slice(0, 8)}`;
         const idea = (
           await client.query(
@@ -382,7 +539,7 @@ export function createPlatformRepository(connectionString: string): PlatformRepo
     },
     async publishEntity(actorId, kind, id) {
       const result = await pool.query(
-        `update public.${kind} set status='published',content_version=content_version+1,updated_at=now() where id=$1 and created_by=$2 and deleted_at is null`,
+        `update public.${kind} set status='published',content_version=case when status='published' then content_version else content_version+1 end,updated_at=now() where id=$1 and created_by=$2 and deleted_at is null`,
         [id, actorId],
       );
       if (!result.rowCount)
@@ -624,8 +781,8 @@ export function createPlatformRepository(connectionString: string): PlatformRepo
         return project;
       });
     },
-    async createSubmission(actorId, bountyId, input) {
-      return transaction(pool, async (client) => {
+    async createSubmission(actorId, bountyId, input, key) {
+      return createOnce(pool, actorId, `submission:${bountyId}`, key, input, async (client) => {
         const bounty = (
           await client.query(
             `select bounty_type,terms_hash from public.bounties where id=$1 and status='open' and deadline_at>now() for share`,
@@ -673,7 +830,7 @@ export function createPlatformRepository(connectionString: string): PlatformRepo
             ? input.payload.summary
             : String(input.snapshot.summary ?? 'Project snapshot');
         const result = await client.query(
-          `insert into public.submissions(bounty_id,project_id,submitted_by,title,description,status,submission_kind,visibility,idea_payload,submitted_at,locked_at,payout_wallet_address,payout_wallet_verified_at,team_payout_acknowledged_at) values($1,$2,$3,$4,$5,'submitted',$6,'private_owner_judges',$7,now(),now(),$8,$9,$10) returning id,bounty_id "bountyId",submission_kind kind,status,visibility,submitted_at "submittedAt"`,
+          `insert into public.submissions(bounty_id,project_id,submitted_by,title,description,status,submission_kind,visibility,idea_payload,submitted_at,payout_wallet_address,payout_wallet_verified_at,team_payout_acknowledged_at) values($1,$2,$3,$4,$5,'submitted',$6,'private_owner_judges',$7,now(),$8,$9,$10) returning id,bounty_id "bountyId",submission_kind kind,status,visibility,submitted_at "submittedAt"`,
           [
             bountyId,
             input.kind === 'project' ? input.projectId : null,
@@ -689,11 +846,16 @@ export function createPlatformRepository(connectionString: string): PlatformRepo
         );
         const submission = result.rows[0];
         const snapshot = input.kind === 'idea' ? input.payload : input.snapshot;
-        await client.query(
-          `insert into public.submission_versions(submission_id,version,snapshot,content_hash,created_by) values($1,1,$2,encode(digest(convert_to($2::jsonb::text,'UTF8'),'sha256'),'hex'),$3)`,
+        const version = await client.query(
+          `insert into public.submission_versions(submission_id,version,snapshot,content_hash,created_by) values($1,1,$2,encode(digest(convert_to($2::jsonb::text,'UTF8'),'sha256'),'hex'),$3) returning version,content_hash`,
           [submission.id, snapshot, actorId],
         );
-        return submission;
+        return {
+          ...submission,
+          version: version.rows[0].version,
+          contentHash: version.rows[0].content_hash,
+          payoutWalletAddress: rewardWallet.address,
+        };
       });
     },
     async listSubmissions(actorId, bountyId) {
@@ -708,7 +870,7 @@ export function createPlatformRepository(connectionString: string): PlatformRepo
       return (
         (
           await pool.query(
-            `select s.*,v.snapshot from public.submissions s join public.bounties b on b.id=s.bounty_id join public.submission_versions v on v.submission_id=s.id and v.version=s.current_version where s.id=$2 and (s.submitted_by=$1 or exists(select 1 from public.bounty_participants bp where bp.bounty_id=s.bounty_id and bp.user_id=$1 and bp.role in ('creator','judge')) or exists(select 1 from public.organization_members om where om.organization_id=b.organization_id and om.user_id=$1 and om.permission_level in ('owner','admin','judge')))`,
+            `select s.*,b.slug bounty_slug,v.snapshot,v.content_hash from public.submissions s join public.bounties b on b.id=s.bounty_id join public.submission_versions v on v.submission_id=s.id and v.version=s.current_version where s.id=$2 and (s.submitted_by=$1 or exists(select 1 from public.bounty_participants bp where bp.bounty_id=s.bounty_id and bp.user_id=$1 and bp.role in ('creator','judge')) or exists(select 1 from public.organization_members om where om.organization_id=b.organization_id and om.user_id=$1 and om.permission_level in ('owner','admin','judge')))`,
             [actorId, submissionId],
           )
         ).rows[0] ?? null
@@ -1011,7 +1173,12 @@ export function createPlatformRepository(connectionString: string): PlatformRepo
       return (
         (
           await pool.query(
-            `select distinct m.id,m.bucket,m.object_key "objectKey",m.status,m.visibility from public.media_assets m left join public.entity_media_assets a on a.media_asset_id=m.id left join public.submissions s on a.entity_type='submission' and a.entity_id=s.id left join public.bounties b on b.id=s.bounty_id where m.id=$2 and m.status='uploaded' and (m.owner_id=$1 or m.visibility='public' or s.submitted_by=$1 or exists(select 1 from public.bounty_participants bp where bp.bounty_id=s.bounty_id and bp.user_id=$1 and bp.role in ('creator','judge')) or exists(select 1 from public.organization_members om where om.organization_id=b.organization_id and om.user_id=$1 and om.permission_level in ('owner','admin','judge')))`,
+            `select distinct m.id,m.bucket,m.object_key "objectKey",m.status,m.visibility from public.media_assets m left join public.entity_media_assets a on a.media_asset_id=m.id left join public.submissions s on a.entity_type='submission' and a.entity_id=s.id left join public.bounties b on b.id=s.bounty_id where m.id=$2 and m.status='uploaded' and (m.owner_id=$1 or (m.visibility='public' and m.bucket='public-media' and (
+              (a.entity_type='problem' and exists(select 1 from public.problems p where p.id=a.entity_id and p.status='published' and p.visibility='public' and p.deleted_at is null)) or
+              (a.entity_type='idea' and exists(select 1 from public.ideas i where i.id=a.entity_id and i.status='published' and i.visibility='public' and i.deleted_at is null)) or
+              (a.entity_type='project' and exists(select 1 from public.projects p where p.id=a.entity_id and p.visibility='public' and p.deleted_at is null)) or
+              (a.entity_type='post' and exists(select 1 from public.posts p where p.id=a.entity_id and p.visibility='public' and p.deleted_at is null))
+            )) or s.submitted_by=$1 or exists(select 1 from public.bounty_participants bp where bp.bounty_id=s.bounty_id and bp.user_id=$1 and bp.role in ('creator','judge')) or exists(select 1 from public.organization_members om where om.organization_id=b.organization_id and om.user_id=$1 and om.permission_level in ('owner','admin','judge')))`,
             [actorId, id],
           )
         ).rows[0] ?? null
@@ -1019,7 +1186,7 @@ export function createPlatformRepository(connectionString: string): PlatformRepo
     },
     async completeMediaAsset(actorId, id) {
       const result = await pool.query(
-        `update public.media_assets set status='uploaded',updated_at=now() where id=$1 and owner_id=$2 and status='pending'`,
+        `update public.media_assets set status='uploaded',updated_at=now() where id=$1 and owner_id=$2 and status in ('pending','uploaded')`,
         [id, actorId],
       );
       if (!result.rowCount)
@@ -1063,7 +1230,7 @@ export function createPlatformRepository(connectionString: string): PlatformRepo
           });
       }
       const result = await pool.query(
-        `insert into public.entity_media_assets(entity_type,entity_id,media_asset_id,position) select $1,$2,id,$4 from public.media_assets where id=$3 and owner_id=$5 and status='uploaded' on conflict do nothing`,
+        `insert into public.entity_media_assets(entity_type,entity_id,media_asset_id,position) select $1,$2,id,$4 from public.media_assets where id=$3 and owner_id=$5 and status='uploaded' on conflict (entity_type,entity_id,media_asset_id) do update set position=excluded.position`,
         [entityType, entityId, id, position, actorId],
       );
       if (!result.rowCount)
@@ -1086,13 +1253,23 @@ export function createPlatformRepository(connectionString: string): PlatformRepo
       ).rows[0];
       return { id: existing.id, created: false };
     },
-    async listNotifications(actorId, limit) {
+    async listNotifications(actorId, limit, offset = 0) {
       return (
         await pool.query(
-          `select id,type,payload,delivery_status "deliveryStatus",read_at "readAt",created_at "createdAt" from public.notifications where user_id=$1 order by created_at desc limit $2`,
-          [actorId, limit],
+          `select n.id,n.type,n.payload,n.delivery_status "deliveryStatus",n.read_at "readAt",n.created_at "createdAt", b.slug "bountySlug", s.id "submissionId"
+           from public.notifications n left join public.bounties b on b.id::text=n.payload->>'bountyId' and b.status not in ('draft','cancelled')
+           left join public.submissions s on s.id::text=n.payload->>'submissionId' and s.bounty_id=b.id and (s.submitted_by=$1 or exists(select 1 from public.bounty_participants bp where bp.bounty_id=b.id and bp.user_id=$1 and bp.role in ('creator','judge')) or exists(select 1 from public.organization_members om where om.organization_id=b.organization_id and om.user_id=$1 and om.permission_level in ('owner','admin','judge')))
+           where n.user_id=$1 order by n.created_at desc,n.id limit $2 offset $3`,
+          [actorId, limit, offset],
         )
       ).rows;
+    },
+    async unreadNotificationCount(actorId) {
+      const result = await pool.query<{ count: number }>(
+        'select count(*)::int count from public.notifications where user_id=$1 and read_at is null',
+        [actorId],
+      );
+      return result.rows[0]?.count ?? 0;
     },
     async markNotificationRead(actorId, notificationId) {
       return Boolean(

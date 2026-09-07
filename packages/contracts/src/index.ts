@@ -46,6 +46,16 @@ export const previousAttemptSchema = z.object({
 });
 export type PreviousAttemptDTO = z.infer<typeof previousAttemptSchema>;
 
+export const publicMediaSchema = z.object({
+  id: z.string().uuid(),
+  kind: z.enum(['image', 'video']),
+  name: z.string(),
+  size: z.number().nonnegative(),
+  mimeType: z.string(),
+  remote: z.literal(true),
+});
+export type PublicMediaDTO = z.infer<typeof publicMediaSchema>;
+
 export const problemDetailSchema = z.object({
   id: z.string().uuid(),
   slug: z.string(),
@@ -53,6 +63,10 @@ export const problemDetailSchema = z.object({
   summary: z.string(),
   description: z.string(),
   affectedGroups: z.array(z.string()),
+  industry: z.string().nullable().optional(),
+  region: z.string().nullable().optional(),
+  desiredOutcome: z.string().nullable().optional(),
+  constraints: z.array(z.string()).optional(),
   evidence: z.array(z.string()),
   severity: z.enum(['low', 'medium', 'high', 'critical']),
   status: z.enum(['draft', 'published', 'archived']),
@@ -60,6 +74,7 @@ export const problemDetailSchema = z.object({
   createdAt: z.string().datetime(),
   creator: creatorSummarySchema.nullable(),
   provenance: provenanceSchema,
+  media: z.array(publicMediaSchema).optional(),
   relatedIdeas: z.array(z.object({ slug: z.string(), title: z.string(), summary: z.string() })),
   bounty: z
     .object({
@@ -92,11 +107,15 @@ export const ideaDetailSchema = z.object({
   thesis: z.string(),
   solution: z.string(),
   targetUsers: z.array(z.string()),
+  whyNow: z.string().nullable().optional(),
+  risks: z.array(z.string()).optional(),
+  validationPlan: z.string().nullable().optional(),
   status: z.enum(['draft', 'published', 'archived']),
   researchStatus: researchStatusSchema,
   createdAt: z.string().datetime(),
   creator: creatorSummarySchema.nullable(),
   provenance: provenanceSchema,
+  media: z.array(publicMediaSchema).optional(),
   primaryProblem: z.object({ slug: z.string(), title: z.string(), summary: z.string() }),
   previousAttempts: z.array(previousAttemptSchema),
   project: z.object({ slug: z.string(), name: z.string(), stage: z.string() }).nullable(),
@@ -123,6 +142,19 @@ export const readinessSchema = z.object({
 });
 
 export const uuidSchema = z.string().uuid();
+export const reactionParamsSchema = z.object({
+  kind: z.enum(['problem', 'idea', 'project', 'bounty']),
+  slug: z.string().min(1).max(200),
+});
+export const reactionUpdateSchema = z.object({
+  action: z.enum(['bookmark', 'like', 'follow']),
+  enabled: z.boolean(),
+});
+export const libraryQuerySchema = z.object({
+  category: z.enum(['bookmarks', 'likes']).default('bookmarks'),
+  limit: z.coerce.number().int().min(1).max(100).default(31),
+  offset: z.coerce.number().int().min(0).max(3_000_000).default(0),
+});
 export const rawAmountSchema = z
   .string()
   .regex(/^\d+$/, 'Token amounts must be unsigned integer strings.');

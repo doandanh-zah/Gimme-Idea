@@ -1,0 +1,1473 @@
+{
+  "checked_at": "2026-09-06T13:41:43.350740+07:00",
+  "method": "Read-only HTTP; no browser execution or authenticated actions",
+  "git_head": "0030fa65443a041e65462445375ca4d26f9eead2",
+  "api_catalog": {
+    "projects": [
+      {
+        "id": "50000000-0000-4000-8000-000000000001",
+        "slug": "prep-signal-pilot",
+        "name": "Prep Signal Pilot"
+      },
+      {
+        "id": "50000000-0000-4000-8000-000000000002",
+        "slug": "cold-slot-prototype",
+        "name": "Cold Slot Prototype"
+      },
+      {
+        "id": "50000000-0000-4000-8000-000000000003",
+        "slug": "repair-thread-demo",
+        "name": "Repair Thread Demo"
+      }
+    ],
+    "bounties": [
+      {
+        "id": "60000000-0000-4000-8000-000000000001",
+        "slug": "reduce-avoidable-prep-waste",
+        "type": "idea",
+        "title": "Reduce avoidable prep waste",
+        "status": "awaiting_funding"
+      },
+      {
+        "id": "60000000-0000-4000-8000-000000000002",
+        "slug": "close-repair-evidence-loop",
+        "type": "idea",
+        "title": "Close the repair evidence loop",
+        "status": "awaiting_funding"
+      }
+    ],
+    "problems": [
+      {
+        "id": "30000000-0000-4000-8000-000000000004",
+        "slug": "tenant-repair-visibility",
+        "title": "Tenants cannot track shared-building repair accountability"
+      },
+      {
+        "id": "30000000-0000-4000-8000-000000000001",
+        "slug": "restaurant-food-waste",
+        "title": "Restaurants cannot match daily supply to volatile demand"
+      },
+      {
+        "id": "30000000-0000-4000-8000-000000000002",
+        "slug": "last-mile-clinic-delays",
+        "title": "Community clinics lose hours to unpredictable medicine deliveries"
+      },
+      {
+        "id": "30000000-0000-4000-8000-000000000003",
+        "slug": "small-farm-cold-chain",
+        "title": "Small farms lack affordable cold-chain coordination"
+      },
+      {
+        "id": "30000000-0000-4000-8000-000000000005",
+        "slug": "freelancer-payment-proof",
+        "title": "Freelancers lack portable proof of reliable client payment"
+      }
+    ],
+    "ideas": [
+      {
+        "id": "40000000-0000-4000-8000-000000000008",
+        "slug": "building-maintenance-map",
+        "title": "Building Maintenance Map"
+      },
+      {
+        "id": "40000000-0000-4000-8000-000000000007",
+        "slug": "repair-evidence-thread",
+        "title": "Repair Evidence Thread"
+      },
+      {
+        "id": "40000000-0000-4000-8000-000000000002",
+        "slug": "surplus-window-exchange",
+        "title": "Surplus Window Exchange"
+      },
+      {
+        "id": "40000000-0000-4000-8000-000000000001",
+        "slug": "demand-pulse-for-kitchens",
+        "title": "Demand Pulse for independent kitchens"
+      },
+      {
+        "id": "40000000-0000-4000-8000-000000000004",
+        "slug": "medicine-route-pooling",
+        "title": "Medicine Route Pooling"
+      },
+      {
+        "id": "40000000-0000-4000-8000-000000000003",
+        "slug": "clinic-delivery-ledger",
+        "title": "Clinic Delivery Ledger"
+      },
+      {
+        "id": "40000000-0000-4000-8000-000000000006",
+        "slug": "harvest-handoff",
+        "title": "Harvest Handoff"
+      },
+      {
+        "id": "40000000-0000-4000-8000-000000000005",
+        "slug": "cold-slot-market",
+        "title": "Cold Slot Market"
+      },
+      {
+        "id": "40000000-0000-4000-8000-000000000010",
+        "slug": "milestone-expectation-card",
+        "title": "Milestone Expectation Card"
+      },
+      {
+        "id": "40000000-0000-4000-8000-000000000009",
+        "slug": "payment-timing-attestations",
+        "title": "Payment Timing Attestations"
+      }
+    ]
+  },
+  "routes": [
+    {
+      "path": "/en",
+      "status": 200,
+      "final_url": "http://127.0.0.1:3000/en",
+      "h1": ["Problemsare everywhere.Possibilitystarts here."],
+      "lang": "en",
+      "streamed_not_found": false,
+      "links": [
+        "/en",
+        "/en/problems",
+        "/en/ideas",
+        "/en/bounties",
+        "/en/home",
+        "/vi",
+        "/en/create/problem",
+        "/en/projects",
+        "/en/problems/restaurant-food-waste",
+        "/en/problems/tenant-repair-visibility",
+        "/en/create/idea"
+      ]
+    },
+    {
+      "path": "/vi",
+      "status": 200,
+      "final_url": "http://127.0.0.1:3000/vi",
+      "h1": ["Vấn đề ởkhắp nơi.Ý tưởng cầnmột khởi đầu."],
+      "lang": "en",
+      "streamed_not_found": false,
+      "links": [
+        "/vi",
+        "/vi/problems",
+        "/vi/ideas",
+        "/vi/bounties",
+        "/vi/home",
+        "/en",
+        "/vi/create/problem",
+        "/vi/projects",
+        "/vi/problems/restaurant-food-waste",
+        "/vi/problems/tenant-repair-visibility",
+        "/vi/create/idea"
+      ]
+    },
+    {
+      "path": "/en/home",
+      "status": 200,
+      "final_url": "http://127.0.0.1:3000/en/home",
+      "h1": ["Home"],
+      "lang": "en",
+      "streamed_not_found": false,
+      "links": [
+        "/en/home",
+        "/en/problems",
+        "/en/ideas",
+        "/en/projects",
+        "/en/bounties",
+        "/en/saved",
+        "/en/notifications",
+        "/en/profile",
+        "/vi/home",
+        "/en/problems/tenant-repair-visibility",
+        "/en/problems/restaurant-food-waste",
+        "/en/problems/last-mile-clinic-delays",
+        "/en/problems/small-farm-cold-chain",
+        "/en/problems/freelancer-payment-proof",
+        "/en/home/70000000-0000-4000-8000-000000000008",
+        "/en/home/70000000-0000-4000-8000-000000000005",
+        "/en/home/70000000-0000-4000-8000-000000000006",
+        "/en/home/70000000-0000-4000-8000-000000000007",
+        "/en/home/70000000-0000-4000-8000-000000000009",
+        "/en/home/70000000-0000-4000-8000-000000000010",
+        "/en/home/70000000-0000-4000-8000-000000000001",
+        "/en/home/70000000-0000-4000-8000-000000000002",
+        "/en/home/70000000-0000-4000-8000-000000000003",
+        "/en/home/70000000-0000-4000-8000-000000000004",
+        "/en/projects/prep-signal-pilot",
+        "/en/projects/cold-slot-prototype",
+        "/en/projects/repair-thread-demo",
+        "/en/create/problem"
+      ]
+    },
+    {
+      "path": "/vi/home",
+      "status": 200,
+      "final_url": "http://127.0.0.1:3000/vi/home",
+      "h1": ["Trang chủ"],
+      "lang": "en",
+      "streamed_not_found": false,
+      "links": [
+        "/vi/home",
+        "/vi/problems",
+        "/vi/ideas",
+        "/vi/projects",
+        "/vi/bounties",
+        "/vi/saved",
+        "/vi/notifications",
+        "/vi/profile",
+        "/en/home",
+        "/vi/problems/tenant-repair-visibility",
+        "/vi/problems/restaurant-food-waste",
+        "/vi/problems/last-mile-clinic-delays",
+        "/vi/problems/small-farm-cold-chain",
+        "/vi/problems/freelancer-payment-proof",
+        "/vi/home/70000000-0000-4000-8000-000000000008",
+        "/vi/home/70000000-0000-4000-8000-000000000005",
+        "/vi/home/70000000-0000-4000-8000-000000000006",
+        "/vi/home/70000000-0000-4000-8000-000000000007",
+        "/vi/home/70000000-0000-4000-8000-000000000009",
+        "/vi/home/70000000-0000-4000-8000-000000000010",
+        "/vi/home/70000000-0000-4000-8000-000000000001",
+        "/vi/home/70000000-0000-4000-8000-000000000002",
+        "/vi/home/70000000-0000-4000-8000-000000000003",
+        "/vi/home/70000000-0000-4000-8000-000000000004",
+        "/vi/projects/prep-signal-pilot",
+        "/vi/projects/cold-slot-prototype",
+        "/vi/projects/repair-thread-demo",
+        "/vi/create/problem"
+      ]
+    },
+    {
+      "path": "/en/problems",
+      "status": 200,
+      "final_url": "http://127.0.0.1:3000/en/problems",
+      "h1": ["Problems"],
+      "lang": "en",
+      "streamed_not_found": false,
+      "links": [
+        "/en/home",
+        "/en/problems",
+        "/en/ideas",
+        "/en/projects",
+        "/en/bounties",
+        "/en/saved",
+        "/en/notifications",
+        "/en/profile",
+        "/vi/problems",
+        "/en/create/problem",
+        "/en/problems/restaurant-food-waste",
+        "/en/problems/tenant-repair-visibility"
+      ]
+    },
+    {
+      "path": "/en/ideas",
+      "status": 200,
+      "final_url": "http://127.0.0.1:3000/en/ideas",
+      "h1": ["Ideas"],
+      "lang": "en",
+      "streamed_not_found": false,
+      "links": [
+        "/en/home",
+        "/en/problems",
+        "/en/ideas",
+        "/en/projects",
+        "/en/bounties",
+        "/en/saved",
+        "/en/notifications",
+        "/en/profile",
+        "/vi/ideas",
+        "/en/create/idea",
+        "/en/ideas/demand-pulse-for-kitchens",
+        "/en/create/problem"
+      ]
+    },
+    {
+      "path": "/en/projects",
+      "status": 200,
+      "final_url": "http://127.0.0.1:3000/en/projects",
+      "h1": ["Projects"],
+      "lang": "en",
+      "streamed_not_found": false,
+      "links": [
+        "/en/home",
+        "/en/problems",
+        "/en/ideas",
+        "/en/projects",
+        "/en/bounties",
+        "/en/saved",
+        "/en/notifications",
+        "/en/profile",
+        "/vi/projects",
+        "/en/projects?filter=historical",
+        "/en/projects?filter=community",
+        "/en/projects?filter=winners",
+        "/en/projects?filter=active",
+        "/en/projects/prep-signal-pilot",
+        "/en/projects/cold-slot-prototype",
+        "/en/projects/repair-thread-demo",
+        "/en/create/problem"
+      ]
+    },
+    {
+      "path": "/en/bounties",
+      "status": 200,
+      "final_url": "http://127.0.0.1:3000/en/bounties",
+      "h1": ["Bounties"],
+      "lang": "en",
+      "streamed_not_found": false,
+      "links": [
+        "/en/home",
+        "/en/problems",
+        "/en/ideas",
+        "/en/projects",
+        "/en/bounties",
+        "/en/saved",
+        "/en/notifications",
+        "/en/profile",
+        "/vi/bounties",
+        "/en/bounties?stage=idea",
+        "/en/bounties?stage=build",
+        "/en/create/problem",
+        "/en/bounties/reduce-avoidable-prep-waste",
+        "/en/bounties/close-repair-evidence-loop",
+        "/devnet-bounty"
+      ]
+    },
+    {
+      "path": "/en/search?q=restaurant",
+      "status": 200,
+      "final_url": "http://127.0.0.1:3000/en/search?q=restaurant",
+      "h1": ["Search"],
+      "lang": "en",
+      "streamed_not_found": false,
+      "links": [
+        "/en/home",
+        "/en/problems",
+        "/en/ideas",
+        "/en/projects",
+        "/en/bounties",
+        "/en/saved",
+        "/en/notifications",
+        "/en/profile",
+        "/vi/search",
+        "/en/search?q=restaurant",
+        "/en/search?mode=similar&q=restaurant",
+        "/en/create/problem"
+      ]
+    },
+    {
+      "path": "/en/search?q=restaurant&mode=similar",
+      "status": 200,
+      "final_url": "http://127.0.0.1:3000/en/search?q=restaurant&mode=similar",
+      "h1": ["Search"],
+      "lang": "en",
+      "streamed_not_found": false,
+      "links": [
+        "/en/home",
+        "/en/problems",
+        "/en/ideas",
+        "/en/projects",
+        "/en/bounties",
+        "/en/saved",
+        "/en/notifications",
+        "/en/profile",
+        "/vi/search",
+        "/en/search?q=restaurant",
+        "/en/search?mode=similar&q=restaurant",
+        "/en/create/problem"
+      ]
+    },
+    {
+      "path": "/en/profile",
+      "status": 200,
+      "final_url": "http://127.0.0.1:3000/en/profile",
+      "h1": ["Profile"],
+      "lang": "en",
+      "streamed_not_found": false,
+      "links": [
+        "/en/home",
+        "/en/problems",
+        "/en/ideas",
+        "/en/projects",
+        "/en/bounties",
+        "/en/saved",
+        "/en/notifications",
+        "/en/profile",
+        "/vi/profile",
+        "/en/projects/kitchen-signal-lab",
+        "/en/create/problem"
+      ]
+    },
+    {
+      "path": "/en/notifications",
+      "status": 200,
+      "final_url": "http://127.0.0.1:3000/en/notifications",
+      "h1": ["Notifications"],
+      "lang": "en",
+      "streamed_not_found": false,
+      "links": [
+        "/en/home",
+        "/en/problems",
+        "/en/ideas",
+        "/en/projects",
+        "/en/bounties",
+        "/en/saved",
+        "/en/notifications",
+        "/en/profile",
+        "/vi/notifications",
+        "/en/create/problem"
+      ]
+    },
+    {
+      "path": "/en/saved",
+      "status": 200,
+      "final_url": "http://127.0.0.1:3000/en/saved",
+      "h1": ["Saved"],
+      "lang": "en",
+      "streamed_not_found": false,
+      "links": [
+        "/en/home",
+        "/en/problems",
+        "/en/ideas",
+        "/en/projects",
+        "/en/bounties",
+        "/en/saved",
+        "/en/notifications",
+        "/en/profile",
+        "/vi/saved",
+        "/en/saved?tab=bookmarks",
+        "/en/saved?tab=likes",
+        "/en/create/problem"
+      ]
+    },
+    {
+      "path": "/en/settings",
+      "status": 200,
+      "final_url": "http://127.0.0.1:3000/en/settings",
+      "h1": ["Settings"],
+      "lang": "en",
+      "streamed_not_found": false,
+      "links": [
+        "/en/home",
+        "/en/problems",
+        "/en/ideas",
+        "/en/projects",
+        "/en/bounties",
+        "/en/saved",
+        "/en/notifications",
+        "/en/profile",
+        "/vi/settings",
+        "/en/create/problem"
+      ]
+    },
+    {
+      "path": "/en/following",
+      "status": 200,
+      "final_url": "http://127.0.0.1:3000/en/home",
+      "h1": ["Home"],
+      "lang": "en",
+      "streamed_not_found": false,
+      "links": [
+        "/en/home",
+        "/en/problems",
+        "/en/ideas",
+        "/en/projects",
+        "/en/bounties",
+        "/en/saved",
+        "/en/notifications",
+        "/en/profile",
+        "/vi/home",
+        "/en/problems/tenant-repair-visibility",
+        "/en/problems/restaurant-food-waste",
+        "/en/problems/last-mile-clinic-delays",
+        "/en/problems/small-farm-cold-chain",
+        "/en/problems/freelancer-payment-proof",
+        "/en/home/70000000-0000-4000-8000-000000000008",
+        "/en/home/70000000-0000-4000-8000-000000000005",
+        "/en/home/70000000-0000-4000-8000-000000000006",
+        "/en/home/70000000-0000-4000-8000-000000000007",
+        "/en/home/70000000-0000-4000-8000-000000000009",
+        "/en/home/70000000-0000-4000-8000-000000000010",
+        "/en/home/70000000-0000-4000-8000-000000000001",
+        "/en/home/70000000-0000-4000-8000-000000000002",
+        "/en/home/70000000-0000-4000-8000-000000000003",
+        "/en/home/70000000-0000-4000-8000-000000000004",
+        "/en/projects/prep-signal-pilot",
+        "/en/projects/cold-slot-prototype",
+        "/en/projects/repair-thread-demo",
+        "/en/create/problem"
+      ]
+    },
+    {
+      "path": "/en/community",
+      "status": 200,
+      "final_url": "http://127.0.0.1:3000/en/home",
+      "h1": ["Home"],
+      "lang": "en",
+      "streamed_not_found": false,
+      "links": [
+        "/en/home",
+        "/en/problems",
+        "/en/ideas",
+        "/en/projects",
+        "/en/bounties",
+        "/en/saved",
+        "/en/notifications",
+        "/en/profile",
+        "/vi/home",
+        "/en/problems/tenant-repair-visibility",
+        "/en/problems/restaurant-food-waste",
+        "/en/problems/last-mile-clinic-delays",
+        "/en/problems/small-farm-cold-chain",
+        "/en/problems/freelancer-payment-proof",
+        "/en/home/70000000-0000-4000-8000-000000000008",
+        "/en/home/70000000-0000-4000-8000-000000000005",
+        "/en/home/70000000-0000-4000-8000-000000000006",
+        "/en/home/70000000-0000-4000-8000-000000000007",
+        "/en/home/70000000-0000-4000-8000-000000000009",
+        "/en/home/70000000-0000-4000-8000-000000000010",
+        "/en/home/70000000-0000-4000-8000-000000000001",
+        "/en/home/70000000-0000-4000-8000-000000000002",
+        "/en/home/70000000-0000-4000-8000-000000000003",
+        "/en/home/70000000-0000-4000-8000-000000000004",
+        "/en/projects/prep-signal-pilot",
+        "/en/projects/cold-slot-prototype",
+        "/en/projects/repair-thread-demo",
+        "/en/create/problem"
+      ]
+    },
+    {
+      "path": "/en/talent",
+      "status": 200,
+      "final_url": "http://127.0.0.1:3000/en/projects",
+      "h1": ["Projects"],
+      "lang": "en",
+      "streamed_not_found": false,
+      "links": [
+        "/en/home",
+        "/en/problems",
+        "/en/ideas",
+        "/en/projects",
+        "/en/bounties",
+        "/en/saved",
+        "/en/notifications",
+        "/en/profile",
+        "/vi/projects",
+        "/en/projects?filter=historical",
+        "/en/projects?filter=community",
+        "/en/projects?filter=winners",
+        "/en/projects?filter=active",
+        "/en/projects/prep-signal-pilot",
+        "/en/projects/cold-slot-prototype",
+        "/en/projects/repair-thread-demo",
+        "/en/create/problem"
+      ]
+    },
+    {
+      "path": "/en/dashboard",
+      "status": 200,
+      "final_url": "http://127.0.0.1:3000/en/dashboard",
+      "h1": ["Reviewer access required"],
+      "lang": "en",
+      "streamed_not_found": false,
+      "links": [
+        "/en/home",
+        "/en/problems",
+        "/en/ideas",
+        "/en/projects",
+        "/en/bounties",
+        "/en/saved",
+        "/en/notifications",
+        "/en/profile",
+        "/vi/dashboard",
+        "/en/create/problem"
+      ]
+    },
+    {
+      "path": "/en/create/idea",
+      "status": 200,
+      "final_url": "http://127.0.0.1:3000/en/create/idea",
+      "h1": ["Propose a public direction"],
+      "lang": "en",
+      "streamed_not_found": false,
+      "links": [
+        "/en/home",
+        "/en/problems",
+        "/en/ideas",
+        "/en/projects",
+        "/en/bounties",
+        "/en/saved",
+        "/en/notifications",
+        "/en/profile",
+        "/vi/create/idea",
+        "/en/create/problem"
+      ]
+    },
+    {
+      "path": "/en/create/problem",
+      "status": 200,
+      "final_url": "http://127.0.0.1:3000/en/create/problem",
+      "h1": ["Publish what needs to be solved"],
+      "lang": "en",
+      "streamed_not_found": false,
+      "links": [
+        "/en/home",
+        "/en/problems",
+        "/en/ideas",
+        "/en/projects",
+        "/en/bounties",
+        "/en/saved",
+        "/en/notifications",
+        "/en/profile",
+        "/vi/create/problem",
+        "/en/create/problem"
+      ]
+    },
+    {
+      "path": "/en/problems/restaurant-food-waste",
+      "status": 200,
+      "final_url": "http://127.0.0.1:3000/en/problems/restaurant-food-waste",
+      "h1": ["Restaurants cannot match daily supply to volatile demand"],
+      "lang": "en",
+      "streamed_not_found": false,
+      "links": [
+        "/en/home",
+        "/en/problems",
+        "/en/ideas",
+        "/en/projects",
+        "/en/bounties",
+        "/en/saved",
+        "/en/notifications",
+        "/en/profile",
+        "/vi/problems/restaurant-food-waste",
+        "/en/bounties/reduce-avoidable-prep-waste",
+        "/en/ideas/demand-pulse-for-kitchens",
+        "/en/ideas/surplus-window-exchange",
+        "/en/create/problem"
+      ]
+    },
+    {
+      "path": "/en/ideas/demand-pulse-for-kitchens",
+      "status": 200,
+      "final_url": "http://127.0.0.1:3000/en/ideas/demand-pulse-for-kitchens",
+      "h1": ["Demand Pulse for independent kitchens"],
+      "lang": "en",
+      "streamed_not_found": false,
+      "links": [
+        "/en/home",
+        "/en/problems",
+        "/en/ideas",
+        "/en/projects",
+        "/en/bounties",
+        "/en/saved",
+        "/en/notifications",
+        "/en/profile",
+        "/vi/ideas/demand-pulse-for-kitchens",
+        "/en/projects/kitchen-signal-lab",
+        "/en/problems/restaurant-food-waste",
+        "/en/create/problem"
+      ]
+    },
+    {
+      "path": "/en/projects/kitchen-signal-lab",
+      "status": 404,
+      "final_url": "http://127.0.0.1:3000/en/projects/kitchen-signal-lab",
+      "h1": [],
+      "lang": null,
+      "streamed_not_found": true,
+      "links": []
+    },
+    {
+      "path": "/en/projects/pantry-pulse-archive",
+      "status": 404,
+      "final_url": "http://127.0.0.1:3000/en/projects/pantry-pulse-archive",
+      "h1": [],
+      "lang": null,
+      "streamed_not_found": true,
+      "links": []
+    },
+    {
+      "path": "/en/bounties/foodloop-build",
+      "status": 200,
+      "final_url": "http://127.0.0.1:3000/en/bounties/foodloop-build",
+      "h1": [],
+      "lang": "en",
+      "streamed_not_found": true,
+      "links": [
+        "/en/home",
+        "/en/problems",
+        "/en/ideas",
+        "/en/projects",
+        "/en/bounties",
+        "/en/saved",
+        "/en/notifications",
+        "/en/profile",
+        "/vi/bounties/foodloop-build",
+        "/en/bounties?stage=idea",
+        "/en/bounties?stage=build",
+        "/en/create/problem"
+      ]
+    },
+    {
+      "path": "/en/bounties/restaurant-demand-idea",
+      "status": 200,
+      "final_url": "http://127.0.0.1:3000/en/bounties/restaurant-demand-idea",
+      "h1": [],
+      "lang": "en",
+      "streamed_not_found": true,
+      "links": [
+        "/en/home",
+        "/en/problems",
+        "/en/ideas",
+        "/en/projects",
+        "/en/bounties",
+        "/en/saved",
+        "/en/notifications",
+        "/en/profile",
+        "/vi/bounties/restaurant-demand-idea",
+        "/en/bounties?stage=idea",
+        "/en/bounties?stage=build",
+        "/en/create/problem"
+      ]
+    },
+    {
+      "path": "/vi/does-not-exist",
+      "status": 404,
+      "final_url": "http://127.0.0.1:3000/vi/does-not-exist",
+      "h1": ["This node is not in the network."],
+      "lang": "en",
+      "streamed_not_found": false,
+      "links": ["/en"]
+    },
+    {
+      "path": "/en/projects/prep-signal-pilot",
+      "status": 200,
+      "final_url": "http://127.0.0.1:3000/en/projects/prep-signal-pilot",
+      "h1": ["Prep Signal Pilot"],
+      "lang": "en",
+      "streamed_not_found": false,
+      "links": [
+        "/en/home",
+        "/en/problems",
+        "/en/ideas",
+        "/en/projects",
+        "/en/bounties",
+        "/en/saved",
+        "/en/notifications",
+        "/en/profile",
+        "/vi/projects/prep-signal-pilot",
+        "/en/create/problem"
+      ]
+    },
+    {
+      "path": "/en/projects/cold-slot-prototype",
+      "status": 200,
+      "final_url": "http://127.0.0.1:3000/en/projects/cold-slot-prototype",
+      "h1": ["Cold Slot Prototype"],
+      "lang": "en",
+      "streamed_not_found": false,
+      "links": [
+        "/en/home",
+        "/en/problems",
+        "/en/ideas",
+        "/en/projects",
+        "/en/bounties",
+        "/en/saved",
+        "/en/notifications",
+        "/en/profile",
+        "/vi/projects/cold-slot-prototype",
+        "/en/create/problem"
+      ]
+    },
+    {
+      "path": "/en/projects/repair-thread-demo",
+      "status": 200,
+      "final_url": "http://127.0.0.1:3000/en/projects/repair-thread-demo",
+      "h1": ["Repair Thread Demo"],
+      "lang": "en",
+      "streamed_not_found": false,
+      "links": [
+        "/en/home",
+        "/en/problems",
+        "/en/ideas",
+        "/en/projects",
+        "/en/bounties",
+        "/en/saved",
+        "/en/notifications",
+        "/en/profile",
+        "/vi/projects/repair-thread-demo",
+        "/en/create/problem"
+      ]
+    },
+    {
+      "path": "/en/bounties/reduce-avoidable-prep-waste",
+      "status": 200,
+      "final_url": "http://127.0.0.1:3000/en/bounties/reduce-avoidable-prep-waste",
+      "h1": ["Reduce avoidable prep waste"],
+      "lang": "en",
+      "streamed_not_found": false,
+      "links": [
+        "/en/home",
+        "/en/problems",
+        "/en/ideas",
+        "/en/projects",
+        "/en/bounties",
+        "/en/saved",
+        "/en/notifications",
+        "/en/profile",
+        "/vi/bounties/reduce-avoidable-prep-waste",
+        "/en/bounties?stage=idea",
+        "/en/bounties?stage=build",
+        "/en/create/problem",
+        "/en/problems/restaurant-food-waste"
+      ]
+    },
+    {
+      "path": "/en/bounties/close-repair-evidence-loop",
+      "status": 200,
+      "final_url": "http://127.0.0.1:3000/en/bounties/close-repair-evidence-loop",
+      "h1": ["Close the repair evidence loop"],
+      "lang": "en",
+      "streamed_not_found": false,
+      "links": [
+        "/en/home",
+        "/en/problems",
+        "/en/ideas",
+        "/en/projects",
+        "/en/bounties",
+        "/en/saved",
+        "/en/notifications",
+        "/en/profile",
+        "/vi/bounties/close-repair-evidence-loop",
+        "/en/bounties?stage=idea",
+        "/en/bounties?stage=build",
+        "/en/create/problem",
+        "/en/problems/tenant-repair-visibility"
+      ]
+    },
+    {
+      "path": "/en/problems/tenant-repair-visibility",
+      "status": 200,
+      "final_url": "http://127.0.0.1:3000/en/problems/tenant-repair-visibility",
+      "h1": ["Tenants cannot track shared-building repair accountability"],
+      "lang": "en",
+      "streamed_not_found": false,
+      "links": [
+        "/en/home",
+        "/en/problems",
+        "/en/ideas",
+        "/en/projects",
+        "/en/bounties",
+        "/en/saved",
+        "/en/notifications",
+        "/en/profile",
+        "/vi/problems/tenant-repair-visibility",
+        "/en/bounties/close-repair-evidence-loop",
+        "/en/ideas/repair-evidence-thread",
+        "/en/ideas/building-maintenance-map",
+        "/en/create/problem"
+      ]
+    },
+    {
+      "path": "/en/problems/last-mile-clinic-delays",
+      "status": 200,
+      "final_url": "http://127.0.0.1:3000/en/problems/last-mile-clinic-delays",
+      "h1": ["Community clinics lose hours to unpredictable medicine deliveries"],
+      "lang": "en",
+      "streamed_not_found": false,
+      "links": [
+        "/en/home",
+        "/en/problems",
+        "/en/ideas",
+        "/en/projects",
+        "/en/bounties",
+        "/en/saved",
+        "/en/notifications",
+        "/en/profile",
+        "/vi/problems/last-mile-clinic-delays",
+        "/en/create/idea",
+        "/en/ideas/clinic-delivery-ledger",
+        "/en/ideas/medicine-route-pooling",
+        "/en/create/problem"
+      ]
+    },
+    {
+      "path": "/en/ideas/building-maintenance-map",
+      "status": 200,
+      "final_url": "http://127.0.0.1:3000/en/ideas/building-maintenance-map",
+      "h1": ["Building Maintenance Map"],
+      "lang": "en",
+      "streamed_not_found": false,
+      "links": [
+        "/en/home",
+        "/en/problems",
+        "/en/ideas",
+        "/en/projects",
+        "/en/bounties",
+        "/en/saved",
+        "/en/notifications",
+        "/en/profile",
+        "/vi/ideas/building-maintenance-map",
+        "/en/projects/kitchen-signal-lab",
+        "/en/problems/tenant-repair-visibility",
+        "/en/create/problem"
+      ]
+    },
+    {
+      "path": "/en/ideas/repair-evidence-thread",
+      "status": 200,
+      "final_url": "http://127.0.0.1:3000/en/ideas/repair-evidence-thread",
+      "h1": ["Repair Evidence Thread"],
+      "lang": "en",
+      "streamed_not_found": false,
+      "links": [
+        "/en/home",
+        "/en/problems",
+        "/en/ideas",
+        "/en/projects",
+        "/en/bounties",
+        "/en/saved",
+        "/en/notifications",
+        "/en/profile",
+        "/vi/ideas/repair-evidence-thread",
+        "/en/projects/kitchen-signal-lab",
+        "/en/problems/tenant-repair-visibility",
+        "/en/create/problem"
+      ]
+    },
+    {
+      "path": "/en/ideas/surplus-window-exchange",
+      "status": 200,
+      "final_url": "http://127.0.0.1:3000/en/ideas/surplus-window-exchange",
+      "h1": ["Surplus Window Exchange"],
+      "lang": "en",
+      "streamed_not_found": false,
+      "links": [
+        "/en/home",
+        "/en/problems",
+        "/en/ideas",
+        "/en/projects",
+        "/en/bounties",
+        "/en/saved",
+        "/en/notifications",
+        "/en/profile",
+        "/vi/ideas/surplus-window-exchange",
+        "/en/projects/kitchen-signal-lab",
+        "/en/problems/restaurant-food-waste",
+        "/en/create/problem"
+      ]
+    },
+    {
+      "path": "/en/bounties?stage=build",
+      "status": 200,
+      "final_url": "http://127.0.0.1:3000/en/bounties?stage=build",
+      "h1": ["Bounties"],
+      "lang": "en",
+      "streamed_not_found": false,
+      "links": [
+        "/en/home",
+        "/en/problems",
+        "/en/ideas",
+        "/en/projects",
+        "/en/bounties",
+        "/en/saved",
+        "/en/notifications",
+        "/en/profile",
+        "/vi/bounties",
+        "/en/bounties?stage=idea",
+        "/en/bounties?stage=build",
+        "/en/create/problem",
+        "/devnet-bounty"
+      ]
+    },
+    {
+      "path": "/en/bounties?stage=idea",
+      "status": 200,
+      "final_url": "http://127.0.0.1:3000/en/bounties?stage=idea",
+      "h1": ["Bounties"],
+      "lang": "en",
+      "streamed_not_found": false,
+      "links": [
+        "/en/home",
+        "/en/problems",
+        "/en/ideas",
+        "/en/projects",
+        "/en/bounties",
+        "/en/saved",
+        "/en/notifications",
+        "/en/profile",
+        "/vi/bounties",
+        "/en/bounties?stage=idea",
+        "/en/bounties?stage=build",
+        "/en/create/problem",
+        "/en/bounties/reduce-avoidable-prep-waste",
+        "/en/bounties/close-repair-evidence-loop",
+        "/devnet-bounty"
+      ]
+    },
+    {
+      "path": "/en/home/70000000-0000-4000-8000-000000000001",
+      "status": 200,
+      "final_url": "http://127.0.0.1:3000/en/home/70000000-0000-4000-8000-000000000001",
+      "h1": [],
+      "lang": "en",
+      "streamed_not_found": false,
+      "links": [
+        "/en/home",
+        "/en/problems",
+        "/en/ideas",
+        "/en/projects",
+        "/en/bounties",
+        "/en/saved",
+        "/en/notifications",
+        "/en/profile",
+        "/vi/home/70000000-0000-4000-8000-000000000001",
+        "/en/create/problem"
+      ]
+    },
+    {
+      "path": "/en/home/70000000-0000-4000-8000-000000000002",
+      "status": 200,
+      "final_url": "http://127.0.0.1:3000/en/home/70000000-0000-4000-8000-000000000002",
+      "h1": [],
+      "lang": "en",
+      "streamed_not_found": false,
+      "links": [
+        "/en/home",
+        "/en/problems",
+        "/en/ideas",
+        "/en/projects",
+        "/en/bounties",
+        "/en/saved",
+        "/en/notifications",
+        "/en/profile",
+        "/vi/home/70000000-0000-4000-8000-000000000002",
+        "/en/create/problem"
+      ]
+    },
+    {
+      "path": "/en/home/70000000-0000-4000-8000-000000000003",
+      "status": 200,
+      "final_url": "http://127.0.0.1:3000/en/home/70000000-0000-4000-8000-000000000003",
+      "h1": [],
+      "lang": "en",
+      "streamed_not_found": false,
+      "links": [
+        "/en/home",
+        "/en/problems",
+        "/en/ideas",
+        "/en/projects",
+        "/en/bounties",
+        "/en/saved",
+        "/en/notifications",
+        "/en/profile",
+        "/vi/home/70000000-0000-4000-8000-000000000003",
+        "/en/create/problem"
+      ]
+    },
+    {
+      "path": "/en/home/70000000-0000-4000-8000-000000000004",
+      "status": 200,
+      "final_url": "http://127.0.0.1:3000/en/home/70000000-0000-4000-8000-000000000004",
+      "h1": [],
+      "lang": "en",
+      "streamed_not_found": false,
+      "links": [
+        "/en/home",
+        "/en/problems",
+        "/en/ideas",
+        "/en/projects",
+        "/en/bounties",
+        "/en/saved",
+        "/en/notifications",
+        "/en/profile",
+        "/vi/home/70000000-0000-4000-8000-000000000004",
+        "/en/create/problem"
+      ]
+    },
+    {
+      "path": "/en/home/70000000-0000-4000-8000-000000000005",
+      "status": 200,
+      "final_url": "http://127.0.0.1:3000/en/home/70000000-0000-4000-8000-000000000005",
+      "h1": [],
+      "lang": "en",
+      "streamed_not_found": false,
+      "links": [
+        "/en/home",
+        "/en/problems",
+        "/en/ideas",
+        "/en/projects",
+        "/en/bounties",
+        "/en/saved",
+        "/en/notifications",
+        "/en/profile",
+        "/vi/home/70000000-0000-4000-8000-000000000005",
+        "/en/create/problem"
+      ]
+    },
+    {
+      "path": "/en/home/70000000-0000-4000-8000-000000000006",
+      "status": 200,
+      "final_url": "http://127.0.0.1:3000/en/home/70000000-0000-4000-8000-000000000006",
+      "h1": [],
+      "lang": "en",
+      "streamed_not_found": false,
+      "links": [
+        "/en/home",
+        "/en/problems",
+        "/en/ideas",
+        "/en/projects",
+        "/en/bounties",
+        "/en/saved",
+        "/en/notifications",
+        "/en/profile",
+        "/vi/home/70000000-0000-4000-8000-000000000006",
+        "/en/create/problem"
+      ]
+    },
+    {
+      "path": "/en/home/70000000-0000-4000-8000-000000000007",
+      "status": 200,
+      "final_url": "http://127.0.0.1:3000/en/home/70000000-0000-4000-8000-000000000007",
+      "h1": [],
+      "lang": "en",
+      "streamed_not_found": false,
+      "links": [
+        "/en/home",
+        "/en/problems",
+        "/en/ideas",
+        "/en/projects",
+        "/en/bounties",
+        "/en/saved",
+        "/en/notifications",
+        "/en/profile",
+        "/vi/home/70000000-0000-4000-8000-000000000007",
+        "/en/create/problem"
+      ]
+    },
+    {
+      "path": "/en/home/70000000-0000-4000-8000-000000000008",
+      "status": 200,
+      "final_url": "http://127.0.0.1:3000/en/home/70000000-0000-4000-8000-000000000008",
+      "h1": [],
+      "lang": "en",
+      "streamed_not_found": false,
+      "links": [
+        "/en/home",
+        "/en/problems",
+        "/en/ideas",
+        "/en/projects",
+        "/en/bounties",
+        "/en/saved",
+        "/en/notifications",
+        "/en/profile",
+        "/vi/home/70000000-0000-4000-8000-000000000008",
+        "/en/create/problem"
+      ]
+    },
+    {
+      "path": "/en/home/70000000-0000-4000-8000-000000000009",
+      "status": 200,
+      "final_url": "http://127.0.0.1:3000/en/home/70000000-0000-4000-8000-000000000009",
+      "h1": [],
+      "lang": "en",
+      "streamed_not_found": false,
+      "links": [
+        "/en/home",
+        "/en/problems",
+        "/en/ideas",
+        "/en/projects",
+        "/en/bounties",
+        "/en/saved",
+        "/en/notifications",
+        "/en/profile",
+        "/vi/home/70000000-0000-4000-8000-000000000009",
+        "/en/create/problem"
+      ]
+    },
+    {
+      "path": "/en/home/70000000-0000-4000-8000-000000000010",
+      "status": 200,
+      "final_url": "http://127.0.0.1:3000/en/home/70000000-0000-4000-8000-000000000010",
+      "h1": [],
+      "lang": "en",
+      "streamed_not_found": false,
+      "links": [
+        "/en/home",
+        "/en/problems",
+        "/en/ideas",
+        "/en/projects",
+        "/en/bounties",
+        "/en/saved",
+        "/en/notifications",
+        "/en/profile",
+        "/vi/home/70000000-0000-4000-8000-000000000010",
+        "/en/create/problem"
+      ]
+    },
+    {
+      "path": "/en/ideas/clinic-delivery-ledger",
+      "status": 200,
+      "final_url": "http://127.0.0.1:3000/en/ideas/clinic-delivery-ledger",
+      "h1": ["Clinic Delivery Ledger"],
+      "lang": "en",
+      "streamed_not_found": false,
+      "links": [
+        "/en/home",
+        "/en/problems",
+        "/en/ideas",
+        "/en/projects",
+        "/en/bounties",
+        "/en/saved",
+        "/en/notifications",
+        "/en/profile",
+        "/vi/ideas/clinic-delivery-ledger",
+        "/en/projects/kitchen-signal-lab",
+        "/en/problems/last-mile-clinic-delays",
+        "/en/create/problem"
+      ]
+    },
+    {
+      "path": "/en/ideas/medicine-route-pooling",
+      "status": 200,
+      "final_url": "http://127.0.0.1:3000/en/ideas/medicine-route-pooling",
+      "h1": ["Medicine Route Pooling"],
+      "lang": "en",
+      "streamed_not_found": false,
+      "links": [
+        "/en/home",
+        "/en/problems",
+        "/en/ideas",
+        "/en/projects",
+        "/en/bounties",
+        "/en/saved",
+        "/en/notifications",
+        "/en/profile",
+        "/vi/ideas/medicine-route-pooling",
+        "/en/projects/kitchen-signal-lab",
+        "/en/problems/last-mile-clinic-delays",
+        "/en/create/problem"
+      ]
+    },
+    {
+      "path": "/en/problems/freelancer-payment-proof",
+      "status": 200,
+      "final_url": "http://127.0.0.1:3000/en/problems/freelancer-payment-proof",
+      "h1": ["Freelancers lack portable proof of reliable client payment"],
+      "lang": "en",
+      "streamed_not_found": false,
+      "links": [
+        "/en/home",
+        "/en/problems",
+        "/en/ideas",
+        "/en/projects",
+        "/en/bounties",
+        "/en/saved",
+        "/en/notifications",
+        "/en/profile",
+        "/vi/problems/freelancer-payment-proof",
+        "/en/create/idea",
+        "/en/ideas/payment-timing-attestations",
+        "/en/ideas/milestone-expectation-card",
+        "/en/create/problem"
+      ]
+    },
+    {
+      "path": "/en/problems/small-farm-cold-chain",
+      "status": 200,
+      "final_url": "http://127.0.0.1:3000/en/problems/small-farm-cold-chain",
+      "h1": ["Small farms lack affordable cold-chain coordination"],
+      "lang": "en",
+      "streamed_not_found": false,
+      "links": [
+        "/en/home",
+        "/en/problems",
+        "/en/ideas",
+        "/en/projects",
+        "/en/bounties",
+        "/en/saved",
+        "/en/notifications",
+        "/en/profile",
+        "/vi/problems/small-farm-cold-chain",
+        "/en/create/idea",
+        "/en/ideas/cold-slot-market",
+        "/en/ideas/harvest-handoff",
+        "/en/create/problem"
+      ]
+    },
+    {
+      "path": "/en/projects?filter=active",
+      "status": 200,
+      "final_url": "http://127.0.0.1:3000/en/projects?filter=active",
+      "h1": ["Projects"],
+      "lang": "en",
+      "streamed_not_found": false,
+      "links": [
+        "/en/home",
+        "/en/problems",
+        "/en/ideas",
+        "/en/projects",
+        "/en/bounties",
+        "/en/saved",
+        "/en/notifications",
+        "/en/profile",
+        "/vi/projects",
+        "/en/projects?filter=historical",
+        "/en/projects?filter=community",
+        "/en/projects?filter=winners",
+        "/en/projects?filter=active",
+        "/en/create/problem"
+      ]
+    },
+    {
+      "path": "/en/projects?filter=community",
+      "status": 200,
+      "final_url": "http://127.0.0.1:3000/en/projects?filter=community",
+      "h1": ["Projects"],
+      "lang": "en",
+      "streamed_not_found": false,
+      "links": [
+        "/en/home",
+        "/en/problems",
+        "/en/ideas",
+        "/en/projects",
+        "/en/bounties",
+        "/en/saved",
+        "/en/notifications",
+        "/en/profile",
+        "/vi/projects",
+        "/en/projects?filter=historical",
+        "/en/projects?filter=community",
+        "/en/projects?filter=winners",
+        "/en/projects?filter=active",
+        "/en/projects/prep-signal-pilot",
+        "/en/projects/cold-slot-prototype",
+        "/en/projects/repair-thread-demo",
+        "/en/create/problem"
+      ]
+    },
+    {
+      "path": "/en/projects?filter=historical",
+      "status": 200,
+      "final_url": "http://127.0.0.1:3000/en/projects?filter=historical",
+      "h1": ["Projects"],
+      "lang": "en",
+      "streamed_not_found": false,
+      "links": [
+        "/en/home",
+        "/en/problems",
+        "/en/ideas",
+        "/en/projects",
+        "/en/bounties",
+        "/en/saved",
+        "/en/notifications",
+        "/en/profile",
+        "/vi/projects",
+        "/en/projects?filter=historical",
+        "/en/projects?filter=community",
+        "/en/projects?filter=winners",
+        "/en/projects?filter=active",
+        "/en/create/problem"
+      ]
+    },
+    {
+      "path": "/en/projects?filter=winners",
+      "status": 200,
+      "final_url": "http://127.0.0.1:3000/en/projects?filter=winners",
+      "h1": ["Projects"],
+      "lang": "en",
+      "streamed_not_found": false,
+      "links": [
+        "/en/home",
+        "/en/problems",
+        "/en/ideas",
+        "/en/projects",
+        "/en/bounties",
+        "/en/saved",
+        "/en/notifications",
+        "/en/profile",
+        "/vi/projects",
+        "/en/projects?filter=historical",
+        "/en/projects?filter=community",
+        "/en/projects?filter=winners",
+        "/en/projects?filter=active",
+        "/en/create/problem"
+      ]
+    },
+    {
+      "path": "/en/saved?tab=bookmarks",
+      "status": 200,
+      "final_url": "http://127.0.0.1:3000/en/saved?tab=bookmarks",
+      "h1": ["Saved"],
+      "lang": "en",
+      "streamed_not_found": false,
+      "links": [
+        "/en/home",
+        "/en/problems",
+        "/en/ideas",
+        "/en/projects",
+        "/en/bounties",
+        "/en/saved",
+        "/en/notifications",
+        "/en/profile",
+        "/vi/saved",
+        "/en/saved?tab=bookmarks",
+        "/en/saved?tab=likes",
+        "/en/create/problem"
+      ]
+    },
+    {
+      "path": "/en/saved?tab=likes",
+      "status": 200,
+      "final_url": "http://127.0.0.1:3000/en/saved?tab=likes",
+      "h1": ["Saved"],
+      "lang": "en",
+      "streamed_not_found": false,
+      "links": [
+        "/en/home",
+        "/en/problems",
+        "/en/ideas",
+        "/en/projects",
+        "/en/bounties",
+        "/en/saved",
+        "/en/notifications",
+        "/en/profile",
+        "/vi/saved",
+        "/en/saved?tab=bookmarks",
+        "/en/saved?tab=likes",
+        "/en/create/problem"
+      ]
+    },
+    {
+      "path": "/en/search?mode=similar&q=restaurant",
+      "status": 200,
+      "final_url": "http://127.0.0.1:3000/en/search?mode=similar&q=restaurant",
+      "h1": ["Search"],
+      "lang": "en",
+      "streamed_not_found": false,
+      "links": [
+        "/en/home",
+        "/en/problems",
+        "/en/ideas",
+        "/en/projects",
+        "/en/bounties",
+        "/en/saved",
+        "/en/notifications",
+        "/en/profile",
+        "/vi/search",
+        "/en/search?q=restaurant",
+        "/en/search?mode=similar&q=restaurant",
+        "/en/create/problem"
+      ]
+    }
+  ],
+  "browser": "No browser is available; discovery []",
+  "screenshots": [
+    {
+      "path": "artifacts/frontend-brand/landing-mobile.png",
+      "modified": "2026-09-06T13:18:47.069361+07:00"
+    },
+    {
+      "path": "artifacts/frontend-brand/landing-desktop.png",
+      "modified": "2026-09-06T13:18:47.018365+07:00"
+    }
+  ]
+}

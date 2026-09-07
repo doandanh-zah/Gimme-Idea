@@ -95,7 +95,31 @@ export default async function ProjectDetail({ params }: Props) {
           }}
         />
       </header>
-      <ProblemReference problem={project.problem} locale={locale} />
+      <div className="v1-canonical-actionbar">
+        {project.demoUrl && (
+          <a
+            className="button button-primary"
+            href={project.demoUrl}
+            target="_blank"
+            rel="noreferrer"
+          >
+            {locale === 'vi' ? 'Xem demo (liên kết ngoài)' : 'View demo (external)'}{' '}
+            <ArrowUpRight size={17} aria-hidden="true" />
+          </a>
+        )}
+        {project.repositoryUrl && (
+          <a
+            className="button button-quiet"
+            href={project.repositoryUrl}
+            target="_blank"
+            rel="noreferrer"
+          >
+            {locale === 'vi' ? 'Mã nguồn (liên kết ngoài)' : 'Source code (external)'}{' '}
+            <ArrowUpRight size={17} aria-hidden="true" />
+          </a>
+        )}
+      </div>
+      {project.problem.slug && <ProblemReference problem={project.problem} locale={locale} />}
       {historical && project.source ? (
         <div className="v1-evidence-split">
           <section className="v1-source-facts">
@@ -163,7 +187,11 @@ export default async function ProjectDetail({ params }: Props) {
             <p className="v1-kicker">02 / TEAM</p>
             <h2>{locale === 'vi' ? 'Người đang xây' : 'People building'}</h2>
             <p>
-              <Users size={17} aria-hidden="true" /> {project.team.join(' · ')}
+              <Users size={17} aria-hidden="true" />{' '}
+              {project.team.join(' · ') ||
+                (locale === 'vi'
+                  ? 'Chưa có thông tin thành viên.'
+                  : 'Team information is not available yet.')}
             </p>
           </section>
           <section>

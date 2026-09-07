@@ -12,7 +12,7 @@ export default async function HomeFeed({ params }: { params: Promise<{ locale: s
   return (
     <main id="main" className="app-page">
       <AppPageHeader
-        eyebrow="GIMME IDEA / HOME"
+        eyebrow={locale === 'vi' ? 'GIMME IDEA / KHÁM PHÁ' : 'GIMME IDEA / DISCOVER'}
         title={t.shell.home}
         summary={
           locale === 'vi'

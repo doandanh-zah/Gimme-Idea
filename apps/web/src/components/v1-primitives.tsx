@@ -5,7 +5,8 @@ import {
   ExternalLink,
   EyeOff,
   LockKeyhole,
-  ShieldCheck,
+  Globe2,
+  Info,
 } from 'lucide-react';
 import type { Locale } from '@gimme-idea/contracts';
 import type {
@@ -17,7 +18,7 @@ import type {
 } from '@/lib/domain/types';
 
 const originLabels: Record<DataOrigin, { en: string; vi: string }> = {
-  api: { en: 'API / canonical', vi: 'API / canonical' },
+  api: { en: 'Published', vi: 'Đã xuất bản' },
   database_fixture: { en: 'Database fixture', vi: 'Dữ liệu mẫu database' },
   local_dev: { en: 'Development preview', vi: 'Bản xem trước development' },
   imported_public: { en: 'Imported public source', vi: 'Nguồn công khai đã nhập' },
@@ -45,7 +46,7 @@ export function VisibilityBadge({
   visibility: Visibility;
   locale: Locale;
 }) {
-  const Icon = visibility === 'public' ? ShieldCheck : LockKeyhole;
+  const Icon = visibility === 'public' ? Globe2 : LockKeyhole;
   return (
     <span className={`v1-visibility-badge is-${visibility}`}>
       <Icon size={13} aria-hidden="true" />
@@ -107,7 +108,7 @@ export function RewardAmount({ amount, locale }: { amount: number; locale: Local
   return (
     <strong className="v1-reward" aria-label={`${amount} USDC`}>
       {new Intl.NumberFormat(locale === 'vi' ? 'vi-VN' : 'en-US', {
-        maximumFractionDigits: 0,
+        maximumFractionDigits: 6,
       }).format(amount)}{' '}
       <span>USDC</span>
     </strong>
@@ -140,13 +141,13 @@ export function FundingStatus({
       {verified ? (
         <CheckCircle2 size={17} aria-hidden="true" />
       ) : (
-        <ShieldCheck size={17} aria-hidden="true" />
+        <Info size={17} aria-hidden="true" />
       )}
       <span>
         <strong>{labels[state]}</strong>
         <small>
           {verified
-            ? `${new Intl.NumberFormat(locale).format(amount)} USDC ${locale === 'vi' ? 'đã khóa' : 'locked'}`
+            ? `${new Intl.NumberFormat(locale, { maximumFractionDigits: 6 }).format(amount)} USDC ${locale === 'vi' ? 'đã khóa' : 'locked'}`
             : locale === 'vi'
               ? 'Không phải xác nhận tài chính'
               : 'Not a financial confirmation'}

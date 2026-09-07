@@ -13,6 +13,7 @@ export type StoredMediaAttachment = {
   name: string;
   size: number;
   mimeType: string;
+  remote?: boolean;
 };
 
 export type SocialActor = {
@@ -80,9 +81,9 @@ export type QuotePost = {
   quotedComment?: QuotedComment;
   media?: MediaAttachment | null;
 };
-import { browserRequest } from './api';
+import { ApiRequestError, browserRequest } from './api';
 import { getCurrentAccessToken } from './auth';
-import { attachUploads, uploadFiles } from './uploads';
+import { attachUploads, uploadFiles, type UploadedAsset, type PendingUpload } from './uploads';
 
 export type SocialComment = {
   id: string;
@@ -105,7 +106,17 @@ type SocialState = {
   knowledgePosts: LocalKnowledgePost[];
 };
 
-const STORAGE_KEY = 'gimme-idea-social-v2';
+function socialStorageKey() {
+  if (typeof window === 'undefined') return 'gimme-social:guest';
+  try {
+    const session = JSON.parse(window.localStorage.getItem('gimme-idea-auth-v3') ?? 'null') as {
+      id?: string;
+    } | null;
+    return `gimme-social:${session?.id ?? 'guest'}`;
+  } catch {
+    return 'gimme-social:guest';
+  }
+}
 const CHANGE_EVENT = 'gimme-social-change';
 const MAX_MEDIA_BYTES = 1_800_000;
 const MEDIA_DB_NAME = 'gimme-idea-media-v2';
@@ -127,7 +138,7 @@ function emptyState(): SocialState {
 function readState(): SocialState {
   if (typeof window === 'undefined') return emptyState();
   try {
-    const raw = window.localStorage.getItem(STORAGE_KEY);
+    const raw = window.localStorage.getItem(socialStorageKey());
     if (!raw) return emptyState();
     const parsed = JSON.parse(raw) as Partial<SocialState>;
     return {
@@ -145,7 +156,7 @@ function readState(): SocialState {
 }
 
 function writeState(state: SocialState) {
-  window.localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  window.localStorage.setItem(socialStorageKey(), JSON.stringify(state));
   window.dispatchEvent(new Event(CHANGE_EVENT));
 }
 
@@ -294,7 +305,11 @@ export async function addQuote(input: {
     media: input.media ?? null,
   };
   state.quotes = [post, ...state.quotes];
-  writeState(state);
+  try {
+    writeState(state);
+  } catch {
+    /* Publication is already confirmed by the API. */
+  }
   return post;
 }
 
@@ -404,6 +419,21 @@ function usdcToRaw(value: string) {
   return `${whole}${fraction.padEnd(6, '0')}`.replace(/^0+(?=\d)/, '');
 }
 
+const lines = (value?: string) =>
+  (value ?? '')
+    .split('\n')
+    .map((line) => line.trim())
+    .filter(Boolean);
+
+export type PublishOperation = {
+  uploaded: UploadedAsset[];
+  pendingUpload?: PendingUpload;
+  saved?: { id: string; slug: string };
+  published?: boolean;
+  createUncertain?: boolean;
+  idempotencyKey?: string;
+  fileNames?: string[];
+};
 export async function createLocalKnowledgePost(input: {
   kind: 'idea' | 'problem';
   title: string;
@@ -414,83 +444,131 @@ export async function createLocalKnowledgePost(input: {
   bountyAmount?: string;
   openToHiring?: boolean;
   files: File[];
+  operation?: PublishOperation;
+  onProgress?: (
+    phase: 'upload' | 'create' | 'attach' | 'publish',
+    current?: number,
+    total?: number,
+  ) => void;
 }) {
   validatePostMedia(input.files);
   const token = await getCurrentAccessToken();
   if (!token) throw new Error('Your authenticated session expired. Sign in again.');
-  const uploaded = await uploadFiles(input.files, 'public');
-  let saved: Record<string, unknown> | null;
-  if (input.kind === 'problem') {
-    saved = await browserRequest<Record<string, unknown>>('/v1/problems', {
-      method: 'POST',
-      accessToken: token,
-      body: JSON.stringify({
-        title: input.title,
-        summary: input.summary,
-        description: input.details?.problem ?? input.summary,
-        affectedGroups: (input.details?.whoHasThisProblem ?? '')
-          .split(',')
-          .map((value) => value.trim())
-          .filter(Boolean),
-        evidence: [],
-        desiredOutcome: input.details?.whyItMatters ?? null,
-        constraints: [],
-        successMetrics: [],
-        visibility: 'public',
-      }),
-    });
-  } else {
-    if (!input.primaryProblemSlug) throw new Error('A primary public Problem is required.');
-    let problem = await resolveEntity('problem', input.primaryProblemSlug);
-    if ((!problem || typeof problem.id !== 'string') && input.details?.primaryProblemTitle) {
-      const proposed = input.details.primaryProblemTitle.trim();
-      problem = await browserRequest<Record<string, unknown>>('/v1/problems', {
-        method: 'POST',
-        accessToken: token,
-        body: JSON.stringify({
-          title: proposed,
-          summary: `A creator-proposed problem context: ${proposed}.`,
-          description: `This Problem was proposed by the creator as the primary context for a new Idea: ${proposed}.`,
-          affectedGroups: [],
-          evidence: [],
-          constraints: [],
-          successMetrics: [],
-          visibility: 'public',
-        }),
-      });
-      if (problem && typeof problem.id === 'string')
-        await browserRequest(`/v1/problems/${problem.id}/publish`, {
+  const operation = input.operation ?? { uploaded: [] };
+  if (operation.createUncertain && !operation.idempotencyKey && !operation.saved)
+    throw new Error(
+      'Publication could not be confirmed. Check your posts before starting another publication.',
+    );
+  operation.idempotencyKey ??= crypto.randomUUID();
+  const resumeCreate = Boolean(
+    operation.createUncertain &&
+    operation.fileNames &&
+    operation.uploaded.length === operation.fileNames.length,
+  );
+  const signatures = input.files.map((file) => `${file.name}:${file.size}:${file.type}`);
+  if (
+    operation.fileNames &&
+    !operation.saved &&
+    !resumeCreate &&
+    JSON.stringify(operation.fileNames) !== JSON.stringify(signatures)
+  )
+    throw new Error('Reselect the original files in the same order to resume this upload.');
+  if (!resumeCreate) operation.fileNames = signatures;
+  const uploaded =
+    operation.saved || resumeCreate
+      ? operation.uploaded
+      : await uploadFiles(input.files, 'public', {
+          uploaded: operation.uploaded,
+          pending: operation.pendingUpload,
+          onPendingChange: (pending) => {
+            operation.pendingUpload = pending;
+            input.onProgress?.('upload', operation.uploaded.length, input.files.length);
+          },
+          onProgress: (_, current, total) => input.onProgress?.('upload', current, total),
+        });
+  let saved: Record<string, unknown> | null = operation.saved ?? null;
+  if (!saved) {
+    try {
+      if (input.kind === 'problem') {
+        operation.createUncertain = true;
+        input.onProgress?.('create');
+        saved = await browserRequest<Record<string, unknown>>('/v1/problems', {
           method: 'POST',
           accessToken: token,
+          headers: { 'idempotency-key': operation.idempotencyKey },
+          body: JSON.stringify({
+            title: input.title,
+            summary: input.summary,
+            description: [input.details?.problem ?? input.summary, input.details?.whyItMatters]
+              .filter(Boolean)
+              .join('\n\n'),
+            industry: input.details?.extra?.industry || null,
+            region: input.details?.extra?.regionMarket || null,
+            affectedGroups: (input.details?.whoHasThisProblem ?? '')
+              .split(',')
+              .map((value) => value.trim())
+              .filter(Boolean),
+            evidence: lines(input.details?.extra?.evidenceSource),
+            desiredOutcome: input.details?.extra?.desiredOutcome || null,
+            constraints: lines(input.details?.extra?.constraints),
+            successMetrics: [],
+            visibility: 'public',
+          }),
         });
+      } else {
+        if (!input.primaryProblemSlug) throw new Error('A primary public Problem is required.');
+        const problem = await resolveEntity('problem', input.primaryProblemSlug);
+        if (!problem || typeof problem.id !== 'string')
+          throw new Error('The primary Problem is unavailable.');
+        operation.createUncertain = true;
+        input.onProgress?.('create');
+        saved = await browserRequest<Record<string, unknown>>('/v1/ideas', {
+          method: 'POST',
+          accessToken: token,
+          headers: { 'idempotency-key': operation.idempotencyKey },
+          body: JSON.stringify({
+            problemId: problem.id,
+            title: input.title,
+            summary: input.summary,
+            thesis: input.details?.opportunity ?? input.summary,
+            solution: input.details?.solution ?? input.summary,
+            opportunity: input.details?.opportunity ?? null,
+            whyNow: input.details?.extra?.whyNow || null,
+            targetUsers: lines(input.details?.extra?.targetSegment),
+            risks: lines(input.details?.extra?.risks),
+            validationPlan: input.details?.extra?.successMetrics || null,
+            visibility: 'public',
+          }),
+        });
+      }
+    } catch (error) {
+      // A definite rejection can be corrected. A network interruption may have committed.
+      if (
+        error instanceof ApiRequestError &&
+        error.status >= 400 &&
+        error.status < 500 &&
+        error.status !== 408
+      ) {
+        operation.createUncertain = false;
+        input.onProgress?.('create');
+      }
+      throw error;
     }
-    if (!problem || typeof problem.id !== 'string')
-      throw new Error('The primary Problem is unavailable.');
-    saved = await browserRequest<Record<string, unknown>>('/v1/ideas', {
-      method: 'POST',
-      accessToken: token,
-      body: JSON.stringify({
-        problemId: problem.id,
-        title: input.title,
-        summary: input.summary,
-        thesis: input.details?.opportunity ?? input.summary,
-        solution: input.details?.solution ?? input.summary,
-        opportunity: input.details?.opportunity ?? null,
-        whyNow: input.details?.whyItMatters ?? null,
-        targetUsers: [],
-        risks: [],
-        validationPlan: null,
-        visibility: 'public',
-      }),
-    });
   }
   if (!saved || typeof saved.id !== 'string' || typeof saved.slug !== 'string')
     throw new Error('The server did not return the published object.');
-  await browserRequest(`/v1/${input.kind}s/${saved.id}/publish`, {
-    method: 'POST',
-    accessToken: token,
-  });
+  operation.saved = { id: saved.id, slug: saved.slug };
+  operation.createUncertain = false;
+  input.onProgress?.('attach');
   await attachUploads(uploaded, input.kind, saved.id);
+  input.onProgress?.('publish');
+  if (!operation.published) {
+    await browserRequest(`/v1/${input.kind}s/${saved.id}/publish`, {
+      method: 'POST',
+      accessToken: token,
+    });
+    operation.published = true;
+  }
   const id = saved.id;
   const bountyRaw = input.kind === 'problem' ? usdcToRaw(input.bountyAmount ?? '') : null;
   const post: LocalKnowledgePost = {
@@ -524,7 +602,11 @@ export async function createLocalKnowledgePost(input: {
   };
   const state = readState();
   state.knowledgePosts = [post, ...state.knowledgePosts];
-  writeState(state);
+  try {
+    writeState(state);
+  } catch {
+    /* Publication is already confirmed by the API. */
+  }
   return post;
 }
 

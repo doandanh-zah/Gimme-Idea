@@ -18,6 +18,13 @@ export function validatePostMedia(files: File[]) {
   let imageCount = 0;
   let videoCount = 0;
   for (const file of files) {
+    if (
+      !['image/png', 'image/jpeg', 'image/webp', 'image/gif', 'video/mp4', 'video/webm'].includes(
+        file.type,
+      ) ||
+      file.size < 1
+    )
+      throw new PostMediaValidationError('unsupported', file.name);
     if (file.type.startsWith('image/')) {
       imageCount++;
       if (file.size > POST_MEDIA_LIMITS.maxImageBytes)

@@ -1,37 +1,47 @@
 import { ExternalLink } from 'lucide-react';
-import type { ProvenanceDTO } from '@gimme-idea/contracts';
+import type { ProvenanceDTO, Locale } from '@gimme-idea/contracts';
 import { StatusPill } from '@gimme-idea/ui';
 
 export function Provenance({
   value,
   label,
   id,
+  locale = 'en',
 }: {
   value: ProvenanceDTO;
   label: string;
   id?: string;
+  locale?: Locale;
 }) {
   return (
     <aside className="provenance" id={id}>
       <div className="section-heading">
         <p>{label}</p>
         <StatusPill tone={value.reviewedByHuman ? 'success' : 'warning'}>
-          {value.reviewedByHuman ? 'HUMAN REVIEWED' : 'REVIEW NEEDED'}
+          {value.reviewedByHuman
+            ? locale === 'vi'
+              ? 'ĐÃ ĐƯỢC XEM XÉT'
+              : 'HUMAN REVIEWED'
+            : locale === 'vi'
+              ? 'CẦN XEM XÉT'
+              : 'REVIEW NEEDED'}
         </StatusPill>
       </div>
       <dl>
         <div>
-          <dt>ORIGIN</dt>
+          <dt>{locale === 'vi' ? 'NGUỒN' : 'ORIGIN'}</dt>
           <dd>{value.origin.replace('_', ' ')}</dd>
         </div>
         <div>
-          <dt>LAST RESEARCH</dt>
+          <dt>{locale === 'vi' ? 'NGHIÊN CỨU GẦN NHẤT' : 'LAST RESEARCH'}</dt>
           <dd>
             {value.lastResearchedAt
-              ? new Intl.DateTimeFormat('en', { dateStyle: 'medium' }).format(
+              ? new Intl.DateTimeFormat(locale, { dateStyle: 'medium' }).format(
                   new Date(value.lastResearchedAt),
                 )
-              : 'Not researched'}
+              : locale === 'vi'
+                ? 'Chưa nghiên cứu'
+                : 'Not researched'}
           </dd>
         </div>
       </dl>

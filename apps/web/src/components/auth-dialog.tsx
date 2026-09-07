@@ -1,9 +1,10 @@
 'use client';
 
 import { FlaskConical, LoaderCircle, X } from 'lucide-react';
-import { useEffect, useRef, useState } from 'react';
+import { useId, useEffect, useRef, useState } from 'react';
 import type { Locale } from '@gimme-idea/contracts';
 import { type SocialAuthProvider, useAuth } from '@/lib/auth';
+import { legalCopy } from '@/lib/legal';
 
 const copy = {
   en: {
@@ -12,7 +13,6 @@ const copy = {
     subtitle: 'Sign in with social. Your Gimme Idea wallet is created automatically.',
     continueWith: 'Continue with',
     close: 'Close',
-    terms: 'By continuing, you agree to the Terms and Privacy Policy.',
     google: 'Google',
     x: 'X',
     facebook: 'Facebook',
@@ -27,7 +27,6 @@ const copy = {
     subtitle: 'Đăng nhập bằng social. Gimme Idea sẽ tự động tạo ví cho bạn.',
     continueWith: 'Tiếp tục với',
     close: 'Đóng',
-    terms: 'Khi tiếp tục, bạn đồng ý với Điều khoản và Chính sách bảo mật.',
     google: 'Google',
     x: 'X',
     facebook: 'Facebook',
@@ -40,13 +39,7 @@ const copy = {
 
 const socialProviders: Array<{
   id: SocialAuthProvider;
-  brand: string;
-  className: string;
-}> = [
-  { id: 'google', brand: 'G', className: 'is-google' },
-  { id: 'x', brand: '𝕏', className: 'is-x' },
-  { id: 'facebook', brand: 'f', className: 'is-facebook' },
-];
+}> = [{ id: 'google' }, { id: 'x' }, { id: 'facebook' }];
 
 export function AuthDialog({
   locale,
@@ -58,7 +51,9 @@ export function AuthDialog({
   onClose: () => void;
 }) {
   const t = copy[locale];
+  const legal = legalCopy[locale];
   const auth = useAuth();
+  const dialogId = useId();
   const dialogRef = useRef<HTMLDialogElement>(null);
   const [busyAction, setBusyAction] = useState<string | null>(null);
 
@@ -104,7 +99,7 @@ export function AuthDialog({
     <dialog
       ref={dialogRef}
       className="auth-dialog"
-      aria-labelledby="auth-dialog-title"
+      aria-labelledby={`${dialogId}-auth-dialog-title`}
       onClose={closeDialog}
       onCancel={(event) => {
         event.preventDefault();
@@ -123,10 +118,21 @@ export function AuthDialog({
 
         <header className="auth-intro">
           <p>{t.brand}</p>
-          <h2 id="auth-dialog-title">{t.title}</h2>
+          <h2 id={`${dialogId}-auth-dialog-title`}>{t.title}</h2>
           <span>{t.subtitle}</span>
         </header>
 
+        {!auth.socialReady && (
+          <p role="status" className="auth-terms">
+            {auth.socialConfigured
+              ? locale === 'vi'
+                ? 'Đang khởi tạo đăng nhập. Nếu chờ lâu, hãy đóng rồi tải lại trang để thử lại.'
+                : 'Initializing sign-in. If this takes too long, close this dialog and reload the page to retry.'
+              : locale === 'vi'
+                ? 'Đăng nhập mạng xã hội chưa được cấu hình trên môi trường này.'
+                : 'Social sign-in is not configured in this environment.'}
+          </p>
+        )}
         <div className="auth-primary-list">
           {socialProviders.map((provider) => (
             <button
@@ -137,9 +143,6 @@ export function AuthDialog({
               aria-busy={busyAction === provider.id}
               onClick={() => void run(provider.id)}
             >
-              <span className={`auth-brand-mark ${provider.className}`} aria-hidden="true">
-                {provider.brand}
-              </span>
               <strong>
                 {t.continueWith} {t[provider.id]}
               </strong>
@@ -182,7 +185,27 @@ export function AuthDialog({
           </p>
         )}
 
-        <p className="auth-terms">{t.terms}</p>
+        <p className="auth-terms">
+          {legal.authLead}{' '}
+          <a
+            href={`/${locale}/terms`}
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label={`${legal.terms} (${legal.newTab})`}
+          >
+            {legal.terms}
+          </a>{' '}
+          {legal.and}{' '}
+          <a
+            href={`/${locale}/privacy`}
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label={`${legal.privacy} (${legal.newTab})`}
+          >
+            {legal.privacy}
+          </a>
+          . {legal.authNote}
+        </p>
       </div>
     </dialog>
   );

@@ -239,7 +239,7 @@ function readDevToken() {
 }
 
 export async function getCurrentAccessToken() {
-  return readDevToken() ?? getPrivyAccessToken();
+  return readDevToken() ?? (PRIVY_APP_ID ? getPrivyAccessToken() : null);
 }
 
 function persistDevToken(token: string | null) {
@@ -338,6 +338,7 @@ function useSharedSessionState() {
   const setSession = useCallback((next: AuthSession | null) => {
     setSessionState(next);
     persistSession(next);
+    window.dispatchEvent(new Event('gimme-social-change'));
   }, []);
 
   const signInMock = useCallback(async () => {
@@ -459,7 +460,7 @@ function MockOnlyAuthProvider({ children }: { children: ReactNode }) {
     () =>
       createContextValue(state, {
         socialConfigured: false,
-        socialReady: true,
+        socialReady: false,
         signInSocial,
         logout,
       }),
@@ -565,7 +566,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         loginMethods: ['google', 'twitter', FACEBOOK_LOGIN_METHOD],
         appearance: {
           theme: 'dark',
-          accentColor: '#9945FF',
+          accentColor: '#BA91F5',
           logo: '/brand/logo-gmi.png',
           landingHeader: 'Sign in to Gimme Idea',
           loginMessage: 'Your Solana wallet is created automatically after social sign-in.',

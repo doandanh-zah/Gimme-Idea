@@ -151,6 +151,8 @@ export type PrivateSubmissionModel = {
   status: 'draft' | 'submitted' | 'shortlisted' | 'selected' | 'not_selected';
   submittedAt?: string;
   snapshotVersion?: string;
+  snapshot?: Record<string, unknown>;
+  contentHash?: string;
 };
 
 export type HomeFeedItem =
@@ -159,8 +161,8 @@ export type HomeFeedItem =
       type: 'problem';
       priority: number;
       problem: ProblemReferenceModel;
-      ideaCount: number;
-      archiveCount: number;
+      ideaCount?: number;
+      archiveCount?: number;
     }
   | { type: 'project'; priority: number; project: ProjectModel }
   | {

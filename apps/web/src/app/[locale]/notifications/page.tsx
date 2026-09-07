@@ -18,8 +18,8 @@ export default async function NotificationsPage({
         title={t.shell.notifications}
         summary={
           locale === 'vi'
-            ? 'Bounty, submission, research và payout — không tối ưu cho Like.'
-            : 'Bounties, submissions, research and payouts—not Like-driven noise.'
+            ? 'Cập nhật về ý tưởng, dự án, bài dự thi và những hoạt động bạn quan tâm.'
+            : 'Updates on your ideas, projects, entries and the work you follow.'
         }
       />
       <NotificationList locale={locale} />

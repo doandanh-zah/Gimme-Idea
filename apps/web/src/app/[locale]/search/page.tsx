@@ -5,6 +5,8 @@ import { notFound } from 'next/navigation';
 import { AppPageHeader, EmptySurface } from '@/components/app-surfaces';
 import { DataOriginBadge } from '@/components/v1-primitives';
 import { searchPublicCatalog } from '@/lib/domain/client';
+import { CatalogPagination } from '@/components/catalog-pagination';
+import { catalogPage, catalogPageSize } from '@/lib/pagination';
 import { isLocale } from '@/lib/i18n';
 
 export const metadata: Metadata = { title: 'Search', robots: { index: false, follow: true } };
@@ -13,12 +15,19 @@ export default async function SearchPage({
   searchParams,
 }: {
   params: Promise<{ locale: string }>;
-  searchParams: Promise<{ q?: string; mode?: string }>;
+  searchParams: Promise<{ q?: string; mode?: string; page?: string }>;
 }) {
   const [{ locale }, query] = await Promise.all([params, searchParams]);
   if (!isLocale(locale)) notFound();
   const q = query.q?.trim() ?? '';
-  const results = await searchPublicCatalog(locale, q);
+  const page = catalogPage(query.page);
+  const rows = await searchPublicCatalog(
+    locale,
+    q,
+    (page - 1) * catalogPageSize,
+    catalogPageSize + 1,
+  );
+  const results = rows.slice(0, catalogPageSize);
   return (
     <main id="main" className="app-page v1-search-page">
       <AppPageHeader
@@ -32,7 +41,7 @@ export default async function SearchPage({
       />
       <form className="v1-search-form" role="search" action={`/${locale}/search`}>
         <label htmlFor="catalog-search">
-          {locale === 'vi' ? 'Tìm trong catalog công khai' : 'Search the public catalog'}
+          {locale === 'vi' ? 'Tìm nội dung công khai' : 'Search public content'}
         </label>
         <div>
           <Search size={19} aria-hidden="true" />
@@ -50,26 +59,12 @@ export default async function SearchPage({
         </div>
         <p>
           {locale === 'vi'
-            ? 'Private submissions và restricted content không nằm trong index này.'
-            : 'Private submissions and restricted content are excluded from this index.'}
+            ? 'Bài nộp riêng tư và nội dung giới hạn không xuất hiện trong tìm kiếm.'
+            : 'Private entries and restricted content do not appear in search.'}
         </p>
       </form>
-      <div className="v1-search-mode">
-        <Link
-          className={!query.mode ? 'is-active' : ''}
-          href={`/${locale}/search${q ? `?q=${encodeURIComponent(q)}` : ''}`}
-        >
-          Search
-        </Link>
-        <Link
-          className={query.mode === 'similar' ? 'is-active' : ''}
-          href={`/${locale}/search?mode=similar${q ? `&q=${encodeURIComponent(q)}` : ''}`}
-        >
-          {locale === 'vi' ? 'Khám phá tương tự' : 'Explore Similar'}
-        </Link>
-      </div>
       <p className="v1-result-count">
-        {results.length} {locale === 'vi' ? 'kết quả được phép xem' : 'authorized public results'}
+        {results.length} {locale === 'vi' ? 'kết quả đang hiển thị' : 'results shown'}
       </p>
       {results.length ? (
         <section className="v1-search-results">
@@ -100,6 +95,13 @@ export default async function SearchPage({
           }
         />
       )}
+      <CatalogPagination
+        locale={locale}
+        path={`/${locale}/search`}
+        page={page}
+        hasNext={rows.length > catalogPageSize}
+        query={{ q }}
+      />
     </main>
   );
 }
