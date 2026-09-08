@@ -15,7 +15,7 @@ const copy = {
     close: 'Close',
     google: 'Google',
     x: 'X',
-    facebook: 'Facebook',
+    github: 'GitHub',
     or: 'or',
     devnet: 'Devnet',
     mock: 'Use test account',
@@ -29,7 +29,7 @@ const copy = {
     close: 'Đóng',
     google: 'Google',
     x: 'X',
-    facebook: 'Facebook',
+    github: 'GitHub',
     or: 'hoặc',
     devnet: 'Test Devnet',
     mock: 'Dùng tài khoản test',
@@ -39,7 +39,7 @@ const copy = {
 
 const socialProviders: Array<{
   id: SocialAuthProvider;
-}> = [{ id: 'google' }, { id: 'x' }, { id: 'facebook' }];
+}> = [{ id: 'google' }, { id: 'x' }, { id: 'github' }];
 
 export function AuthDialog({
   locale,

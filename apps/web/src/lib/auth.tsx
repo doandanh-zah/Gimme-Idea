@@ -4,7 +4,6 @@ import {
   PrivyProvider,
   getAccessToken as getPrivyAccessToken,
   useLogin,
-  useLoginWithOAuth,
   useLogout,
   usePrivy,
   type User as PrivyUser,
@@ -27,7 +26,7 @@ export type AuthActor = {
   avatarUrl: string | null;
 };
 
-export type SocialAuthProvider = 'google' | 'x' | 'facebook';
+export type SocialAuthProvider = 'google' | 'x' | 'github';
 export type AuthProviderName = 'dev' | SocialAuthProvider;
 
 export type WalletActivity = {
@@ -96,10 +95,6 @@ const DEV_TOKEN_STORAGE_KEY = 'gimme-idea-dev-access-token';
 const PUBLIC_API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://127.0.0.1:3001';
 const PRIVY_APP_ID = process.env.NEXT_PUBLIC_PRIVY_APP_ID?.trim() ?? '';
 const PRIVY_CLIENT_ID = process.env.NEXT_PUBLIC_PRIVY_CLIENT_ID?.trim() ?? '';
-const FACEBOOK_OAUTH_PROVIDER =
-  (process.env.NEXT_PUBLIC_PRIVY_FACEBOOK_OAUTH_PROVIDER?.trim() as
-    | `custom:${string}`
-    | undefined) ?? 'custom:facebook';
 const DEV_AUTH_ENABLED =
   process.env.NODE_ENV !== 'production' && process.env.NEXT_PUBLIC_ENABLE_DEV_AUTH === 'true';
 
@@ -130,7 +125,7 @@ const AuthContext = createContext<AuthContextValue | null>(null);
 const socialProviderNames: Record<SocialAuthProvider, string> = {
   google: 'Google',
   x: 'X',
-  facebook: 'Facebook',
+  github: 'GitHub',
 };
 
 function pendingWallet(custody: EmbeddedWallet['custody']): EmbeddedWallet {
@@ -205,7 +200,7 @@ function readStoredSession(): AuthSession | null {
       parsed.authProvider !== 'dev' &&
       parsed.authProvider !== 'google' &&
       parsed.authProvider !== 'x' &&
-      parsed.authProvider !== 'facebook'
+      parsed.authProvider !== 'github'
     ) {
       return null;
     }
@@ -290,37 +285,25 @@ function devSessionFromResponse(response: DevMockResponse): AuthSession {
   };
 }
 
-function customFacebookAccount(user: PrivyUser) {
-  return user.linkedAccounts.find((account) => account.type === 'custom:facebook') as
-    | {
-        username?: string | null;
-        name?: string | null;
-        email?: string | null;
-        profilePictureUrl?: string | null;
-      }
-    | undefined;
-}
-
 function sessionFromPrivyUser(user: PrivyUser, walletAddress: string | null): AuthSession {
-  const facebook = customFacebookAccount(user);
-  const authProvider: SocialAuthProvider = user.google ? 'google' : user.twitter ? 'x' : 'facebook';
+  const authProvider: SocialAuthProvider = user.google ? 'google' : user.twitter ? 'x' : 'github';
   const displayName =
     user.google?.name ??
     user.twitter?.name ??
-    facebook?.name ??
+    user.github?.name ??
     user.google?.email?.split('@')[0] ??
-    facebook?.email?.split('@')[0] ??
+    user.github?.email?.split('@')[0] ??
     `${socialProviderNames[authProvider]} user`;
   const requestedUsername =
     user.twitter?.username ??
-    facebook?.username ??
+    user.github?.username ??
     user.google?.email?.split('@')[0] ??
     `${authProvider}-${user.id.slice(-8)}`;
   return {
     id: `privy:${user.id}`,
     displayName,
     username: normalizeUsername(requestedUsername) || `builder-${user.id.slice(-8)}`,
-    avatarUrl: user.twitter?.profilePictureUrl ?? facebook?.profilePictureUrl ?? null,
+    avatarUrl: user.twitter?.profilePictureUrl ?? null,
     avatarInitials: initialsFor(displayName),
     createdAt: user.createdAt.toISOString(),
     authProvider,
@@ -475,7 +458,6 @@ function PrivyAuthBridge({ children }: { children: ReactNode }) {
   const privy = usePrivy();
   const { wallets } = usePrivySolanaWallets();
   const { logout: logoutPrivy } = useLogout();
-  const { initOAuth } = useLoginWithOAuth();
   const state = useSharedSessionState();
   const { setError, setHydrated, setSession, setSessionState } = state;
   const embeddedWallet = wallets.find((wallet) => wallet.standardWallet.name === 'Privy');
@@ -532,20 +514,10 @@ function PrivyAuthBridge({ children }: { children: ReactNode }) {
         setError(message);
         throw new Error(message);
       }
-      if (provider === 'facebook') {
-        try {
-          await initOAuth({ provider: FACEBOOK_OAUTH_PROVIDER });
-        } catch (caught) {
-          const message =
-            caught instanceof Error ? caught.message : 'Could not start Facebook sign-in.';
-          setError(message);
-          throw caught instanceof Error ? caught : new Error(message);
-        }
-        return;
-      }
-      login({ loginMethods: [provider === 'google' ? 'google' : 'twitter'] });
+      const loginMethod = provider === 'x' ? 'twitter' : provider;
+      login({ loginMethods: [loginMethod] });
     },
-    [initOAuth, login, privy.ready, setError],
+    [login, privy.ready, setError],
   );
 
   const logout = useCallback(async () => {
@@ -575,7 +547,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       appId={PRIVY_APP_ID}
       clientId={PRIVY_CLIENT_ID || undefined}
       config={{
-        loginMethods: ['google', 'twitter'],
+        loginMethods: ['google', 'twitter', 'github'],
         appearance: {
           theme: 'dark',
           accentColor: '#BA91F5',
