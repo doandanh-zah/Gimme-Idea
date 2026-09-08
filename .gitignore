@@ -24,3 +24,4 @@ target/
 test-ledger/
 *.keypair.json
 apps/api/.local/
+.vercel/

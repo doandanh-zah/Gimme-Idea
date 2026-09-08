@@ -723,6 +723,27 @@ export const auditLogs = pgTable('audit_logs', {
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
 });
 
+export const analyticsEvents = pgTable(
+  'analytics_events',
+  {
+    id: uuid().defaultRandom().primaryKey(),
+    eventName: text('event_name').notNull(),
+    actorUserId: uuid('actor_user_id').references(() => users.id, { onDelete: 'set null' }),
+    entityType: text('entity_type').notNull(),
+    entityId: uuid('entity_id').notNull(),
+    source: text().default('database_trigger').notNull(),
+    properties: jsonb().default({}).notNull(),
+    dedupeKey: text('dedupe_key').notNull().unique(),
+    occurredAt: timestamp('occurred_at', { withTimezone: true }).defaultNow().notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  },
+  (t) => [
+    index('analytics_events_name_occurred_idx').on(t.eventName, t.occurredAt),
+    index('analytics_events_actor_occurred_idx').on(t.actorUserId, t.occurredAt),
+    index('analytics_events_entity_idx').on(t.entityType, t.entityId),
+  ],
+);
+
 export const organizationWallets = pgTable('organization_wallets', {
   id: uuid().defaultRandom().primaryKey(),
   organizationId: uuid('organization_id')

@@ -2,8 +2,9 @@ import './globals.css';
 import './v1.css';
 import './brand-system.css';
 import type { Metadata } from 'next';
-import type { ReactNode } from 'react';
+import { Suspense, type ReactNode } from 'react';
 import { AuthProvider } from '@/lib/auth';
+import { GoogleAnalytics } from '@/components/google-analytics';
 import { headers } from 'next/headers';
 
 export const metadata: Metadata = {
@@ -22,6 +23,9 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
       </head>
       <body>
         <AuthProvider>{children}</AuthProvider>
+        <Suspense fallback={null}>
+          <GoogleAnalytics />
+        </Suspense>
       </body>
     </html>
   );
