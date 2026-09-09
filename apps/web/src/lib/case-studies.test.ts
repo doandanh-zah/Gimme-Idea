@@ -39,14 +39,18 @@ describe('case-studies module', () => {
   it('should filter by query string', () => {
     const results = filterCaseStudies({ query: 'supabase' });
     expect(results.length).toBeGreaterThanOrEqual(1);
-    expect(results[0].name).toContain('Supabase');
+    expect(results[0]?.name).toContain('Supabase');
   });
 
   it('should filter by theme and sort by score descending', () => {
     const results = filterCaseStudies({ theme: 'AI', sortBy: 'score_desc' });
     expect(results.length).toBe(10);
     for (let i = 1; i < results.length; i++) {
-      expect(results[i - 1].case_study.score).toBeGreaterThanOrEqual(results[i].case_study.score);
+      const prev = results[i - 1];
+      const curr = results[i];
+      if (prev && curr) {
+        expect(prev.case_study.score).toBeGreaterThanOrEqual(curr.case_study.score);
+      }
     }
   });
 
