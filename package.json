@@ -26,6 +26,7 @@
     "db:stop": "supabase stop",
     "db:reset": "supabase db reset --local",
     "db:generate": "pnpm --filter @gimme-idea/db db:generate",
+    "db:seed:case-studies": "pnpm --filter @gimme-idea/db seed:case-studies",
     "db:seed:verify": "pnpm --filter @gimme-idea/db seed:verify"
   },
   "devDependencies": {

@@ -44,10 +44,16 @@ export default async function IdeasFeed({
             ? 'Mỗi ý tưởng bắt đầu từ một vấn đề thật. Bạn có một góc nhìn khác?'
             : 'Every idea starts with a real problem. Have a different perspective?'}
         </p>
-        <Link href={`/${locale}/create/idea`}>
-          {locale === 'vi' ? 'Đề xuất ý tưởng' : 'Propose an idea'}
-          <ArrowUpRight size={18} aria-hidden="true" />
-        </Link>
+        <div className="flex gap-4 items-center">
+          <Link href={`/${locale}/case-studies`} className="text-[var(--yellow,#f9d65c)] hover:underline inline-flex items-center gap-1">
+            {locale === 'vi' ? 'Kho Case Studies (102 hồ sơ)' : 'Case Studies Bank (102 cases)'}
+            <ArrowUpRight size={16} aria-hidden="true" />
+          </Link>
+          <Link href={`/${locale}/create/idea`}>
+            {locale === 'vi' ? 'Đề xuất ý tưởng' : 'Propose an idea'}
+            <ArrowUpRight size={18} aria-hidden="true" />
+          </Link>
+        </div>
       </aside>
       <KnowledgeFeed locale={locale} kind="idea" initialItems={items} />
       <CatalogPagination

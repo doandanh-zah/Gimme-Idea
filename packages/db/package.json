@@ -15,6 +15,7 @@
     "test": "vitest run --passWithNoTests",
     "db:generate": "drizzle-kit generate --config drizzle.config.ts",
     "seed": "tsx scripts/seed.ts",
+    "seed:case-studies": "tsx scripts/seed-case-studies.ts",
     "seed:verify": "tsx scripts/verify-seed.ts"
   },
   "dependencies": {
